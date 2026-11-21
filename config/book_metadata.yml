@@ -4,13 +4,14 @@ book:
   tagline: "A Complete Zero-to-Researcher Textbook with Interactive Google Colab Labs"
   author: "Mezanur Rahman Sharukh"
   credentials: "M.Sc. Statistician | Public Health & Machine Learning Researcher"
+  orcid: "https://orcid.org/0009-0006-8348-6123"
   edition: "First Edition (In Development)"
   target_pages: 1275
   language: "en"
 
 distribution:
   mode: "option_b_github_and_gdrive"
-  github_owner: "MEZANUR_GITHUB_USERNAME"   # Replace once GitHub repo is connected
+  github_owner: "sharukh01621"
   github_repo: "first-line-to-first-paper"
   github_branch: "main"
   colab_drive_subdir: "colab_drive"

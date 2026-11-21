@@ -3,37 +3,37 @@
   "google_drive_folder_url": "https://drive.google.com/drive/folders/REPLACE_WITH_SHARED_FOLDER_ID",
   "notebooks": {
     "00_START_HERE.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb",
       "qr_path": "assets/qr/00_START_HERE.png",
       "is_solution": false
     },
     "00_setup/00_colab_orientation.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb",
       "qr_path": "assets/qr/00_setup__00_colab_orientation.png",
       "is_solution": false
     },
     "part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb",
       "qr_path": "assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png",
       "is_solution": false
     },
     "part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb",
       "qr_path": "assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png",
       "is_solution": false
     },
     "part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb",
       "qr_path": "assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png",
       "is_solution": false
     },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
       "is_solution": true
     },
     "solutions/part_01_python_foundations/ch01_first_program/03_coding_exam_SOLUTION.ipynb": {
-      "colab_url": "https://colab.research.google.com/github/MEZANUR_GITHUB_USERNAME/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/03_coding_exam_SOLUTION.ipynb",
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
