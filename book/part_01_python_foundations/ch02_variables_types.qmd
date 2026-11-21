@@ -74,8 +74,7 @@ cases = cases + 250
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.2
+%%| fig-width: 5.8
 %%| fig-align: center
 flowchart LR
     subgraph Names["Name Tags (Namespace)"]

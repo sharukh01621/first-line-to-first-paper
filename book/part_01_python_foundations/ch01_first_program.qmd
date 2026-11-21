@@ -60,8 +60,7 @@ When you open one of this book's `.ipynb` notebooks in **Google Colab**, you are
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 3.2
-%%| fig-height: 4.2
+%%| fig-width: 2.6
 %%| fig-align: center
 flowchart TD
     A["1. Your Browser<br/>(Google Colab Code Cell)"] -->|"Press Shift + Enter"| B["2. Python Interpreter<br/>(Checks Grammar / Syntax)"]

@@ -60,8 +60,7 @@ deep_w = copy.deepcopy(wards)   # New outer list, NEW inner rows!
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.4
+%%| fig-width: 6.2
 %%| fig-align: center
 flowchart TD
     subgraph Names["Variable Name Tags"]

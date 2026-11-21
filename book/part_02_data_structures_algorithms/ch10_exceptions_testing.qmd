@@ -56,7 +56,6 @@ Every `try` statement follows one exact deterministic path through its four clau
 ```{mermaid}
 %%| echo: false
 %%| fig-width: 4.2
-%%| fig-height: 3.4
 %%| fig-align: center
 flowchart TD
     A["Enter try: block<br/>(run risky code)"] --> B{"Exception<br/>raised?"}

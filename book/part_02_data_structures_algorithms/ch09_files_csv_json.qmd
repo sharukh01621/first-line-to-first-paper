@@ -52,27 +52,16 @@ Follow the exact lifecycle of a clean CSV-to-JSON surveillance pipeline from raw
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.4
+%%| fig-width: 2.3
 %%| fig-align: center
 flowchart TD
-    subgraph DiskIn["Persistent Disk (Read-Only Raw Data)"]
-        D1["raw_hb.csv<br/>(UTF-8 bytes on disk)"]
-    end
-    subgraph CtxIn["with open(in_csv, 'r', encoding='utf-8', newline='')"]
-        R1["csv.DictReader(in_f)<br/>yields dict[str, str] rows"]
-        R2["Clean & Aggregate in RAM<br/>skip '', 'N/A', '999'<br/>normalize .strip().title()"]
-    end
-    subgraph CtxOut["with open(out_json, 'w', encoding='utf-8')"]
-        W1["json.dump(summary, out_f, indent=2)<br/>flushes & auto-closes handle"]
-    end
-    subgraph DiskOut["Persistent Disk (Derived Artifact)"]
-        D2["district_hb.json<br/>(indented UTF-8 JSON)"]
-    end
-    D1 --> R1
-    R1 --> R2
-    R2 -->|"exit block:<br/>in_f auto-closed"| W1
-    W1 -->|"exit block:<br/>out_f flushed & closed"| D2
+    D1["1. Raw CSV on Disk<br/>raw_hb.csv (UTF-8)"]
+    R1["2. with open(in_csv, 'r')<br/>csv.DictReader -> rows"]
+    R2["3. Clean & Aggregate<br/>skip '', 'N/A', '999'"]
+    W1["4. with open(out_json, 'w')<br/>json.dump(summary, out_f)"]
+    D2["5. Saved JSON Artifact<br/>flushed & auto-closed"]
+
+    D1 --> R1 --> R2 -->|"in_f closed"| W1 -->|"out_f closed"| D2
 ```
 
 Notice the two most important architectural safeguards in this diagram:

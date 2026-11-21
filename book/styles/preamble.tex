@@ -7,6 +7,10 @@
 \usepackage{fvextra}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
 
+% Never distort figure aspect ratios in PDF builds; prevent overfull hboxes on long paths
+\AtBeginDocument{\setkeys{Gin}{keepaspectratio}}
+\emergencystretch=3em
+
 % Brand palette: Deep Teal (Researcher), Navy (Mental Model), Amber (Trap), Crimson (Break It)
 \definecolor{TealPrimary}{HTML}{0F5C6E}
 \definecolor{NavyAccent}{HTML}{1B3B6F}

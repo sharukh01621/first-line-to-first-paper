@@ -67,16 +67,15 @@ lab_result = screen_temperature(38.6)
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.4
+%%| fig-width: 5.8
 %%| fig-align: center
 flowchart TD
-    subgraph Global["Global Frame (Outer Notebook)"]
+    subgraph Global["Global Frame"]
         G1["FEVER_CUTOFF_C = 38.0<br/>(read-only constant)"]
         G2["patient_status = 'Waiting'<br/>(remains untouched!)"]
         G3["lab_result = 'Febrile'<br/>(receives return value)"]
     end
-    subgraph Local["Local Call Frame: screen_temperature(38.6)"]
+    subgraph Local["Local Frame"]
         L1["temp_c = 38.6<br/>(parameter binding)"]
         L2["patient_status = 'Febrile'<br/>(private local tag)"]
     end

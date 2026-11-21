@@ -57,8 +57,7 @@ Before writing a single line of Part II code, ask two architectural questions: *
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.4
+%%| fig-width: 5.6
 %%| fig-align: center
 flowchart TD
     Q1{"Need fast O(1)<br/>lookup by key/ID?"}

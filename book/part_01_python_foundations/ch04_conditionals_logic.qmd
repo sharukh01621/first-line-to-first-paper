@@ -72,8 +72,7 @@ Watch how Python evaluates a guarded **WHO Maternal Anemia & Triage Decision Tre
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.8
+%%| fig-width: 4.0
 %%| fig-align: center
 flowchart TD
     S["Start: Receive raw_hb"] --> G{"raw_hb is None<br/>or raw_hb == 999?"}

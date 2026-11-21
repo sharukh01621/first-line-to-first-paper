@@ -53,8 +53,7 @@ Every loop in Python—whether processing 5 clinic rows or 50 million genomic re
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.0
-%%| fig-height: 3.6
+%%| fig-width: 3.8
 %%| fig-align: center
 flowchart TD
     Init["1. Initialize State<br/>total = 0 | count = 0"]

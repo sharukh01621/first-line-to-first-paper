@@ -52,28 +52,34 @@ Computer scientists describe how an algorithm's workload grows with input size $
 
 Two ideas unlock all of Chapter 11: **halving a sorted search space** ( $O(\log n)$ ) and **stacking/unwinding recursive call frames**. Watch how both reduce complex problems into crisp, deterministic steps:
 
+**A. Iterative Binary Search Halving ($O(\log n)$):**
+
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.4
+%%| fig-width: 6.0
 %%| fig-align: center
-flowchart TD
-    subgraph BS["Binary Search Halving: O(log n)"]
-        B1["8 sorted IDs: low=0, high=7<br/>mid=3 ('P-040' &lt; 'P-070')"]
-        B2["4 IDs left: low=4, high=7<br/>mid=5 ('P-060' &lt; 'P-070')"]
-        B3["2 IDs left: low=6, high=7<br/>mid=6 ('P-070' == target!)"]
-        B1 -->|"discard left half"| B2
-        B2 -->|"discard left half"| B3
-    end
-    subgraph REC["Recursion Call Stack: outbreak(10, 1.5, 2)"]
-        R2["Frame gen=2<br/>waits for gen=1"]
-        R1["Frame gen=1<br/>waits for gen=0"]
-        R0["Base Case gen=0<br/>returns 10.0"]
-        R2 -->|"call(gen=1)"| R1
-        R1 -->|"call(gen=0)"| R0
-        R0 -. "10.0 * 1.5 = 15.0" .-> R1
-        R1 -. "15.0 * 1.5 = 22.5" .-> R2
-    end
+flowchart LR
+    B1["8 sorted IDs<br/>low=0, high=7<br/>mid=3 ('P-040' &lt; 'P-070')"]
+    B2["4 IDs left<br/>low=4, high=7<br/>mid=5 ('P-060' &lt; 'P-070')"]
+    B3["2 IDs left<br/>low=6, high=7<br/>mid=6 ('P-070' Found!)"]
+    B1 -->|"discard left"| B2
+    B2 -->|"discard left"| B3
+```
+
+**B. Recursion Call Stack (`outbreak(10, 1.5, 2)`):**
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 6.0
+%%| fig-align: center
+flowchart LR
+    R2["Frame gen=2<br/>waits for gen=1"]
+    R1["Frame gen=1<br/>waits for gen=0"]
+    R0["Base Case gen=0<br/>returns 10.0"]
+    R2 -->|"call(gen=1)"| R1
+    R1 -->|"call(gen=0)"| R0
+    R0 -. "10.0 * 1.5 = 15.0" .-> R1
+    R1 -. "15.0 * 1.5 = 22.5" .-> R2
 ```
 
 Notice the striking contrast between how your brain tracks the two mechanisms:

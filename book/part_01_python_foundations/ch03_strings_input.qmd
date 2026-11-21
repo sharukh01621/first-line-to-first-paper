@@ -53,15 +53,14 @@ Watch what happens in memory when you chain `.strip().replace("_", " ").title()`
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 4.2
-%%| fig-height: 3.0
+%%| fig-width: 3.0
 %%| fig-align: center
-flowchart LR
-    R["raw_clinic<br/>'  dhaka_med  '<br/>(Immutable Original)"]
-    S1[".strip()<br/>New str:<br/>'dhaka_med'"]
-    S2[".replace('_', ' ')<br/>New str:<br/>'dhaka med'"]
-    S3[".title()<br/>New str:<br/>'Dhaka Med'"]
-    C["clean_clinic<br/>(Bound Name Tag)"]
+flowchart TD
+    R["raw_clinic = '  dhaka_med  '<br/>(Immutable Original str)"]
+    S1[".strip() -> New str: 'dhaka_med'"]
+    S2[".replace('_', ' ') -> New str: 'dhaka med'"]
+    S3[".title() -> New str: 'Dhaka Med'"]
+    C["clean_clinic (Final Bound Name Tag)"]
 
     R --> S1 --> S2 --> S3 ==> C
 ```
