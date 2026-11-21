@@ -6,10 +6,11 @@ book:
   title: "From First Line to First Paper"
   subtitle: "Mastering Python, Statistical Data Science, and Applied Deep Learning"
   author: "Mezanur Rahman Sharukh"
-  date: "2026"
+  date: "2026-11-22"
+  date-format: "YYYY"
   chapters:
     - index.qmd
-    - part: "Part I: Computational Thinking & Python from Absolute Zero"
+    - part: "Computational Thinking & Python from Absolute Zero"
       chapters:
         - part_01_python_foundations/ch01_first_program.qmd
     # Subsequent chapters (Ch 2–36) and Appendices (A–D) plug in seamlessly here
