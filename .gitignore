@@ -1,0 +1,35 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+
+# Jupyter & Quarto build artifacts
+.ipynb_checkpoints/
+book/_book/
+book/_freeze/
+book/.quarto/
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Secrets & OAuth tokens (NEVER commit)
+*.json.secret
+client_secrets.json
+token.json
+.env
+rclone.conf

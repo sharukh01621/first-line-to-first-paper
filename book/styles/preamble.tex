@@ -1,0 +1,18 @@
+% Publication-grade XeLaTeX typography & color-coded pedagogical callouts
+\usepackage[dvipsnames,svgnames]{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{booktabs}
+\usepackage{microtype}
+
+% Brand palette: Deep Teal (Researcher), Navy (Mental Model), Amber (Trap), Crimson (Break It)
+\definecolor{TealPrimary}{HTML}{0F5C6E}
+\definecolor{NavyAccent}{HTML}{1B3B6F}
+\definecolor{AmberTrap}{HTML}{B45309}
+\definecolor{CrimsonBreak}{HTML}{991B1B}
+\definecolor{SlateNote}{HTML}{334155}
+
+\renewcommand{\chaptername}{Chapter}
+\setkomafont{chapter}{\Huge\bfseries\color{NavyAccent}}
+\setkomafont{section}{\Large\bfseries\color{TealPrimary}}
+\setkomafont{subsection}{\large\bfseries\color{SlateNote}}

@@ -1,0 +1,422 @@
+# How Computers Think, Google Colab, and Your Very First Program {#sec-ch01}
+
+> **Chapter Mission:** Demystify what a computer program actually is, launch your first cloud Python environment in Google Colab without installing anything, write and dissect your first epidemiological calculations line-by-line, and lose all fear of Python error messages forever.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)
+
+| Lab Type | Notebook Path | Scan (Print Edition) |
+| :--- | :--- | :---: |
+| **Walkthrough** | `part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png){width=64px} |
+| **Guided To-Dos** | `part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png){width=64px} |
+| **Coding Exam** | `part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png){width=64px} |
+
+### Learning Objectives
+
+By the end of this chapter, you will be able to:
+
+1. Explain how the **Python interpreter** reads and executes code line-by-line inside a Google Colab cloud runtime.
+2. Write clean `print()` statements, human-readable `#` comments, and basic arithmetic expressions (`+`, `-`, `*`, `/`, `//`, `%`, `**`).
+3. Apply **operator precedence** and explicit parentheses so statistical averages and epidemiological rates are never silently corrupted.
+4. Calmly read and fix four foundational Python errors: `SyntaxError`, `NameError`, `TypeError`, and `ZeroDivisionError`.
+5. Structure any beginner data problem using the **4-Step Problem-Structuring Blueprint** *before* typing Python code.
+
+---
+
+## Stage 1 — First-Principles Intuition: How Computers Actually Think {#sec-ch01-intuition}
+
+Before touching a keyboard, let us clear up the biggest myth in programming:
+
+> *Computers are **not** intelligent.* A computer is an astonishingly fast, 100% literal clerk who follows a checklist one line at a time—and never guesses what you "meant."
+
+::: {.callout-note title="Mental Model — The Upazila Clinic Intake Clerk"}
+Imagine a newly hired clerk at a rural Upazila Health Complex who has zero medical background, cannot improvise, and obeys written instructions literally:
+
+- If you write: *"Measure temperature and write down if it is high,"* the clerk freezes—what does "high" mean? Celsius or Fahrenheit? Where should it be written?
+- If instead you write an unambiguous numbered checklist:
+  1. Take the thermometer reading in Celsius (`38.5`).
+  2. Multiply that number by `9`, divide by `5`, and add `32`.
+  3. Print the resulting Fahrenheit number on the intake slip.
+
+The clerk executes those three steps accurately **ten million times per second** without ever getting tired or making an arithmetic slip.
+
+**A Python program is simply that exact numbered checklist—written in a tiny, unambiguous language called Python.**
+:::
+
+### Why Python for Statistics, Public Health, and Machine Learning?
+
+You may wonder why researchers worldwide—from WHO epidemiologists to deep learning labs—converged on Python:
+
+1. **Readable Like English:** `mean_sbp = (124 + 130 + 127) / 3` reads almost identically to a biostatistics notebook.
+2. **One Language from First Line to First Paper:** Unlike tools that trap you inside point-and-click menus, Python handles raw messy household surveys (Pandas), classical hypothesis tests (SciPy/Statsmodels), gradient-boosted trees (XGBoost), and neural networks on GPUs (PyTorch) in one unified workflow.
+3. **Reproducibility:** When a peer reviewer asks, *"How did you compute your maternal anemia prevalence after excluding missing hemoglobin values?"*, a Python script answers with exact mathematical transparency.
+
+---
+
+## Stage 2 — Visual Mental Model: Inside Google Colab & the Python Interpreter {#sec-ch01-mental-model}
+
+When you open one of this book's `.ipynb` notebooks in **Google Colab**, you are not running code on your laptop's processor—you are sending Python instructions over the internet to a clean Linux computer hosted by Google (the **Colab Runtime**).
+
+```{mermaid}
+flowchart LR
+    A["Your Browser\n(Colab Code Cell)"] -->|"1. Press Shift + Enter"| B["Python Interpreter\n(Checks Grammar / Syntax)"]
+    B -->|"2. Evaluates Line by Line"| C["CPU & Working Memory\n(Stores Values & Computes Math)"]
+    C -->|"3. Sends Printed Output Back"| D["Output Area Below Cell\n(Text, Numbers, Tables, or Error)"]
+```
+
+Notice the two distinct checkpoints in that pipeline:
+
+1. **Grammar Check (Syntax Parsing):** Before running *any* line in a cell, Python scans your grammar. If you forgot a closing quotation mark or parenthesis, Python stops immediately with a **`SyntaxError`**.
+2. **Step-by-Step Execution (Runtime):** Once grammar passes, Python executes Line 1, then Line 2, then Line 3 in strict top-to-bottom order. If Line 3 asks Python to divide by zero, Lines 1 and 2 succeed and Line 3 stops with a **`ZeroDivisionError`**.
+
+::: {.callout-tip title="Researcher's Note — Always Save Your Own Copy in Google Drive"}
+When you click any **Open in Colab** link from this book, Google opens our master read-only copy. Always click **File $\rightarrow$ Save a copy in Drive** immediately so every note, edit, and solved exercise stays safely inside your personal Google Drive folder.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch01-walkthrough}
+
+Open `part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb` in Colab and run each cell alongside the line-by-line dissections below.
+
+### 3.1 Your Very First `print()` Statements & Comments {#sec-ch01-print}
+
+```python
+# Lines starting with '#' are comments — notes for humans, ignored by Python.
+print("Upazila Health Complex — Morning Triage Started")
+print("Patients waiting in queue:", 14)
+```
+
+**Expected Output:**
+```text
+Upazila Health Complex — Morning Triage Started
+Patients waiting in queue: 14
+```
+
+**Line-by-Line Dissection:**
+
+| Line | Code Element | What Python Does Internally |
+| :---: | :--- | :--- |
+| `1` | `# Lines starting with '#' ...` | Sees `#` and skips everything to the end of the line. Comments explain *why* to future humans (especially your future self six months later!). |
+| `2` | `print(...)` | Calls Python's built-in **function** `print`, which displays whatever sits inside its parentheses `(...)` onto the screen. |
+| `2` | `"Upazila Health Complex ..."` | Quotation marks tell Python: *"Treat these characters literally as text (a **string**, or `str`), not as Python commands."* |
+| `3` | `"Patients waiting in queue:", 14` | A comma inside `print()` lets you pass **multiple items** (here, a text string and the whole number `14`). Python automatically inserts one clean space between them. |
+
+---
+
+### 3.2 Python as a Scientific & Epidemiological Calculator {#sec-ch01-arithmetic}
+
+Every quantitative researcher needs exact command over Python's **seven arithmetic operators**:
+
+```python
+# Basic arithmetic operators in Python
+print("Addition (+):", 120 + 45)
+print("Subtraction (-):", 120 - 45)
+print("Multiplication (*):", 14 * 3)
+print("True Division (/):", 10 / 4)        # Always returns a decimal (float): 2.5
+print("Floor Division (//):", 10 // 4)    # Whole groups only: 2
+print("Remainder / Modulo (%):", 10 % 4)  # Leftover after packing: 2
+print("Exponentiation (**):", 1.65 ** 2)  # Height squared for BMI: 2.7225
+```
+
+**Expected Output:**
+```text
+Addition (+): 165
+Subtraction (-): 75
+Multiplication (*): 42
+True Division (/): 2.5
+Floor Division (//): 2
+Remainder / Modulo (%): 2
+Exponentiation (**): 2.7225
+```
+
+Let us zoom in on the **three operators that surprise beginners most**:
+
+1. **True Division (`/`) vs. Floor Division (`//`):**
+   - `10 / 4` gives `2.5` (a decimal number, called a **`float`**). Even `8 / 2` gives `4.0`!
+   - `10 // 4` asks: *"How many **complete** groups of 4 fit inside 10?"* Answer: `2` (an exact whole number, called an **`int`**). Think of packing vaccine vials into 24-vial cold boxes.
+2. **Modulo / Remainder (`%`):**
+   - `10 % 4` asks: *"After removing those complete groups of 4, how many items are **left over**?"* Since $2 \times 4 = 8$, the leftover is $10 - 8 = 2$.
+   - **Golden Packing Invariant:** For any positive integers $a$ and $b$, `(a // b) * b + (a % b) == a`.
+3. **Exponentiation (`**`), NOT `^`:**
+   - To square height ($1.65^2$) for Body Mass Index, write `1.65 ** 2`.
+   - Never write `1.65 ^ 2`—in Python, `^` is a completely different operator (bitwise XOR) that will crash on decimals and give wrong answers on integers!
+
+---
+
+### 3.3 Operator Precedence: Why Parentheses Save Lives in Biostatistics
+
+Python follows standard mathematical **PEMDAS** order: **P**arentheses $\rightarrow$ **E**xponents (`**`) $\rightarrow$ **M**ultiplication / **D**ivision (`*`, `/`, `//`, `%`) $\rightarrow$ **A**ddition / **S**ubtraction (`+`, `-`).
+
+Run this experiment in Cell 3 of `01_walkthrough.ipynb`:
+
+```python
+# Operator precedence: Why parentheses save lives in biostatistics!
+wrong_mean = 120 + 130 + 140 / 3
+right_mean = (120 + 130 + 140) / 3
+
+print("Without parentheses (BUG!):", wrong_mean)
+print("With parentheses (CORRECT):", right_mean)
+```
+
+**Expected Output:**
+```text
+Without parentheses (BUG!): 296.6666666666667
+With parentheses (CORRECT): 130.0
+```
+
+::: {.callout-warning title="Common Trap — Silent Logic Bugs"}
+Notice that `wrong_mean = 120 + 130 + 140 / 3` did **not** produce a red error! Python happily calculated `140 / 3 = 46.67` first, then added `120 + 130 + 46.67 = 296.67`—claiming the average systolic blood pressure of three normotensive adults is a fatal **296.7 mmHg**!
+
+**Researcher's Rule:** Whenever you divide a sum, multiply a rate, or convert units, **use explicit parentheses** even when you think you know the precedence rule. Clarity beats cleverness every single time.
+:::
+
+---
+
+### 3.4 Break It On Purpose! (Error Anatomy Lab) {#sec-ch01-errors}
+
+Beginners often treat red Python error boxes as a personal failure. Senior researchers treat them as **free diagnostic reports**. Let us trigger three classic errors *deliberately* so you can dissect how to read them from the **bottom line upward**.
+
+::: {.callout-important title="Break It On Purpose #1 — NameError"}
+```python
+print(Dhaka)
+```
+**Python's Traceback:**
+```text
+NameError: name 'Dhaka' is not defined
+```
+**Diagnosis:** Because `Dhaka` has no quotation marks around it, Python assumes `Dhaka` is the name of a stored variable—looks in memory, finds nothing, and tells you so.  
+**Fix:** Wrap text in quotes: `print("Dhaka")`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — TypeError"}
+```python
+print("Fever temperature: " + 38.5)
+```
+**Python's Traceback:**
+```text
+TypeError: can only concatenate str (not "float") to str
+```
+**Diagnosis:** The `+` symbol glues two strings together (`"A" + "B"`) OR adds two numbers (`1 + 2`), but refuses to glue a string and a float directly.  
+**Fix:** Pass separate arguments with a comma (`print("Fever temperature:", 38.5)`) or use an **f-string** (`print(f"Fever temperature: {38.5}")`).
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ZeroDivisionError"}
+```python
+cases = 12
+population = 0
+rate = (cases / population) * 100000
+```
+**Python's Traceback:**
+```text
+ZeroDivisionError: division by zero
+```
+**Diagnosis:** In epidemiology, missing or unpopulated catchment records sometimes enter datasets as `0`. Dividing by zero is mathematically undefined, so Python halts cleanly rather than silently inventing a bogus incidence rate. (In Chapter 4 and Chapter 10, we will guard against this defensively!)
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch01-blueprint}
+
+Let us apply our signature **4-Step Problem-Structuring Blueprint** to a realistic clinical intake task *before* writing code.
+
+**Scenario:** A nurse at an Upazila clinic enters a patient's ID (`"UHC-0001"`), weight (`58.4` kg), height (`160.0` cm), and body temperature (`38.6` °C). Print a structured intake card showing Body Mass Index ($\text{kg/m}^2$, rounded to 2 decimals) and temperature in both Celsius and Fahrenheit (rounded to 1 decimal).
+
+### Blueprint (Completed on Paper Before Coding)
+1. **Inputs & Units:**
+   - `patient_id = "UHC-0001"` (`str`)
+   - `weight_kg = 58.4` (`float`, kilograms)
+   - `height_cm = 160.0` (`float`, **centimeters** — notice the unit!)
+   - `temp_c = 38.6` (`float`, degrees Celsius)
+2. **Edge Cases & Traps:**
+   - **Unit Trap:** BMI requires height in **meters**, not centimeters! Forgetting to divide `height_cm / 100` produces an absurd BMI of `0.0023`.
+   - **Exponent Trap:** Square meters using `height_m ** 2`, not `height_m * 2`.
+   - **Precedence Trap:** Convert Celsius to Fahrenheit as `(temp_c * 9 / 5) + 32`.
+3. **Step-by-Step Algorithm:**
+   1. Convert `height_cm` to `height_m` by dividing by `100`.
+   2. Compute `bmi = round(weight_kg / (height_m ** 2), 2)`.
+   3. Compute `temp_f = round((temp_c * 9 / 5) + 32, 1)`.
+   4. Print a clean, aligned intake card using f-strings.
+4. **Verification Plan (Hand Check):**
+   - $160\text{ cm} = 1.60\text{ m}$; $1.60^2 = 2.56$; $58.4 / 2.56 = 22.8125 \approx 22.81$ (healthy adult range: 18.5–24.9).
+   - $38.6 \times 1.8 + 32 = 69.48 + 32 = 101.48 \approx 101.5^\circ\text{F}$ (consistent with mild-to-moderate fever).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+# Step 1: Inputs (documented with explicit units!)
+patient_id = "UHC-0001"
+weight_kg = 58.4
+height_cm = 160.0
+temp_c = 38.6
+
+# Step 2: Algorithm (convert cm -> m, compute BMI, convert C -> F)
+height_m = height_cm / 100
+bmi = round(weight_kg / (height_m ** 2), 2)
+temp_f = round((temp_c * 9 / 5) + 32, 1)
+
+# Step 3: Clean Structured Output
+print("=== COMMUNITY CLINIC INTAKE CARD ===")
+print(f"Patient ID : {patient_id}")
+print(f"BMI        : {bmi} kg/m^2")
+print(f"Temperature: {temp_c} C ({temp_f} F)")
+```
+
+**Output:**
+```text
+=== COMMUNITY CLINIC INTAKE CARD ===
+Patient ID : UHC-0001
+BMI        : 22.81 kg/m^2
+Temperature: 38.6 C (101.5 F)
+```
+
+Notice how writing the **unit** directly inside the variable name (`weight_kg`, `height_cm`, `height_m`, `temp_c`, `temp_f`) makes unit-mismatch bugs immediately visible to the human eye. This is a lifelong research software engineering habit.
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch01-todos}
+
+Open `part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and solve all six exercises below. Use `tutor.hint("ch01_todo_XX", level=1..3)` if you need a progressive nudge, and run `tutor.check(...)` after each solution.
+
+- **To-Do 1.1 (Warm-Up — Clinic Intake Banner):** Create a string variable `clinic_banner` set to `"Upazila Health Complex - Patient Intake Active"`.
+- **To-Do 1.2 (Core Arithmetic — Fever Conversion):** Given `temp_c = 38.5`, compute Fahrenheit using $F = (C \times \frac{9}{5}) + 32$ and store the result in `temp_f`.
+- **To-Do 1.3 (Public Health Metric — Patient BMI):** Given `weight_kg = 62.0` and `height_m = 1.65`, compute $\text{BMI} = \frac{\text{weight}}{\text{height}^2}$ rounded to 2 decimal places (`round(..., 2)`), stored in `patient_bmi`.
+- **To-Do 1.4 (Cold-Chain Logistics — Vaccine Box Packing):** An outreach clinic receives `275` vaccine vials; each cold box holds `24` vials. Compute `full_boxes` (using `//`) and `leftover_vials` (using `%`).
+- **To-Do 1.5 (Epidemiology — Weekly Dengue Incidence Rate):** A district of `240000` residents recorded `186` confirmed dengue cases. Compute `incidence_per_100k = round((cases / population) * 100000, 2)`.
+- **To-Do 1.6 (Stretch Debugging — Fix the Broken Blood Pressure Average):** Correct the type bug and operator-precedence bug in:
+  ```python
+  sbp_1 = 124
+  sbp_2 = "130"
+  sbp_3 = 127
+  mean_sbp = sbp_1 + sbp_2 + sbp_3 / 3
+  ```
+  so that `mean_sbp` computes the true average (`127.0`).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch01-test}
+
+Before opening the Coding Exam, test your mental model on paper. Check your answers against Stage 8.
+
+1. **Predict the Output:** What exact number does `15 // 4` evaluate to? What about `15 % 4`?
+2. **Predict the Output:** What data type (`int` or `float`) does `12 / 3` return in Python?
+3. **Spot the Error Type:** Running `print(Chattogram)` without quotes triggers which exact Python error?
+4. **Spot the Error Type:** Running `print("Age: " + 29)` triggers which exact Python error?
+5. **Operator Precedence Trace:** Evaluate `10 + 20 * 3` by hand, then evaluate `(10 + 20) * 3`.
+6. **Exponent Trap:** What does `3 ** 2` return? Why should you never write `3 ^ 2` for squaring in Python?
+7. **Execution Trace Table:** Fill in the values after each line executes:
+   ```python
+   cases = 40
+   cases = cases + 15
+   double_cases = cases * 2
+   ```
+8. **Silent Bug Audit:** A student writes `bmi = 70 / 1.75 * 1.75`. What number does Python compute, and why is it dangerously wrong?
+9. **Unit Hygiene:** Why is `height_cm = 165` superior to `h = 165` in public health code?
+10. **Colab Discipline:** Why must you click *File $\rightarrow$ Save a copy in Drive* before editing a shared course notebook?
+
+---
+
+## Stage 7 — Chapter 1 Hands-On Coding Exam (100 Points) {#sec-ch01-exam}
+
+Open `part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb`, complete all three tasks using the **4-Step Problem-Structuring Blueprint**, and run `tutor.check_exam("ch01", exam_submissions)` for your automated 100-point scorecard.
+
+### Exam Task 1.1 (30 Points): Pediatric ORS Supply & Carton Logistics
+A community clinic projects `140` pediatric diarrhea patients this week, each requiring `3` Oral Rehydration Solution (ORS) packets, plus a **15% emergency safety buffer** (`* 1.15`). Each shipping carton holds `50` packets. Compute:
+- `base_packets` (int)
+- `total_packets` (int, computed with `round(base_packets * buffer_multiplier)` to avoid binary float truncation)
+- `full_cartons` (int) and `extra_packets` (int)
+
+### Exam Task 1.2 (35 Points): Maternal Health Clinic Summary Card
+Out of `320` registered mothers in Q1, `218` completed 4+ antenatal visits and `96` tested positive for maternal anemia. Compute:
+- `anc_coverage_pct` (rounded to 1 decimal)
+- `anemia_prevalence_pct` (rounded to 1 decimal)
+- `summary_line`: exact formatted report `"ANC 4+ Coverage: 68.1% | Anemia Prevalence: 30.0%"` generated dynamically using an f-string.
+
+### Exam Task 1.3 (35 Points): Rural vs. Urban Case Fatality Rate Disparity
+Surveillance reports record `450` rural cases with `9` deaths, and `600` urban cases with `6` deaths. Compute:
+- `cfr_rural_pct`: $\left(\frac{9}{450}\right) \times 100$
+- `cfr_urban_pct`: $\left(\frac{6}{600}\right) \times 100$
+- `cfr_ratio`: `cfr_rural_pct / cfr_urban_pct`
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch01-solutions}
+
+### A. Concept & Execution Trace Test Key
+1. `15 // 4` is `3`; `15 % 4` is `3` (check: $3 \times 4 + 3 = 15$).
+2. `float` (`4.0`) — true division `/` *always* returns a `float`.
+3. `NameError: name 'Chattogram' is not defined`.
+4. `TypeError: can only concatenate str (not "int") to str`.
+5. `10 + 20 * 3 = 70`; `(10 + 20) * 3 = 90`.
+6. `3 ** 2 = 9`. In Python, `^` is bitwise XOR (`3 ^ 2 == 1`!), not exponentiation.
+7. After Line 1: `cases = 40`. After Line 2: `cases = 55`. After Line 3: `cases = 55`, `double_cases = 110`.
+8. Python evaluates `(70 / 1.75) * 1.75 = 70.0` (division and multiplication execute left-to-right)! It must be `70 / (1.75 ** 2)` or `70 / (1.75 * 1.75)`.
+9. Encoding the unit (`_cm`) prevents silent cm-vs-meter errors during data cleaning and modeling.
+10. Shared links are read-only; saving a copy to your Google Drive preserves your work permanently.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 1.1
+clinic_banner = "Upazila Health Complex - Patient Intake Active"
+
+# To-Do 1.2
+temp_c = 38.5
+temp_f = (temp_c * 9 / 5) + 32           # 101.3
+
+# To-Do 1.3
+weight_kg = 62.0
+height_m = 1.65
+patient_bmi = round(weight_kg / (height_m ** 2), 2)  # 22.77
+
+# To-Do 1.4
+total_vials = 275
+box_capacity = 24
+full_boxes = total_vials // box_capacity      # 11
+leftover_vials = total_vials % box_capacity   # 11
+
+# To-Do 1.5
+cases = 186
+population = 240000
+incidence_per_100k = round((cases / population) * 100000, 2)  # 77.5
+
+# To-Do 1.6
+sbp_1 = 124
+sbp_2 = 130
+sbp_3 = 127
+mean_sbp = (sbp_1 + sbp_2 + sbp_3) / 3        # 127.0
+```
+
+### C. Annotated Solutions — Chapter 1 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 1.1 (30 pts)
+patients = 140
+packets_per_patient = 3
+buffer_multiplier = 1.15
+carton_size = 50
+base_packets = patients * packets_per_patient          # 420
+total_packets = round(base_packets * buffer_multiplier) # 483
+full_cartons = total_packets // carton_size            # 9
+extra_packets = total_packets % carton_size            # 33
+
+# Exam Task 1.2 (35 pts)
+total_mothers = 320
+anc_4plus = 218
+anemic_count = 96
+anc_coverage_pct = round((anc_4plus / total_mothers) * 100, 1)        # 68.1
+anemia_prevalence_pct = round((anemic_count / total_mothers) * 100, 1) # 30.0
+summary_line = f"ANC 4+ Coverage: {anc_coverage_pct}% | Anemia Prevalence: {anemia_prevalence_pct}%"
+
+# Exam Task 1.3 (35 pts)
+rural_cases, rural_deaths = 450, 9
+urban_cases, urban_deaths = 600, 6
+cfr_rural_pct = (rural_deaths / rural_cases) * 100     # 2.0
+cfr_urban_pct = (urban_deaths / urban_cases) * 100     # 1.0
+cfr_ratio = cfr_rural_pct / cfr_urban_pct              # 2.0
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 1 Failure Modes
+
+1. **The Famous IEEE-754 Binary Float Trap (`int(420 * 1.15) == 482`!):** Because computers store decimals in base-2 binary, `420 * 1.15` evaluates internally to `482.99999999999994`. Calling `int(...)` chops off everything after the decimal point and drops a packet (`482`), whereas `round(...)` properly rounds to `483`. We will unpack binary floating-point representation deeply in Chapter 2.
+2. **Hardcoding Numbers Inside Summary Strings:** Typing `"ANC 4+ Coverage: 68.1%"` manually instead of using `{anc_coverage_pct}` defeats the entire purpose of reproducible research—the next time Q2 clinic counts arrive, your printed report will silently contradict your data.
+3. **Inverting Epidemiological Ratios:** Writing `cfr_urban_pct / cfr_rural_pct` yields `0.5` instead of `2.0`. Always label which group is your **reference (denominator)** group—an essential habit we carry directly into logistic regression odds ratios in Chapter 20 and Chapter 23.

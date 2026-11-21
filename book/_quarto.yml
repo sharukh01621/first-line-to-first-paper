@@ -1,0 +1,52 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "From First Line to First Paper"
+  subtitle: "Mastering Python, Statistical Data Science, and Applied Deep Learning"
+  author: "Mezanur Rahman Sharukh"
+  date: "2026"
+  chapters:
+    - index.qmd
+    - part: "Part I: Computational Thinking & Python from Absolute Zero"
+      chapters:
+        - part_01_python_foundations/ch01_first_program.qmd
+    # Subsequent chapters (Ch 2–36) and Appendices (A–D) plug in seamlessly here
+    # as each chapter is authored and verified by scripts/verify_all.py.
+
+execute:
+  freeze: auto
+  echo: true
+  warning: false
+
+format:
+  html:
+    theme:
+      - cosmo
+      - styles/book_theme.scss
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-copy: true
+    code-line-numbers: true
+  pdf:
+    documentclass: scrbook
+    pdf-engine: xelatex
+    papersize: letter
+    fontsize: 10.5pt
+    geometry:
+      - top=1in
+      - bottom=1in
+      - inner=1.1in
+      - outer=0.9in
+    include-in-header: styles/preamble.tex
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    linkcolor: NavyBlue
+    urlcolor: RoyalBlue
+  epub:
+    toc: true
+    number-sections: true

@@ -1,0 +1,59 @@
+# Preface {.unnumbered}
+
+Welcome to ***From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning*** — a complete, zero-to-researcher textbook and interactive Google Colab curriculum authored by **Mezanur Rahman Sharukh** (*M.Sc. Statistician | Public Health & Machine Learning Researcher*).
+
+## Who This Book Is Written For
+
+This book makes **zero assumptions** about your prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS/Stata to Python, or an aspiring machine learning researcher who wants to understand every equation and line of code from first principles, every chapter builds step-by-step without skipping a single link in the chain.
+
+By the end of Part VII, you will not merely "know Python syntax"—you will think like a disciplined **Research Software Engineer and Applied ML/DL Scientist**, capable of taking raw epidemiological or clinical datasets all the way to leakage-free models, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research repositories.
+
+---
+
+## How the Dual-Synced Book + Google Colab Ecosystem Works
+
+Every single chapter in this textbook is paired **1-to-1** with interactive Google Colab notebooks stored in our dual-mirrored **GitHub + Google Drive** companion repository:
+
+1. **Walkthrough Notebook (`01_walkthrough.ipynb`):** Contains every code snippet and "Break It On Purpose" error lab printed in the chapter verbatim.
+2. **Guided To-Do Notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and friendly diagnostic checks (`tutor.check(...)`) powered by our PyPI package `sharukh-tutor`.
+3. **Chapter Coding Exam (`03_coding_exam.ipynb`):** A realistic 100-point assessment graded automatically with `tutor.check_exam(...)`.
+4. **Annotated Solution Notebooks (`solutions/.../*_SOLUTION.ipynb`):** Complete worked solutions paired with debugging post-mortems explaining the most common mistakes and how to avoid them.
+
+::: {.callout-tip title="First-Time Setup (Takes 2 Minutes)"}
+Before starting Chapter 1, open the **Colab Orientation Notebook** (`00_setup/00_colab_orientation.ipynb`), click **File $\rightarrow$ Save a copy in Drive**, and run its three welcome cells to verify your runtime and preview our Public Health spine datasets.
+:::
+
+---
+
+## The Researcher's 4-Step Problem-Structuring Blueprint
+
+Beginners often stare at a blank code cell and freeze because they try to write Python syntax *before* designing the logic. Throughout all 36 chapters, before we write a single line of code for any non-trivial problem, we complete this 4-step blueprint:
+
+1. **Inputs & Units:** What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?
+2. **Edge Cases & Traps:** What could silently go wrong? (Zero denominators, missing survey codes like `999`, wrong operator precedence, floating-point truncation, data leakage.)
+3. **Step-by-Step Algorithm:** Plain-English ordered steps written *before* Python.
+4. **Verification Plan:** Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.
+
+---
+
+## Visual Callout Legend
+
+- **Mental Model (`Note`):** Diagrams and analogies showing what happens inside Python's memory and interpreter.
+- **Researcher's Note (`Tip`):** Statistical, epidemiological, and reproducible-science best practices.
+- **Common Trap (`Warning`):** Subtle bugs that run *without* crashing and silently corrupt analyses.
+- **Break It On Purpose (`Important`):** Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly and confidently.
+
+---
+
+## Master 7-Part Curriculum Roadmap (~1,275 Pages)
+
+| Part | Chapters | Core Mastery Milestone | Est. Pages |
+| :--- | :---: | :--- | :---: |
+| **Part I** | Ch 1–6 | Computational Thinking & Python from Absolute Zero | ~195 |
+| **Part II** | Ch 7–11 | Core Data Structures, Algorithms & Defensive Programming | ~170 |
+| **Part III** | Ch 12–15 | OOP, Jupyter/Colab Engineering, VS Code & Git | ~125 |
+| **Part IV** | Ch 16–20 | NumPy, Pandas, Survey Cleaning, Visualization & Biostatistics | ~175 |
+| **Part V** | Ch 21–26 | Classical Machine Learning — Scratch Math to Leakage-Free Pipelines | ~205 |
+| **Part VI** | Ch 27–32 | Deep Learning — NumPy Backprop to PyTorch, CNNs & Transformers | ~200 |
+| **Part VII** | Ch 33–36 | Rigorous Experiments, Ablation Studies, Fairness & Capstone Paper | ~130 |
+| **Appendices** | A–D | Cheat Sheets, Math Refresher, Top-50 Error Decoder & Colab Index | ~50 |

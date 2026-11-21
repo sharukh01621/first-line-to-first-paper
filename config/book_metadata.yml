@@ -1,0 +1,33 @@
+book:
+  title: "From First Line to First Paper"
+  subtitle: "Mastering Python, Statistical Data Science, and Applied Deep Learning"
+  tagline: "A Complete Zero-to-Researcher Textbook with Interactive Google Colab Labs"
+  author: "Mezanur Rahman Sharukh"
+  credentials: "M.Sc. Statistician | Public Health & Machine Learning Researcher"
+  edition: "First Edition (In Development)"
+  target_pages: 1275
+  language: "en"
+
+distribution:
+  mode: "option_b_github_and_gdrive"
+  github_owner: "MEZANUR_GITHUB_USERNAME"   # Replace once GitHub repo is connected
+  github_repo: "first-line-to-first-paper"
+  github_branch: "main"
+  colab_drive_subdir: "colab_drive"
+  google_drive_folder_url: "https://drive.google.com/drive/folders/REPLACE_WITH_SHARED_FOLDER_ID"
+  rclone_remote: "gdrive:From_First_Line_To_First_Paper"
+  pypi_package: "sharukh-tutor"
+
+datasets:
+  clinic_triage:
+    file: "clinic_triage.csv"
+    description: "Upazila community clinic patient intake records (vitals, anthropometry, triage)"
+    parts: [1, 2]
+  mch_survey_sample:
+    file: "mch_survey_sample.csv"
+    description: "DHS-style Maternal & Child Health household survey with realistic missingness"
+    parts: [3, 4, 5, 7]
+  epi_surveillance:
+    file: "epi_surveillance.csv"
+    description: "District-level weekly dengue & respiratory surveillance with climate covariates"
+    parts: [4, 5, 6]
