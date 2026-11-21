@@ -18,6 +18,9 @@ distribution:
   google_drive_folder_url: "https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link"
   rclone_remote: "gdrive:From_First_Line_To_First_Paper"
   pypi_package: "sharukh-tutor"
+  # During active authoring, install directly from GitHub so new chapter checks go live immediately.
+  # Once Part I / v1.0 is published to PyPI, flip this single line back to: "sharukh-tutor"
+  tutor_install_spec: '"git+https://github.com/sharukh01621/first-line-to-first-paper.git#subdirectory=sharukh_tutor"'
 
 datasets:
   clinic_triage:

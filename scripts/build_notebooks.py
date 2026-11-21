@@ -66,7 +66,7 @@ def make_colab_badge_cell(rel_from_colab_drive: Path, meta: Dict[str, Any], is_s
     }
 
 
-def transform_code_source(lines: List[str], student: bool) -> List[str]:
+def transform_code_source(lines: List[str], student: bool, install_spec: str = "sharukh-tutor") -> List[str]:
     out: List[str] = []
     in_solution = False
     pending_stubs: List[str] = []
@@ -75,6 +75,11 @@ def transform_code_source(lines: List[str], student: bool) -> List[str]:
     for raw_line in lines:
         line_no_nl = raw_line.rstrip("\r\n")
         has_nl = raw_line.endswith("\n")
+
+        if line_no_nl.strip() == "!pip install -q sharukh-tutor":
+            lead = line_no_nl[: len(line_no_nl) - len(line_no_nl.lstrip())]
+            out.append(f"{lead}!pip install -q {install_spec}" + ("\n" if has_nl else ""))
+            continue
 
         m_stub = STUB_RE.match(line_no_nl)
         if m_stub and not in_solution:
@@ -117,6 +122,7 @@ def strip_outputs(cell: Dict[str, Any]) -> Dict[str, Any]:
 def compile_notebook(master_path: Path, meta: Dict[str, Any]) -> Dict[str, Path]:
     rel = master_path.relative_to(MASTER_DIR)
     nb_master = json.loads(master_path.read_text(encoding="utf-8"))
+    install_spec = meta.get("distribution", {}).get("tutor_install_spec", "sharukh-tutor")
     has_solutions = any(
         "### BEGIN SOLUTION" in "".join(c.get("source", []))
         or "solution-only" in c.get("metadata", {}).get("tags", [])
@@ -134,7 +140,7 @@ def compile_notebook(master_path: Path, meta: Dict[str, Any]) -> Dict[str, Path]
             src = cell.get("source", [])
             if isinstance(src, str):
                 src = src.splitlines(keepends=True)
-            cell["source"] = transform_code_source(src, student=True)
+            cell["source"] = transform_code_source(src, student=True, install_spec=install_spec)
             strip_outputs(cell)
         student_cells.append(cell)
 
@@ -160,7 +166,7 @@ def compile_notebook(master_path: Path, meta: Dict[str, Any]) -> Dict[str, Path]
                 src = cell.get("source", [])
                 if isinstance(src, str):
                     src = src.splitlines(keepends=True)
-                cell["source"] = transform_code_source(src, student=False)
+                cell["source"] = transform_code_source(src, student=False, install_spec=install_spec)
                 strip_outputs(cell)
             sol_cells.append(cell)
 
