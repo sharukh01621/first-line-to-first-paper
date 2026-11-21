@@ -16,9 +16,12 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+os.environ.setdefault("MPLBACKEND", "Agg")
 
 ROOT = Path(__file__).resolve().parent.parent
 COLAB_DIR = ROOT / "colab_drive"

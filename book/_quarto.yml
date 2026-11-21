@@ -31,7 +31,14 @@ book:
         - part_03_engineering_workflow/ch13_jupyter_colab.qmd
         - part_03_engineering_workflow/ch14_vscode_packages.qmd
         - part_03_engineering_workflow/ch15_git_clean_code.qmd
-    # Subsequent Parts (Part IV Ch 16–20 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
+    - part: "Mathematical Computing, Data Wrangling & Statistical Foundations"
+      chapters:
+        - part_04_data_science_math/ch16_numpy_vectorization.qmd
+        - part_04_data_science_math/ch17_pandas_foundations.qmd
+        - part_04_data_science_math/ch18_data_wrangling_surveys.qmd
+        - part_04_data_science_math/ch19_visualization_storytelling.qmd
+        - part_04_data_science_math/ch20_biostatistics_inference.qmd
+    # Subsequent Parts (Part V Ch 21–26 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:

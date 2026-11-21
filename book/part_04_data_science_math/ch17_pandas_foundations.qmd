@@ -1,0 +1,646 @@
+# Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping {#sec-ch17}
+
+> **Chapter Mission:** Build your fluency with **Pandas**, the backbone of tabular data science in Python. Master `Series` and `DataFrame` architecture, explicit label vs. position indexing (`.loc` vs. `.iloc`), vectorized boolean masking (`&`, `|`, `~`, `.isin()`), mutation-safe Pandas 3.x **Copy-on-Write** transformations (`.copy()`, `.assign()`), deterministic multi-key sorting, and tidy data reshaping (`pd.melt`, `pd.crosstab`, and `pivot_table`) using a real bundled clinical triage dataset.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch17 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch17 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch17 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Distinguish a 1D labeled `Series` from a 2D heterogeneous `DataFrame`, inspect schemas and summary statistics (including Pandas' sample standard deviation default $s$ with `ddof=1`), and select subsets safely.
+2. Choose deliberately between **label-based indexing** (`.loc`, inclusive endpoints) and **integer-position indexing** (`.iloc`, exclusive stop), avoiding off-by-one and out-of-bounds traps.
+3. Construct vectorized boolean masks with `&`, `|`, `~`, and `.isin()`, resetting filtered indexes cleanly with `.reset_index(drop=True)`.
+4. Write pure, mutation-free Pandas 3.x transformations using `.copy()` and `.assign()`, never relying on `inplace=True` or chained assignment (`df[mask]["col"] = ...`).
+5. Reshape tabular research datasets fluently between **wide** and **tidy long** layouts using `pd.melt`, and build zero-filled contingency and summary tables with `pd.crosstab` and `.pivot_table()`.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Tabular Research Needs Pandas {#sec-ch17-intuition}
+
+In **Chapter 16**, you saw how **NumPy** accelerates homogeneous numerical arrays—a matrix where every entry shares the exact same `float64` type. Real clinical cohorts, economic surveys, and genomics metadata are almost never homogeneous: a single patient row mixes a string ID (`"UHC-0001"`), a categorical district (`"Sylhet"`), an integer age (`55`), and floating-point vitals (`37.5` °C, `12.2` g/dL).
+
+**Pandas** sits directly on top of NumPy to give each column its own typed NumPy/Arrow vector while binding every row and column to explicit, alignment-aware **labels**:
+
+- **`Series` (1D Labeled Vector):** One typed column paired with a row `Index` (for example, `df["temp_c"]` holds 120 `float64` body temperatures).
+- **`DataFrame` (2D Labeled Table):** An ordered dictionary of `Series` sharing one common row `Index`—each column can hold a different dtype (`str`, `int64`, `float64`, `bool`).
+- **Vectorized Column Operations:** Writing `df["weight_kg"] / (df["height_cm"] / 100) ** 2` computes BMI across 120—or 12 million—rows in compiled C loops without a single Python `for` loop.
+
+::: {.callout-note title="Mental Model — Indexed Laboratory Ledger vs. Loose Lists"}
+Think of a `DataFrame` as a **bound hospital ledger** where every row has a stamped chart label (`Index`) and every column has a printed header and unit:
+
+- **`.iloc[row_pos, col_pos]`** counts physical lines from the top of the page starting at `0` (like Python list slicing, the stop index is **exclusive**).
+- **`.loc[row_label, col_label]`** looks up rows and columns by their **printed labels** (just like a dictionary, and slice endpoints are **inclusive**).
+- **Wide vs. Long Format:** Wide tables put repeated visits in separate columns (`sbp_day1`, `sbp_day2`)—handy for paired differences (`day2 - day1`). **Tidy long tables** stack one measurement per row (`patient_id`, `visit`, `sbp`)—required by Seaborn, Statsmodels, and longitudinal mixed-effects models.
+:::
+
+### The Modern Pandas 3.x Copy-on-Write Discipline
+
+Older Pandas tutorials are packed with `inplace=True` and chained indexing like `df[df["age_years"] >= 18]["bmi"] = ...`, which caused notorious `SettingWithCopyWarning` bugs. In **Pandas 3.x**, **Copy-on-Write (CoW)** is active by default: chained assignment fails or silently does nothing to `df`, and `inplace=True` returns `None`. Throughout this book, we follow one ironclad rule: **never mutate inputs in place**—always derive new tables via `out = df.copy()` or `.assign(...)`, and return the new DataFrame explicitly.
+
+---
+
+## Stage 2 — Visual Mental Model: Indexing & Wide-to-Long Reshaping {#sec-ch17-mental-model}
+
+Trace how a single `DataFrame` routes through `.loc`/`.iloc` indexing, boolean filtering, and `pd.melt` / `pd.crosstab` reshaping without ever mutating the raw cohort table:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph RawTable["DataFrame Anatomy"]
+        DF["clinic_triage (120 x 11)<br/>Row Index: 0..119 | Columns: Series"]
+    end
+    subgraph Indexing["Indexing & Masks"]
+        LOC[".loc[row_lbl, col_lbl]<br/>Inclusive label slices + masks"]
+        ILOC[".iloc[row_pos, col_pos]<br/>Exclusive 0-based positions"]
+        MASK["Boolean Mask (&amp;, |, ~, .isin)<br/>Filter -&gt; .reset_index(drop=True)"]
+    end
+    subgraph Reshape["Tidy Reshaping"]
+        MELT["pd.melt (Wide -&gt; Long)<br/>id_vars + var_name + value_name"]
+        XTAB["pd.crosstab / pivot_table<br/>Row x Column Summary Matrix"]
+    end
+    DF -->|"by label"| LOC
+    DF -->|"by position"| ILOC
+    DF -->|"row filter"| MASK
+    LOC -. "unpivot visits" .-> MELT
+    MASK -. "count groups" .-> XTAB
+```
+
+Keep two visual invariants anchored in your head as you code:
+
+1. **Row filters preserve old index numbers** (e.g., `[3, 16, 28, ...]`) until you explicitly call `.reset_index(drop=True)`.
+2. **Reshaping changes table geometry, not data truth:** `pd.melt` stretches $N$ patients $\times$ $K$ visits into $N \cdot K$ tidy rows, whereas `pd.crosstab` compresses individual rows into a compact district-by-priority count matrix.
+
+::: {.callout-warning title="Pandas .std() vs. NumPy np.std() Default Trap!"}
+By default, Pandas `Series.std()` computes the **sample standard deviation** with Bessel's correction (`ddof=1`, dividing by $n - 1$), whereas NumPy `np.std()` defaults to the **population standard deviation** (`ddof=0`, dividing by $n$). Mixing the two in a statistical pipeline silently shifts every standard deviation and $z$-score!
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch17-walkthrough}
+
+Open `part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb` in Google Colab and execute every cell alongside the dissections below.
+
+### Loading Data, `Series` vs. `DataFrame`, & Summaries {#sec-ch17-series-df}
+
+First, load the real bundled Bangladesh upazila health complex triage dataset via `sharukh_tutor` and inspect its shape, types, and summary statistics:
+
+```python
+import pandas as pd
+import sharukh_tutor as tutor
+
+df = tutor.load_data("clinic_triage", as_pandas=True)
+
+print("Shape:", df.shape)
+print("DataFrame type:", type(df).__name__)
+print("Series type:   ", type(df["temp_c"]).__name__)
+print("Mean temp_c:   ", round(float(df["temp_c"].mean()), 2))
+print("Median temp_c: ", round(float(df["temp_c"].median()), 2))
+print("Std temp_c:    ", round(float(df["temp_c"].std()), 2))
+```
+
+**Expected Output:**
+```text
+Shape: (120, 11)
+DataFrame type: DataFrame
+Series type:    Series
+Mean temp_c:    37.39
+Median temp_c:  37.4
+Std temp_c:     0.78
+```
+
+Notice the single-bracket versus double-bracket distinction: `df["temp_c"]` extracts a 1D **`Series`**, whereas `df[["temp_c"]]` returns a 1-column 2D **`DataFrame`**. Wrapping aggregated values with `float(round(..., 2))` converts Pandas/NumPy scalars into clean native Python floats ready for reports or JSON logs.
+
+---
+
+### Label vs. Position Indexing (`.loc` vs. `.iloc`) {#sec-ch17-indexing}
+
+Watch the exact difference between integer-position slicing (`.iloc`) and label-based slicing (`.loc`):
+
+```python
+print("iloc[0:3, 0:3] (exclusive stop):")
+print(df.iloc[0:3, 0:3])
+
+by_id = df.set_index("patient_id")
+print("\nloc['UHC-0001':'UHC-0003', ['district', 'temp_c']] (inclusive):")
+print(by_id.loc["UHC-0001":"UHC-0003", ["district", "temp_c"]])
+```
+
+**Expected Output:**
+```text
+iloc[0:3, 0:3] (exclusive stop):
+  patient_id    district  age_years
+0   UHC-0001  Chattogram         15
+1   UHC-0002      Sylhet         55
+2   UHC-0003    Rajshahi         70
+
+loc['UHC-0001':'UHC-0003', ['district', 'temp_c']] (inclusive):
+              district  temp_c
+patient_id                    
+UHC-0001    Chattogram    37.7
+UHC-0002        Sylhet    37.5
+UHC-0003      Rajshahi    37.4
+```
+
+Compare those two slices side by side:
+
+- **`.iloc[0:3, 0:3]`** stops *before* position `3`—returning 3 rows (`0, 1, 2`) and 3 columns (`0, 1, 2`), identical to standard Python list slicing.
+- **`.loc["UHC-0001":"UHC-0003", ...]`** includes **both** `"UHC-0001"` and `"UHC-0003"`, because label slices in Pandas are **closed (inclusive) intervals**.
+
+---
+
+### Boolean Masking with `&`, `|`, `~`, and `.isin()` {#sec-ch17-masking}
+
+To isolate clinical sub-cohorts without writing loops, build elementwise boolean `Series` masks and combine them with bitwise operators (`&` for AND, `|` for OR, `~` for NOT):
+
+```python
+adult_fever = (df["age_years"] >= 18) & (df["temp_c"] >= 38.0)
+target_dist = df["district"].isin(["Dhaka", "Sylhet"])
+
+sub = df.loc[adult_fever & target_dist].reset_index(drop=True)
+other_count = int((~target_dist).sum())
+
+print("Adult fever rows (all districts):", int(adult_fever.sum()))
+print("Adult fever in Dhaka/Sylhet:     ", len(sub))
+print("Outside Dhaka/Sylhet rows:       ", other_count)
+print(sub[["patient_id", "district", "age_years", "temp_c"]].head(3))
+```
+
+**Expected Output:**
+```text
+Adult fever rows (all districts): 21
+Adult fever in Dhaka/Sylhet:      4
+Outside Dhaka/Sylhet rows:        90
+  patient_id district  age_years  temp_c
+0   UHC-0017   Sylhet         31    38.8
+1   UHC-0029    Dhaka         41    38.4
+2   UHC-0042   Sylhet         32    38.6
+```
+
+Trace three critical syntax habits here:
+
+- **Parentheses around every comparison:** Operator precedence binds `&` tighter than `>=`, so omitting parentheses around `(df["age_years"] >= 18)` raises `TypeError`.
+- **`.isin([...])` replaces chained `|` checks:** Checking membership across 2 or 20 districts stays concise and fast.
+- **`.reset_index(drop=True)`:** Without `drop=True`, Pandas turns the old scattered row labels (`16, 28, 41, ...`) into an extra column named `"index"`.
+
+---
+
+### Vectorized Columns, `.assign()`, & Pandas 3.x Copy-on-Write {#sec-ch17-assign}
+
+Derive clinical features cleanly with `.assign(...)` (or `out = df.copy(); out["col"] = ...`) so your raw dataset remains 100% immutable:
+
+```python
+enriched = df.assign(
+    bmi=(df["weight_kg"] / (df["height_cm"] / 100) ** 2).round(2),
+    is_anemic=df["hemoglobin_g_dl"] < 11.0,
+)
+
+print("'bmi' in original df?", "bmi" in df.columns)
+print("'bmi' in enriched?   ", "bmi" in enriched.columns)
+print("Anemic patients:     ", int(enriched["is_anemic"].sum()))
+cols = ["patient_id", "bmi", "hemoglobin_g_dl", "is_anemic"]
+print(enriched[cols].head(3))
+```
+
+**Expected Output:**
+```text
+'bmi' in original df? False
+'bmi' in enriched?    True
+Anemic patients:      7
+  patient_id    bmi  hemoglobin_g_dl  is_anemic
+0   UHC-0001  19.56             12.1      False
+1   UHC-0002  25.02             12.2      False
+2   UHC-0003  27.39             14.7      False
+```
+
+Notice that `'bmi' in original df?` is **`False`**: `.assign()` always returns a new DataFrame with the added columns while leaving `df` pristine for downstream sensitivity checks.
+
+---
+
+### Deterministic Multi-Key Sorting with `.sort_values()` {#sec-ch17-sorting}
+
+Whenever two patients share the exact same fever temperature, sorting by a single column leaves tie order arbitrary. Always pass a secondary tie-breaker column (`patient_id`) with an explicit `ascending` list:
+
+```python
+cols = ["patient_id", "district", "temp_c", "triage_priority"]
+top_fever = (
+    df.sort_values(
+        by=["temp_c", "patient_id"],
+        ascending=[False, True],
+    )[cols]
+    .head(5)
+    .reset_index(drop=True)
+)
+print(top_fever)
+```
+
+**Expected Output:**
+```text
+  patient_id    district  temp_c triage_priority
+0   UHC-0004    Rajshahi    39.0        Moderate
+1   UHC-0107     Rangpur    38.9        Moderate
+2   UHC-0017      Sylhet    38.8        Moderate
+3   UHC-0057     Rangpur    38.7        Moderate
+4   UHC-0108  Chattogram    38.7        Moderate
+```
+
+Look at rows `3` and `4`: both patients recorded `38.7` °C, and `ascending=[False, True]` deterministically places `UHC-0057` ahead of `UHC-0108`.
+
+---
+
+### Reshaping Data: `pd.melt`, `pd.crosstab`, & `pivot_table` {#sec-ch17-reshaping}
+
+Research pipelines constantly switch between **wide** visit tables (one column per timepoint), **tidy long** tables (one observation per row), and **2D contingency/summary matrices**:
+
+```python
+wide_bp = pd.DataFrame(
+    {
+        "patient_id": ["UHC-0001", "UHC-0002", "UHC-0003"],
+        "sbp_day1": [123, 132, 140],
+        "sbp_day2": [119, 128, 134],
+    }
+)
+long_bp = pd.melt(
+    wide_bp,
+    id_vars=["patient_id"],
+    value_vars=["sbp_day1", "sbp_day2"],
+    var_name="visit",
+    value_name="sbp",
+)
+print("Long BP shape:", long_bp.shape)
+print(long_bp)
+
+ct = pd.crosstab(df["district"], df["triage_priority"])
+print("\nDistrict x Triage Priority counts:")
+print(ct)
+
+mean_temp = df.pivot_table(
+    index="district",
+    columns="triage_priority",
+    values="temp_c",
+    aggfunc="mean",
+).round(2)
+print("\nMean Temp (C) by District x Priority:")
+print(mean_temp)
+```
+
+**Expected Output:**
+```text
+Long BP shape: (6, 3)
+  patient_id     visit  sbp
+0   UHC-0001  sbp_day1  123
+1   UHC-0002  sbp_day1  132
+2   UHC-0003  sbp_day1  140
+3   UHC-0001  sbp_day2  119
+4   UHC-0002  sbp_day2  128
+5   UHC-0003  sbp_day2  134
+
+District x Triage Priority counts:
+triage_priority  Moderate  Routine
+district                          
+Chattogram              7       11
+Dhaka                   6       10
+Khulna                  8       11
+Rajshahi               12       12
+Rangpur                15       14
+Sylhet                  8        6
+
+Mean Temp (C) by District x Priority:
+triage_priority  Moderate  Routine
+district                          
+Chattogram          37.50    37.15
+Dhaka               37.68    37.31
+Khulna              37.90    36.97
+Rajshahi            37.78    37.00
+Rangpur             37.89    36.87
+Sylhet              38.05    36.82
+```
+
+Notice how each reshaping tool plays a distinct role:
+
+| Operation | Direction / Output | Best Research Use Case |
+| :--- | :--- | :--- |
+| `pd.melt(...)` | Wide $\rightarrow$ Tidy Long | Unpivoting longitudinal visits (`day1`, `day2`) for plotting/regression |
+| `pd.crosstab(r, c)` | Long $\rightarrow$ Count Matrix | Integer contingency tables (automatically fills empty cells with `0`) |
+| `df.pivot_table(...)` | Long $\rightarrow$ Aggregated Matrix | Group means/medians across two categorical axes (`fill_value=0` optional) |
+
+---
+
+### Break It On Purpose! (Pandas Error Anatomy) {#sec-ch17-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — KeyError (Nonexistent Column Name)"}
+```python
+print(df["hemoglobin"].mean())
+```
+**Python's Traceback:**
+```text
+KeyError: 'hemoglobin'
+```
+**Diagnosis:** Column names in Pandas are exact dictionary keys—our dataset stores `"hemoglobin_g_dl"`, not `"hemoglobin"`.  
+**Fix:** Inspect `list(df.columns)` whenever you encounter a `KeyError`, and verify exact spelling and units (`df["hemoglobin_g_dl"].mean()`).
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Ambiguous Truth Value of a Series)"}
+```python
+bad_mask = (df["age_years"] >= 18) and (df["temp_c"] >= 38.0)
+print(bad_mask.sum())
+```
+**Python's Traceback:**
+```text
+ValueError: The truth value of a Series is ambiguous. Use a.empty,
+a.item(), a.any() or a.all().
+```
+**Diagnosis:** Python's logical `and` tries to collapse a 120-element boolean `Series` into a single scalar `True`/`False`, which is meaningless.  
+**Fix:** Replace `and` / `or` / `not` with elementwise bitwise `&` / `|` / `~`, keeping parentheses around each comparison: `(df["age_years"] >= 18) & (df["temp_c"] >= 38.0)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — IndexError (.iloc Out-of-Bounds Row)"}
+```python
+print(df.iloc[120])
+```
+**Python's Traceback:**
+```text
+IndexError: single positional indexer is out-of-bounds
+```
+**Diagnosis:** A 120-row DataFrame has valid 0-based positions `0` through `119`. Requesting `.iloc[120]` steps one slot past the last row!  
+**Fix:** Use `df.iloc[-1]` for the final row, or check `len(df)` before indexing by integer position.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch17-blueprint}
+
+**Scenario:** A district health director wants a reproducible **Adult Fever-Rate Audit** from `clinic_triage`: restrict to adult patients (`age_years >= 18`), compute each adult's 2-decimal BMI and `has_fever` flag (`temp_c >= 38.0`) without mutating `df`, tabulate afebrile vs. febrile counts per district, calculate `fever_pct` rounded to 1 decimal place, and rank districts from highest to lowest fever burden.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Purity & Cohort Selection Contract:**
+
+   - Filter adults with `df.loc[df["age_years"] >= 18].copy()` so the original 120-row table remains untouched (`len(df.columns) == 11`).
+   - Add `bmi` and `has_fever` via `.assign(bmi=lambda d: ..., has_fever=lambda d: ...)` and reset the index (`drop=True`).
+
+2. **Contingency & Rate Formula:**
+
+   - Build a 2-column count table via `pd.crosstab(cohort["district"], cohort["has_fever"])` (`False` $\rightarrow$ `afebrile`, `True` $\rightarrow$ `febrile`).
+   - Compute $\text{fever\_pct} = \text{round}\!\left(\frac{\text{febrile}}{\text{afebrile} + \text{febrile}} \times 100,\ 1\right)$.
+
+3. **Ranking & Hand Check:**
+
+   - Sort descending by `fever_pct` using `.sort_values("fever_pct", ascending=False)`.
+   - Verify row sums match the 97-adult cohort (`27 + 16 + 9 + 20 + 12 + 13 = 97`) and original `df` still has 11 columns.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+cohort = (
+    df.loc[df["age_years"] >= 18]
+    .copy()
+    .assign(
+        bmi=lambda d: (
+            d["weight_kg"] / (d["height_cm"] / 100) ** 2
+        ).round(2),
+        has_fever=lambda d: d["temp_c"] >= 38.0,
+    )
+    .reset_index(drop=True)
+)
+
+fever_table = pd.crosstab(cohort["district"], cohort["has_fever"])
+fever_table.columns = ["afebrile", "febrile"]
+total_adults = fever_table["afebrile"] + fever_table["febrile"]
+fever_table["fever_pct"] = (
+    fever_table["febrile"] / total_adults * 100
+).round(1)
+ranked = fever_table.sort_values("fever_pct", ascending=False)
+
+print(
+    "Adult cohort size:", len(cohort),
+    "| Original df cols:", len(df.columns),
+)
+print(ranked)
+```
+
+**Output:**
+```text
+Adult cohort size: 97 | Original df cols: 11
+            afebrile  febrile  fever_pct
+district                                
+Rangpur           20        7       25.9
+Khulna            12        4       25.0
+Sylhet             7        2       22.2
+Rajshahi          16        4       20.0
+Chattogram        10        2       16.7
+Dhaka             11        2       15.4
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch17-todos}
+
+Open `part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six mutation-free Pandas functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`—for example, `tutor.check("ch17_todo_01", add_bmi_column)`.
+
+- **To-Do 17.1 (Vectorized Feature — `add_bmi_column(df)`):** Return a fresh copy of `df` with a new `'bmi'` column computed as `(weight_kg / (height_cm / 100) ** 2).round(2)`, without mutating `df`.
+- **To-Do 17.2 (Compound Boolean Filtering — `filter_urgent_adults(df)`):** Filter rows where `age_years >= 18` and `triage_priority == "Urgent"`, reset index with `drop=True`, and return a copy.
+- **To-Do 17.3 (Multi-Key Sorting — `select_top_fever_patients(df, n=5)`):** Sort by `temp_c` descending then `patient_id` ascending, return top `n` rows with exact columns `["patient_id", "district", "temp_c"]`, and reset index (`drop=True`).
+- **To-Do 17.4 (Summary Statistics Dict — `summarize_numeric_vitals(df, cols)`):** Return a `dict` mapping each `col` in `cols` to `{"mean": float, "median": float, "std": float}` rounded to 2 decimals using Pandas' default `ddof=1`.
+- **To-Do 17.5 (Wide-to-Long Unpivoting — `melt_vital_measurements(wide_df)`):** Use `pd.melt` to reshape `["patient_id", "sbp_day1", "sbp_day2"]` into tidy long columns `["patient_id", "visit", "sbp"]`.
+- **To-Do 17.6 (Contingency Table — `pivot_district_priority_counts(df)`):** Return a contingency DataFrame with `district` as index, `triage_priority` as columns, and integer counts filled with `0`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch17-test}
+
+Trace every Pandas expression carefully on paper before checking Stage 8:
+
+1. **Single vs. Double Brackets:** Given a 120-row DataFrame `df`, what are the Python types and `.shape` attributes of `df["temp_c"]` versus `df[["temp_c"]]`?
+2. **`.loc` vs. `.iloc` Endpoint Rule:** For a DataFrame with default integer index `0, 1, 2, 3, 4`, how many rows are returned by `df.iloc[1:3]` versus `df.loc[1:3]`?
+3. **Series Boolean Operators:** Why does `(df["age_years"] >= 18) and (df["temp_c"] >= 38.0)` raise `ValueError`, and what two edits fix it?
+4. **Operator Precedence Bug:** Why does `df["age_years"] >= 18 & df["temp_c"] >= 38.0` (without parentheses) fail even though `&` is used?
+5. **The `inplace=True` Return Trap:** What value is stored in `sorted_df` after running `sorted_df = df.sort_values("temp_c", inplace=True)`?
+6. **Leftover `'index'` Column:** You filter a DataFrame to 4 matching rows (original indices `16, 28, 41, 77`) and call `.reset_index()` without `drop=True`. What unexpected column gets added?
+7. **Pandas vs. NumPy Standard Deviation:** For the Series `s = pd.Series([10.0, 12.0, 14.0])`, mean $\bar{x} = 12.0$ and sum of squared deviations is $8.0$. What does `s.std()` return (`ddof=1`) versus `s.std(ddof=0)`?
+8. **Wide-to-Long Row Count:** If `wide_df` has 45 patients and 3 follow-up columns (`sbp_day1`, `sbp_day2`, `sbp_day3`) plus `patient_id`, what is the exact `.shape` of `pd.melt(wide_df, id_vars=["patient_id"], value_vars=["sbp_day1", "sbp_day2", "sbp_day3"])`?
+9. **Zero-Count District Pitfall:** If Khulna has 19 total patients and `0` Urgent patients, what happens to Khulna if you filter `df[df["triage_priority"] == "Urgent"]["district"].value_counts()` instead of using `pd.crosstab`?
+10. **Non-Mutating Pipeline Safety:** Why should a helper function `add_bmi_column(df)` start with `out = df.copy()` or `df.assign(...)` rather than executing `df["bmi"] = ...` directly on the parameter `df`?
+
+---
+
+## Stage 7 — Chapter 17 Hands-On Coding Exam (100 Points) {#sec-ch17-exam}
+
+Open `part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch17", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 17.1 (30 Points): `prepare_triage_cohort(df)`
+
+Implement `prepare_triage_cohort(df)`:
+
+- Work on a non-mutating copy so the caller's `df` is completely unchanged.
+- Add `'bmi'` computed as `(weight_kg / (height_cm / 100) ** 2).round(2)`.
+- Add boolean column `'is_anemic'` (`hemoglobin_g_dl < 11.0`, strict `<`).
+- Keep only adult rows (`age_years >= 18`) and reset the index with `drop=True`.
+
+### Exam Task 17.2 (35 Points): `rank_districts_by_urgent_share(df)`
+
+Implement `rank_districts_by_urgent_share(df)`:
+
+- Return a DataFrame with exact columns `["district", "total_patients", "urgent_patients", "urgent_pct"]`.
+- Retain districts with zero Urgent patients (`urgent_patients == 0`, `urgent_pct == 0.0`).
+- Round `urgent_pct` to **1 decimal place** (`(urgent_patients / total_patients * 100).round(1)`).
+- Sort by `urgent_pct` **descending**, then `district` **ascending** (tie-breaker), and reset the index (`drop=True`) without mutating `df`.
+
+### Exam Task 17.3 (35 Points): `reshape_and_compare_visits(wide_df)`
+
+Implement `reshape_and_compare_visits(wide_df)`:
+
+- Given `wide_df` with columns `["patient_id", "hb_baseline", "hb_followup"]`, melt it into a long DataFrame with exact columns `["patient_id", "visit", "hb_g_dl"]`.
+- Compute the mean paired change (follow-up minus baseline) rounded to **2 decimal places** as a native Python `float`: `float(round((wide_df["hb_followup"] - wide_df["hb_baseline"]).mean(), 2))`.
+- Return the 2-tuple `(long_df, mean_change)` without mutating `wide_df`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch17-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `df["temp_c"]` is a 1D **`Series`** with shape `(120,)`; `df[["temp_c"]]` is a 2D **`DataFrame`** with shape `(120, 1)`.
+2. `df.iloc[1:3]` returns **2 rows** (positions `1, 2` — exclusive stop); `df.loc[1:3]` returns **3 rows** (labels `1, 2, 3` — inclusive endpoints).
+3. Python's `and` cannot evaluate a multi-element boolean `Series` as a single truth value. Replace `and` with `&` and keep parentheses around each condition.
+4. Bitwise `&` binds tighter than `>=`, so Python tries to evaluate `18 & df["temp_c"]` first, raising `TypeError`. Always parenthesize both sides.
+5. **`None`** — Pandas methods invoked with `inplace=True` return `None` instead of the sorted DataFrame.
+6. An extra column named **`"index"`** containing `[16, 28, 41, 77]` is inserted as the first column. Always pass `drop=True` unless you want to preserve old labels as data.
+7. `s.std()` (`ddof=1`) returns $\sqrt{8.0 / 2} = \mathbf{2.0}$; `s.std(ddof=0)` returns $\sqrt{8.0 / 3} \approx \mathbf{1.633}$.
+8. **`(135, 3)`** — $45 \times 3 = 135$ rows and 3 columns (`patient_id`, `variable`, `value`).
+9. Khulna is **silently dropped** from the output instead of appearing with `0` Urgent patients (`0.0%`). `pd.crosstab` keeps every district and fills missing cells with integer `0`.
+10. Assigning `df["bmi"] = ...` directly mutates the caller's DataFrame as a hidden side effect, breaking reproducibility if the caller expects the original schema later in the notebook.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import pandas as pd
+
+# To-Do 17.1
+def add_bmi_column(df):
+    """Return a fresh copy of df with 2-decimal BMI column added."""
+    out = df.copy()
+    height_m = out["height_cm"] / 100
+    out["bmi"] = (out["weight_kg"] / (height_m ** 2)).round(2)
+    return out
+
+# To-Do 17.2
+def filter_urgent_adults(df):
+    """Filter adult Urgent rows, reset index, and return a copy."""
+    mask = (df["age_years"] >= 18) & (df["triage_priority"] == "Urgent")
+    return df.loc[mask].reset_index(drop=True).copy()
+
+# To-Do 17.3
+def select_top_fever_patients(df, n=5):
+    """Return top-n fever patients sorted by temp_c desc, id asc."""
+    cols = ["patient_id", "district", "temp_c"]
+    ranked = df.sort_values(
+        by=["temp_c", "patient_id"],
+        ascending=[False, True],
+    )
+    return ranked[cols].head(n).reset_index(drop=True)
+
+# To-Do 17.4
+def summarize_numeric_vitals(df, cols):
+    """Return {col: {'mean', 'median', 'std'}} rounded to 2 decimals."""
+    summary = {}
+    for col in cols:
+        s = df[col]
+        summary[col] = {
+            "mean": float(round(s.mean(), 2)),
+            "median": float(round(s.median(), 2)),
+            "std": float(round(s.std(), 2)),
+        }
+    return summary
+
+# To-Do 17.5
+def melt_vital_measurements(wide_df):
+    """Unpivot sbp_day1/sbp_day2 to long [patient_id, visit, sbp]."""
+    return pd.melt(
+        wide_df,
+        id_vars=["patient_id"],
+        value_vars=["sbp_day1", "sbp_day2"],
+        var_name="visit",
+        value_name="sbp",
+    )
+
+# To-Do 17.6
+def pivot_district_priority_counts(df):
+    """Return integer district x triage_priority counts filled with 0."""
+    return pd.crosstab(df["district"], df["triage_priority"])
+```
+
+### C. Annotated Solutions — Chapter 17 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 17.1 (30 pts)
+def prepare_triage_cohort(df):
+    """Return non-mutating adult triage cohort with bmi and is_anemic."""
+    adults = df.loc[df["age_years"] >= 18].copy()
+    height_m = adults["height_cm"] / 100
+    adults["bmi"] = (adults["weight_kg"] / (height_m ** 2)).round(2)
+    adults["is_anemic"] = adults["hemoglobin_g_dl"] < 11.0
+    return adults.reset_index(drop=True)
+
+# Exam Task 17.2 (35 pts)
+def rank_districts_by_urgent_share(df):
+    """Rank districts by % Urgent patients desc, then district asc."""
+    is_urgent = df["triage_priority"] == "Urgent"
+    counts = pd.crosstab(df["district"], is_urgent)
+    total = counts.sum(axis=1)
+    urgent = (
+        counts[True]
+        if True in counts.columns
+        else pd.Series(0, index=total.index)
+    )
+    out = pd.DataFrame(
+        {
+            "district": total.index,
+            "total_patients": total.astype(int).values,
+            "urgent_patients": urgent.astype(int).values,
+        }
+    )
+    out["urgent_pct"] = (
+        out["urgent_patients"] / out["total_patients"] * 100
+    ).round(1)
+    return out.sort_values(
+        by=["urgent_pct", "district"],
+        ascending=[False, True],
+    ).reset_index(drop=True)
+
+# Exam Task 17.3 (35 pts)
+def reshape_and_compare_visits(wide_df):
+    """Melt baseline/followup Hb and return (long_df, mean_change)."""
+    long_df = pd.melt(
+        wide_df,
+        id_vars=["patient_id"],
+        value_vars=["hb_baseline", "hb_followup"],
+        var_name="visit",
+        value_name="hb_g_dl",
+    )
+    deltas = wide_df["hb_followup"] - wide_df["hb_baseline"]
+    mean_change = float(round(deltas.mean(), 2))
+    return long_df, mean_change
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 17 Failure Modes
+
+1. **Mutating Input DataFrames or Using `inplace=True`:** Writing `df["bmi"] = ...` directly on an argument leaks columns back into the caller's table, and `df = df.sort_values(..., inplace=True)` sets `df` to `None`. Always copy (`out = df.copy()` or `.assign(...)`) and return the fresh DataFrame.
+2. **Mixing Python `and`/`or`/`not` with Pandas Series Masks:** Every Pandas boolean mask is a vector of booleans, not a single truth value. Always write `(cond_a) & (cond_b)`, `(cond_a) | (cond_b)`, or `~(cond_a)` with parentheses around each condition.
+3. **Dropping Zero-Count Categories During Filtering:** Filtering to `"Urgent"` rows before counting districts erases zero-urgent districts from denominator tables and prevalence rankings. Use `pd.crosstab` or full-table boolean sums so every district stays accounted for.
+
+---
+
+::: {.callout-note title="Up Next — Data Cleaning, Missingness, GroupBy & Merging"}
+You can now index, filter, sort, and reshape clean clinical tables with Pandas 3.x Copy-on-Write discipline. Real-world field datasets, however, arrive with missing `NaN` values, duplicate IDs, messy text labels, and multiple tables that must be joined together. In **Chapter 18**, you will master missing-data diagnostics and imputation, split-apply-combine `.groupby()` pipelines, and relational `.merge()` joins across multi-table clinical cohorts.
+:::

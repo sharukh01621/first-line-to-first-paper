@@ -1,0 +1,626 @@
+# NumPy & Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action {#sec-ch16}
+
+> **Chapter Mission:** Launch **Part IV (Data Science Foundations & Applied Mathematics)** by shifting from row-by-row Python loops to **vectorized array computation** with **NumPy**. Master contiguous `ndarray` memory, shapes, `axis=0` vs. `axis=1` reductions, view-vs-copy safety, boolean masking, `np.nanmean`, broadcasting rules, and matrix algebra (`@`, norms, and sigmoid scoring)—the numerical engine underneath Pandas, Scikit-Learn, and PyTorch.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch16 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch16 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch16 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Explain why NumPy's **contiguous homogeneous `ndarray`** outperforms Python lists by 10x–100x on numerical arrays, and inspect `.shape`, `.ndim`, `.dtype`, and `.nbytes`.
+2. Aggregate 2D scientific tables unambiguously along **`axis=0`** (down rows, per column) versus **`axis=1`** (across columns, per row) using `np.sum`, `np.mean`, `np.std`, and `np.argmax`.
+3. Prevent silent data corruption by distinguishing **NumPy slice views** (shared memory) from explicit **`.copy()`** arrays, and cast integer arrays to `dtype=float` before assigning `np.nan`.
+4. Clean clinical sentinels (`999.0`), filter cohorts with **boolean masks**, and compute missing-aware statistics via **`np.nanmean`** and **`np.where`**.
+5. Apply **NumPy broadcasting** and **linear algebra** (`@`, Euclidean norms via `np.linalg.norm`, and logistic sigmoid scoring) to implement complete ML preprocessing and inference passes without a single Python `for` loop.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Loops Collapse & Vectorization Wins {#sec-ch16-intuition}
+
+In **Parts I–III**, you built clean pure-Python algorithms, classes, and reproducible engineering workflows. Yet the moment a public health registry grows from 50 rows to 5,000,000 hospital records—or a neural network multiplies two $1024 \times 1024$ weight matrices—a Python `for` loop hits a wall.
+
+Why? Because a Python `list` is **not** a contiguous strip of numbers in RAM. Every element in a Python `list` is a separate heap-allocated `PyObject` box storing type tags, reference counts, and pointers. On every single iteration of `for w, h in zip(weights, heights):`, Python must chase pointers across memory, check data types dynamically, box a new float result, and repeat millions of times.
+
+**NumPy (`ndarray`) flips the architecture completely:**
+
+- **Homogeneous Contiguous Memory:** All elements share a single fixed `dtype` (such as 64-bit `float64`, 8 bytes each) laid out back-to-back in one uninterrupted C memory block.
+- **Vectorized C & BLAS Loops:** Writing `weights / ((heights / 100.0) ** 2)` pushes the loop down into compiled C and CPU SIMD vector instructions, processing thousands of patients in microseconds.
+- **Universal Scientific Substrate:** Pandas DataFrames, Scikit-Learn feature matrices, SciPy solvers, and PyTorch/JAX tensors all inherit NumPy's exact shape, axis, masking, and broadcasting semantics.
+
+::: {.callout-note title="Mental Model — Warehouse Pallet vs. Scavenger Hunt"}
+Think of a Python `list` as a **scavenger hunt**: the list only holds sticky notes pointing to scattered storage lockers across a warehouse, and you must unlock each locker and check its label before doing arithmetic. A NumPy `ndarray` is a **shrink-wrapped warehouse pallet** of identical 8-byte float bricks lined up in a straight row—a single forklift pass (CPU vector instruction) lifts and transforms the entire pallet at once.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Contiguous Memory, Axes & Broadcasting {#sec-ch16-mental-model}
+
+Trace the three mental models that govern 95% of real-world NumPy code—**contiguous RAM**, **2D axis directions**, and **zero-copy broadcasting**:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Mem["Contiguous RAM"]
+        L["Python list: scattered PyObject pointers"]
+        A["NumPy ndarray: packed C float64 block (8 B each)"]
+    end
+    subgraph Axes["2D Axes (3, 4)"]
+        AX0["axis=0 (down rows): mean(X, axis=0) -> shape (4,)"]
+        AX1["axis=1 (across cols): sum(X, axis=1) -> shape (3,)"]
+    end
+    subgraph Bcast["Broadcasting"]
+        BC["(3, 4) - (4,) aligns trailing dims -> (3, 4)"]
+    end
+    A --> AX0
+    A --> AX1
+    AX0 -. "1D vector (4,)" .-> BC
+```
+
+Keep one golden rule glued to your monitor whenever you pass `axis=...` on a 2D `(rows, cols)` matrix: **the axis you specify is the axis that collapses (disappears)!**
+
+- Collapsing **`axis=0`** (rows) leaves one result per column: `(3, 4)` $\rightarrow$ `(4,)`.
+- Collapsing **`axis=1`** (columns) leaves one result per row: `(3, 4)` $\rightarrow$ `(3,)`.
+
+::: {.callout-warning title="The View-vs-Copy Trap — Slicing a NumPy Array Does NOT Copy!"}
+In pure Python (Chapter 7), `sub = my_list[1:4]` allocates a **new** list. In NumPy, `sub = arr[1:4]` returns a **view** pointing directly into `arr`'s original memory buffer! Mutating `sub[0] = -1.0` silently overwrites `arr[1]`. Whenever you plan to clean, clip, or impute an input array inside a function, **always start with `np.array(x, dtype=float, copy=True)` or `x.copy()`**.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch16-walkthrough}
+
+Open `part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Contiguous Arrays vs. Python Lists {#sec-ch16-arrays-vs-lists}
+
+```python
+import numpy as np
+
+w_list = [64.5, 54.6, 70.0, 81.2]
+h_list = [168.0, 156.0, 175.0, 180.0]
+
+weights = np.array(w_list, dtype=float)
+heights = np.array(h_list, dtype=float)
+
+# List `* 2` repeats the container; NumPy `* 2` scales every value!
+print("List * 2: ", w_list[:2] * 2)
+print("Array * 2:", weights[:2] * 2)
+
+# Vectorized BMI in one C-speed expression (zero Python for-loops)
+bmi = np.round(weights / ((heights / 100.0) ** 2), 2)
+print("Cohort BMI:", bmi)
+print(
+    f"type={type(bmi).__name__}, shape={bmi.shape}, "
+    f"dtype={bmi.dtype}, nbytes={bmi.nbytes}"
+)
+```
+
+**Expected Output:**
+```text
+List * 2:  [64.5, 54.6, 64.5, 54.6]
+Array * 2: [129.  109.2]
+Cohort BMI: [22.85 22.44 22.86 25.06]
+type=ndarray, shape=(4,), dtype=float64, nbytes=32
+```
+
+Notice two crucial differences immediately:
+
+- **Operator semantics:** Multiplying a Python list by `2` concatenates the list onto itself (`[64.5, 54.6, 64.5, 54.6]`). Multiplying a NumPy `ndarray` by `2` performs true mathematical scalar multiplication (`[129.0, 109.2]`).
+- **Compact memory:** Four `float64` numbers take exactly `4 * 8 = 32` raw bytes (`nbytes=32`) with no per-element pointer overhead.
+
+---
+
+### Shapes, Axes (`axis=0` vs. `axis=1`) & Dtypes {#sec-ch16-shapes-axes}
+
+```python
+# 3 districts (rows, axis=0) x 4 weeks (columns, axis=1)
+cases = np.array([
+    [12, 25, 40, 23],  # Dhaka
+    [30, 15, 10,  5],  # Sylhet
+    [ 5,  8, 12, 20],  # Khulna
+])
+
+print("shape:", cases.shape, "| ndim:", cases.ndim, "| dtype:", cases.dtype)
+print("Total per district (axis=1):", np.sum(cases, axis=1))
+print("Weekly mean (axis=0):       ", np.round(np.mean(cases, axis=0), 2))
+print("Peak week index (axis=1):   ", np.argmax(cases, axis=1))
+
+# Homogeneous dtype upcasting: mixing int + float promotes to float64
+mixed = np.array([10, 11.5, 12])
+print("Upcast mixed dtype:         ", mixed.dtype, mixed)
+```
+
+**Expected Output:**
+```text
+shape: (3, 4) | ndim: 2 | dtype: int64
+Total per district (axis=1): [100  60  45]
+Weekly mean (axis=0):        [15.67 16.   20.67 16.  ]
+Peak week index (axis=1):    [2 0 3]
+Upcast mixed dtype:          float64 [10.  11.5 12. ]
+```
+
+Verify the axis rule on this rectangular `(3, 4)` dengue surveillance matrix:
+
+- `np.sum(cases, axis=1)` collapses the 4 week columns into **3** district totals (`[100, 60, 45]`).
+- `np.mean(cases, axis=0)` collapses the 3 district rows into **4** weekly means (`[15.67, 16.0, 20.67, 16.0]`).
+- `np.argmax(cases, axis=1)` returns the **0-based column index** of each district's peak week (`[2, 0, 3]`, i.e., Week 3 for Dhaka, Week 1 for Sylhet, Week 4 for Khulna).
+
+---
+
+### The View-vs-Copy Trap (Slicing Shares Memory!) {#sec-ch16-view-vs-copy}
+
+```python
+readings = np.array([10.4, 11.2, 12.1, 13.0, 11.8])
+
+# NumPy slice = VIEW (shares underlying C memory buffer!)
+view_slice = readings[1:4]
+safe_copy = readings[1:4].copy()
+
+print("Shares memory (view)?", np.shares_memory(readings, view_slice))
+print("Shares memory (copy)?", np.shares_memory(readings, safe_copy))
+
+view_slice[0] = -1.0  # Silently mutates `readings[1]`!
+print("Original after view edit:", readings)
+
+safe_copy[0] = 99.0   # Does NOT touch `readings`
+print("Original after copy edit:", readings)
+```
+
+**Expected Output:**
+```text
+Shares memory (view)? True
+Shares memory (copy)? False
+Original after view edit: [10.4 -1.  12.1 13.  11.8]
+Original after copy edit: [10.4 -1.  12.1 13.  11.8]
+```
+
+Slicing returns a zero-copy **view** so NumPy can window across multi-gigabyte tensors instantly without blowing up RAM. That performance gift becomes a subtle aliasing bug if you forget `.copy()` before mutating a slice!
+
+---
+
+### Boolean Masking & Sentinel-Safe `np.nanmean` {#sec-ch16-masking-nan}
+
+```python
+raw_hb = np.array([10.4, 999.0, 11.8, np.nan, 10.6, 12.6])
+
+# Always copy as float before inserting np.nan!
+clean_hb = np.array(raw_hb, dtype=float, copy=True)
+clean_hb[clean_hb == 999.0] = np.nan
+
+print("np.mean(clean_hb):   ", np.mean(clean_hb))
+print("np.nanmean(clean_hb):", round(float(np.nanmean(clean_hb)), 2))
+
+anemic_mask = clean_hb < 11.0
+print("Anemic mask:         ", anemic_mask)
+print("Anemic count:        ", int(np.sum(anemic_mask)))
+print("Raw input untouched: ", raw_hb)
+```
+
+**Expected Output:**
+```text
+np.mean(clean_hb):    nan
+np.nanmean(clean_hb): 11.35
+Anemic mask:          [ True False False False  True False]
+Anemic count:         2
+Raw input untouched:  [ 10.4 999.   11.8   nan  10.6  12.6]
+```
+
+Three defensive patterns work together here:
+
+- **Float copy first:** Integer arrays (`int64`) cannot store IEEE-754 `np.nan`, so `np.array(..., dtype=float, copy=True)` solves both dtype safety and caller non-mutation in one line.
+- **NaN-aware aggregation:** Standard `np.mean` poisons the entire result into `nan` if even one cell is `np.nan`; `np.nanmean` skips `NaN`s cleanly.
+- **Mask counting:** Comparing `clean_hb < 11.0` returns `False` for `np.nan`, and `int(np.sum(anemic_mask))` counts `True` values in C speed (`True == 1`, `False == 0`).
+
+---
+
+### Broadcasting Rules in Action {#sec-ch16-broadcasting}
+
+**Broadcasting** lets NumPy combine arrays of different shapes without physically duplicating data in memory. NumPy aligns shapes **from the rightmost (trailing) dimension** leftward. Two dimensions are compatible if and only if:
+
+1. They are **equal**, OR
+2. One of them is **`1`** (or missing on the left, treated as `1`).
+
+| Expression | Left Shape | Right Shape | Result Shape | Why It Works / Fails |
+| :--- | :---: | :---: | :---: | :--- |
+| `X - col_means` | `(3, 2)` | `(2,)` | `(3, 2)` | `(2,)` pads to `(1, 2)`; `1` stretches to `3` |
+| `cases / pop[:, None]` | `(3, 4)` | `(3, 1)` | `(3, 4)` | `1` in trailing col axis stretches to `4` |
+| `np.ones((3, 2)) + vec4` | `(3, 2)` | `(4,)` | `ValueError` | Trailing dims `2` vs. `4` neither equal nor `1` |
+
+Watch both column-wise and row-wise broadcasting in action:
+
+```python
+# Feature matrix: 3 patients x 2 biomarkers [hb_g_dl, sbp_mmhg]
+X = np.array([
+    [10.0, 120.0],
+    [12.0, 130.0],
+    [14.0, 140.0],
+])
+
+# 1. Column centering: (3, 2) - (2,) broadcasts across all 3 rows
+col_means = np.mean(X, axis=0)
+centered = X - col_means
+print("Column means (2,):", col_means)
+print("Centered (3, 2):\n", centered)
+
+# 2. Row-wise scaling via [:, None]: (3, 4) / (3, 1)
+pop = np.array([250_000, 120_000, 90_000], dtype=float)
+weekly_inc = np.round((cases / pop[:, None]) * 100_000, 2)
+print("pop[:, None] shape:", pop[:, None].shape)
+print("Weekly incidence per 100k:\n", weekly_inc)
+```
+
+**Expected Output:**
+```text
+Column means (2,): [ 12. 130.]
+Centered (3, 2):
+ [[ -2. -10.]
+ [  0.   0.]
+ [  2.  10.]]
+pop[:, None] shape: (3, 1)
+Weekly incidence per 100k:
+ [[ 4.8  10.   16.    9.2 ]
+ [25.   12.5   8.33  4.17]
+ [ 5.56  8.89 13.33 22.22]]
+```
+
+Look closely at `pop[:, None]`: inserting `None` (equivalent to `np.newaxis`) turns a 1D `(3,)` vector into a `(3, 1)` column vector so it broadcasts horizontally across all 4 weeks!
+
+---
+
+### Linear Algebra in Action (`@`, Sigmoid & Norms) {#sec-ch16-linalg}
+
+Every linear model, logistic classifier, and neural network layer computes $z = Xw + b$ using Python's dedicated matrix-multiplication operator **`@`**, while k-NN and clustering algorithms measure row-wise Euclidean ($L_2$) distances $\|x_i - r\|_2$:
+
+```python
+Z = np.array([
+    [-1.2,  0.8],
+    [ 0.0,  0.0],
+    [ 1.5, -0.5],
+])
+w = np.array([-0.9, 1.1])
+b = 0.2
+
+# Linear logits (3, 2) @ (2,) -> (3,), then logistic sigmoid
+logits = Z @ w + b
+probs = 1.0 / (1.0 + np.exp(-logits))
+print("Logits:", np.round(logits, 4))
+print("Probs: ", np.round(probs, 4))
+
+# Euclidean (L2) distances from healthy centroid [0.0, 0.0]
+ref = np.array([0.0, 0.0])
+dists = np.round(np.linalg.norm(Z - ref, axis=1), 4)
+print("L2 distances to ref:", dists)
+```
+
+**Expected Output:**
+```text
+Logits: [ 2.16  0.2  -1.7 ]
+Probs:  [0.8966 0.5498 0.1545]
+L2 distances to ref: [1.4422 0.     1.5811]
+```
+
+Never confuse `*` with `@`: `Z * w` multiplies elementwise and returns a `(3, 2)` matrix, whereas `Z @ w` computes the inner product of each patient row with `w`, collapsing the feature axis cleanly into a `(3,)` score vector!
+
+---
+
+### Break It On Purpose! (NumPy Error Anatomy) {#sec-ch16-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Incompatible Broadcasting Shapes)"}
+```python
+mat = np.ones((3, 2))
+vec = np.array([1, 2, 3, 4])
+bad_sum = mat + vec
+```
+**Python's Traceback:**
+```text
+ValueError: operands could not be broadcast together with shapes (3,2) (4,)
+```
+**Diagnosis:** Aligning from the right compares trailing dimension `2` against `4`. Neither is equal nor `1`, so NumPy refuses to guess.  
+**Fix:** Ensure the 1D vector matches the trailing column count (`shape (2,)`) for column-wise ops, or reshape a length-3 vector to `(3, 1)` (`vec[:, None]`) for row-wise ops.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Misaligned Matrix Multiply `@`)"}
+```python
+A = np.ones((3, 2))
+B = np.ones((3, 1))
+bad_prod = A @ B
+```
+**Python's Traceback:**
+```text
+ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0,
+with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 3 is different from 2)
+```
+**Diagnosis:** Matrix multiplication $(n \times k) \mathbin{@} (k \times m)$ requires the **inner dimensions** $k$ to match. Here `A` has $k = 2$ columns, while `B` has $3$ rows!  
+**Fix:** Check `.shape` on both operands and transpose (`A.T @ B`) or fix the weight vector length so inner dimensions match.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — IndexError (Out-of-Bounds 2D Axis Index)"}
+```python
+grid = np.zeros((3, 4))
+bad_cell = grid[3, 0]
+```
+**Python's Traceback:**
+```text
+IndexError: index 3 is out of bounds for axis 0 with size 3
+```
+**Diagnosis:** A `(3, 4)` matrix has valid row indices `0, 1, 2` along `axis=0` and column indices `0, 1, 2, 3` along `axis=1`. Index `3` steps one past the last row.  
+**Fix:** Use 0-based indices (`0..shape[axis] - 1`) or `-1` to select the final row cleanly.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch16-blueprint}
+
+**Scenario:** A Dhaka hospital triage system receives a raw 2D vital-sign matrix `raw_X` of shape `(n_patients, n_features)` containing both `999.0` scanner sentinels and `np.nan` gaps, plus a constant clinic-code column. Build a single zero-loop function `run_vectorized_triage(raw_X, weights, bias, cutoff=0.5)` that cleans, imputes, standardizes, scores via logistic regression, and returns `(probs, flags)` without mutating `raw_X`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Non-Mutating Sentinel Cleaning:**
+
+   - Allocate `X = np.array(raw_X, dtype=float, copy=True)` so integers promote to float and the caller's matrix stays intact.
+   - Replace `999.0` with `np.nan` using boolean masking: `X[X == 999.0] = np.nan`.
+
+2. **Broadcasted Imputation & Safe Standardization:**
+
+   - Compute column means `col_means = np.nanmean(X, axis=0)` (shape `(p,)`).
+   - Fill missing cells in one broadcasted line: `X = np.where(np.isnan(X), col_means, X)`.
+   - Compute `means = np.mean(X, axis=0)` and `stds = np.std(X, axis=0)`. Substitute `1.0` where `stds == 0` via `np.where`, standardize `(X - means) / safe_stds`, and set constant columns to `0.0`.
+
+3. **Linear Algebra Inference & Verification Plan:**
+
+   - Compute `logits = Z @ np.asarray(weights, dtype=float) + bias`.
+   - Apply logistic sigmoid $\sigma(z) = 1 / (1 + e^{-z})$ and cast `(probs >= cutoff).astype(int)`.
+   - Hand-check that patient 0 (low Hb `9.5`, high fever `39.1`) gets high probability (`> 0.9`, flag `1`), patient 2 (healthy Hb `12.5`, normal temp `36.8`) gets low probability (`< 0.1`, flag `0`), and `raw_vitals[1, 0]` remains `999.0`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_vectorized_triage(raw_X, weights, bias, cutoff=0.5):
+    """Clean, impute, standardize, and score a vital matrix."""
+    # Step 1: Copy as float & replace sentinel 999.0 with np.nan
+    X = np.array(raw_X, dtype=float, copy=True)
+    X[X == 999.0] = np.nan
+
+    # Step 2: Broadcasted column-mean imputation
+    col_means = np.nanmean(X, axis=0)
+    X = np.where(np.isnan(X), col_means, X)
+
+    # Step 3: Column Z-score standardization with zero-std guard
+    means = np.mean(X, axis=0)
+    stds = np.std(X, axis=0)
+    safe_stds = np.where(stds == 0, 1.0, stds)
+    Z = (X - means) / safe_stds
+    Z[:, stds == 0] = 0.0
+
+    # Step 4: Linear logits (@), sigmoid probs, and 0/1 flags
+    logits = Z @ np.asarray(weights, dtype=float) + bias
+    probs = 1.0 / (1.0 + np.exp(-logits))
+    flags = (probs >= cutoff).astype(int)
+    return np.round(probs, 4), flags
+
+# 4 patients x 3 features: [hb_g_dl, temp_c, clinic_code]
+raw_vitals = np.array([
+    [ 9.5, 39.1, 1.0],
+    [999.0, 38.4, 1.0],
+    [12.5, 36.8, 1.0],
+    [11.0, np.nan, 1.0],
+])
+w_triage = np.array([-1.2, 1.5, 0.5])
+probs, flags = run_vectorized_triage(raw_vitals, w_triage, bias=0.1)
+
+print("Risk probabilities:", probs)
+print("Triage flags (0/1):", flags)
+print("Raw sentinel intact:", raw_vitals[1, 0])
+```
+
+**Output:**
+```text
+Risk probabilities: [0.9733 0.6547 0.0191 0.525 ]
+Triage flags (0/1): [1 1 0 1]
+Raw sentinel intact: 999.0
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch16-todos}
+
+Open `part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six vectorized functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`—for example, `tutor.check("ch16_todo_01", vectorized_bmi)`.
+
+- **To-Do 16.1 (Vectorized Arithmetic — `vectorized_bmi(weights_kg, heights_cm)`):** Accept array-like inputs without mutating them, convert `heights_cm` to meters (`/ 100.0`), and return a 1D `np.ndarray` of floats rounded to 2 decimal places via `np.round(..., 2)`.
+- **To-Do 16.2 (Masking & `np.nanmean` — `clean_and_mean_hb(hb_array)`):** Replace sentinel `999` with `np.nan` on a **float copy** without mutating input, and return a native Python `float` rounded to 2 decimals via `np.nanmean` (or `None` if all values are `NaN`).
+- **To-Do 16.3 (Broadcasting & `axis=0` — `standardize_columns(X)`):** Given a 2D `(n, p)` array, compute column-wise Z-scores $(X - \mu) / \sigma$ along `axis=0` via broadcasting, setting zero-std columns to `0.0` without mutating `X`.
+- **To-Do 16.4 (Boolean Masking — `flag_fever_mask(temps_c, cutoff=38.0)`):** Return a 2-tuple `(bool_ndarray, int_count)` flagging all temperatures `>= cutoff` (inclusive).
+- **To-Do 16.5 (Matrix Multiply `@` — `weighted_risk_scores(X, weights, bias)`):** Compute `X @ weights + bias` and return a 1D `np.ndarray` rounded to 4 decimal places.
+- **To-Do 16.6 (Broadcasting & Norms — `pairwise_l2_distances(points, reference)`):** Compute broadcasting Euclidean distances `np.linalg.norm(points - reference, axis=1)` and return a 1D `np.ndarray` rounded to 4 decimal places.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch16-test}
+
+Trace every NumPy snippet carefully on paper before checking Stage 8:
+
+1. **List vs. Array Semantics:** Given `a = [10, 20]` and `b = np.array([10, 20])`, what do `a * 2` and `b * 2` evaluate to?
+2. **View-vs-Copy Mutation:** What does `print(arr)` display after running this snippet?
+   ```python
+   arr = np.array([5.0, 6.0, 7.0, 8.0])
+   window = arr[1:3]
+   window[1] = 0.0
+   print(arr)
+   ```
+3. **Axis Collapse Rule:** A surveillance array `cases` has shape `(5, 12)` (5 districts $\times$ 12 months). What are the exact shapes of `np.sum(cases, axis=1)` and `np.mean(cases, axis=0)`?
+4. **Integer `NaN` Trap:** Why does executing `x = np.array([10, 999, 12]); x[x == 999] = np.nan` raise `ValueError`, and how do you prevent it?
+5. **`np.mean` vs. `np.nanmean`:** What do `np.mean(np.array([10.0, np.nan, 14.0]))` and `np.nanmean(np.array([10.0, np.nan, 14.0]))` each return?
+6. **Broadcasting Compatibility:** Which of these two operations succeeds, and what is its output shape: `np.ones((3, 2)) + np.ones((4,))` or `np.ones((3, 4)) / np.ones((3, 1))`?
+7. **Zero-Std Column Guard:** In `standardize_columns(X)`, what happens if column 2 is `[37.0, 37.0, 37.0]` and you naively run `(X - means) / stds` without guarding `stds == 0`?
+8. **`@` vs. `*` Operator:** Suppose `X` has shape `(4, 3)` and `w` has shape `(3,)`. Compare the output shapes of `X * w` versus `X @ w`.
+9. **Forgetting `axis=1` in Norms:** If `points` has shape `(10, 2)` and `ref` has shape `(2,)`, what does `np.linalg.norm(points - ref)` (without `axis=1`) return instead of 10 per-point distances?
+10. **Sigmoid Boundary:** For a patient whose linear logit is $z = 0.0$, what exact probability does $\sigma(z) = 1 / (1 + e^{-z})$ produce, and what integer label does `(probs >= 0.5).astype(int)` assign?
+
+---
+
+## Stage 7 — Chapter 16 Hands-On Coding Exam (100 Points) {#sec-ch16-exam}
+
+Open `part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch16", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 16.1 (30 Points): `normalize_vital_matrix(X)`
+
+Build `normalize_vital_matrix(X)` for a 2D numeric matrix:
+
+- Make a float copy (`np.array(X, dtype=float, copy=True)`) without mutating `X`.
+- Convert sentinel `999.0` to `np.nan`, then impute all `NaN`s with each column's `np.nanmean(..., axis=0)`.
+- Min-max scale each column to $[0.0, 1.0]$, setting any constant column (`col_max == col_min`) to `0.0`, and return the 2D `np.ndarray` rounded to **4 decimal places**.
+
+### Exam Task 16.2 (35 Points): `district_weekly_summary(cases_2d, pop_1d)`
+
+Given a `(n_districts, n_weeks)` case matrix `cases_2d` and a `(n_districts,)` population vector `pop_1d`, return a `dict` with 4 NumPy arrays:
+
+- `"total_per_district"`: 1D `np.ndarray` of total cases per district (`axis=1`).
+- `"weekly_mean"`: 1D `np.ndarray` of mean cases per week across districts (`axis=0`), rounded to **2 decimal places**.
+- `"peak_week_index"`: 1D integer `np.ndarray` of 0-based peak week indices per district (`np.argmax(..., axis=1)`).
+- `"incidence_per_100k"`: 1D `np.ndarray` of `(total_per_district / pop_1d) * 100_000`, rounded to **2 decimal places**.
+
+### Exam Task 16.3 (35 Points): `linear_clinical_scorer(X, weights, bias, threshold=0.5)`
+
+Build a vectorized logistic scorer:
+
+- Compute `z = X @ weights + bias` (converting `X` and `weights` via `np.asarray(..., dtype=float)`).
+- Compute `probs = 1.0 / (1.0 + np.exp(-z))` and `preds = (probs >= threshold).astype(int)`.
+- Return the 2-tuple `(np.round(probs, 4), preds)`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch16-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `a * 2` repeats the Python list $\rightarrow$ `[10, 20, 10, 20]`; `b * 2` scales each element $\rightarrow$ `array([20, 40])`.
+2. Prints **`[5. 6. 0. 8.]`** — `arr[1:3]` is a memory **view**, so `window[1] = 0.0` overwrites `arr[2]`.
+3. `np.sum(cases, axis=1)` collapses columns $\rightarrow$ **`(5,)`**; `np.mean(cases, axis=0)` collapses rows $\rightarrow$ **`(12,)`**.
+4. NumPy `int64` arrays cannot represent IEEE-754 floating-point `NaN`. Cast on a float copy first: `np.array(x, dtype=float, copy=True)`.
+5. `np.mean(...)` returns **`nan`**; `np.nanmean(...)` skips `NaN` and returns **`12.0`**.
+6. `np.ones((3, 4)) / np.ones((3, 1))` succeeds with shape **`(3, 4)`**; `(3, 2) + (4,)` raises `ValueError` because trailing dimensions `2` and `4` are incompatible.
+7. `(37.0 - 37.0) / 0.0` computes `0.0 / 0.0`, producing **`nan`** across the entire column (and a `RuntimeWarning`).
+8. `X * w` broadcasts elementwise to shape **`(4, 3)`**; `X @ w` takes row dot products and returns shape **`(4,)`**.
+9. Omitting `axis=1` computes a single scalar **Frobenius norm** across all $10 \times 2 = 20$ entries instead of a `(10,)` array of row distances.
+10. $\sigma(0.0) = 1 / (1 + e^0) = 1 / 2 =$ **`0.5`**, and `(0.5 >= 0.5).astype(int)` assigns integer label **`1`**.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+
+# To-Do 16.1
+def vectorized_bmi(weights_kg, heights_cm):
+    """Compute 1D NumPy array of BMIs rounded to 2 decimals."""
+    w = np.asarray(weights_kg, dtype=float)
+    h_m = np.asarray(heights_cm, dtype=float) / 100.0
+    return np.round(w / (h_m ** 2), 2)
+
+# To-Do 16.2
+def clean_and_mean_hb(hb_array):
+    """Replace 999 with NaN on a float copy and return nanmean."""
+    arr = np.array(hb_array, dtype=float, copy=True)
+    arr[arr == 999] = np.nan
+    if arr.size == 0 or np.all(np.isnan(arr)):
+        return None
+    return round(float(np.nanmean(arr)), 2)
+
+# To-Do 16.3
+def standardize_columns(X):
+    """Column-wise Z-score standardization with zero-std guard."""
+    arr = np.array(X, dtype=float, copy=True)
+    means = np.mean(arr, axis=0)
+    stds = np.std(arr, axis=0)
+    safe_stds = np.where(stds == 0, 1.0, stds)
+    z = (arr - means) / safe_stds
+    z[:, stds == 0] = 0.0
+    return z
+
+# To-Do 16.4
+def flag_fever_mask(temps_c, cutoff=38.0):
+    """Return (bool_mask, int_count) for temperatures >= cutoff."""
+    arr = np.asarray(temps_c, dtype=float)
+    mask = arr >= cutoff
+    return mask, int(np.sum(mask))
+
+# To-Do 16.5
+def weighted_risk_scores(X, weights, bias):
+    """Compute vectorized linear risk scores X @ weights + bias."""
+    X_arr = np.asarray(X, dtype=float)
+    w_arr = np.asarray(weights, dtype=float)
+    return np.round(X_arr @ w_arr + bias, 4)
+
+# To-Do 16.6
+def pairwise_l2_distances(points, reference):
+    """Return 1D Euclidean distances from each row to reference."""
+    pts = np.asarray(points, dtype=float)
+    ref = np.asarray(reference, dtype=float)
+    return np.round(np.linalg.norm(pts - ref, axis=1), 4)
+```
+
+### C. Annotated Solutions — Chapter 16 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 16.1 (30 pts)
+def normalize_vital_matrix(X):
+    """Clean 999.0, impute column nanmeans, and min-max scale [0, 1]."""
+    arr = np.array(X, dtype=float, copy=True)
+    arr[arr == 999.0] = np.nan
+    col_means = np.nanmean(arr, axis=0)
+    arr = np.where(np.isnan(arr), col_means, arr)
+    col_min = np.min(arr, axis=0)
+    span = np.max(arr, axis=0) - col_min
+    safe_span = np.where(span == 0, 1.0, span)
+    scaled = (arr - col_min) / safe_span
+    scaled[:, span == 0] = 0.0
+    return np.round(scaled, 4)
+
+# Exam Task 16.2 (35 pts)
+def district_weekly_summary(cases_2d, pop_1d):
+    """Aggregate district surveillance grid across axes & population."""
+    cases = np.asarray(cases_2d, dtype=float)
+    pop = np.asarray(pop_1d, dtype=float)
+    total = np.sum(cases, axis=1)
+    weekly_mean = np.round(np.mean(cases, axis=0), 2)
+    peak_week = np.argmax(cases, axis=1)
+    incidence = np.round((total / pop) * 100_000, 2)
+    return {
+        "total_per_district": total,
+        "weekly_mean": weekly_mean,
+        "peak_week_index": peak_week,
+        "incidence_per_100k": incidence,
+    }
+
+# Exam Task 16.3 (35 pts)
+def linear_clinical_scorer(X, weights, bias, threshold=0.5):
+    """Compute logistic risk probabilities and 0/1 class predictions."""
+    X_arr = np.asarray(X, dtype=float)
+    w_arr = np.asarray(weights, dtype=float)
+    z = X_arr @ w_arr + bias
+    probs = 1.0 / (1.0 + np.exp(-z))
+    preds = (probs >= threshold).astype(int)
+    return np.round(probs, 4), preds
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 16 Failure Modes
+
+1. **Mutating Input Arrays via Views or In-Place Masking:** Running `X[X == 999.0] = np.nan` directly on the caller's argument permanently corrupts raw survey data upstream (and crashes on `int64` arrays). Always open data-cleaning functions with `arr = np.array(X, dtype=float, copy=True)`.
+2. **Swapping `axis=0` and `axis=1` on 2D Feature Tables:** On a square `(3, 3)` test matrix, swapped axes silently return the same shape with completely wrong science! Always test axis reductions on rectangular `(3, 4)` grids where `axis=0` yields `(4,)` and `axis=1` yields `(3,)`.
+3. **Confusing `*` (Elementwise) with `@` (Matrix Multiply) or Omitting `axis=1` in Norms:** Remember that `*` preserves 2D shape by multiplying cell-by-cell, whereas `@` computes dot products across the inner feature dimension, and `np.linalg.norm(diff, axis=1)` reduces each row independently.
+
+---
+
+::: {.callout-note title="Up Next — Pandas & Tabular Data Wrangling"}
+NumPy gave you blazing-fast, contiguous numeric matrices—but real research datasets mix string district names, timestamps, missing values, and heterogeneous clinical columns. In **Chapter 17**, you will master **Pandas (`Series` and `DataFrame`)**, which wraps NumPy arrays in labeled axes for expressive filtering, `groupby` epidemiology tables, joins, and tidy data pipelines.
+:::

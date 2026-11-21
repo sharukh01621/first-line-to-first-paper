@@ -1,0 +1,765 @@
+# Statistical Visualization & Publication-Ready Figures (Matplotlib & Seaborn) {#sec-ch19}
+
+> **Chapter Mission:** Transform cleaned Pandas DataFrames into **camera-ready scientific figures** worthy of *The Lancet*, *BMJ Global Health*, or a top ML conference. Master Matplotlib's Object-Oriented (`Figure` $\rightarrow$ `Axes` $\rightarrow$ Artists) architecture, colorblind-safe Okabe-Ito palettes, reference thresholds and annotations, multi-panel `subplots` grids, Seaborn statistical heatmaps, and automated 300-DPI PNG + vector PDF export pipelines with zero figure memory leaks.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch19 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch19 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch19 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Build every chart with Matplotlib's **Object-Oriented API** (`fig, ax = plt.subplots(...)`), returning `(fig, ax)` or `(fig, axes)` from reusable functions and closing figures cleanly with `plt.close(fig)` to prevent RAM leaks.
+2. Select honest, high-signal visual encodings—**sorted horizontal bar charts**, **clinical cutoff histograms**, **grouped scatter plots**, and **rolling time-series trends**—paired with the **colorblind-safe Okabe-Ito palette**.
+3. Compose multi-panel scientific figures (`1x2` equity panels and `2x1` `sharex=True` outbreak dashboards) with unified `fig.suptitle(...)` titles and clean `fig.tight_layout()` spacing.
+4. Render zero-centered, annotated **Seaborn correlation heatmaps** (`sns.heatmap(..., annot=True, center=0, ax=ax)`) embedded cleanly inside an OO Matplotlib `Axes`.
+5. Export publication-ready figure bundles simultaneously to **300-DPI raster PNG** and **lossless vector PDF** using `bbox_inches="tight"` inside isolated reproducible pipelines.
+
+---
+
+## Stage 1 — First-Principles Intuition: Exploratory Sketches vs. Publication Figures {#sec-ch19-intuition}
+
+In Chapters 16–18, you learned to vectorize math with NumPy, aggregate tables with Pandas, and scrub messy clinical surveys. Yet a journal reviewer rarely inspects your raw `.csv` file—the **very first thing** a reviewer, policymaker, or thesis examiner reads is **Figure 1**.
+
+There is a massive gap between an *exploratory sketch* (calling `plt.hist(x)` with default blue bars, missing units, and overlapping labels) and a **publication-ready figure**:
+
+- **Every axis carries units:** Writing `"Hemoglobin (g/dL)"` and `"Systolic BP (mmHg)"` eliminates ambiguity across international clinical readers.
+- **Perceptual honesty comes first:** Human eyes judge aligned **position** and **length** far more accurately than pie-chart angles or dual y-axis slopes. Sorting bar charts by magnitude and stacking related time series with `sharex=True` makes patterns effortless to verify.
+- **Colorblind accessibility is mandatory:** Roughly $8\%$ of men and $0.5\%$ of women experience red-green color-vision deficiency. Replacing default red/green contrasts with the **Okabe-Ito palette** (`#0072B2` blue, `#E69F00` orange, `#D55E00` vermilion, `#009E73` bluish green, `#56B4E9` sky blue) keeps figures legible in both color and grayscale print.
+- **Reproducible figure functions beat throwaway cells:** Wrapping each chart in a function that returns `(fig, ax)` lets you unit-test titles, thresholds, and artist counts—and regenerate every manuscript figure automatically when new survey waves arrive.
+
+::: {.callout-note title="Mental Model — Canvas Frame (`Figure`), Drawing Panels (`Axes`) & Ink (`Artists`)"}
+Think of Matplotlib as a **medical journal page layout**:
+
+- **`Figure` (`fig`):** The entire blank journal page (e.g., `10.5 x 4.2` inches). It owns overall margins, `fig.suptitle(...)`, and the export printer (`fig.savefig(...)`).
+- **`Axes` (`ax` or `axes[i]`):** An individual framed chart panel sitting on the page. Every axis label (`ax.set_xlabel`), panel title (`ax.set_title`), tick mark, spine, and legend lives on an `Axes`.
+- **Artists (`patches`, `lines`, `collections`, `texts`):** The actual ink drawn inside an `Axes`—histogram bars (`Rectangle` patches), trend lines (`Line2D`), scatter points (`PathCollection`), and heatmap annotations (`Text`).
+:::
+
+### Why the Object-Oriented API (`fig, ax`) Beats `plt.plot(...)`
+
+Beginners often copy tutorials using `plt.plot(...)`, `plt.title(...)`, and `plt.xlabel(...)`. That *state-machine* interface secretly mutates whichever panel Matplotlib thinks is "currently active"—a recipe for chaos the moment you build a `1x2` or `2x1` multi-panel paper figure. By explicitly creating `fig, ax = plt.subplots(...)` and calling methods on `ax`, **every line of code names the exact panel it modifies.**
+
+---
+
+## Stage 2 — Visual Mental Model: Matplotlib Object-Oriented Hierarchy {#sec-ch19-mental-model}
+
+Trace how every Matplotlib and Seaborn visualization flows from a single `Figure` container down to `Axes` panels, visual Artists, and camera-ready file export:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph FigCanvas["Figure Canvas"]
+        F["fig = Figure<br/>figsize, suptitle, tight_layout"]
+    end
+    subgraph AxesPanels["Axes Panels"]
+        A0["axes[0] (Axes)<br/>set_title, set_xlabel, set_ylabel"]
+        A1["axes[1] (Axes)<br/>sharex=True, spines, legend"]
+    end
+    subgraph Artists["Visual Artists"]
+        P["Patches & Bars<br/>ax.hist, ax.bar, ax.barh"]
+        L["Lines & Cutoff<br/>ax.plot, ax.axvline"]
+        C["Collections<br/>ax.scatter, sns.heatmap"]
+    end
+    subgraph Export["Export Pipeline"]
+        E["fig.savefig(..., dpi=300, bbox_inches='tight')<br/>PNG (raster) + PDF (vector) -> plt.close(fig)"]
+    end
+    F -->|"plt.subplots()"| A0
+    F -->|"plt.subplots()"| A1
+    A0 --> P
+    A0 --> L
+    A1 --> C
+    F -. "camera-ready" .-> E
+```
+
+Notice that **Seaborn sits directly on top of this hierarchy**: passing `ax=ax` into `sns.heatmap(..., ax=ax)` or `sns.scatterplot(..., ax=ax)` draws Seaborn's statistical artists right into your chosen Matplotlib `Axes`, so you retain 100% control over titles, subplots, and 300-DPI exports.
+
+::: {.callout-warning title="The Silent Figure Memory Leak in Batch Scripts"}
+Every call to `plt.subplots()` registers a live `Figure` inside Matplotlib's global manager. If a loop generates 50 district reports without calling `plt.close(fig)` after `fig.savefig(...)`, all 50 figures stay pinned in RAM—triggering `RuntimeWarning: More than 20 figures have been opened` and eventually crashing Colab. Always pair every batch figure creation or automated test with `plt.close(fig)`!
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch19-walkthrough}
+
+Open `part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Setup & Loading the Spine Datasets {#sec-ch19-setup}
+
+```python
+from pathlib import Path
+import tempfile
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import sharukh_tutor as tutor
+
+clinic = tutor.load_data("clinic_triage", as_pandas=True)
+clinic["bmi"] = clinic["weight_kg"] / ((clinic["height_cm"] / 100) ** 2)
+mch = tutor.load_data("mch_survey_sample", as_pandas=True)
+epi = tutor.load_data("epi_surveillance", as_pandas=True)
+
+print("clinic_triage:    ", clinic.shape)
+print("mch_survey_sample:", mch.shape)
+print("epi_surveillance: ", epi.shape)
+```
+
+**Expected Output:**
+```text
+clinic_triage:     (120, 12)
+mch_survey_sample: (500, 12)
+epi_surveillance:  (416, 8)
+```
+
+---
+
+### Matplotlib OO API, Clinical Cutoffs & Annotations {#sec-ch19-oo}
+
+Watch how `fig, ax = plt.subplots(...)` layers histogram bars, a WHO $11.0\text{ g/dL}$ dashed anemia cutoff, a callout arrow, and clean despined axes:
+
+```python
+OKABE_ITO = {
+    "blue": "#0072B2",
+    "orange": "#E69F00",
+    "vermilion": "#D55E00",
+    "green": "#009E73",
+    "sky": "#56B4E9",
+}
+
+fig, ax = plt.subplots(figsize=(6.5, 4.0))
+hb = clinic["hemoglobin_g_dl"].dropna()
+ax.hist(hb, bins=16, color=OKABE_ITO["blue"], edgecolor="white")
+ax.axvline(
+    11.0,
+    color=OKABE_ITO["vermilion"],
+    linestyle="--",
+    linewidth=2.0,
+    label="WHO Cutoff (11.0 g/dL)",
+)
+ax.annotate(
+    "Anemic tail (<11.0)",
+    xy=(11.0, 12),
+    xytext=(8.8, 16),
+    arrowprops={"arrowstyle": "->", "color": OKABE_ITO["vermilion"]},
+    fontsize=9,
+)
+ax.set_title("Clinic Triage Hemoglobin Distribution")
+ax.set_xlabel("Hemoglobin (g/dL)")
+ax.set_ylabel("Patient Count")
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.legend(frameon=False)
+
+print("Patches:", len(ax.patches), "| Lines:", len(ax.lines))
+print("Title:  ", ax.get_title())
+plt.close(fig)
+```
+
+**Expected Output:**
+```text
+Patches: 16 | Lines: 1
+Title:   Clinic Triage Hemoglobin Distribution
+```
+
+Three publication habits are working together here:
+
+- **Programmatic inspectability:** `ax.patches` holds the 16 histogram bars and `ax.lines` holds the dashed cutoff line—the exact artists our automated checks verify!
+- **Despining reduces chartjunk:** Hiding the top and right box borders (`ax.spines["top"].set_visible(False)`) increases the data-ink ratio cleanly.
+- **Explicit cleanup:** Calling `plt.close(fig)` releases memory immediately once the figure is inspected or saved.
+
+---
+
+### Okabe-Ito Palette: Sorted Horizontal Bars & Grouped Scatter {#sec-ch19-bar-scatter}
+
+Always sort categorical bars by magnitude rather than alphabetically, and encode clinical triage severity with distinct Okabe-Ito hues:
+
+```python
+district_summary = (
+    clinic.assign(is_anemic=clinic["hemoglobin_g_dl"] < 11.0)
+    .groupby("district", as_index=False)["is_anemic"]
+    .mean()
+    .rename(columns={"is_anemic": "anemia_pct"})
+)
+district_summary["anemia_pct"] *= 100
+ordered = district_summary.sort_values("anemia_pct", ascending=True)
+
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+ax.barh(ordered["district"], ordered["anemia_pct"], color="#009E73")
+ax.set_title("Anemia Prevalence by District (Sorted)")
+ax.set_xlabel("Anemia Prevalence (%)")
+ax.set_ylabel("District")
+top_row = ordered.iloc[-1]
+print(f"Top district: {top_row['district']} ({top_row['anemia_pct']:.1f}%)")
+plt.close(fig)
+
+fig, ax = plt.subplots(figsize=(6.5, 4.0))
+priority_colors = {"Routine": "#0072B2", "Moderate": "#D55E00"}
+for priority, sub in clinic.groupby("triage_priority"):
+    ax.scatter(
+        sub["bmi"],
+        sub["systolic_bp"],
+        color=priority_colors.get(priority, "#E69F00"),
+        alpha=0.8,
+        label=priority,
+    )
+ax.set_title("BMI vs. Systolic BP by Triage Priority")
+ax.set_xlabel("BMI (kg/m^2)")
+ax.set_ylabel("Systolic Blood Pressure (mmHg)")
+ax.legend(title="Triage Priority")
+print("Scatter groups plotted:", len(ax.collections))
+plt.close(fig)
+```
+
+**Expected Output:**
+```text
+Top district: Rangpur (13.8%)
+Scatter groups plotted: 2
+```
+
+Notice why we sorted `ascending=True` before calling `ax.barh(...)`: Matplotlib draws horizontal bars from $y = 0$ (bottom) up to $y = N - 1$ (top), so sorting ascending places **Rangpur (13.8%)** squarely at the top!
+
+---
+
+### Time-Series Seasonality & 4-Week Rolling Mean {#sec-ch19-seasonality}
+
+Weekly epidemiological counts fluctuate noisily. Plotting the raw weekly curve semi-transparently (`alpha=0.65`) behind a bold 4-week rolling mean exposes monsoon outbreak peaks honestly:
+
+```python
+dhaka = (
+    epi[epi["district"] == "Dhaka"]
+    .sort_values(["year", "epi_week"])
+    .reset_index(drop=True)
+)
+x_weeks = range(1, len(dhaka) + 1)
+roll_4w = dhaka["dengue_cases"].rolling(4, min_periods=1).mean()
+
+fig, ax = plt.subplots(figsize=(7.2, 3.8))
+ax.plot(
+    x_weeks, dhaka["dengue_cases"], color="#56B4E9", alpha=0.65,
+    label="Weekly Cases",
+)
+ax.plot(
+    x_weeks, roll_4w, color="#D55E00", linewidth=2.2,
+    label="4-Week Rolling Mean",
+)
+ax.set_title("Dhaka Weekly Dengue Cases & 4-Week Trend (2024-2025)")
+ax.set_xlabel("Sequential Epidemiological Week")
+ax.set_ylabel("Reported Dengue Cases")
+ax.legend(frameon=False)
+print("Peak weekly Dhaka cases:", int(dhaka["dengue_cases"].max()))
+print("Peak 4-week rolling mean:", round(float(roll_4w.max()), 1))
+plt.close(fig)
+```
+
+**Expected Output:**
+```text
+Peak weekly Dhaka cases: 395
+Peak 4-week rolling mean: 343.5
+```
+
+---
+
+### Multi-Panel Subplots (`1x2` MCH Wealth Equity) {#sec-ch19-multipanel}
+
+When comparing two public health indicators across the same socioeconomic gradient, side-by-side panels (`plt.subplots(1, 2, ...)`) with an explicit `quintile_order` reindex let readers scan disparities instantaneously:
+
+```python
+quintile_order = ["Poorest", "Poorer", "Middle", "Richer", "Richest"]
+mch_eq = (
+    mch.groupby("wealth_quintile")[["child_stunted", "maternal_anemia"]]
+    .mean()
+    .reindex(quintile_order)
+    * 100
+)
+
+fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.0))
+axes[0].bar(mch_eq.index, mch_eq["child_stunted"], color="#0072B2")
+axes[0].set_title("Child Stunting Prevalence")
+axes[0].set_xlabel("Wealth Quintile")
+axes[0].set_ylabel("Prevalence (%)")
+
+axes[1].bar(mch_eq.index, mch_eq["maternal_anemia"], color="#D55E00")
+axes[1].set_title("Maternal Anemia Prevalence")
+axes[1].set_xlabel("Wealth Quintile")
+axes[1].set_ylabel("Prevalence (%)")
+
+fig.suptitle("MCH Health Inequities Across Wealth Quintiles")
+fig.tight_layout()
+print("Poorest vs Richest stunting (%):")
+print(
+    round(float(mch_eq.loc["Poorest", "child_stunted"]), 1),
+    "vs",
+    round(float(mch_eq.loc["Richest", "child_stunted"]), 1),
+)
+plt.close(fig)
+```
+
+**Expected Output:**
+```text
+Poorest vs Richest stunting (%):
+28.0 vs 8.0
+```
+
+Without `.reindex(quintile_order)`, Pandas sorts strings alphabetically (`Middle`, `Poorer`, `Poorest`, `Richer`, `Richest`), destroying the socioeconomic gradient!
+
+---
+
+### Seaborn Correlation Heatmap & 300-DPI Dual Export {#sec-ch19-heatmap}
+
+For correlation matrices spanning $[-1, +1]$, always pair a **diverging colormap** (`"coolwarm"` or `"RdBu_r"`) with `center=0` and `annot=True`, then export both raster (300-DPI PNG) and vector (PDF) formats inside a temporary directory during testing:
+
+```python
+num_cols = ["age_years", "bmi", "systolic_bp", "hemoglobin_g_dl"]
+corr_mat = clinic[num_cols].corr()
+
+fig, ax = plt.subplots(figsize=(5.8, 4.6))
+sns.heatmap(
+    corr_mat, annot=True, fmt=".2f", center=0, cmap="coolwarm", ax=ax
+)
+ax.set_title("Clinic Triage Feature Correlation Matrix")
+
+with tempfile.TemporaryDirectory() as tmpdir:
+    png_path = Path(tmpdir) / "corr_heatmap.png"
+    pdf_path = Path(tmpdir) / "corr_heatmap.pdf"
+    fig.savefig(png_path, dpi=300, bbox_inches="tight")
+    fig.savefig(pdf_path, dpi=300, bbox_inches="tight")
+    print("300-DPI PNG bytes:", png_path.stat().st_size)
+    print("Vector PDF bytes: ", pdf_path.stat().st_size)
+
+plt.close(fig)
+```
+
+**Expected Output:**
+```text
+300-DPI PNG bytes: 115944
+Vector PDF bytes:  15605
+```
+
+| Format | Best For | Key `savefig` Flags |
+| :--- | :--- | :--- |
+| **PNG (`dpi=300`)** | Slides, Word docs, web previews, dense scatter plots | `dpi=300, bbox_inches="tight"` |
+| **PDF (vector)** | LaTeX / Quarto journal manuscripts (infinite zoom) | `bbox_inches="tight"` |
+
+---
+
+### Break It On Purpose! (Visualization Error Anatomy) {#sec-ch19-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Mismatched `x` and `y` Lengths)"}
+```python
+fig, ax = plt.subplots()
+try:
+    weeks = [1, 2, 3, 4]
+    cases = [18, 29, 44]
+    ax.plot(weeks, cases)
+finally:
+    plt.close(fig)
+```
+**Python's Traceback:**
+```text
+ValueError: x and y must have same first dimension,
+but have shapes (4,) and (3,)
+```
+**Diagnosis:** `weeks` has 4 entries while `cases` has only 3 (often caused by dropping NaNs from `y` without aligning `x`, or slicing one series differently).  
+**Fix:** Filter and align a single DataFrame first (`sub = df.dropna(subset=["epi_week", "dengue_cases"])`), then plot `sub["epi_week"]` against `sub["dengue_cases"]`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — KeyError (Missing Column in DataFrame)"}
+```python
+fig, ax = plt.subplots()
+try:
+    ax.hist(clinic["hb_g_dl"])
+finally:
+    plt.close(fig)
+```
+**Python's Traceback:**
+```text
+KeyError: 'hb_g_dl'
+```
+**Diagnosis:** The `clinic_triage` table names the column `"hemoglobin_g_dl"`, not `"hb_g_dl"`.  
+**Fix:** Print `list(clinic.columns)` before writing plotting code so column names match the DataFrame schema exactly.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Invalid Colormap Name)"}
+```python
+fig, ax = plt.subplots()
+try:
+    sns.heatmap(
+        corr_mat, cmap=plt.get_cmap("hospital_rainbow"), ax=ax
+    )
+finally:
+    plt.close(fig)
+```
+**Python's Traceback:**
+```text
+ValueError: 'hospital_rainbow' is not a valid value for name.
+Did you mean one of: 'gist_rainbow', 'gist_rainbow_r', 'rainbow'?
+```
+**Diagnosis:** `"hospital_rainbow"` is not a registered Matplotlib colormap (and rainbow colormaps distort perception anyway!).  
+**Fix:** Use perceptually uniform sequential palettes (`"viridis"`, `"cividis"`, `"crest"`) for ordered quantities, and zero-centered diverging palettes (`"coolwarm"`, `"RdBu_r"`, `"vlag"`) for signed correlations.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch19-blueprint}
+
+**Scenario:** An epidemiological surveillance team publishes a weekly dengue bulletin comparing dengue incidence against monsoon rainfall for any target district. They need a single reusable function that (1) builds a `2x1` shared-x figure (avoiding deceptive dual y-axes), (2) exports both a 300-DPI PNG and a vector PDF into any output folder, (3) closes the figure to guarantee zero memory leaks, and (4) returns the exported byte counts for automated CI verification.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Units:**
+
+   - `epi_df`: Pandas DataFrame (`year`, `epi_week`, `district`, `dengue_cases` [count], `rainfall_mm` [mm]).
+   - `district` (`str`), `out_dir` (`str | Path`), `dpi` (`int`, default `300`).
+
+2. **Edge Cases & Traps:**
+
+   - Multi-year data: `epi_surveillance` spans 2024 and 2025 (52 weeks each), so plotting raw `epi_week` alone would fold 2025 back on top of 2024! Sort by `["year", "epi_week"]` and plot along sequential week index `range(1, len(sub) + 1)`.
+   - Uncreated output folders: call `Path(out_dir).mkdir(parents=True, exist_ok=True)`.
+   - Memory leaks & stray test files: call `plt.close(fig)` immediately after saving, and run demos inside `tempfile.TemporaryDirectory()`.
+
+3. **Step-by-Step Algorithm:**
+
+   - Filter `epi_df` to `district`, sort by `["year", "epi_week"]`, compute 4-week rolling mean.
+   - Create `fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.2))`.
+   - Plot weekly cases + 4-week trend with legend on `axes[0]`; plot `rainfall_mm` bars on `axes[1]`; apply `fig.tight_layout()`.
+   - Export `<district>_outbreak.png` and `<district>_outbreak.pdf` at `dpi` with `bbox_inches="tight"`, close `fig`, and return byte sizes.
+
+4. **Verification Plan:**
+
+   - Confirm `png_bytes > 0`, `pdf_bytes > 0`, `len(plt.get_fignums()) == 0`, and zero files left behind after the `TemporaryDirectory` block exits.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def generate_outbreak_report(epi_df, district, out_dir, dpi=300):
+    """Build a 2x1 outbreak figure, export PNG+PDF, and close safely."""
+    sub = (
+        epi_df[epi_df["district"] == district]
+        .sort_values(["year", "epi_week"])
+        .reset_index(drop=True)
+    )
+    x = range(1, len(sub) + 1)
+    roll = sub["dengue_cases"].rolling(4, min_periods=1).mean()
+
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.2))
+    axes[0].plot(x, sub["dengue_cases"], color="#56B4E9", alpha=0.6,
+                 label="Weekly Cases")
+    axes[0].plot(x, roll, color="#D55E00", linewidth=2.2,
+                 label="4-Week Rolling Mean")
+    axes[0].set_title(f"Dengue Surveillance & Rainfall — {district}")
+    axes[0].set_ylabel("Dengue Cases")
+    axes[0].legend(frameon=False)
+
+    axes[1].bar(x, sub["rainfall_mm"], color="#0072B2", alpha=0.8)
+    axes[1].set_title(f"Weekly Rainfall — {district}")
+    axes[1].set_xlabel("Sequential Epidemiological Week")
+    axes[1].set_ylabel("Rainfall (mm)")
+    fig.tight_layout()
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    png_p = out / f"{district.lower()}_outbreak.png"
+    pdf_p = out / f"{district.lower()}_outbreak.pdf"
+    fig.savefig(png_p, dpi=dpi, bbox_inches="tight")
+    fig.savefig(pdf_p, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return {
+        "png_bytes": int(png_p.stat().st_size),
+        "pdf_bytes": int(pdf_p.stat().st_size),
+    }
+
+with tempfile.TemporaryDirectory() as tmpdir:
+    report = generate_outbreak_report(epi, "Dhaka", tmpdir, dpi=300)
+    print("Exported Dhaka report bundle:", report)
+
+plt.close("all")
+print("Open Matplotlib figures remaining:", len(plt.get_fignums()))
+```
+
+**Output:**
+```text
+Exported Dhaka report bundle: {'png_bytes': 208349, 'pdf_bytes': 22965}
+Open Matplotlib figures remaining: 0
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch19-todos}
+
+Open `part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six publication-ready visualization functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`—for example, `tutor.check("ch19_todo_01", plot_hb_distribution)`.
+
+- **To-Do 19.1 (OO Histogram & Clinical Cutoff — `plot_hb_distribution(df, cutoff=11.0)`):** Create `fig, ax = plt.subplots(...)`, plot a histogram of `df["hemoglobin_g_dl"].dropna()`, add a vertical dashed cutoff line `ax.axvline(cutoff, linestyle="--", ...)`, set non-empty title and x/y labels, and return `(fig, ax)`.
+- **To-Do 19.2 (Sorted Horizontal Bar Chart — `plot_district_anemia_bar(summary_df)`):** Sort `summary_df` ascending by `anemia_pct` (without mutating input) so the highest-burden district sits at the top, plot via `ax.barh(...)`, set title and x/y labels, and return `(fig, ax)`.
+- **To-Do 19.3 (Grouped Clinical Scatter — `plot_bmi_vs_sbp_scatter(df)`):** Plot `bmi` (x) vs. `systolic_bp` (y) colored/grouped by `triage_priority`, add a legend, title, and x/y labels, and return `(fig, ax)`.
+- **To-Do 19.4 (Surveillance Time-Series — `plot_dengue_seasonality(epi_df, district)`):** Filter `epi_df` to `district`, sort chronologically, plot weekly `dengue_cases` plus a 4-week rolling mean line with legend, title, and x/y labels, and return `(fig, ax)`.
+- **To-Do 19.5 (Seaborn Correlation Matrix — `plot_correlation_heatmap(df, cols)`):** Plot `sns.heatmap(df[cols].corr(), annot=True, center=0, ax=ax)` with a non-empty title and return `(fig, ax)`.
+- **To-Do 19.6 (300-DPI Publication Exporter — `save_publication_figure(fig, out_path, dpi=300)`):** Save `fig` using `fig.savefig(out_path, dpi=dpi, bbox_inches="tight")` and return the saved file size in bytes as an `int`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch19-test}
+
+Answer all 10 visualization architecture and diagnostic questions on paper before checking Stage 8:
+
+1. **OO Hierarchy:** In `fig, axes = plt.subplots(1, 2, figsize=(10, 4))`, which object owns `suptitle(...)` and `savefig(...)`, and which objects own `set_xlabel(...)` and `legend()`?
+2. **Horizontal Bar Sorting Trap:** Suppose `summary_df` has Dhaka (`28.5%`), Sylhet (`41.2%`), and Rajshahi (`22.0%`). If you sort **descending** (`ascending=False`) before calling `ax.barh(...)`, which district appears at the very **top** of the chart, and why?
+3. **Colorblind Accessibility:** Why should clinical manuscripts avoid encoding "Healthy vs. At-Risk" using only pure red (`#FF0000`) and pure green (`#00FF00`), and what palette solves this cleanly?
+4. **Why `sharex=True` Beats Dual Y-Axes:** Explain in one sentence why stacking `dengue_cases` above `rainfall_mm` with `plt.subplots(2, 1, sharex=True)` is more scientifically honest than plotting both on a single panel with `ax.twinx()`.
+5. **Seaborn Heatmap Centering:** Your correlation matrix values range from `+0.25` to `+1.00`. If you call `sns.heatmap(corr, cmap="coolwarm", annot=True)` *without* `center=0`, what color does a positive correlation of `+0.25` receive—and why is that misleading?
+6. **Multi-Year Seasonality Bug:** `epi_surveillance` contains 52 weeks for `2024` and 52 weeks for `2025` per district. What visual artifact appears if you run `ax.plot(sub["epi_week"], sub["dengue_cases"])` directly without creating a sequential week index or splitting by year?
+7. **Raster vs. Vector Export:** A journal requests 300-DPI PNG for online preview and PDF for print typesetting. What happens if you zoom $600\%$ into text labels on a `72`-DPI PNG compared to a vector PDF?
+8. **Clipped Labels on Export:** Your figure looks fine inside Colab, yet the exported `.png` chops off half of the y-axis label and `fig.suptitle`. Which single keyword argument to `fig.savefig(...)` prevents this?
+9. **Memory Leak Prevention:** A pipeline generates 80 district plots in a `for` loop using `fig, ax = plt.subplots()` and `fig.savefig(...)`, but forgets one cleanup call. Which exact function call frees each figure from Matplotlib's registry?
+10. **Trace the Traceback:** What exact exception is raised by each snippet below?
+
+    - (a) `ax.plot([1, 2, 3, 4], [10, 20, 30])`
+    - (b) `ax.hist(clinic["hb_g_dl"])` when the column is named `"hemoglobin_g_dl"`
+
+---
+
+## Stage 7 — Chapter 19 Hands-On Coding Exam (100 Points) {#sec-ch19-exam}
+
+Open `part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb`, implement all three publication visualization functions, and run `tutor.check_exam("ch19", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 19.1 (35 Points): `build_mch_equity_panel(mch_df)`
+
+Build a `1x2` side-by-side health equity panel from `mch_df`:
+
+- Compute stunting prevalence (`child_stunted`) and maternal anemia prevalence (`maternal_anemia`) as **percentages** (`mean() * 100`) grouped by `wealth_quintile` in logical order `["Poorest", "Poorer", "Middle", "Richer", "Richest"]`.
+- Create `fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.2))`.
+- Plot stunting % on `axes[0]` and anemia % on `axes[1]`, with non-empty titles, x-labels, and y-labels on both panels.
+- Add an overall super-title via `fig.suptitle(...)` and return `(fig, axes)` without mutating `mch_df`.
+
+### Exam Task 19.2 (35 Points): `build_outbreak_dashboard_figure(epi_df, district)`
+
+Build a `2x1` stacked outbreak surveillance dashboard for `district`:
+
+- Filter `epi_df` to `district` and sort chronologically by `["year", "epi_week"]`.
+- Create `fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.5))`.
+- Top panel (`axes[0]`): plot weekly `dengue_cases` + 4-week rolling mean line, with a legend, title, and y-label.
+- Bottom panel (`axes[1]`): plot `rainfall_mm` as a bar chart (`axes[1].bar(...)`), with title, x-label, and y-label.
+- Return `(fig, axes)` without mutating `epi_df`.
+
+### Exam Task 19.3 (30 Points): `export_figure_bundle(fig, out_dir, stem, dpi=300)`
+
+Build a camera-ready dual-format exporter:
+
+- Ensure `out_dir` exists (`Path(out_dir).mkdir(parents=True, exist_ok=True)`).
+- Export `<stem>.png` and `<stem>.pdf` inside `out_dir` at `dpi` with `bbox_inches="tight"`.
+- Return `{"png": Path, "pdf": Path, "png_bytes": int, "pdf_bytes": int}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch19-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `fig` (the `Figure`) owns `fig.suptitle(...)` and `fig.savefig(...)`; `axes[0]` and `axes[1]` (the `Axes` panels) own `set_xlabel(...)` and `legend()`.
+2. **Rajshahi (`22.0%`)** appears at the top! Matplotlib plots horizontal bars bottom-to-top ($y = 0, 1, 2$), so sorting descending puts the largest bar (`41.2%`) at $y = 0$ (the bottom). Always sort `ascending=True` for `ax.barh(...)`.
+3. Roughly $8\%$ of men have red-green color-vision deficiency, making pure red and green indistinguishable (and they collapse into identical gray in monochrome print). Use the **Okabe-Ito** colorblind-safe palette (`#0072B2`, `#D55E00`, `#009E73`, `#E69F00`).
+4. Dual y-axes (`twinx()`) let arbitrary axis limits manufacture fake intersections or exaggerate slopes, whereas a `2x1` `sharex=True` layout preserves honest independent scales while keeping epidemiological weeks aligned vertically.
+5. Without `center=0`, Seaborn stretches the full blue-to-red `"coolwarm"` range across $[+0.25, +1.00]$, painting the *positive* correlation $+0.25$ deep blue (making it look strongly negative!). Passing `center=0` locks $0.0$ to neutral white.
+6. A jagged "sawtooth" line jumps backwards from week 52 of 2024 to week 1 of 2025, overplotting both years on top of each other.
+7. At $600\%$ zoom, a `72`-DPI raster PNG becomes visibly pixelated/blurry, whereas a vector PDF stores mathematical paths and text glyphs that remain razor-sharp at any magnification.
+8. `bbox_inches="tight"` inside `fig.savefig(...)`.
+9. `plt.close(fig)` (or `plt.close("all")` at script teardown).
+10. (a) `ValueError: x and y must have same first dimension, but have shapes (4,) and (3,)`; (b) `KeyError: 'hb_g_dl'`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# To-Do 19.1
+def plot_hb_distribution(df, cutoff=11.0):
+    """Plot hemoglobin histogram with a dashed WHO clinical cutoff."""
+    fig, ax = plt.subplots(figsize=(6.5, 4.0))
+    hb = df["hemoglobin_g_dl"].dropna()
+    ax.hist(hb, bins=15, color="#0072B2", edgecolor="white")
+    ax.axvline(
+        cutoff,
+        color="#D55E00",
+        linestyle="--",
+        linewidth=2.0,
+        label=f"Cutoff ({cutoff} g/dL)",
+    )
+    ax.set_title("Patient Hemoglobin Distribution")
+    ax.set_xlabel("Hemoglobin (g/dL)")
+    ax.set_ylabel("Patient Count")
+    ax.legend(frameon=False)
+    return fig, ax
+
+# To-Do 19.2
+def plot_district_anemia_bar(summary_df):
+    """Plot sorted horizontal bar chart of district anemia prevalence."""
+    ordered = summary_df.sort_values("anemia_pct", ascending=True)
+    fig, ax = plt.subplots(figsize=(6.5, 4.0))
+    ax.barh(ordered["district"], ordered["anemia_pct"], color="#009E73")
+    ax.set_title("Anemia Prevalence by District")
+    ax.set_xlabel("Anemia Prevalence (%)")
+    ax.set_ylabel("District")
+    return fig, ax
+
+# To-Do 19.3
+def plot_bmi_vs_sbp_scatter(df):
+    """Plot BMI vs. systolic BP colored by triage_priority with legend."""
+    palette = ["#0072B2", "#E69F00", "#D55E00", "#009E73"]
+    fig, ax = plt.subplots(figsize=(6.5, 4.2))
+    for idx, (priority, sub) in enumerate(df.groupby("triage_priority")):
+        ax.scatter(
+            sub["bmi"],
+            sub["systolic_bp"],
+            color=palette[idx % len(palette)],
+            alpha=0.8,
+            label=priority,
+        )
+    ax.set_title("BMI vs. Systolic BP by Triage Priority")
+    ax.set_xlabel("BMI (kg/m^2)")
+    ax.set_ylabel("Systolic BP (mmHg)")
+    ax.legend(title="Triage Priority")
+    return fig, ax
+
+# To-Do 19.4
+def plot_dengue_seasonality(epi_df, district):
+    """Plot weekly dengue cases and 4-week rolling mean for a district."""
+    sub = (
+        epi_df[epi_df["district"] == district]
+        .sort_values(["year", "epi_week"])
+        .reset_index(drop=True)
+    )
+    x = range(1, len(sub) + 1)
+    roll = sub["dengue_cases"].rolling(4, min_periods=1).mean()
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
+    ax.plot(
+        x, sub["dengue_cases"], color="#56B4E9", alpha=0.65,
+        label="Weekly Cases",
+    )
+    ax.plot(
+        x, roll, color="#D55E00", linewidth=2.2,
+        label="4-Week Rolling Mean",
+    )
+    ax.set_title(f"Weekly Dengue Seasonality — {district}")
+    ax.set_xlabel("Sequential Epi Week")
+    ax.set_ylabel("Dengue Cases")
+    ax.legend(frameon=False)
+    return fig, ax
+
+# To-Do 19.5
+def plot_correlation_heatmap(df, cols):
+    """Plot a zero-centered annotated Seaborn correlation heatmap."""
+    corr = df[cols].corr()
+    fig, ax = plt.subplots(figsize=(5.8, 4.8))
+    sns.heatmap(
+        corr, annot=True, fmt=".2f", center=0, cmap="coolwarm", ax=ax
+    )
+    ax.set_title("Feature Correlation Heatmap")
+    return fig, ax
+
+# To-Do 19.6
+def save_publication_figure(fig, out_path, dpi=300):
+    """Save a Matplotlib figure tightly at target DPI and return bytes."""
+    path = Path(out_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    return int(path.stat().st_size)
+```
+
+### C. Annotated Solutions — Chapter 19 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 19.1 (35 pts)
+def build_mch_equity_panel(mch_df):
+    """Build a 1x2 MCH stunting & anemia equity figure by wealth."""
+    order = ["Poorest", "Poorer", "Middle", "Richer", "Richest"]
+    cols = ["child_stunted", "maternal_anemia"]
+    summary = (
+        mch_df.groupby("wealth_quintile")[cols]
+        .mean()
+        .reindex(order)
+        * 100
+    )
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.2))
+    axes[0].bar(summary.index, summary["child_stunted"], color="#0072B2")
+    axes[0].set_title("Child Stunting by Wealth Quintile")
+    axes[0].set_xlabel("Wealth Quintile")
+    axes[0].set_ylabel("Stunting Prevalence (%)")
+
+    axes[1].bar(summary.index, summary["maternal_anemia"], color="#D55E00")
+    axes[1].set_title("Maternal Anemia by Wealth Quintile")
+    axes[1].set_xlabel("Wealth Quintile")
+    axes[1].set_ylabel("Anemia Prevalence (%)")
+
+    fig.suptitle("Maternal & Child Health Equity Across Wealth Quintiles")
+    fig.tight_layout()
+    return fig, axes
+
+# Exam Task 19.2 (35 pts)
+def build_outbreak_dashboard_figure(epi_df, district):
+    """Build a 2x1 shared-x dengue incidence and rainfall dashboard."""
+    sub = (
+        epi_df[epi_df["district"] == district]
+        .sort_values(["year", "epi_week"])
+        .reset_index(drop=True)
+    )
+    x = range(1, len(sub) + 1)
+    roll = sub["dengue_cases"].rolling(4, min_periods=1).mean()
+
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.5))
+    axes[0].plot(
+        x, sub["dengue_cases"], color="#56B4E9", alpha=0.65,
+        label="Weekly Cases",
+    )
+    axes[0].plot(
+        x, roll, color="#D55E00", linewidth=2.2,
+        label="4-Week Rolling Mean",
+    )
+    axes[0].set_title(f"Weekly Dengue Incidence — {district}")
+    axes[0].set_ylabel("Dengue Cases")
+    axes[0].legend(frameon=False)
+
+    axes[1].bar(x, sub["rainfall_mm"], color="#0072B2", alpha=0.8)
+    axes[1].set_title(f"Weekly Monsoon Rainfall — {district}")
+    axes[1].set_xlabel("Sequential Epi Week")
+    axes[1].set_ylabel("Rainfall (mm)")
+    fig.tight_layout()
+    return fig, axes
+
+# Exam Task 19.3 (30 pts)
+def export_figure_bundle(fig, out_dir, stem, dpi=300):
+    """Export tight PNG + PDF figure bundle and return path/byte map."""
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    png_path = out / f"{stem}.png"
+    pdf_path = out / f"{stem}.pdf"
+    fig.savefig(png_path, dpi=dpi, bbox_inches="tight")
+    fig.savefig(pdf_path, dpi=dpi, bbox_inches="tight")
+    return {
+        "png": png_path,
+        "pdf": pdf_path,
+        "png_bytes": int(png_path.stat().st_size),
+        "pdf_bytes": int(pdf_path.stat().st_size),
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 19 Failure Modes
+
+1. **Forgetting `return fig, ax` (Calling `plt.show()` Instead):** Plotting functions that only display to screen return `None`, breaking automated grading, multi-figure pipelines, and reproducible export scripts. Always return `(fig, ax)` or `(fig, axes)` and let the caller decide whether to display, inspect, save, or close the figure.
+2. **Plotting Proportions (`0.28`) Instead of Percentages (`28.0%`) or Alphabetical Quintiles:** `groupby("wealth_quintile").mean()` sorts `"Middle"` before `"Poorest"` and returns `0..1` fractions. Reindexing explicitly (`["Poorest", ..., "Richest"]`) and multiplying by `100` ensures the chart matches its `%` axis label and domain order.
+3. **Leaving Unclosed Figures or Stray Export Artifacts Behind:** Forgetting `plt.close(fig)` inside loops leaks memory across dozens of charts, while writing test PNGs straight into your Git workspace pollutes commits. Always export demos inside `tempfile.TemporaryDirectory()` and close every figure explicitly.
+
+---
+
+::: {.callout-note title="Up Next — Biostatistics, Probability Distributions & Hypothesis Testing"}
+Your visual intuition is now sharp—you can inspect distributions, spot wealth gradients, and export publication-grade multi-panel figures automatically. Visual differences alone, however, never tell a peer reviewer whether a gap between Poorest ($28.0\%$) and Richest ($8.0\%$) households could arise by sampling chance. In **Chapter 20**, you will pair these exact figures with **probability distributions, confidence intervals, $p$-values, $t$-tests, chi-square tests, and effect sizes** to close out Part IV!
+:::

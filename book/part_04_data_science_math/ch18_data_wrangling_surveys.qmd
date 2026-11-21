@@ -1,0 +1,675 @@
+# Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series {#sec-ch18}
+
+> **Chapter Mission:** Bridge the gap between clean textbook tables and real-world research datasets. Master **missing-data diagnostics (MCAR / MAR / MNAR)**, **dirty DHS survey cleaning** (sentinels like `999`, casing typos like `"rural"`/`"Rural"`, and safe numeric coercion), **guarded relational joins** (`pd.merge(..., validate="one_to_one")`), **Split-Apply-Combine named `.agg()`**, and **leak-free panel time-series features** (`shift` and `rolling` per district)—all written in modern, non-mutating **Pandas 3.x Copy-on-Write** style.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch18 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch18 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch18 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Distinguish **MCAR**, **MAR**, and **MNAR** missingness mechanisms and build deterministic column-level missingness audit tables before and after cleaning.
+2. Clean dirty household surveys in pure **Pandas 3.x** style—copying inputs explicitly, normalizing inconsistent string casing (`.str.strip().str.title()`), neutralizing DHS sentinel codes (`999` $\rightarrow$ `NaN`), and coercing mixed-type columns safely with `pd.to_numeric(..., errors="coerce")`.
+3. Impute missing measurements per stratum using `.groupby(...).transform("median")` without mutating raw DataFrames or collapsing group differences.
+4. Join relational patient and laboratory tables with `pd.merge(..., how="left", validate="one_to_one")` so duplicate keys raise `MergeError` immediately instead of silently exploding row counts.
+5. Produce publication-ready **Table 1** health-equity summaries using **Split-Apply-Combine** named `.agg()` and engineer **zero-leakage** panel time-series features (1-week lags and rolling means) strictly within each district.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Real Research Data Breaks Clean Code {#sec-ch18-intuition}
+
+In **Chapter 17**, you learned Pandas fundamentals on tidy DataFrames. Real public health surveys (like the Demographic and Health Surveys, **DHS**) and weekly epidemiological surveillance feeds rarely arrive tidy:
+
+- **Hidden Sentinel Codes:** Survey interviewers record `"Don't know"` as `999`, `99`, or `-99`. If you compute `mch["anc_visits"].mean()` without neutralizing `999` first, just **8 sentinel rows** out of 500 inflate average antenatal care visits from **$3.77$** to an absurd **$19.7$**!
+- **Dirty Categorical Strings:** Field enumerators type `"Rural"`, `"rural"`, `" rural "`, and `"URBAN"`. Left unnormalized, `.groupby("residence")` splits one stratum into four fragmented rows and corrupts every downstream summary.
+- **Silent Row Explosions in Joins:** Joining a 500-patient registry to a lab table that accidentally contains two hemoglobin tests for one patient quietly turns 500 rows into 501+—double-counting that patient in every prevalence estimate.
+- **Cross-District Time-Series Leakage:** Computing `.shift(1)` or `.rolling(4).mean()` on a stacked multi-district table lets Chattogram's December dengue surge bleed directly into Dhaka's Week 1 feature!
+
+### Missing-Data Mechanisms: MCAR, MAR, and MNAR
+
+Before dropping or imputing a single `NaN`, ask *why* the value is missing:
+
+| Mechanism | Meaning | Public Health Example | Safe Wrangling Action |
+| :--- | :--- | :--- | :--- |
+| **MCAR** | Missing Completely At Random | Lab vial dropped on floor | Complete-case or simple imputation is unbiased |
+| **MAR** | Missing At Random (given observed strata) | Rural clinics have more missing Hb tests than urban clinics | Impute within observed strata (e.g., per-`residence` median) |
+| **MNAR** | Missing Not At Random (depends on unobserved value itself) | Severely ill patients skip follow-up weigh-ins | Do *not* blindly impute; flag missingness and run sensitivity analysis |
+
+::: {.callout-note title="Pandas 3.x Copy-on-Write Rule — Pure Functions Only!"}
+Starting in **Pandas 3.x**, Copy-on-Write is enforced globally: chained assignments like `df["anc_visits"][mask] = np.nan` fail or behave unpredictably, and `inplace=True` is discouraged because it returns `None` and obscures state mutations. Adopt one clean habit for every wrangling function you write:
+
+- Start with `out = df.copy()`.
+- Transform columns with direct assignment: `out["col"] = ...`.
+- End with `return out`, leaving the caller's raw DataFrame untouched.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Safe Merge & Split-Apply-Combine Pipeline {#sec-ch18-mental-model}
+
+Trace the exact order of operations that protects research tables from sentinel distortion, join row explosions, and cross-group leakage:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Intake["1. Clean & Audit"]
+        R1["Raw Survey Copy<br/>strip/title, 999->NaN<br/>to_numeric coerce"]
+        R2["Group Impute<br/>groupby.transform<br/>per-stratum median"]
+    end
+    subgraph Guard["2. Safe Merge"]
+        M1["pd.merge Left Join<br/>validate=one_to_one"]
+        M2["Duplicate Key?<br/>Raise MergeError"]
+    end
+    subgraph SAC["3. Group & Agg"]
+        S1["Split by Stratum<br/>or District Panel"]
+        S2["Apply Named .agg()<br/>or Per-Group shift/roll"]
+        S3["Combine Tidy Table<br/>Zero Boundary Leakage"]
+    end
+    R1 --> R2 --> M1
+    M1 -. "fail fast" .-> M2
+    M1 --> S1 --> S2 --> S3
+```
+
+Notice why **stage order is non-negotiable**:
+
+- You **must** normalize `"rural"` $\rightarrow$ `"Rural"` *before* grouping to compute per-residence medians, otherwise lowercase rows form their own tiny broken group.
+- You **must** replace `999` $\rightarrow$ `NaN` *before* evaluating thresholds like `anc_visits >= 4`, otherwise `999 >= 4` falsely evaluates to `True`!
+- You **must** sort by `["district", "year", "epi_week"]` and scope `.shift()` / `.rolling()` *inside* `.groupby("district")` so every district starts cleanly on Week 1.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch18-walkthrough}
+
+Open `part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb` in Google Colab and run every cell alongside the dissections below using our real bundled `mch_survey_sample` and `epi_surveillance` datasets.
+
+### Step 0 — Loading Bundled Research Datasets {#sec-ch18-load}
+
+```python
+import numpy as np
+import pandas as pd
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+epi_raw = tutor.load_data("epi_surveillance", as_pandas=True)
+
+print("MCH survey shape:", mch_raw.shape)
+print("Epi panel shape: ", epi_raw.shape)
+```
+
+**Expected Output:**
+```text
+MCH survey shape: (500, 12)
+Epi panel shape:  (416, 8)
+```
+
+---
+
+### Missingness Audit & Cleaning Dirty Surveys {#sec-ch18-clean}
+
+```python
+# 1. Audit explicit NaNs BEFORE sentinel cleaning
+raw_counts = mch_raw.isna().sum().astype(int)
+raw_pct = (raw_counts / len(mch_raw) * 100).round(2)
+raw_audit = pd.DataFrame(
+    {"missing_count": raw_counts, "missing_pct": raw_pct}
+).sort_values("missing_pct", ascending=False)
+print("Explicit NaNs before cleaning:")
+print(raw_audit.head(3))
+
+# 2. Inspect dirty casing and hidden DHS sentinel 999
+raw_res = mch_raw["residence"].value_counts().to_dict()
+raw_anc_mean = round(mch_raw["anc_visits"].mean(), 2)
+print("\nRaw residence counts:", raw_res)
+print("Raw anc_visits mean (with 999!):", raw_anc_mean)
+
+# 3. Non-mutating Pandas 3.x cleaning copy
+mch = mch_raw.copy()
+mch["residence"] = mch["residence"].str.strip().str.title()
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["maternal_hb_g_dl"] = pd.to_numeric(
+    mch["maternal_hb_g_dl"], errors="coerce"
+)
+
+print("Clean residence counts:", mch["residence"].value_counts().to_dict())
+print("Clean anc_visits NaNs: ", int(mch["anc_visits"].isna().sum()))
+print("Clean anc_visits mean: ", round(mch["anc_visits"].mean(), 2))
+```
+
+**Expected Output:**
+```text
+Explicit NaNs before cleaning:
+                  missing_count  missing_pct
+maternal_hb_g_dl             22          4.4
+household_id                  0          0.0
+division                      0          0.0
+
+Raw residence counts: {'Rural': 345, 'Urban': 140, 'rural': 11, 'urban': 4}
+Raw anc_visits mean (with 999!): 19.7
+Clean residence counts: {'Rural': 356, 'Urban': 144}
+Clean anc_visits NaNs:  8
+Clean anc_visits mean:  3.77
+```
+
+Look at that dramatic difference: `anc_visits` initially showed `0` explicit `NaN` values, yet hiding inside those 500 rows were **8 sentinel `999` codes** that inflated the mean from **$3.77$** to **$19.7$**! Meanwhile, `.str.strip().str.title()` merged the 11 `"rural"` and 4 `"urban"` typos cleanly into `Rural` (356) and `Urban` (144).
+
+---
+
+### Group-Median Imputation with `.groupby(...).transform("median")` {#sec-ch18-impute}
+
+Because hemoglobin missingness differs across strata (16 Rural vs. 6 Urban missing readings, with medians $11.4$ vs. $11.6\text{ g/dL}$), imputing by **per-residence median** respects MAR structure better than plugging in one global average:
+
+```python
+# Check missing Hb by residence (MAR diagnostic) and group medians
+hb_na_by_res = mch.groupby("residence")["maternal_hb_g_dl"].apply(
+    lambda s: int(s.isna().sum())
+)
+hb_med_by_res = mch.groupby("residence")["maternal_hb_g_dl"].median()
+print("Missing Hb by residence:", hb_na_by_res.to_dict())
+print("Median Hb by residence: ", hb_med_by_res.to_dict())
+
+# Impute missing Hb with per-residence median (non-mutating copy)
+mch_imp = mch.copy()
+group_medians = (
+    mch_imp.groupby("residence")["maternal_hb_g_dl"]
+    .transform("median")
+)
+mch_imp["maternal_hb_g_dl"] = mch_imp["maternal_hb_g_dl"].fillna(
+    group_medians
+)
+
+post_means = (
+    mch_imp.groupby("residence")["maternal_hb_g_dl"]
+    .mean().round(2).to_dict()
+)
+print("Remaining Hb NaNs:", int(mch_imp["maternal_hb_g_dl"].isna().sum()))
+print("Post-imputation means:", post_means)
+```
+
+**Expected Output:**
+```text
+Missing Hb by residence: {'Rural': 16, 'Urban': 6}
+Median Hb by residence:  {'Rural': 11.4, 'Urban': 11.6}
+Remaining Hb NaNs: 0
+Post-imputation means: {'Rural': 11.41, 'Urban': 11.6}
+```
+
+Why `.transform("median")` instead of `.median()`? `.groupby("residence")["maternal_hb_g_dl"].median()` collapses the table to **2 rows** (`Rural`, `Urban`), whereas `.transform("median")` broadcasts each group's median back onto all **500 rows** with exact index alignment so `.fillna(group_medians)` fills every missing entry cleanly in one vectorized pass.
+
+---
+
+### Safe Relational Joins with `pd.merge(..., validate="one_to_one")` {#sec-ch18-merge}
+
+When linking a patient intake table to a separate laboratory table, always specify both `how=` (usually `"left"` to retain your full cohort) and `validate=` to enforce key uniqueness:
+
+```python
+patients = pd.DataFrame(
+    {
+        "patient_id": ["P-101", "P-102", "P-103", "P-104"],
+        "residence": ["Rural", "Urban", "Rural", "Urban"],
+    }
+)
+labs = pd.DataFrame(
+    {
+        "patient_id": ["P-101", "P-102", "P-104", "P-999"],
+        "ferritin_ng_ml": [18.5, 42.0, 31.2, 25.0],
+    }
+)
+
+joined = pd.merge(
+    patients, labs, on="patient_id", how="left", validate="one_to_one"
+)
+print(joined.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+patient_id residence  ferritin_ng_ml
+     P-101     Rural            18.5
+     P-102     Urban            42.0
+     P-103     Rural             NaN
+     P-104     Urban            31.2
+```
+
+Notice two critical guarantees here:
+
+- Unmatched patient `P-103` stays in the cohort with `NaN` for `ferritin_ng_ml` (unlike `how="inner"`, which would silently drop her).
+- Orphan lab record `P-999` is excluded (unlike `how="outer"`, which would inject an unenrolled person).
+
+---
+
+### Split-Apply-Combine with Named `.agg()` {#sec-ch18-groupby}
+
+Named aggregation (`new_col=("source_col", "func")`) produces clean, flat-column summary tables in a single readable expression:
+
+```python
+wealth_tbl = mch_imp.groupby("wealth_quintile").agg(
+    n_households=("household_id", "count"),
+    stunting_pct=("child_stunted", "mean"),
+    anemia_pct=("maternal_anemia", "mean"),
+    mean_anc=("anc_visits", "mean"),
+)
+wealth_tbl["stunting_pct"] = (wealth_tbl["stunting_pct"] * 100).round(1)
+wealth_tbl["anemia_pct"] = (wealth_tbl["anemia_pct"] * 100).round(1)
+wealth_tbl["mean_anc"] = wealth_tbl["mean_anc"].round(2)
+
+order = ["Poorest", "Poorer", "Middle", "Richer", "Richest"]
+print(wealth_tbl.reindex(order))
+```
+
+**Expected Output:**
+```text
+                 n_households  stunting_pct  anemia_pct  mean_anc
+wealth_quintile                                                  
+Poorest                   107          28.0        48.6      2.46
+Poorer                    116          19.8        37.1      3.14
+Middle                     99           5.1        38.4      4.11
+Richer                     91           5.5        31.9      4.37
+Richest                    87           8.0        19.5      5.20
+```
+
+Because `child_stunted` and `maternal_anemia` are binary `0/1` indicators, taking `.mean() * 100` directly yields prevalence percentages—revealing a stark socioeconomic gradient from **$28.0\%$** stunting and **$48.6\%$** anemia in the `Poorest` quintile down to **$8.0\%$** and **$19.5\%$** in the `Richest` quintile!
+
+---
+
+### Panel Time Series: Per-District Lags & Rolling Windows {#sec-ch18-timeseries}
+
+Epidemiological surveillance data (`epi_surveillance`) is a **panel dataset**: multiple districts tracked repeatedly across weeks and years. Always sort by `["district", "year", "epi_week"]` first, then run `.shift(1)` and `.rolling(...)` strictly *inside* `.groupby("district")`:
+
+```python
+epi = epi_raw.sort_values(["district", "year", "epi_week"]).copy()
+epi["prev_week_cases"] = epi.groupby("district")["dengue_cases"].shift(1)
+epi["rolling_4w"] = (
+    epi.groupby("district")["dengue_cases"]
+    .transform(lambda s: s.rolling(window=4, min_periods=1).mean())
+    .round(2)
+)
+
+cols = ["district", "year", "epi_week", "dengue_cases",
+        "prev_week_cases", "rolling_4w"]
+dhaka_top = epi[epi["district"] == "Dhaka"][cols].head(5)
+ctg_top = epi[epi["district"] == "Chattogram"][cols].head(3)
+print("Dhaka first 5 weeks:")
+print(dhaka_top.to_string(index=False))
+print("\nChattogram first 3 weeks (zero leakage from Dhaka!):")
+print(ctg_top.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+Dhaka first 5 weeks:
+district  year  epi_week  dengue_cases  prev_week_cases  rolling_4w
+   Dhaka  2024         1            21              NaN       21.00
+   Dhaka  2024         2            32             21.0       26.50
+   Dhaka  2024         3            42             32.0       31.67
+   Dhaka  2024         4            45             42.0       35.00
+   Dhaka  2024         5            23             45.0       35.50
+
+Chattogram first 3 weeks (zero leakage from Dhaka!):
+  district  year  epi_week  dengue_cases  prev_week_cases  rolling_4w
+Chattogram  2024         1            34              NaN       34.00
+Chattogram  2024         2            15             34.0       24.50
+Chattogram  2024         3            28             15.0       25.67
+```
+
+Look closely at Chattogram 2024 Week 1: `prev_week_cases` is `NaN` and `rolling_4w` is `34.00` (its own Week 1 count, thanks to `min_periods=1`). Zero cases leaked across the district boundary!
+
+---
+
+### Break It On Purpose! (Wrangling Error Anatomy) {#sec-ch18-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — pd.errors.MergeError (Duplicate Keys Caught!)"}
+```python
+dup_labs = pd.DataFrame(
+    {
+        "patient_id": ["P-101", "P-101", "P-102"],
+        "ferritin_ng_ml": [18.5, 22.0, 42.0],
+    }
+)
+pd.merge(
+    patients, dup_labs, on="patient_id", how="left", validate="one_to_one"
+)
+```
+**Python's Traceback:**
+```text
+pandas.errors.MergeError: Merge keys are not unique in right dataset;
+not a one-to-one merge
+```
+**Diagnosis:** `dup_labs` has two rows for `"P-101"`. Without `validate="one_to_one"`, Pandas would silently duplicate `"P-101"` in the merged table!  
+**Fix:** Deduplicate or aggregate `dup_labs` per `patient_id` (e.g., taking the latest or mean lab value) *before* merging.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — KeyError (Missing Join Key)"}
+```python
+misnamed_labs = pd.DataFrame(
+    {"household_id": ["P-101", "P-102"], "hb_g_dl": [11.4, 10.2]}
+)
+pd.merge(patients, misnamed_labs, on="patient_id", how="left")
+```
+**Python's Traceback:**
+```text
+KeyError: 'patient_id'
+```
+**Diagnosis:** `patients` uses `"patient_id"` while `misnamed_labs` uses `"household_id"`, so `on="patient_id"` cannot find the join column on the right table.  
+**Fix:** Either rename the column first (`misnamed_labs.rename(columns={"household_id": "patient_id"})`) or pass explicit `left_on="patient_id", right_on="household_id"`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (.astype(float) on Dirty Text)"}
+```python
+dirty_hb = pd.Series(["11.2", "N/A", "9.8"])
+dirty_hb.astype(float)
+```
+**Python's Traceback:**
+```text
+ValueError: could not convert string to float: 'N/A'
+```
+**Diagnosis:** Strict `.astype(float)` crashes on the very first non-numeric token (`"N/A"`, `"."`, `""`, or `"missing"`), which are ubiquitous in CSV exports from clinic spreadsheets.  
+**Fix:** Always cast messy numeric columns with `pd.to_numeric(series, errors="coerce")` so valid numbers become floats and unparseable tokens cleanly become `NaN`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch18-blueprint}
+
+**Scenario:** A Ministry of Health policy brief needs an automated, reproducible function `build_equity_brief(raw_mch)` that takes a raw DHS maternal-child survey, cleans all dirty casing and sentinel codes, imputes missing maternal hemoglobin by residence median, derives WHO's **4+ antenatal care visits (`anc_4plus`)** indicator, and outputs a flat, sorted `residence` $\times$ `wealth_quintile` equity table without mutating `raw_mch`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Non-Mutating Cleaning Sequence (Strict Order):**
+
+   - Copy `raw_mch` (`df = raw_mch.copy()`).
+   - Normalize `residence` with `.str.strip().str.title()` *first*.
+   - Neutralize sentinel `anc_visits == 999` $\rightarrow$ `np.nan` *before* thresholding.
+   - Coerce `maternal_hb_g_dl` via `pd.to_numeric(..., errors="coerce")` and impute missing values with per-`residence` median via `.groupby("residence")["maternal_hb_g_dl"].transform("median")`.
+   - Derive `anc_4plus = (df["anc_visits"] >= 4).fillna(False).astype(bool)`.
+
+2. **Stratified Aggregation Contract:**
+
+   - Group with `groupby(["residence", "wealth_quintile"], as_index=False)` so stratification keys stay flat columns.
+   - Compute `n_households`, `stunting_pct`, `anemia_pct`, and `anc4_pct` (each percentage scaled by $100$ and rounded to 1 decimal place).
+   - Sort deterministically by `["residence", "wealth_quintile"]` and reset the index.
+
+3. **Verification Plan:**
+
+   - Check `Rural` + `Poorest` vs. `Urban` + `Richest`: `anc4_pct` should rise sharply with both wealth and urbanicity, and `raw_mch["anc_visits"]` must still contain its original 8 sentinel `999` entries untouched.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def build_equity_brief(raw_mch):
+    """Clean DHS survey and summarize residence x wealth equity gaps."""
+    df = raw_mch.copy()
+    df["residence"] = df["residence"].str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["maternal_hb_g_dl"] = pd.to_numeric(
+        df["maternal_hb_g_dl"], errors="coerce"
+    )
+    med = df.groupby("residence")["maternal_hb_g_dl"].transform("median")
+    df["maternal_hb_g_dl"] = df["maternal_hb_g_dl"].fillna(med)
+    df["anc_4plus"] = (df["anc_visits"] >= 4).fillna(False).astype(bool)
+
+    brief = df.groupby(
+        ["residence", "wealth_quintile"], as_index=False
+    ).agg(
+        n_households=("household_id", "count"),
+        stunting_pct=("child_stunted", "mean"),
+        anemia_pct=("maternal_anemia", "mean"),
+        anc4_pct=("anc_4plus", "mean"),
+    )
+    for col in ("stunting_pct", "anemia_pct", "anc4_pct"):
+        brief[col] = (brief[col] * 100).round(1)
+    return brief.sort_values(["residence", "wealth_quintile"]).reset_index(
+        drop=True
+    )
+
+equity_brief = build_equity_brief(mch_raw)
+print(equity_brief.to_string(index=False))
+```
+
+**Output:**
+```text
+residence wealth_quintile  n_households  stunting_pct  anemia_pct  anc4_pct
+    Rural          Middle            71           4.2        43.7      60.6
+    Rural          Poorer            86          22.1        33.7      37.2
+    Rural         Poorest            91          31.9        48.4      20.9
+    Rural          Richer            56           5.4        33.9      58.9
+    Rural         Richest            52           5.8        19.2      76.9
+    Urban          Middle            28           7.1        25.0      89.3
+    Urban          Poorer            30          13.3        46.7      63.3
+    Urban         Poorest            16           6.2        50.0      50.0
+    Urban          Richer            35           5.7        28.6      77.1
+    Urban         Richest            35          11.4        20.0      88.6
+```
+
+Look at that single table—ready for a *Lancet Global Health* policy brief: only **$20.9\%$** of mothers in `Rural` + `Poorest` households achieve 4+ ANC visits (with **$31.9\%$** child stunting), compared to **$88.6\%$** ANC4+ coverage in `Urban` + `Richest` households!
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch18-todos}
+
+Open `part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six pure Pandas 3.x functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`—for example, `tutor.check("ch18_todo_01", clean_mch_survey)`.
+
+- **To-Do 18.1 (Dirty Survey Cleaning — `clean_mch_survey(df)`):** Return a non-mutating copy normalizing `residence` with `.str.strip().str.title()`, converting `anc_visits == 999` to `np.nan`, and casting `maternal_hb_g_dl` via `pd.to_numeric(..., errors="coerce")`.
+- **To-Do 18.2 (Missingness Audit — `audit_missingness_table(df)`):** Return a DataFrame indexed by column name with integer `missing_count` and float `missing_pct` (rounded to 2 decimals), sorted by `missing_pct` descending then column name ascending.
+- **To-Do 18.3 (Group-Median Imputation — `impute_group_median(df, value_col, group_col)`):** Return a non-mutating copy filling `NaN` entries in `value_col` using per-`group_col` medians via `.groupby(group_col)[value_col].transform("median")`.
+- **To-Do 18.4 (Safe Relational Merge — `safe_merge_patient_labs(patients_df, labs_df)`):** Return `pd.merge(patients_df, labs_df, on="patient_id", how="left", validate="one_to_one")` so unmatched patients stay with `NaN` and duplicate keys raise `pd.errors.MergeError`.
+- **To-Do 18.5 (Split-Apply-Combine — `groupby_wealth_outcomes(mch_df)`):** Use named `.agg()` per `wealth_quintile` (kept as index) returning `n_households`, `stunting_pct` (`mean * 100`, 1 dec), `anemia_pct` (`mean * 100`, 1 dec), and `mean_anc` (2 dec).
+- **To-Do 18.6 (Panel Rolling Average — `add_rolling_dengue_avg(epi_df, window=4)`):** Return a non-mutating copy sorted by `["district", "year", "epi_week"]` with column `rolling_dengue` equal to the per-district rolling mean (`window=window`, `min_periods=1`, rounded to 2 decimals).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch18-test}
+
+Trace every wrangling question carefully on paper before checking Stage 8:
+
+1. **MCAR vs. MAR vs. MNAR:** In a maternal nutrition survey, rural clinics have $12\%$ missing hemoglobin tests because of rural reagent stockouts while urban clinics have $2\%$ missing. Assuming missingness depends only on observed `residence` (not on a mother's true anemia severity), which missing-data mechanism is this?
+2. **Sentinel Order-of-Operations Bug:** Suppose a row has `anc_visits = 999` (DHS `"Don't know"`). If you run `df["anc_4plus"] = df["anc_visits"] >= 4` *before* replacing `999` with `np.nan`, what boolean value does `anc_4plus` wrongly receive?
+3. **Pandas 3.x Copy-on-Write Purity:** Why should a wrangling function write `out = df.copy(); out["x"] = out["x"].fillna(0); return out` instead of `df["x"].fillna(0, inplace=True)`?
+4. **Strict Cast vs. Safe Coercion:** What happens if you run `pd.Series(["10.5", "N/A", "12.0"]).astype(float)` versus `pd.to_numeric(pd.Series(["10.5", "N/A", "12.0"]), errors="coerce")`?
+5. **`.transform("median")` vs. `.median()`:** On a 500-row DataFrame with 2 residence categories (`Rural`, `Urban`), what is the **length** of `df.groupby("residence")["maternal_hb_g_dl"].median()` versus `df.groupby("residence")["maternal_hb_g_dl"].transform("median")`?
+6. **Row-Explosion Arithmetic:** `patients` has 4 unique IDs (`P1..P4`). `labs` has 5 rows where `P1` appears **twice** and `P2..P4` appear once each. How many rows does `pd.merge(patients, labs, on="patient_id", how="left")` return *without* `validate`, and what happens *with* `validate="one_to_one"`?
+7. **Left Join vs. Inner Join Cohort Bias:** In `patients` (4 patients) left-joined to `labs` (3 matching patients plus 1 orphan lab `P99`), why does `how="inner"` distort cohort denominators while `how="left"` preserves them?
+8. **`as_index=False` in Multi-Key GroupBy:** What structural difference appears in the returned DataFrame when you pass `as_index=False` to `df.groupby(["residence", "wealth_quintile"], as_index=False).agg(...)`?
+9. **Cross-District Lag Leakage:** A sorted DataFrame has Chattogram Weeks 1–52 followed immediately by Dhaka Weeks 1–52. If Chattogram Week 52 had `85` dengue cases and you accidentally run `df["dengue_cases"].shift(1)` *without* `.groupby("district")`, what value lands in Dhaka Week 1's `prev_week_cases`?
+10. **Rolling Window `min_periods=1`:** For a single district whose first three weekly dengue counts are `[20, 40, 60]`, what are the first three values of `.rolling(window=4, min_periods=1).mean()` versus `.rolling(window=4).mean()` (default `min_periods=4`)?
+
+---
+
+## Stage 7 — Chapter 18 Hands-On Coding Exam (100 Points) {#sec-ch18-exam}
+
+Open `part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch18", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 18.1 (30 Points): `build_clean_dhs_analytic_table(mch_df)`
+
+Build a non-mutating DHS cleaning function `build_clean_dhs_analytic_table(mch_df)`:
+
+- Copy `mch_df` without mutating the caller's DataFrame.
+- Normalize `residence` with `.str.strip().str.title()`.
+- Replace `anc_visits == 999` with `np.nan`.
+- Convert `maternal_hb_g_dl` to numeric (`pd.to_numeric(..., errors="coerce")`) and impute missing `maternal_hb_g_dl` using the per-`residence` median (computed *after* normalizing `residence`!).
+- Add boolean column `anc_4plus = (out["anc_visits"] >= 4).fillna(False).astype(bool)` (guaranteeing `False` for `NaN` / former `999`).
+
+### Exam Task 18.2 (35 Points): `equity_gap_by_residence_wealth(clean_mch_df)`
+
+Build `equity_gap_by_residence_wealth(clean_mch_df)`:
+
+- Group with `groupby(["residence", "wealth_quintile"], as_index=False)`.
+- Compute `n_households` (row count), `stunting_pct` (`child_stunted` mean $\times 100$), `anemia_pct` (`maternal_anemia` mean $\times 100$), and `anc4_pct` (`anc_4plus` mean $\times 100$), each percentage rounded to **1 decimal place**.
+- Sort ascending by `["residence", "wealth_quintile"]` and return without mutating `clean_mch_df`.
+
+### Exam Task 18.3 (35 Points): `prepare_epi_time_features(epi_df)`
+
+Build `prepare_epi_time_features(epi_df)`:
+
+- Return a non-mutating copy sorted by `["district", "year", "epi_week"]`.
+- Add `incidence_per_100k`: `(dengue_cases / population) * 100_000`, rounded to **2 decimal places**.
+- Add `prev_week_cases`: per-district 1-week lag (`groupby("district")["dengue_cases"].shift(1)`) with zero leakage across district boundaries.
+- Add `rolling_4w_cases`: per-district 4-week rolling mean (`window=4`, `min_periods=1`, rounded to **2 decimal places**) with zero leakage across district boundaries.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch18-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **MAR (Missing At Random):** Missingness depends on an *observed* variable (`residence`), not on the unobserved hemoglobin value itself—making per-`residence` median imputation principled.
+2. **`True`!** Because $999 \ge 4$, computing `anc_4plus` before replacing `999` with `np.nan` falsely classifies unknown antenatal history as meeting the WHO 4+ visit target.
+3. Creating `out = df.copy()` and using direct assignment (`out["x"] = ...`) respects Pandas 3.x Copy-on-Write, preserves the caller's raw data for auditability, and avoids `inplace=True` returning `None`.
+4. `.astype(float)` raises **`ValueError: could not convert string to float: 'N/A'`**, whereas `pd.to_numeric(..., errors="coerce")` returns `Series([10.5, NaN, 12.0], dtype=float64)`.
+5. `.median()` returns length **`2`** (one scalar per group); `.transform("median")` returns length **`500`** (one group median aligned to every original row index).
+6. Without `validate`, Pandas silently returns **`5` rows** (duplicating `P1`!); with `validate="one_to_one"`, Pandas immediately raises **`pd.errors.MergeError`**.
+7. `how="inner"` silently drops patients who lack a lab test, shrinking the cohort denominator and biasing prevalence estimates toward tested patients; `how="left"` keeps every enrolled patient (marking missing labs as `NaN`) while excluding orphan lab `P99`.
+8. With `as_index=False`, `residence` and `wealth_quintile` remain **regular flat columns** instead of becoming a two-level `MultiIndex`.
+9. **`85.0`** (Chattogram's final week leaks into Dhaka's Week 1!). Grouping by `"district"` first ensures Dhaka's Week 1 receives `NaN`.
+10. With `min_periods=1`: **`[20.0, 30.0, 40.0]`**; with default `min_periods=4`: **`[NaN, NaN, NaN]`** because fewer than 4 observations are available in Weeks 1–3.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+
+# To-Do 18.1
+def clean_mch_survey(df):
+    """Return a cleaned copy of a dirty DHS/MCH household survey."""
+    out = df.copy()
+    out["residence"] = out["residence"].str.strip().str.title()
+    out["anc_visits"] = out["anc_visits"].replace(999, np.nan)
+    out["maternal_hb_g_dl"] = pd.to_numeric(
+        out["maternal_hb_g_dl"], errors="coerce"
+    )
+    return out
+
+# To-Do 18.2
+def audit_missingness_table(df):
+    """Return column-level missing counts and percentages sorted neatly."""
+    counts = df.isna().sum().astype(int)
+    pcts = (counts / len(df) * 100).round(2)
+    audit = pd.DataFrame(
+        {"missing_count": counts, "missing_pct": pcts}
+    )
+    return audit.sort_index().sort_values(
+        "missing_pct", ascending=False, kind="mergesort"
+    )
+
+# To-Do 18.3
+def impute_group_median(df, value_col, group_col):
+    """Fill NaNs in value_col using per-group medians without mutation."""
+    out = df.copy()
+    medians = out.groupby(group_col)[value_col].transform("median")
+    out[value_col] = out[value_col].fillna(medians)
+    return out
+
+# To-Do 18.4
+def safe_merge_patient_labs(patients_df, labs_df):
+    """Left-join patients to labs with strict 1-to-1 key validation."""
+    return pd.merge(
+        patients_df,
+        labs_df,
+        on="patient_id",
+        how="left",
+        validate="one_to_one",
+    )
+
+# To-Do 18.5
+def groupby_wealth_outcomes(mch_df):
+    """Aggregate stunting, anemia, and ANC outcomes by wealth quintile."""
+    out = mch_df.groupby("wealth_quintile").agg(
+        n_households=("child_stunted", "size"),
+        stunting_pct=("child_stunted", "mean"),
+        anemia_pct=("maternal_anemia", "mean"),
+        mean_anc=("anc_visits", "mean"),
+    )
+    out["stunting_pct"] = (out["stunting_pct"] * 100).round(1)
+    out["anemia_pct"] = (out["anemia_pct"] * 100).round(1)
+    out["mean_anc"] = out["mean_anc"].round(2)
+    return out
+
+# To-Do 18.6
+def add_rolling_dengue_avg(epi_df, window=4):
+    """Add per-district rolling dengue mean without boundary leakage."""
+    out = epi_df.sort_values(["district", "year", "epi_week"]).copy()
+    out["rolling_dengue"] = (
+        out.groupby("district")["dengue_cases"]
+        .transform(lambda s: s.rolling(window=window, min_periods=1).mean())
+        .round(2)
+    )
+    return out
+```
+
+### C. Annotated Solutions — Chapter 18 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 18.1 (30 pts)
+def build_clean_dhs_analytic_table(mch_df):
+    """Clean DHS survey, impute Hb by residence, and flag anc_4plus."""
+    out = mch_df.copy()
+    out["residence"] = out["residence"].str.strip().str.title()
+    out["anc_visits"] = out["anc_visits"].replace(999, np.nan)
+    out["maternal_hb_g_dl"] = pd.to_numeric(
+        out["maternal_hb_g_dl"], errors="coerce"
+    )
+    medians = out.groupby("residence")["maternal_hb_g_dl"].transform(
+        "median"
+    )
+    out["maternal_hb_g_dl"] = out["maternal_hb_g_dl"].fillna(medians)
+    out["anc_4plus"] = (
+        (out["anc_visits"] >= 4).fillna(False).astype(bool)
+    )
+    return out
+
+# Exam Task 18.2 (35 pts)
+def equity_gap_by_residence_wealth(clean_mch_df):
+    """Stratify stunting, anemia, and ANC4+ by residence and wealth."""
+    out = clean_mch_df.groupby(
+        ["residence", "wealth_quintile"], as_index=False
+    ).agg(
+        n_households=("child_stunted", "size"),
+        stunting_pct=("child_stunted", "mean"),
+        anemia_pct=("maternal_anemia", "mean"),
+        anc4_pct=("anc_4plus", "mean"),
+    )
+    for col in ("stunting_pct", "anemia_pct", "anc4_pct"):
+        out[col] = (out[col] * 100).round(1)
+    return out.sort_values(
+        ["residence", "wealth_quintile"]
+    ).reset_index(drop=True)
+
+# Exam Task 18.3 (35 pts)
+def prepare_epi_time_features(epi_df):
+    """Engineer incidence, 1-week lag, and 4-week rolling dengue mean."""
+    out = epi_df.sort_values(["district", "year", "epi_week"]).copy()
+    out["incidence_per_100k"] = (
+        out["dengue_cases"] / out["population"] * 100_000
+    ).round(2)
+    out["prev_week_cases"] = (
+        out.groupby("district")["dengue_cases"].shift(1)
+    )
+    out["rolling_4w_cases"] = (
+        out.groupby("district")["dengue_cases"]
+        .transform(lambda s: s.rolling(window=4, min_periods=1).mean())
+        .round(2)
+    )
+    return out
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 18 Failure Modes
+
+1. **Wrong Cleaning Order (`999 >= 4` & Unnormalized Group Imputation):** Thresholding `anc_visits >= 4` before neutralizing `999` inflates ANC4+ coverage, and imputing hemoglobin before normalizing `"rural"` to `"Rural"` splits rural respondents across separate medians. Always follow: **Normalize categories $\rightarrow$ Neutralize sentinels $\rightarrow$ Coerce & Impute $\rightarrow$ Derive indicators.**
+2. **Unvalidated Merges (Silent Row Explosion):** Calling `pd.merge(patients, labs, on="patient_id", how="left")` without `validate="one_to_one"` lets duplicate lab keys silently inflate sample sizes and double-count sick patients.
+3. **Global Lags/Rolling Windows on Panel Data:** Calling `.shift(1)` or `.rolling(4).mean()` directly on a multi-district DataFrame leaks one district's final weeks into the next district's Week 1. Always sort by `[entity, time]` and scope window operators inside `.groupby(entity)`.
+
+---
+
+::: {.callout-note title="Up Next — Exploratory Data Analysis & Publication-Quality Visualization"}
+Your DHS maternal-child tables and weekly dengue panels are now clean, validated, and leak-free. Numbers in a printed table tell half the story—peer reviewers expect clear, colorblind-safe figures that surface disparities and epidemic waves at a glance. In **Chapter 19**, you will turn these exact wrangled DataFrames into **publication-grade Matplotlib and Seaborn visualizations**.
+:::

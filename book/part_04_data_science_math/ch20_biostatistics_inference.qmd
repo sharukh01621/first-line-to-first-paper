@@ -1,0 +1,756 @@
+# Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python {#sec-ch20}
+
+> **Chapter Mission:** Complete **Part IV (The Scientific Data Stack & Mathematical Foundations)** by uniting probability theory, statistical inference, hypothesis testing, multiple-testing control, and multivariable logistic regression in Python. Using `scipy.stats` and `statsmodels.api` on Bangladesh maternal and child health survey data (`mch_survey_sample`), you will move from descriptive tables to publication-grade confidence intervals, effect sizes, risk/odds ratios, and adjusted epidemiological models.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch20 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch20 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch20 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Compute exact distribution probabilities with `scipy.stats` (Normal, Binomial) and verify the **Central Limit Theorem (CLT)** through reproducible NumPy Monte Carlo simulation.
+2. Estimate clinical proportions with **95% Wilson score confidence intervals**, avoiding the zero-event collapse and boundary overshoot of naive Wald intervals.
+3. Choose and execute the right group-comparison test—**Welch's two-sample $t$-test** with pooled **Cohen's $d$**, **Mann-Whitney $U$**, **One-Way ANOVA**, and **Kruskal-Wallis $H$**—based on outcome scale, variance heterogeneity, and skewness.
+4. Audit $2 \times 2$ contingency tables using **Pearson's $\chi^2$** (`correction=False`), expected-cell checks (`expected_min < 5`), **Fisher's exact test**, **Risk Ratios (RR)**, and **Odds Ratios (OR)** with **Woolf 95% confidence intervals**.
+5. Guard multi-hypothesis analyses against false positives using **Benjamini-Hochberg False Discovery Rate (FDR)** adjustment (`scipy.stats.false_discovery_control`).
+6. Clean messy epidemiological survey covariates and fit a multivariable **logistic regression** model in `statsmodels.api.Logit`, reporting exponentiated **Adjusted Odds Ratios (aOR)**, 95% CIs, and $p$-values for publication tables.
+
+---
+
+## Stage 1 — First-Principles Intuition: From Descriptive Tables to Inferential Evidence {#sec-ch20-intuition}
+
+Across Chapters 16–19, you built the full computational foundation of modern data science: vectorized NumPy arrays, clean Pandas data pipelines, publication Matplotlib/Seaborn graphics, and linear algebra & calculus intuition. Yet a mean, median, or bar chart alone describes only the **500 households in your sample**.
+
+Peer reviewers, ministries of health, and clinical trialists ask a deeper question: *Could this observed rural–urban anemia gap be mere sampling luck, how large is the effect clinically, and does it survive after controlling for confounders?*
+
+That leap—from finite sample to population claim—is **statistical inference**. Five core principles govern every test in this chapter:
+
+- **Sampling Variability & the Central Limit Theorem:** Even if individual antenatal care (ANC) visits are heavily right-skewed, the distribution of sample means $\bar{X}$ across repeated samples approaches a Normal distribution centered at $\mu$ with standard error $\text{SE} = \sigma / \sqrt{n}$.
+- **Interval Estimation Over Bare Point Estimates:** Saying "anemia prevalence is 35.8%" hides sample-size precision. Reporting "35.8% (95% Wilson CI: 31.7%–40.1%)" communicates both estimate and uncertainty transparently.
+- **Effect Size + $p$-Value Together:** A $p$-value answers whether an observed difference is incompatible with the null hypothesis ($H_0$); it says *nothing* about clinical magnitude. Always pair $p$-values with effect sizes (Cohen's $d$, RR, OR, or aOR).
+- **Multiple Testing Inflates False Positives:** If you run 20 independent tests at $\alpha = 0.05$ when every null is true, you expect one false positive by pure chance! Controlling the **False Discovery Rate (FDR)** via Benjamini-Hochberg prevents cherry-picking noise.
+- **Crude vs. Adjusted Associations (Confounding):** In `mch_survey_sample`, rural mothers show a slightly higher crude anemia rate than urban mothers—yet urban mothers also attend significantly more ANC visits. Multivariable logistic regression untangles which predictor actually drives the risk.
+
+::: {.callout-note title="Mental Model — Two Questions Before Picking Any Statistical Test"}
+Never memorize a wall of test names in isolation. Ask just **two diagnostic questions**:
+
+1. **What is the outcome variable's scale?** Continuous/numeric (`maternal_hb_g_dl`), skewed count/ordinal (`anc_visits`), or binary/categorical (`maternal_anemia`)?
+2. **Are you comparing 2 groups, $k \ge 3$ groups, or adjusting for multiple covariates simultaneously?**
+
+Once you answer those two questions, the exact SciPy or Statsmodels tool follows deterministically!
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Statistical Test Selector {#sec-ch20-mental-model}
+
+Use this decision map whenever you move from exploratory data analysis (EDA) to formal hypothesis testing and multivariable modeling:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Outcome["Outcome Type"]
+        Q0["Identify Outcome<br/>Continuous, Skewed, or Binary"]
+    end
+    subgraph TestFamily["Hypothesis Tests"]
+        C1["Continuous (Normal)<br/>2 grps: Welch t + Cohen d<br/>k>=3: One-Way ANOVA"]
+        C2["Skewed / Ordinal<br/>2 grps: Mann-Whitney U<br/>k>=3: Kruskal-Wallis H"]
+        C3["Binary / 2x2 Table<br/>expected_min >= 5: Chi2<br/>expected_min < 5: Fisher"]
+    end
+    subgraph Model["Adjusted Model"]
+        M1["Epidemiological Metrics<br/>Wilson CI, RR, Woolf OR<br/>+ BH FDR (Multi-Test)"]
+        M2["Multivariable Regression<br/>sm.Logit(y, add_constant(X))<br/>exp(params) -> Adjusted OR"]
+    end
+    Q0 -->|"Approx. Normal"| C1
+    Q0 -->|"Skewed / Ties"| C2
+    Q0 -->|"Categorical"| C3
+    C1 --> M2
+    C2 --> M2
+    C3 --> M1
+    M1 --> M2
+```
+
+Notice how **bivariate tests** (Welch $t$, Mann-Whitney $U$, $\chi^2$, ANOVA, Kruskal-Wallis) populate **Table 1 & Table 2** of a scientific paper, whereas **multivariable regression** (`sm.Logit`) powers **Table 3**, isolating independent Adjusted Odds Ratios (aOR) while controlling for confounders.
+
+::: {.callout-warning title="Two Silent SciPy Defaults That Catch Researchers Off Guard"}
+1. `scipy.stats.ttest_ind(a, b)` defaults to `equal_var=True` (Student's $t$-test). Always pass `equal_var=False` for **Welch's $t$-test**, which stays valid when group variances or sample sizes differ.
+2. `scipy.stats.chi2_contingency(table)` defaults to `correction=True` (Yates' continuity correction for $2 \times 2$ tables), which is overly conservative. Pass `correction=False` for standard **Pearson's $\chi^2$**, and switch to `stats.fisher_exact` whenever `expected_min < 5`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch20-walkthrough}
+
+Open `part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading & Cleaning `mch_survey_sample` {#sec-ch20-setup}
+
+```python
+import math
+import numpy as np
+import pandas as pd
+from scipy import stats
+import statsmodels.api as sm
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = mch["residence"].astype(str).str.strip().str.title()
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+print("Loaded mch_survey_sample:", mch.shape)
+print(mch["residence"].value_counts().to_dict())
+```
+
+**Expected Output:**
+```text
+Loaded mch_survey_sample: (500, 12)
+{'Rural': 356, 'Urban': 144}
+```
+
+Before running a single statistical test, we standardize mixed casing in `residence` (`"rural"` / `"urban"` $\rightarrow$ `"Rural"` / `"Urban"`) and replace the field-survey missing sentinel `anc_visits == 999` with `np.nan` on a clean `.copy()`. Leaving sentinel `999` inside numeric covariates is one of the fastest ways to silently corrupt means, variances, and regression slopes.
+
+---
+
+### Probability Distributions & CLT Monte Carlo Simulation {#sec-ch20-clt}
+
+```python
+# 1. Theoretical Normal & Binomial probabilities
+p_anemic_hb = stats.norm.cdf(11.0, loc=11.3, scale=1.4)
+p_20_or_more = stats.binom.sf(19, n=50, p=0.35)
+print(f"P(Hb < 11.0 g/dL | N(11.3, 1.4)): {p_anemic_hb:.4f}")
+print(f"P(X >= 20 cases | Binom(50, 0.35)): {p_20_or_more:.4f}")
+
+# 2. Central Limit Theorem (CLT) from skewed Exponential(scale=2.0)
+rng = np.random.default_rng(42)
+draws = rng.exponential(scale=2.0, size=(2000, 30))
+sample_means = draws.mean(axis=1)
+theo_se = 2.0 / math.sqrt(30)
+print(f"CLT mean of 2,000 means: {sample_means.mean():.4f} (true=2.0)")
+print(f"Empirical SE: {sample_means.std(ddof=1):.4f} "
+      f"| Theoretical SE: {theo_se:.4f}")
+```
+
+**Expected Output:**
+```text
+P(Hb < 11.0 g/dL | N(11.3, 1.4)): 0.4152
+P(X >= 20 cases | Binom(50, 0.35)): 0.2736
+CLT mean of 2,000 means: 2.0023 (true=2.0)
+Empirical SE: 0.3636 | Theoretical SE: 0.3651
+```
+
+Look closely at two details:
+
+- **Survival function (`sf`):** For discrete `stats.binom`, `P(X >= 20)` equals `1 - P(X <= 19)` = `stats.binom.sf(19, n=50, p=0.35)` (note `19`, not `20`!).
+- **CLT in action:** Even though individual `Exponential(scale=2.0)` observations are severely skewed, the standard deviation of 2,000 sample means (`0.3636`) matches the theoretical standard error $\sigma / \sqrt{30} = 2.0 / \sqrt{30} = 0.3651$ to three decimal places!
+
+---
+
+### Proportion Estimation & 95% Wilson Score Confidence Interval {#sec-ch20-wilson}
+
+For a binomial proportion $\hat{p} = k / n$ with critical value $z$ ($z = 1.96$ for 95% CI), the **Wilson score interval** centers and scales the interval so it never falls below $0$, never exceeds $1$, and remains accurate even at $k = 0$:
+
+$$d = 1 + \frac{z^2}{n}, \qquad c = \frac{\hat{p} + \frac{z^2}{2n}}{d}, \qquad m = \frac{z \sqrt{\frac{\hat{p}(1 - \hat{p}) + \frac{z^2}{4n}}{n}}}{d}$$
+
+```python
+def wilson_ci_demo(successes, n, z=1.96):
+    p = successes / n
+    denom = 1 + (z ** 2) / n
+    center = (p + (z ** 2) / (2 * n)) / denom
+    margin = (
+        z * math.sqrt((p * (1 - p) + (z ** 2) / (4 * n)) / n)
+    ) / denom
+    return (round(p, 4), round(max(0.0, center - margin), 4),
+            round(min(1.0, center + margin), 4))
+
+anemic_n = int(mch["maternal_anemia"].sum())
+total_n = len(mch)
+prop, lo, hi = wilson_ci_demo(anemic_n, total_n)
+print(f"Maternal anemia: {anemic_n}/{total_n} = {prop:.4f} "
+      f"(95% Wilson CI: [{lo:.4f}, {hi:.4f}])")
+print("Zero-event sample (0/20) Wilson CI:", wilson_ci_demo(0, 20))
+```
+
+**Expected Output:**
+```text
+Maternal anemia: 179/500 = 0.3580 (95% Wilson CI: [0.3172, 0.4010])
+Zero-event sample (0/20) Wilson CI: (0.0, 0.0, 0.1611)
+```
+
+Notice the `0/20` boundary check: a naive Wald interval $\hat{p} \pm 1.96\sqrt{\hat{p}(1-\hat{p})/n}$ collapses to `[0.0, 0.0]`—falsely claiming zero uncertainty! Wilson's score interval returns `[0.0, 0.1611]`, honestly showing that true prevalence could still be up to 16.1%.
+
+---
+
+### Parametric Comparison: Welch's $t$-Test & Pooled Cohen's $d$ {#sec-ch20-welch}
+
+To quantify both statistical significance and standardized effect size between two continuous groups, pair Welch's $t$-test (`equal_var=False`) with **pooled Cohen's $d$**:
+
+$$s_p = \sqrt{\frac{(n_a - 1) s_a^2 + (n_b - 1) s_b^2}{n_a + n_b - 2}}, \qquad d = \frac{\bar{x}_a - \bar{x}_b}{s_p}$$
+
+```python
+hb_urban = mch.loc[mch["residence"] == "Urban", "maternal_hb_g_dl"]
+hb_rural = mch.loc[mch["residence"] == "Rural", "maternal_hb_g_dl"]
+a = hb_urban.dropna().to_numpy()
+b = hb_rural.dropna().to_numpy()
+
+t_res = stats.ttest_ind(a, b, equal_var=False)
+var_a, var_b = np.var(a, ddof=1), np.var(b, ddof=1)
+pooled_sd = math.sqrt(
+    ((len(a) - 1) * var_a + (len(b) - 1) * var_b) / (len(a) + len(b) - 2)
+)
+cohens_d = (a.mean() - b.mean()) / pooled_sd
+print(f"Urban Hb mean: {a.mean():.3f} (n={len(a)}) | "
+      f"Rural Hb mean: {b.mean():.3f} (n={len(b)})")
+print(f"Welch t={t_res.statistic:.4f}, p={t_res.pvalue:.4f}, "
+      f"Cohen's d={cohens_d:.4f}")
+```
+
+**Expected Output:**
+```text
+Urban Hb mean: 11.598 (n=138) | Rural Hb mean: 11.406 (n=340)
+Welch t=1.3273, p=0.1857, Cohen's d=0.1385
+```
+
+Urban mothers average `11.598 g/dL` vs. `11.406 g/dL` in rural areas—a very small effect (`d = 0.1385`) that is not statistically significant at $\alpha = 0.05$ (`p = 0.1857`). Notice how `.dropna()` was essential because 22 mothers had missing hemoglobin readings!
+
+---
+
+### Nonparametric Rank Tests: Mann-Whitney $U$ {#sec-ch20-mwu}
+
+Antenatal care (`anc_visits`) is a discrete, right-skewed count variable with many ties. Instead of assuming normality, compare medians and run a two-sided **Mann-Whitney $U$** rank-sum test:
+
+```python
+anc_urban = mch.loc[mch["residence"] == "Urban", "anc_visits"].dropna()
+anc_rural = mch.loc[mch["residence"] == "Rural", "anc_visits"].dropna()
+
+u_res = stats.mannwhitneyu(anc_urban, anc_rural, alternative="two-sided")
+print(f"Median ANC visits — Urban: {anc_urban.median():.1f}, "
+      f"Rural: {anc_rural.median():.1f}")
+print(f"Mann-Whitney U={u_res.statistic:.2f}, "
+      f"p={u_res.pvalue:.6f}, significant={bool(u_res.pvalue < 0.05)}")
+```
+
+**Expected Output:**
+```text
+Median ANC visits — Urban: 5.0, Rural: 3.0
+Mann-Whitney U=34177.50, p=0.000000, significant=True
+```
+
+Urban mothers receive a median of **5.0** ANC visits compared with **3.0** for rural mothers (`p < 0.0001`). Remember this striking rural–urban service gap—it will reappear as a classic confounder in our logistic regression!
+
+---
+
+### Categorical Association: Pearson $\chi^2$ & Fisher's Exact Test {#sec-ch20-chi2}
+
+```python
+ct = pd.crosstab(mch["residence"], mch["maternal_anemia"])
+a_cell = int(ct.loc["Rural", 1])
+b_cell = int(ct.loc["Rural", 0])
+c_cell = int(ct.loc["Urban", 1])
+d_cell = int(ct.loc["Urban", 0])
+table_2x2 = [[a_cell, b_cell], [c_cell, d_cell]]
+
+chi2, p_chi2, dof, expected = stats.chi2_contingency(
+    table_2x2, correction=False
+)
+print("2x2 Table (Rural vs Urban x Anemia):", table_2x2)
+print(f"Pearson chi2={chi2:.4f}, p={p_chi2:.4f}, "
+      f"dof={dof}, expected_min={expected.min():.2f}")
+
+# Small-cell subgroup where expected_min < 5 -> use Fisher's Exact
+sparse_tbl = [[1, 14], [7, 8]]
+_, _, _, exp_sparse = stats.chi2_contingency(sparse_tbl, correction=False)
+fish_res = stats.fisher_exact(sparse_tbl)
+print(f"Sparse expected_min={exp_sparse.min():.2f} -> "
+      f"Fisher OR={fish_res.statistic:.3f}, p={fish_res.pvalue:.4f}")
+```
+
+**Expected Output:**
+```text
+2x2 Table (Rural vs Urban x Anemia): [[133, 223], [46, 98]]
+Pearson chi2=1.3081, p=0.2527, dof=1, expected_min=51.55
+Sparse expected_min=4.00 -> Fisher OR=0.082, p=0.0352
+```
+
+For the full survey table, `expected_min = 51.55 >= 5`, so Pearson's $\chi^2$ (`1.3081, p = 0.2527`) is completely valid. In contrast, the sparse subgroup (`[[1, 14], [7, 8]]`) has `expected_min = 4.00 < 5`, triggering **Fisher's exact test** (`p = 0.0352`).
+
+---
+
+### Epidemiological Effect Measures: Risk Ratio & Woolf Odds Ratio 95% CI {#sec-ch20-or}
+
+In a standard $2 \times 2$ epidemiological table (`a` = exposed cases, `b` = exposed non-cases, `c` = unexposed cases, `d` = unexposed non-cases):
+
+$$\text{RR} = \frac{a / (a + b)}{c / (c + d)}, \qquad \text{OR} = \frac{ad}{bc}, \qquad \text{SE}(\ln \text{OR}) = \sqrt{\frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}}$$
+
+```python
+risk_rural = a_cell / (a_cell + b_cell)
+risk_urban = c_cell / (c_cell + d_cell)
+risk_ratio = risk_rural / risk_urban
+
+odds_ratio = (a_cell * d_cell) / (b_cell * c_cell)
+se_log_or = math.sqrt(1/a_cell + 1/b_cell + 1/c_cell + 1/d_cell)
+ci_low = math.exp(math.log(odds_ratio) - 1.96 * se_log_or)
+ci_high = math.exp(math.log(odds_ratio) + 1.96 * se_log_or)
+
+print(f"Risk (Rural): {risk_rural:.4f} | Risk (Urban): {risk_urban:.4f}")
+print(f"Risk Ratio (RR): {risk_ratio:.3f}")
+print(f"Crude OR: {odds_ratio:.3f} "
+      f"(95% Woolf CI: [{ci_low:.3f}, {ci_high:.3f}])")
+```
+
+**Expected Output:**
+```text
+Risk (Rural): 0.3736 | Risk (Urban): 0.3194
+Risk Ratio (RR): 1.170
+Crude OR: 1.271 (95% Woolf CI: [0.843, 1.916])
+```
+
+Because the 95% CI `[0.843, 1.916]` spans the null value `1.0`, the crude rural–urban anemia odds ratio is not statistically significant—completely consistent with Pearson's $\chi^2$ (`p = 0.2527`). Notice also that because anemia is common (~36%), the Odds Ratio (`1.271`) is noticeably further from `1.0` than the Risk Ratio (`1.170`).
+
+---
+
+### Multiple Hypothesis Testing & Benjamini-Hochberg FDR {#sec-ch20-fdr}
+
+```python
+raw_p = [0.004, 0.032, 0.048, 0.210, 0.650]
+bh_q = stats.false_discovery_control(raw_p, method="bh")
+bonf_p = [min(1.0, p * len(raw_p)) for p in raw_p]
+
+audit = pd.DataFrame({
+    "raw_p": raw_p,
+    "bh_q": np.round(bh_q, 4),
+    "bonferroni_p": np.round(bonf_p, 4),
+    "survives_fdr_05": bh_q < 0.05,
+})
+print(audit.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+ raw_p   bh_q  bonferroni_p  survives_fdr_05
+ 0.004 0.0200          0.02             True
+ 0.032 0.0800          0.16            False
+ 0.048 0.0800          0.24            False
+ 0.210 0.2625          1.00            False
+ 0.650 0.6500          1.00            False
+```
+
+Observe how **three** raw $p$-values sat below `0.05`, yet after Benjamini-Hochberg FDR correction only `0.004` (`q = 0.0200`) remains significant! Notice also why both `0.032` and `0.048` yield `bh_q = 0.0800`: the BH step-up procedure enforces monotonicity from right to left ($\min(0.032 \times 5 / 2, 0.048 \times 5 / 3) = \min(0.08, 0.08) = 0.08$).
+
+---
+
+### Multivariable Logistic Regression (`statsmodels.api.Logit`) {#sec-ch20-logit}
+
+```python
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+model_df = mch[["maternal_anemia", "anc_visits", "is_urban"]].dropna()
+X = sm.add_constant(model_df[["anc_visits", "is_urban"]])
+y = model_df["maternal_anemia"]
+
+logit_fit = sm.Logit(y, X).fit(disp=False)
+conf = logit_fit.conf_int()
+aor_table = pd.DataFrame({
+    "aor": np.exp(logit_fit.params),
+    "ci_low": np.exp(conf[0]),
+    "ci_high": np.exp(conf[1]),
+    "p_value": logit_fit.pvalues,
+}).round(4)
+print(f"Complete cases fitted: n={len(model_df)}")
+print(aor_table)
+```
+
+**Expected Output:**
+```text
+Complete cases fitted: n=492
+               aor  ci_low  ci_high  p_value
+const       0.8293  0.5601   1.2277   0.3497
+anc_visits  0.9006  0.8158   0.9941   0.0378
+is_urban    0.9078  0.5877   1.4024   0.6630
+```
+
+Read this publication-ready **Table 3** output carefully:
+
+- **`anc_visits` (`aOR = 0.9006`, 95% CI `0.8158–0.9941`, `p = 0.0378`):** Controlling for urban/rural residence, each additional antenatal care visit is associated with a statistically significant **9.9% reduction in the odds of maternal anemia**.
+- **`is_urban` (`aOR = 0.9078`, 95% CI `0.5877–1.4024`, `p = 0.6630`):** Once ANC visit frequency is controlled for, urban vs. rural residence has no independent statistical effect—classic confounding uncovered by multivariable modeling!
+- **Why `sm.add_constant(X)` and `np.exp(...)`?** Unlike Scikit-Learn, Statsmodels does **not** add an intercept automatically, and its raw `.params` live on the **log-odds** ($\beta$) scale until exponentiated into Adjusted Odds Ratios ($e^{\beta}$).
+
+---
+
+### Break It On Purpose! (Biostatistics Error Anatomy) {#sec-ch20-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Negative Counts in Chi-Square Table)"}
+```python
+bad_table = [[-5, 20], [15, 30]]
+stats.chi2_contingency(bad_table, correction=False)
+```
+**Python's Traceback:**
+```text
+ValueError: All values in `observed` must be nonnegative.
+```
+**Diagnosis:** Contingency tables represent event counts ($\ge 0$). Negative entries—often caused by passing differences, $z$-scores, or uncleaned sentinel codes like `-99`—immediately violate the $\chi^2$ definition.  
+**Fix:** Assert `(table >= 0).all()` and construct tables directly from categorical labels with `pd.crosstab(...)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ZeroDivisionError (Woolf SE With a Zero Cell)"}
+```python
+a0, b0, c0, d0 = 12, 38, 0, 50
+se_broken = math.sqrt(1 / a0 + 1 / b0 + 1 / c0 + 1 / d0)
+```
+**Python's Traceback:**
+```text
+ZeroDivisionError: division by zero
+```
+**Diagnosis:** Woolf's log-OR variance formula $\frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}$ blows up whenever any cell in the $2 \times 2$ table equals `0`.  
+**Fix:** Apply the **Haldane-Anscombe correction** (add `0.5` to all four cells) for approximate OR/CI reporting, and use `scipy.stats.fisher_exact` for the exact $p$-value.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — MissingDataError (Passing NaN/Inf Into `sm.Logit`)"}
+```python
+X_with_nan = sm.add_constant(mch[["anc_visits", "is_urban"]])
+sm.Logit(mch["maternal_anemia"], X_with_nan).fit(disp=False)
+```
+**Python's Traceback:**
+```text
+MissingDataError: exog contains inf or nans
+```
+**Diagnosis:** After converting sentinel `999` to `np.nan`, `mch["anc_visits"]` has 8 missing values. Statsmodels refuses to silently drop rows by default and raises `MissingDataError` (analogous to NumPy's `ValueError` for non-finite inputs).  
+**Fix:** Explicitly slice the exact outcome and predictor columns and call `.dropna()` before passing `y` and `sm.add_constant(X)` into `sm.Logit(...)` (or pass `missing="drop"` deliberately and log the complete-case sample size $n$).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch20-blueprint}
+
+**Scenario:** Your epidemiology group needs a single reproducible function `build_mch_evidence_summary(raw_df)` that takes the raw `mch_survey_sample` DataFrame (without mutating it) and produces three core manuscript artifacts in one call: (1) overall anemia prevalence with 95% Wilson CI, (2) a dual parametric/nonparametric test of maternal hemoglobin across all 5 wealth quintiles (One-Way ANOVA $F$ + Kruskal-Wallis $H$), and (3) a clean multivariable logistic regression aOR table adjusting for `anc_visits` and `is_urban`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Data Hygiene Layer (Zero Mutation):**
+
+   - Copy `raw_df` first (`df = raw_df.copy()`).
+   - Normalize `residence` via `.astype(str).str.strip().str.title()`, convert `anc_visits == 999` to `np.nan`, and derive integer `is_urban = (df["residence"] == "Urban").astype(int)`.
+
+2. **Three Statistical Modules:**
+
+   - *Prevalence:* Pass `(int(df["maternal_anemia"].sum()), len(df))` to `wilson_ci_demo(...)`.
+   - *Wealth Gradient:* Extract non-null `maternal_hb_g_dl` arrays per `wealth_quintile` via `groupby`, then run both `stats.f_oneway(*groups)` and `stats.kruskal(*groups)`.
+   - *Multivariable Model:* Complete-case `.dropna()` on `["maternal_anemia", "anc_visits", "is_urban"]`, add intercept via `sm.add_constant`, fit `sm.Logit(y, X).fit(disp=False)`, and exponentiate both `params` and `conf_int()`.
+
+3. **Verification Plan:**
+
+   - Overall anemia must match `179/500 = 0.358` with 95% CI `(0.3172, 0.401)`.
+   - Both ANOVA and Kruskal-Wallis should confirm a highly significant socioeconomic gradient across the 5 quintiles ($p < 0.0001$).
+   - Complete-case sample size for Logit must be $n = 492$ (500 minus 8 sentinel `999` rows), with `anc_visits` protective (`aOR = 0.9006, p = 0.0378`).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def build_mch_evidence_summary(raw_df):
+    """Run end-to-end prevalence, wealth-gradient & adjusted logit."""
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+
+    # 1. Overall anemia prevalence + 95% Wilson CI
+    prev = wilson_ci_demo(int(df["maternal_anemia"].sum()), len(df))
+
+    # 2. Hemoglobin across 5 wealth quintiles (ANOVA + Kruskal-Wallis)
+    groups = [
+        grp["maternal_hb_g_dl"].dropna().to_numpy()
+        for _, grp in df.groupby("wealth_quintile")
+    ]
+    f_stat, anova_p = stats.f_oneway(*groups)
+    h_stat, kruskal_p = stats.kruskal(*groups)
+
+    # 3. Multivariable logistic regression (aOR table)
+    m_df = df[["maternal_anemia", "anc_visits", "is_urban"]].dropna()
+    X_m = sm.add_constant(m_df[["anc_visits", "is_urban"]])
+    fit = sm.Logit(m_df["maternal_anemia"], X_m).fit(disp=False)
+    ci = fit.conf_int()
+    aor_df = pd.DataFrame({
+        "aor": np.exp(fit.params),
+        "ci_low": np.exp(ci[0]),
+        "ci_high": np.exp(ci[1]),
+        "p_value": fit.pvalues,
+    }).round(4)
+    wealth_tuple = (
+        round(float(f_stat), 4), round(float(anova_p), 4),
+        round(float(h_stat), 4), round(float(kruskal_p), 4),
+    )
+    return prev, wealth_tuple, aor_df
+
+prev_ci, wealth_stats, aor_res = build_mch_evidence_summary(mch_raw)
+print("Anemia Wilson CI:", prev_ci)
+print("Wealth Hb (F, p, H, p):", wealth_stats)
+print(aor_res)
+```
+
+**Output:**
+```text
+Anemia Wilson CI: (0.358, 0.3172, 0.401)
+Wealth Hb (F, p, H, p): (9.7085, 0.0, 33.1492, 0.0)
+               aor  ci_low  ci_high  p_value
+const       0.8293  0.5601   1.2277   0.3497
+anc_visits  0.9006  0.8158   0.9941   0.0378
+is_urban    0.9078  0.5877   1.4024   0.6630
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch20-todos}
+
+Open `part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reusable biostatistical functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 20.1 (`wilson_ci(successes, n, z=1.96)`):** Compute the sample proportion and Wilson score confidence interval returning `(prop, low, high)` as floats rounded to **4 decimals** (clamped to `[0.0, 1.0]`).
+- **To-Do 20.2 (`compare_two_groups_welch(group_a, group_b)`):** Run Welch's two-sample $t$-test (`stats.ttest_ind(..., equal_var=False)`) and pooled Cohen's $d = (\bar{x}_a - \bar{x}_b) / s_p$ (`ddof=1`), returning `{"t_stat": round4, "p_value": round4, "cohens_d": round4, "significant_05": bool}`.
+- **To-Do 20.3 (`nonparametric_mannwhitney(group_a, group_b)`):** Run `stats.mannwhitneyu(group_a, group_b, alternative="two-sided")` and return `{"u_stat": round2, "p_value": round4, "significant_05": bool}`.
+- **To-Do 20.4 (`chi2_contingency_audit(table_2x2)`):** Run Pearson's chi-square via `stats.chi2_contingency(table_2x2, correction=False)` and return `{"chi2": round4, "p_value": round4, "dof": int, "expected_min": round2}`.
+- **To-Do 20.5 (`odds_ratio_with_ci(a, b, c, d)`):** Compute crude $\text{OR} = (ad)/(bc)$ and Woolf 95% CI using `z = 1.96` (`se = sqrt(1/a + 1/b + 1/c + 1/d)`), returning `{"or": round3, "ci_low": round3, "ci_high": round3}`.
+- **To-Do 20.6 (`benjamini_hochberg_adjust(p_values)`):** Return a Python `list` of Benjamini-Hochberg FDR-adjusted $q$-values rounded to **4 decimals** matching `scipy.stats.false_discovery_control(p_values, method="bh")` in the original input order.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch20-test}
+
+Work through all 10 biostatistics and Python reasoning questions on paper before checking Stage 8:
+
+1. **CLT Standard Error Scaling:** A biomarker has population standard deviation $\sigma = 2.0$. If you quadruple your sample size from $n = 25$ to $n = 100$, how does the standard error of the sample mean $\text{SE} = \sigma / \sqrt{n}$ change?
+2. **Wald vs. Wilson at Zero Events:** In a pilot safety study of $n = 20$ patients, $0$ adverse events occur ($\hat{p} = 0$). Why is the naive Wald 95% CI misleading, and what key property makes the Wilson interval scientifically superior?
+3. **Welch vs. Student's $t$-Test:** What happens if you call `stats.ttest_ind(group_a, group_b)` without specifying `equal_var`? Which parameter value gives Welch's $t$-test?
+4. **Effect Size vs. $p$-Value:** Study A ($n = 20{,}000$) finds a hemoglobin difference of `0.05 g/dL` with $p = 0.002$ and Cohen's $d = 0.04$. Study B ($n = 60$) finds a difference of `1.10 g/dL` with $p = 0.008$ and Cohen's $d = 0.78$. Which finding has greater clinical magnitude, and why can $p$-value alone mislead?
+5. **Expected Cell Audit:** A $2 \times 2$ clinical table yields `expected_min = 3.2`. Should you report Pearson's $\chi^2$ $p$-value or switch to another test—and which SciPy function implements it?
+6. **RR vs. OR Hand Calculation:** Given `a = 40` (exposed cases), `b = 60` (exposed non-cases), `c = 20` (unexposed cases), and `d = 80` (unexposed non-cases), compute the exact **Risk Ratio (RR)** and **Odds Ratio (OR)** by hand. Why is $\text{OR} > \text{RR}$?
+7. **Woolf CI Scale Symmetry:** Why is the 95% confidence interval for an Odds Ratio `[0.843, 1.916]` asymmetric around `OR = 1.271`, and on what transformed scale IS it symmetric?
+8. **Benjamini-Hochberg Step-Up:** You test 4 independent hypotheses and obtain sorted raw $p$-values `[0.01, 0.04, 0.20, 0.80]`. Compute the BH-adjusted $q$-value for rank $i = 1$ ($p_1 = 0.01$) and rank $i = 2$ ($p_2 = 0.04$) using $q_i = p_i \cdot m / i$.
+9. **Missing Values in `stats.f_oneway`:** One clinic group in your DataFrame contains `[11.2, np.nan, 12.1]`. If you pass that array directly into `stats.f_oneway(*groups)` without `.dropna()`, what does SciPy return for `f_stat` and `anova_p`?
+10. **Statsmodels `Logit` Pitfalls:** A colleague runs `sm.Logit(y, X).fit(disp=False)` and reports `fit.params["anc_visits"] = -0.1047` as an "Adjusted Odds Ratio of `-0.10`." Spot the **two** critical bugs they may have made (one in interpretation/transformation, and one common omission in building `X`).
+
+---
+
+## Stage 7 — Chapter 20 Part IV Capstone Coding Exam (100 Points) {#sec-ch20-exam}
+
+Open `part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch20", exam_submissions)` to earn your Part IV Capstone score out of 100 points.
+
+### Exam Task 20.1 (30 Points): `epidemiological_2x2_report(a, b, c, d)`
+
+Given integer $2 \times 2$ counts (`a`, `b`, `c`, `d`), return a single `dict` containing:
+
+- `"risk_exposed"` ($a / (a + b)$, 4 decimals) and `"risk_unexposed"` ($c / (c + d)$, 4 decimals),
+- `"risk_ratio"` (raw exposed risk / raw unexposed risk, 3 decimals),
+- `"odds_ratio"` ($(ad)/(bc)$, 3 decimals),
+- `"or_ci_low"` and `"or_ci_high"` (Woolf 95% CI with $z = 1.96$, 3 decimals),
+- `"chi2_p_value"` (Pearson $\chi^2$ $p$-value using `stats.chi2_contingency([[a, b], [c, d]], correction=False)`, 4 decimals).
+
+### Exam Task 20.2 (35 Points): `anova_and_kruskal_by_group(df, value_col, group_col)`
+
+Without mutating `df`:
+
+- Group `df` by `group_col`, extract non-null numeric arrays of `value_col` per group (dropping `NaN`s and skipping any empty group).
+- Run `stats.f_oneway(*groups)` and `stats.kruskal(*groups)`.
+- Return `{"n_groups": int, "f_stat": round4, "anova_p": round4, "h_stat": round4, "kruskal_p": round4}`.
+
+### Exam Task 20.3 (35 Points): `fit_adjusted_anemia_logit(mch_df)`
+
+Without mutating `mch_df`:
+
+- Clean `residence` casing (`str.strip().str.title()`) and replace `anc_visits == 999` with `np.nan`.
+- Create binary `is_urban = (residence == "Urban").astype(int)`.
+- Drop rows with missing `maternal_anemia`, `anc_visits`, or `is_urban`.
+- Fit `statsmodels.api.Logit(y, sm.add_constant(X)).fit(disp=False)`.
+- Return a `pd.DataFrame` indexed by `["const", "anc_visits", "is_urban"]` with columns `["aor", "ci_low", "ci_high", "p_value"]` rounded to **4 decimals**.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch20-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. $\text{SE}$ is **cut in half**! At $n = 25$, $\text{SE} = 2.0 / 5 = 0.40$; at $n = 100$, $\text{SE} = 2.0 / 10 = 0.20$. Quadrupling sample size halves the standard error ($\sqrt{4} = 2$).
+2. The Wald CI collapses to `[0.0, 0.0]`, pretending zero uncertainty despite only 20 observations. Wilson's score interval always stays inside `[0, 1]` and gives a realistic non-zero upper bound (`0.1611`) even at $0/20$.
+3. By default `equal_var=True`, which runs **Student's** equal-variance $t$-test. Pass **`equal_var=False`** for Welch's $t$-test.
+4. **Study B** (`d = 0.78`, `1.10 g/dL`) has far greater clinical magnitude! Huge sample sizes can make tiny, clinically trivial differences (`0.05 g/dL`) yield tiny $p$-values.
+5. Switch to **Fisher's exact test** using **`scipy.stats.fisher_exact(table_2x2)`**, because Pearson's $\chi^2$ asymptotic approximation degrades when `expected_min < 5`.
+6. $\text{Risk}_{\text{exp}} = 40/100 = 0.40$, $\text{Risk}_{\text{unexp}} = 20/100 = 0.20 \Rightarrow \mathbf{RR = 2.00}$. $\mathbf{OR} = (40 \times 80)/(60 \times 20) = 3200 / 1200 \approx \mathbf{2.667}$. Because baseline risk (`20%`) is common, odds diverge from probabilities and $\text{OR}$ exaggerates $\text{RR}$.
+7. The CI is symmetric on the **natural-log scale** ($\ln(\text{OR}) \pm 1.96 \cdot \text{SE}$). Exponentiating a symmetric interval produces an asymmetric ratio interval on $(0, \infty)$.
+8. For $m = 4$: $q_1 = 0.01 \times 4 / 1 = \mathbf{0.04}$; $q_2 = 0.04 \times 4 / 2 = \mathbf{0.08}$ (since $q_3 = 0.20 \times 4 / 3 = 0.2667$ and $q_4 = 0.80$, monotonicity is already satisfied).
+9. SciPy returns **`nan`** for both `f_stat` and `anova_p` (silent NaN propagation unless you drop NaNs first!).
+10. First, `fit.params` are **log-odds** ($\beta$), never odds ratios—you must exponentiate via `np.exp(-0.1047) = 0.9006` (an Odds Ratio can never be negative!). Second, callers frequently forget **`sm.add_constant(X)`**, forcing the regression through zero intercept.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import math
+import numpy as np
+from scipy import stats
+
+# To-Do 20.1
+def wilson_ci(successes, n, z=1.96):
+    """Return (prop, low, high) 95% Wilson CI rounded to 4 decimals."""
+    p = successes / n
+    denom = 1.0 + (z ** 2) / n
+    center = (p + (z ** 2) / (2.0 * n)) / denom
+    margin = (
+        z * math.sqrt((p * (1.0 - p) + (z ** 2) / (4.0 * n)) / n)
+    ) / denom
+    low = max(0.0, center - margin)
+    high = min(1.0, center + margin)
+    return (round(p, 4), round(low, 4), round(high, 4))
+
+# To-Do 20.2
+def compare_two_groups_welch(group_a, group_b):
+    """Run Welch's t-test and compute pooled Cohen's d."""
+    a = np.asarray(group_a, dtype=float)
+    b = np.asarray(group_b, dtype=float)
+    res = stats.ttest_ind(a, b, equal_var=False)
+    n_a, n_b = len(a), len(b)
+    var_a = float(np.var(a, ddof=1))
+    var_b = float(np.var(b, ddof=1))
+    pooled_sd = math.sqrt(
+        ((n_a - 1) * var_a + (n_b - 1) * var_b) / (n_a + n_b - 2)
+    )
+    cohens_d = (float(np.mean(a)) - float(np.mean(b))) / pooled_sd
+    return {
+        "t_stat": round(float(res.statistic), 4),
+        "p_value": round(float(res.pvalue), 4),
+        "cohens_d": round(float(cohens_d), 4),
+        "significant_05": bool(res.pvalue < 0.05),
+    }
+
+# To-Do 20.3
+def nonparametric_mannwhitney(group_a, group_b):
+    """Run a two-sided Mann-Whitney U test on two independent groups."""
+    res = stats.mannwhitneyu(group_a, group_b, alternative="two-sided")
+    return {
+        "u_stat": round(float(res.statistic), 2),
+        "p_value": round(float(res.pvalue), 4),
+        "significant_05": bool(res.pvalue < 0.05),
+    }
+
+# To-Do 20.4
+def chi2_contingency_audit(table_2x2):
+    """Run Pearson chi-square (no Yates) and audit min expected count."""
+    chi2, p_val, dof, expected = stats.chi2_contingency(
+        table_2x2, correction=False
+    )
+    return {
+        "chi2": round(float(chi2), 4),
+        "p_value": round(float(p_val), 4),
+        "dof": int(dof),
+        "expected_min": round(float(np.min(expected)), 2),
+    }
+
+# To-Do 20.5
+def odds_ratio_with_ci(a, b, c, d):
+    """Compute crude Odds Ratio and Woolf 95% CI rounded to 3 decimals."""
+    or_val = (a * d) / (b * c)
+    se = math.sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+    log_or = math.log(or_val)
+    return {
+        "or": round(or_val, 3),
+        "ci_low": round(math.exp(log_or - 1.96 * se), 3),
+        "ci_high": round(math.exp(log_or + 1.96 * se), 3),
+    }
+
+# To-Do 20.6
+def benjamini_hochberg_adjust(p_values):
+    """Return BH FDR-adjusted q-values as a 4-decimal Python list."""
+    q_vals = stats.false_discovery_control(p_values, method="bh")
+    return [round(float(q), 4) for q in q_vals]
+```
+
+### C. Annotated Solutions — Part IV Capstone Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import pandas as pd
+import statsmodels.api as sm
+
+# Exam Task 20.1 (30 pts)
+def epidemiological_2x2_report(a, b, c, d):
+    """Return full 2x2 risk, RR, OR, Woolf 95% CI, and chi2 p-value."""
+    risk_exp = a / (a + b)
+    risk_unexp = c / (c + d)
+    rr = risk_exp / risk_unexp
+    or_val = (a * d) / (b * c)
+    se = math.sqrt(1 / a + 1 / b + 1 / c + 1 / d)
+    log_or = math.log(or_val)
+    _, p_val, _, _ = stats.chi2_contingency(
+        [[a, b], [c, d]], correction=False
+    )
+    return {
+        "risk_exposed": round(risk_exp, 4),
+        "risk_unexposed": round(risk_unexp, 4),
+        "risk_ratio": round(rr, 3),
+        "odds_ratio": round(or_val, 3),
+        "or_ci_low": round(math.exp(log_or - 1.96 * se), 3),
+        "or_ci_high": round(math.exp(log_or + 1.96 * se), 3),
+        "chi2_p_value": round(float(p_val), 4),
+    }
+
+# Exam Task 20.2 (35 pts)
+def anova_and_kruskal_by_group(df, value_col, group_col):
+    """Run NaN-safe One-Way ANOVA and Kruskal-Wallis across groups."""
+    groups = [
+        grp[value_col].dropna().to_numpy()
+        for _, grp in df.groupby(group_col)
+        if grp[value_col].notna().any()
+    ]
+    f_stat, anova_p = stats.f_oneway(*groups)
+    h_stat, kruskal_p = stats.kruskal(*groups)
+    return {
+        "n_groups": int(len(groups)),
+        "f_stat": round(float(f_stat), 4),
+        "anova_p": round(float(anova_p), 4),
+        "h_stat": round(float(h_stat), 4),
+        "kruskal_p": round(float(kruskal_p), 4),
+    }
+
+# Exam Task 20.3 (35 pts)
+def fit_adjusted_anemia_logit(mch_df):
+    """Clean MCH survey covariates and fit multivariable Logit aORs."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    model_df = work[
+        ["maternal_anemia", "anc_visits", "is_urban"]
+    ].dropna()
+    X = sm.add_constant(model_df[["anc_visits", "is_urban"]])
+    y = model_df["maternal_anemia"]
+    fit = sm.Logit(y, X).fit(disp=False)
+    conf = fit.conf_int()
+    return pd.DataFrame(
+        {
+            "aor": np.exp(fit.params),
+            "ci_low": np.exp(conf[0]),
+            "ci_high": np.exp(conf[1]),
+            "p_value": fit.pvalues,
+        },
+        index=["const", "anc_visits", "is_urban"],
+    ).round(4)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 20 Failure Modes
+
+1. **Forgetting `equal_var=False` or `correction=False` in SciPy:** Leaving SciPy's defaults silently switches Welch's $t$-test to Student's $t$-test and Pearson's $\chi^2$ to Yates' corrected $\chi^2$, shifting test statistics and $p$-values away from standard epidemiological reporting conventions.
+2. **Leaving Survey Sentinels (`999`) or `NaN`s Uncleaned Before Modeling:** Sentinel `999` in `anc_visits` inflates predictor variance by orders of magnitude and crushes the logistic slope toward zero, while uncleaned `NaN`s either propagate `nan` in `f_oneway`/`kruskal` or crash `sm.Logit` with `MissingDataError`.
+3. **Reporting Raw Log-Odds Instead of Exponentiated aORs (or Omitting `sm.add_constant`):** Statsmodels estimates linear log-odds $\beta$ without an automatic intercept. Always wrap predictors with `sm.add_constant(X)` and apply `np.exp(...)` to both `fit.params` and `fit.conf_int()` before building your manuscript table.
+
+---
+
+::: {.callout-tip title="Part IV Milestone Achieved — Welcome to Part V: Classical Machine Learning!"}
+**Congratulations!** By completing **Chapter 20**, you have mastered the entire **Scientific Data Stack & Mathematical Foundations (Part IV)**: vectorized NumPy computation, Pandas data engineering, publication-grade Matplotlib/Seaborn visualization, linear algebra & calculus intuition, and formal biostatistical inference with SciPy and Statsmodels.
+
+In **Part V (Classical Machine Learning with Scikit-Learn)**, you will pivot from **explanatory statistical inference** (estimating $p$-values, confidence intervals, and Adjusted Odds Ratios) to **predictive out-of-sample generalization**—building leakage-free `Pipeline` and `ColumnTransformer` workflows, cross-validating tree ensembles and regularized classifiers, evaluating ROC-AUC and calibration curves, and explaining predictions with SHAP values.
+:::

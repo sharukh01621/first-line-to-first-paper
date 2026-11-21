@@ -237,6 +237,81 @@
       "qr_path": "assets/qr/part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam.png",
       "is_solution": false
     },
+    "part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch16_numpy_vectorization__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch16_numpy_vectorization__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch16_numpy_vectorization__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch17_pandas_foundations__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch17_pandas_foundations__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch17_pandas_foundations__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch19_visualization_storytelling__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch20_biostatistics_inference__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch20_biostatistics_inference__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -385,6 +460,56 @@
     "solutions/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch16_numpy_vectorization__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch16_numpy_vectorization__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch17_pandas_foundations__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch17_pandas_foundations__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch20_biostatistics_inference__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }
