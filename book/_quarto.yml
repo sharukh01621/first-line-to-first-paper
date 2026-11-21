@@ -38,7 +38,15 @@ book:
         - part_04_data_science_math/ch18_data_wrangling_surveys.qmd
         - part_04_data_science_math/ch19_visualization_storytelling.qmd
         - part_04_data_science_math/ch20_biostatistics_inference.qmd
-    # Subsequent Parts (Part V Ch 21–26 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
+    - part: "Classical Machine Learning — Intuition, Scratch Math & Scikit-Learn"
+      chapters:
+        - part_05_classical_ml/ch21_ml_paradigm_leakage.qmd
+        - part_05_classical_ml/ch22_linear_regularized_regression.qmd
+        - part_05_classical_ml/ch23_classification_calibration.qmd
+        - part_05_classical_ml/ch24_trees_ensembles_interpretability.qmd
+        - part_05_classical_ml/ch25_unsupervised_clustering_pca.qmd
+        - part_05_classical_ml/ch26_pipelines_nested_cv.qmd
+    # Subsequent Parts (Part VI Ch 27–32, Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:

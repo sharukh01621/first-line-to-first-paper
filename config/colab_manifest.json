@@ -312,6 +312,96 @@
       "qr_path": "assets/qr/part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam.png",
       "is_solution": false
     },
+    "part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch23_classification_calibration__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch23_classification_calibration__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch23_classification_calibration__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -510,6 +600,66 @@
     "solutions/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch23_classification_calibration/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch23_classification_calibration/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch23_classification_calibration__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch23_classification_calibration/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch23_classification_calibration/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch23_classification_calibration__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch24_trees_ensembles_interpretability__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch24_trees_ensembles_interpretability__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch25_unsupervised_clustering_pca__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch25_unsupervised_clustering_pca__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch26_pipelines_nested_cv__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }

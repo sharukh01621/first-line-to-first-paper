@@ -1,0 +1,771 @@
+# Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA) {#sec-ch25}
+
+> **Chapter Mission:** Discover hidden clinical phenotypes, district risk profiles, and low-dimensional latent biomarker axes **without target labels** ($y$). Using pure NumPy and Scikit-Learn on Bangladesh clinic triage records (`clinic_triage`), you will master why feature scaling governs Euclidean geometry, implement **K-Means** and **PCA via SVD** from scratch, compare **K-Means**, **Ward Hierarchical Clustering**, and **DBSCAN** anomaly flagging, and guard against common nonlinear-embedding traps in **t-SNE / UMAP**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch25 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch25 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch25 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Diagnose why raw clinical units (`age_years`, `height_cm`, `temp_c`) distort Euclidean distances and prevent variance domination using `StandardScaler`.
+2. Implement iterative **K-Means clustering** from scratch in pure NumPy (deterministic seeding, vectorized assignment, empty-cluster-safe centroid updates, and SSE inertia) and explain why `n_init=10` multi-start `k-means++` escapes poor local minima.
+3. Select the number of clusters $k$ transparently by pairing **within-cluster inertia** (Elbow method) with the **Silhouette score** (`sklearn.metrics.silhouette_score`).
+4. Compare **Hierarchical Agglomerative Clustering** (`linkage="ward"`) and **DBSCAN** density clustering (`eps`, `min_samples`, noise label `-1`) for phenotype discovery and clinical anomaly flagging.
+5. Derive and implement **Principal Component Analysis (PCA)** directly via centered **Singular Value Decomposition (`np.linalg.svd`)**, verify exact agreement with `sklearn.decomposition.PCA`, interpret feature loadings, and audit compression via `inverse_transform` reconstruction MSE.
+6. Critically evaluate **t-SNE / UMAP** nonlinear embeddings so you never over-interpret distorted global distances, cluster sizes, or perplexity-dependent layouts.
+
+---
+
+## Stage 1 — First-Principles Intuition: Learning Structure Without Labels {#sec-ch25-intuition}
+
+In Chapters 21–24, every model learned a mapping $\hat{y} = f(X)$ guided by ground-truth labels—whether a patient was anemic, needed urgent referral, or had elevated blood pressure. Yet in real clinical, genomic, and public health research, **labels are often missing, incomplete, or not yet defined**:
+
+- *Patient Phenotyping:* Do 120 patients arriving at Upazila Health Complexes naturally fall into distinct clinical profiles (e.g., pediatric febrile cases vs. older hypertensive adults) before anyone assigns a diagnosis code?
+- *Health-System Targeting:* Which Bangladesh districts share similar burdens of fever, blood pressure, anemia, and non-routine triage load so health ministries can group interventions?
+- *Biomarker Compression:* When seven physiological measurements (`age_years`, `weight_kg`, `height_cm`, `temp_c`, `systolic_bp`, `hemoglobin_g_dl`, `fever_days`) are strongly correlated, how many independent biological axes actually drive 85%–90% of the variation?
+
+That is the domain of **unsupervised learning**: discovering latent geometry directly from $X$ alone. Four first principles govern every method in this chapter:
+
+- **Distance Depends Completely on Feature Scale:** Euclidean distance sums squared differences across all features, $\|x - z\|_2^2 = \sum_j (x_j - z_j)^2$. In `clinic_triage`, `age_years` has variance `451.44` while `temp_c` has variance `0.60`—a **752x variance gap**! Without `StandardScaler`, clustering and PCA effectively ignore body temperature and hemoglobin.
+- **No Universal "Accuracy" Metric:** Without ground-truth $y$, we evaluate cluster structure using geometric cohesion and separation—**inertia** (within-cluster sum of squared errors) and **Silhouette score** $s \in [-1, +1]$—always backed by clinical interpretability.
+- **Different Algorithms Assume Different Shapes:** **K-Means** and **Ward** assume compact, roughly spherical clusters of comparable spread and force every point into a cluster. **DBSCAN** traces arbitrary dense regions and explicitly isolates sparse anomalies as label `-1`.
+- **PCA Maximizes Variance & Minimizes Reconstruction Error:** Projecting standardized data onto the top $k$ orthogonal principal components preserves the maximum possible linear variance and yields the lowest possible mean squared reconstruction error—and remarkably, on standardized data, $\text{MSE} = 1 - \text{cumulative explained variance}$!
+
+::: {.callout-note title="Mental Model — Two Questions Before Picking an Unsupervised Method"}
+Never run K-Means blindly on every unlabeled table. Ask two structural questions first:
+
+1. **Are you grouping rows (patients/districts) or compressing columns (correlated features)?** Row grouping calls for **Clustering**; column compression and noise reduction call for **PCA**.
+2. **If clustering, do you expect compact spherical groups, a nested hierarchy, or dense blobs mixed with outliers?** Spherical $\rightarrow$ **K-Means**; nested tree $\rightarrow$ **Ward Hierarchical**; irregular shapes + anomalies $\rightarrow$ **DBSCAN**.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Unsupervised Method Selector {#sec-ch25-mental-model}
+
+Use this decision map whenever you approach an unlabeled dataset $X$:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Prep["Step 1: Scale"]
+        S0["Standardize Numeric X<br/>StandardScaler() -> mean 0, SD 1"]
+    end
+    subgraph Goal["Step 2: Goal"]
+        G1["Group Rows<br/>Clustering"]
+        G2["Compress Columns<br/>Dim. Reduction"]
+    end
+    subgraph Cluster["Clustering Methods"]
+        C1["K-Means<br/>Spherical, fast, set k<br/>Audit: Elbow + Silhouette"]
+        C2["Ward Hierarchical<br/>Deterministic tree<br/>Minimizes within-var"]
+        C3["DBSCAN<br/>Arbitrary density shapes<br/>Flags outliers as -1"]
+    end
+    subgraph Reduce["Reduction Methods"]
+        R1["PCA via SVD<br/>Linear, orthogonal PCs<br/>Explainable loadings + MSE"]
+        R2["t-SNE / UMAP<br/>2D local visualization only<br/>Do NOT cluster on axes"]
+    end
+    S0 --> G1
+    S0 --> G2
+    G1 -->|"Compact blobs"| C1
+    G1 -->|"Nested tree"| C2
+    G1 -->|"Outliers / noise"| C3
+    G2 -->|"Variance + audit"| R1
+    G2 -->|"Visual explore"| R2
+```
+
+::: {.callout-warning title="Two Classic Unsupervised Pitfalls That Invalidate Papers"}
+1. **Counting DBSCAN Noise (`-1`) as a Cluster:** `DBSCAN` assigns sparse outliers to label `-1`. Computing `len(set(labels))` falsely counts noise as an extra cluster—always subtract `{-1}` before reporting `n_clusters`!
+2. **Clustering Directly on t-SNE or UMAP Coordinates:** t-SNE and UMAP warp global distances and cluster diameters to preserve *local* neighborhoods. Never feed t-SNE coordinates into K-Means or claim two distant t-SNE islands are quantitatively "farther apart" than two close ones.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch25-walkthrough}
+
+Open `part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading `clinic_triage` Feature Matrix {#sec-ch25-setup}
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from sklearn.metrics import silhouette_score
+import sharukh_tutor as tutor
+
+clinic = tutor.load_data("clinic_triage", as_pandas=True)
+feat_cols = [
+    "age_years", "weight_kg", "height_cm",
+    "temp_c", "systolic_bp", "hemoglobin_g_dl", "fever_days",
+]
+X_raw = clinic[feat_cols].to_numpy(dtype=float)
+print("Loaded clinic_triage:", clinic.shape)
+print("Feature matrix shape:", X_raw.shape)
+```
+
+**Expected Output:**
+```text
+Loaded clinic_triage: (120, 11)
+Feature matrix shape: (120, 7)
+```
+
+We extract the 7 continuous physiological and anthropometric measurements into a clean `(120, 7)` float matrix `X_raw`, intentionally excluding `patient_id`, `district`, `sex`, and `triage_priority` so our algorithms discover structure purely from vitals.
+
+---
+
+### Why Feature Scaling Dominates Euclidean Distance {#sec-ch25-scaling}
+
+```python
+# Inspect raw feature variances across incompatible clinical units
+raw_vars = pd.Series(X_raw.var(axis=0), index=feat_cols).round(2)
+print("Raw feature variances:\n" + raw_vars.to_string())
+print(f"Variance ratio (age / temp): "
+      f"{raw_vars['age_years'] / raw_vars['temp_c']:.1f}x")
+
+X_scaled = StandardScaler().fit_transform(X_raw)
+km_raw = KMeans(n_clusters=3, n_init=10, random_state=42)
+km_scl = KMeans(n_clusters=3, n_init=10, random_state=42)
+lbl_raw = km_raw.fit_predict(X_raw)
+lbl_scl = km_scl.fit_predict(X_scaled)
+
+sil_raw_in_scaled = silhouette_score(X_scaled, lbl_raw)
+sil_scl_in_scaled = silhouette_score(X_scaled, lbl_scl)
+print(f"Unscaled K-Means silhouette (scaled space): "
+      f"{sil_raw_in_scaled:.4f}")
+print(f"Scaled   K-Means silhouette (scaled space): "
+      f"{sil_scl_in_scaled:.4f}")
+```
+
+**Expected Output:**
+```text
+Raw feature variances:
+age_years          451.44
+weight_kg          190.29
+height_cm          343.92
+temp_c               0.60
+systolic_bp        215.95
+hemoglobin_g_dl      2.70
+fever_days           8.01
+Variance ratio (age / temp): 752.4x
+Unscaled K-Means silhouette (scaled space): 0.1791
+Scaled   K-Means silhouette (scaled space): 0.2811
+```
+
+Look at that dramatic **752.4x variance imbalance** between `age_years` (`451.44`) and `temp_c` (`0.60`). When K-Means clusters `X_raw` directly, it splits patients almost exclusively by age, height, blood pressure, and weight—ignoring fever and anemia—yielding a weak silhouette of `0.1791` in standardized clinical space. Applying `StandardScaler` first lifts silhouette quality by **+57%** to `0.2811`!
+
+---
+
+### K-Means From Scratch in Pure NumPy {#sec-ch25-kmeans-scratch}
+
+K-Means minimizes **within-cluster inertia** (sum of squared Euclidean distances to assigned centroids $\mu_c$):
+
+$$J = \sum_{i=1}^{n} \left\| x_i - \mu_{c(i)} \right\|_2^2$$
+
+It alternates two steps until centroids stop moving: (1) assign each point $x_i$ to its nearest centroid, and (2) replace each centroid $\mu_c$ with the mean of points assigned to cluster $c$.
+
+```python
+def kmeans_scratch_demo(X, k, max_iter=50, seed=42):
+    X_arr = np.asarray(X, dtype=float)
+    rng = np.random.default_rng(seed)
+    idx = rng.choice(len(X_arr), size=k, replace=False)
+    centroids = X_arr[idx].copy()
+    for _ in range(max_iter):
+        dists = ((X_arr[:, None, :] - centroids[None, :, :]) ** 2)
+        labels = np.argmin(dists.sum(axis=2), axis=1).astype(int)
+        new_c = centroids.copy()
+        for cid in range(k):
+            mask = labels == cid
+            if np.any(mask):
+                new_c[cid] = X_arr[mask].mean(axis=0)
+        if np.allclose(new_c, centroids):
+            centroids = new_c
+            break
+        centroids = new_c
+    dists = ((X_arr[:, None, :] - centroids[None, :, :]) ** 2)
+    labels = np.argmin(dists.sum(axis=2), axis=1).astype(int)
+    inertia = float(np.sum((X_arr - centroids[labels]) ** 2))
+    return labels, centroids, inertia
+
+sc_labels, sc_centers, sc_inertia = kmeans_scratch_demo(
+    X_scaled, k=3, max_iter=50, seed=42
+)
+print(f"Scratch K-Means inertia: {sc_inertia:.4f}")
+print(f"Sklearn K-Means inertia: {km_scl.inertia_:.4f}")
+print("Scratch cluster sizes:",
+      {int(c): int(n) for c, n in zip(*np.unique(
+          sc_labels, return_counts=True))})
+```
+
+**Expected Output:**
+```text
+Scratch K-Means inertia: 549.5317
+Sklearn K-Means inertia: 514.0598
+Scratch cluster sizes: {0: 29, 1: 40, 2: 51}
+```
+
+Pause and appreciate two key lessons in this output:
+
+- **Vectorized Broadcasting (`(n, 1, d) - (1, k, d)`):** One line computes every point-to-centroid squared distance in pure NumPy without a slow Python loop over patients!
+- **Why Single-Start Inertia (`549.5317`) > Sklearn Inertia (`514.0598`):** K-Means is **non-convex**—a single random initialization can converge to a suboptimal local minimum. Scikit-Learn uses `k-means++` smart seeding across `n_init=10` independent restarts and keeps the lowest-inertia solution (`514.0598`).
+
+---
+
+### Choosing $k$: Elbow Method & Silhouette Score {#sec-ch25-elbow}
+
+For each sample $i$, the **Silhouette coefficient** compares mean intra-cluster distance $a(i)$ against mean nearest-other-cluster distance $b(i)$:
+
+$$s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))} \in [-1, +1]$$
+
+Values near `+1` signal tight, well-separated clusters; values near `0` indicate overlapping borders; negative values indicate misassigned points.
+
+```python
+sweep_rows = []
+for k in range(2, 7):
+    km = KMeans(n_clusters=k, n_init=10, random_state=42)
+    lbl = km.fit_predict(X_scaled)
+    sweep_rows.append({
+        "k": k,
+        "inertia": round(float(km.inertia_), 4),
+        "silhouette": round(float(silhouette_score(X_scaled, lbl)), 4),
+    })
+k_table = pd.DataFrame(sweep_rows)
+print(k_table.to_string(index=False))
+best_row = k_table.loc[k_table["silhouette"].idxmax()]
+print(f"Peak silhouette at k={int(best_row['k'])} "
+      f"({best_row['silhouette']:.4f})")
+```
+
+**Expected Output:**
+```text
+ k  inertia  silhouette
+ 2 663.0774      0.3672
+ 3 514.0598      0.2811
+ 4 413.6670      0.2435
+ 5 368.9307      0.2316
+ 6 331.9703      0.2371
+Peak silhouette at k=2 (0.3672)
+```
+
+Notice the classic pattern: **inertia drops monotonically** (`663.08` $\rightarrow$ `331.97`) because adding more centroids always shrinks within-cluster distance, eventually reaching `0` when $k = n$. Pairing inertia with **Silhouette** reveals that $k = 2$ achieves the cleanest geometric separation (`0.3672`), with $k = 3$ (`0.2811`) offering a plausible finer split if clinically justified.
+
+---
+
+### Hierarchical Agglomerative Clustering (Ward Linkage) {#sec-ch25-ward}
+
+Agglomerative clustering starts with every patient as a singleton cluster and iteratively merges the two clusters that minimize **Ward's criterion**—the exact increase in total within-cluster squared variance:
+
+```python
+ward = AgglomerativeClustering(n_clusters=3, linkage="ward")
+ward_labels = ward.fit_predict(X_scaled)
+ward_sil = silhouette_score(X_scaled, ward_labels)
+ward_sizes = {
+    int(c): int(n)
+    for c, n in zip(*np.unique(ward_labels, return_counts=True))
+}
+print(f"Ward (k=3) silhouette: {ward_sil:.4f}")
+print("Ward (k=3) cluster sizes:", ward_sizes)
+```
+
+**Expected Output:**
+```text
+Ward (k=3) silhouette: 0.2847
+Ward (k=3) cluster sizes: {0: 89, 1: 24, 2: 7}
+```
+
+Ward clustering is **100% deterministic** (zero random seed sensitivity) and achieves a slightly higher silhouette (`0.2847`) than K-Means (`0.2811`) at $k = 3$, isolating a tight 7-patient subgroup (`cluster 2`) alongside two broader clinical groups (`89` and `24`).
+
+---
+
+### DBSCAN: Density Clustering & Anomaly Flagging {#sec-ch25-dbscan}
+
+**DBSCAN** (*Density-Based Spatial Clustering of Applications with Noise*) defines dense neighborhoods using two intuitive hyperparameters: radius `eps` and minimum neighbor count `min_samples`. Points in sparse regions are never forced into a cluster—they receive label **`-1`** (noise / anomaly):
+
+```python
+db = DBSCAN(eps=1.8, min_samples=5)
+db_labels = db.fit_predict(X_scaled)
+n_clusters = int(len(set(db_labels.tolist()) - {-1}))
+n_noise = int(np.sum(db_labels == -1))
+print(f"DBSCAN (eps=1.8, min_samples=5): "
+      f"{n_clusters} clusters, {n_noise} noise outliers")
+outlier_preview = clinic.loc[
+    db_labels == -1, ["patient_id", "age_years", "temp_c", "systolic_bp"]
+].head(3)
+print("Sample flagged clinical outliers:\n",
+      outlier_preview.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+DBSCAN (eps=1.8, min_samples=5): 2 clusters, 14 noise outliers
+Sample flagged clinical outliers:
+ patient_id  age_years  temp_c  systolic_bp
+  UHC-0008         10    38.5          106
+  UHC-0021          8    36.8          129
+  UHC-0023         55    36.1          102
+```
+
+Look at who DBSCAN flags automatically without any hand-coded thresholds: `UHC-0008` (10-year-old with high fever `38.5 C`), `UHC-0021` (8-year-old with unusually elevated `129 mmHg` systolic BP), and `UHC-0023` (55-year-old with unusually low `102 mmHg` BP and `36.1 C` temperature). In clinical data quality audits, DBSCAN `-1` labels serve as an automatic shortlist for chart review!
+
+---
+
+### PCA From Scratch via NumPy SVD vs. Scikit-Learn {#sec-ch25-pca}
+
+Given a mean-centered matrix $X_c = X - \bar{X} \in \mathbb{R}^{n \times p}$, its thin **Singular Value Decomposition (SVD)** factorizes $X_c = U \Sigma V^\top$. The rows of $V^\top$ are the orthogonal **principal component axes** (loadings), the projected coordinates are $Z_k = X_c V_k$, and the **explained variance ratio** of component $j$ is simply:
+
+$$\text{EVR}_j = \frac{\sigma_j^2}{\sum_{m=1}^{r} \sigma_m^2}$$
+
+```python
+# 1. PCA from scratch via centered SVD
+X_c = X_scaled - X_scaled.mean(axis=0)
+U, S, Vt = np.linalg.svd(X_c, full_matrices=False)
+Z_svd = X_c @ Vt[:2].T
+evr_svd = ((S ** 2) / np.sum(S ** 2))[:2]
+
+# 2. Compare directly against sklearn.decomposition.PCA
+pca_full = PCA().fit(X_scaled)
+cum_var = np.cumsum(pca_full.explained_variance_ratio_)
+print("SVD EVR (top 2):    ", np.round(evr_svd, 4))
+print("Sklearn EVR (top 2):",
+      np.round(pca_full.explained_variance_ratio_[:2], 4))
+print("Cumulative variance:", np.round(cum_var, 4))
+k_85 = int(np.argmax(cum_var >= 0.85) + 1)
+print(f"PCs required for >=85% variance: {k_85} "
+      f"(retains {cum_var[k_85 - 1]:.4f})")
+
+# 3. Interpret clinical loadings on PC1 & PC2
+loadings = pd.DataFrame(
+    pca_full.components_[:2].T,
+    index=feat_cols,
+    columns=["PC1", "PC2"],
+).round(4)
+print("Top-2 PC Clinical Loadings:\n", loadings)
+```
+
+**Expected Output:**
+```text
+SVD EVR (top 2):     [0.3051 0.2519]
+Sklearn EVR (top 2): [0.3051 0.2519]
+Cumulative variance: [0.3051 0.557  0.7325 0.8621 0.9272 0.9692 1.    ]
+PCs required for >=85% variance: 4 (retains 0.8621)
+Top-2 PC Clinical Loadings:
+                     PC1     PC2
+age_years        0.4951  0.0179
+weight_kg        0.4826  0.3182
+height_cm        0.4902  0.3448
+temp_c          -0.1944  0.6084
+systolic_bp      0.3863 -0.1301
+hemoglobin_g_dl -0.1745  0.0237
+fever_days      -0.2536  0.6260
+```
+
+Read those loadings like a clinician-scientist—they tell a crystal-clear biological story:
+
+- **Exact SVD Match:** Our 4-line NumPy SVD implementation reproduces Scikit-Learn's `explained_variance_ratio_` (`[0.3051, 0.2519]`) to machine precision!
+- **PC1 (30.5% variance — Anthropometric / Age-Maturity Axis):** Driven by `age_years` (`+0.4951`), `height_cm` (`+0.4902`), `weight_kg` (`+0.4826`), and `systolic_bp` (`+0.3863`).
+- **PC2 (25.2% variance — Acute Febrile Illness Axis):** Driven almost exclusively by `fever_days` (`+0.6260`) and `temp_c` (`+0.6084`). Together, just 2 orthogonal axes explain **55.7%** of all 7 vitals, and **4 PCs** capture **86.21%**!
+
+---
+
+### Nonlinear Projections (t-SNE / UMAP) Caveats {#sec-ch25-tsne}
+
+When visualizing high-dimensional datasets (e.g., single-cell RNA-seq or multi-biomarker panels), researchers frequently reach for **t-SNE** or **UMAP**. Unlike PCA, these methods optimize a nonlinear objective preserving *local* neighbor probabilities—which comes with strict scientific caveats:
+
+```python
+# t-SNE preserves local neighborhoods, NOT global distances or variance
+for perp in [10, 30]:
+    emb = TSNE(
+        n_components=2, perplexity=perp, init="pca",
+        learning_rate="auto", random_state=42,
+    ).fit_transform(X_scaled)
+    spread = [round(float(v), 2) for v in emb.std(axis=0)]
+    print(f"t-SNE (perplexity={perp:2d}) embedding shape={emb.shape}, "
+          f"axis SDs={spread}")
+```
+
+**Expected Output:**
+```text
+t-SNE (perplexity=10) embedding shape=(120, 2), axis SDs=[14.46, 16.49]
+t-SNE (perplexity=30) embedding shape=(120, 2), axis SDs=[3.22, 4.36]
+```
+
+Changing a single hyperparameter (`perplexity=10` vs. `30`) shrinks the embedding coordinate spread by nearly **4x** (`[14.46, 16.49]` vs. `[3.22, 4.36]`)! Always remember three rules for publication figures: (1) t-SNE/UMAP axes have **no feature loadings** or explained variance, (2) cluster sizes and inter-cluster gaps in a 2D t-SNE plot are **not** faithful Euclidean distances, and (3) always perform clustering and statistical tests in the standardized original (or PCA) space, using t-SNE/UMAP strictly for visual intuition.
+
+---
+
+### Break It On Purpose! (Unsupervised Error Anatomy) {#sec-ch25-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Silhouette Score With Only 1 Cluster)"}
+```python
+all_one_cluster = np.zeros(len(X_scaled), dtype=int)
+silhouette_score(X_scaled, all_one_cluster)
+```
+**Python's Traceback:**
+```text
+ValueError: Number of labels is 1.
+Valid values are 2 to n_samples - 1 (inclusive)
+```
+**Diagnosis:** The silhouette formula requires a nearest *other* cluster distance $b(i)$. When every sample has the same label (common with $k = 1$, or when DBSCAN labels every point as `-1` noise or collapses everything into 1 giant blob), $b(i)$ is undefined.  
+**Fix:** Always sweep $k \ge 2$ and guard DBSCAN silhouette calls by checking `len(set(labels) - {-1}) >= 2` before scoring.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (PCA `n_components` Exceeds Matrix Rank)"}
+```python
+PCA(n_components=12).fit(X_scaled)
+```
+**Python's Traceback:**
+```text
+ValueError: n_components=12 must be between 0 and
+min(n_samples, n_features)=7 with svd_solver='covariance_eigh'
+```
+**Diagnosis:** A matrix with $n = 120$ samples and $p = 7$ features has at most $\min(n, p) = 7$ orthogonal principal components. Requesting `n_components=12` exceeds the mathematical rank limit.  
+**Fix:** Cap `n_components <= min(X.shape)`—or pass a float in `(0, 1)` (like `PCA(n_components=0.85)`) or compute `k` from `PCA().fit(X_scaled)` dynamically.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError / InvalidParameterError (Negative DBSCAN `eps`)"}
+```python
+DBSCAN(eps=-0.5, min_samples=5).fit(X_scaled)
+```
+**Python's Traceback:**
+```text
+InvalidParameterError: The 'eps' parameter of DBSCAN must be a float
+in the range (0.0, inf). Got -0.5 instead.
+```
+**Diagnosis:** `eps` defines a Euclidean neighborhood radius, which must be strictly positive (`eps > 0`). In Scikit-Learn, `InvalidParameterError` is a subclass of `ValueError` raised during estimator parameter validation.  
+**Fix:** Ensure `eps > 0` (typically chosen via a $k$-nearest-neighbor distance "knee" plot in standardized space, such as `eps=1.8` on 7 standardized features).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch25-blueprint}
+
+**Scenario:** Your health-informatics team wants a single reusable function `run_clinical_phenotyping_pipeline(raw_df, feat_cols, k=3, var_target=0.85, eps=1.8, seed=42)` that takes `clinic_triage` (without mutating it) and outputs a complete unsupervised audit dictionary: (1) minimum PCs required to retain `var_target` variance plus `inverse_transform` reconstruction MSE, (2) side-by-side silhouette comparison of K-Means vs. Ward Hierarchical at $k$ clusters, and (3) total DBSCAN anomaly count (`labels == -1`).
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Preprocessing Layer (Scale First, Never Mutate):**
+
+   - Slice `raw_df[feat_cols].to_numpy(dtype=float)` and standardize via `X_sc = StandardScaler().fit_transform(X)`.
+
+2. **Three Unsupervised Audit Modules:**
+
+   - *PCA Compression:* Fit full `PCA().fit(X_sc)`, find `n_pcs = int(np.argmax(cum >= var_target) + 1)`, refit `PCA(n_components=n_pcs)`, compute `X_hat = pca_k.inverse_transform(pca_k.fit_transform(X_sc))`, and evaluate `recon_mse = np.mean((X_sc - X_hat) ** 2)`.
+   - *Partition Comparison:* Fit `KMeans(n_clusters=k, n_init=10, random_state=seed)` and `AgglomerativeClustering(n_clusters=k, linkage="ward")` on `X_sc` and score both with `silhouette_score`.
+   - *Anomaly Screen:* Fit `DBSCAN(eps=eps, min_samples=5)` on `X_sc` and count `int(np.sum(db_lbl == -1))`.
+
+3. **Verification Plan:**
+
+   - On `clinic_triage` (`var_target=0.85`), `n_pcs` must be `4`, `cum_variance = 0.8621`, and `recon_mse = 0.13789` (verifying `0.86211 + 0.13789 = 1.00000`!).
+   - `ward_sil` (`0.2847`) should slightly beat `kmeans_sil` (`0.2811`), and `dbscan_noise` must flag `14` clinical outliers.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_clinical_phenotyping_pipeline(
+    raw_df, feat_cols, k=3, var_target=0.85, eps=1.8, seed=42
+):
+    """Scale vitals, audit PCA compression, and compare clusterers."""
+    X = raw_df[feat_cols].to_numpy(dtype=float)
+    X_sc = StandardScaler().fit_transform(X)
+
+    # 1. PCA compression & reconstruction MSE audit
+    full_pca = PCA().fit(X_sc)
+    cum = np.cumsum(full_pca.explained_variance_ratio_)
+    n_pcs = int(np.argmax(cum >= var_target) + 1)
+    pca_k = PCA(n_components=n_pcs)
+    X_hat = pca_k.inverse_transform(pca_k.fit_transform(X_sc))
+    recon_mse = round(float(np.mean((X_sc - X_hat) ** 2)), 5)
+
+    # 2. Compare K-Means vs. Ward Agglomerative at k clusters
+    km_lbl = KMeans(
+        n_clusters=k, n_init=10, random_state=seed
+    ).fit_predict(X_sc)
+    ward_lbl = AgglomerativeClustering(
+        n_clusters=k, linkage="ward"
+    ).fit_predict(X_sc)
+
+    # 3. Flag density anomalies via DBSCAN
+    db_lbl = DBSCAN(eps=eps, min_samples=5).fit_predict(X_sc)
+    return {
+        "n_pcs": n_pcs,
+        "cum_variance": round(float(cum[n_pcs - 1]), 4),
+        "recon_mse": recon_mse,
+        "kmeans_sil": round(float(silhouette_score(X_sc, km_lbl)), 4),
+        "ward_sil": round(float(silhouette_score(X_sc, ward_lbl)), 4),
+        "dbscan_noise": int(np.sum(db_lbl == -1)),
+    }
+
+audit = run_clinical_phenotyping_pipeline(clinic, feat_cols)
+for key, val in audit.items():
+    print(f"{key:14s}: {val}")
+```
+
+**Output:**
+```text
+n_pcs         : 4
+cum_variance  : 0.8621
+recon_mse     : 0.13789
+kmeans_sil    : 0.2811
+ward_sil      : 0.2847
+dbscan_noise  : 14
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch25-todos}
+
+Open `part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reusable unsupervised learning functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 25.1 (`kmeans_from_scratch(X, k, max_iter=50, seed=42)`):** Pure-NumPy iterative K-Means seeded via `np.random.default_rng(seed)` (`replace=False`), alternating nearest-centroid assignment and empty-safe mean updates until convergence, returning `(labels_1d_int, centroids_2d, float_inertia)`.
+- **To-Do 25.2 (`evaluate_k_range(X_scaled, k_values, seed=42)`):** Sweep `k_values` with `KMeans(n_clusters=k, n_init=10, random_state=seed)` and return a DataFrame with columns `["k", "inertia", "silhouette"]` rounded to **4 decimals**.
+- **To-Do 25.3 (`fit_agglomerative_ward(X_scaled, n_clusters=3)`):** Fit `AgglomerativeClustering(n_clusters=n_clusters, linkage="ward")` and return `{"labels": labels, "silhouette": round4, "cluster_sizes": dict_int_to_int}`.
+- **To-Do 25.4 (`detect_dbscan_anomalies(X_scaled, eps=0.8, min_samples=5)`):** Fit `DBSCAN(eps=eps, min_samples=min_samples)` and return `{"n_clusters": int_excluding_minus1, "n_noise": int, "labels": labels}`.
+- **To-Do 25.5 (`pca_from_scratch_svd(X, n_components=2)`):** Mean-center `X` by subtracting column means, compute `np.linalg.svd(X_c, full_matrices=False)`, and return `(X_projected, explained_variance_ratio)` of shapes `(n, n_components)` and `(n_components,)`.
+- **To-Do 25.6 (`components_for_variance_target(X_scaled, target_var=0.90)`):** Fit full `PCA()` and return the smallest Python `int` `k` where `np.cumsum(explained_variance_ratio_)[k - 1] >= target_var`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch25-test}
+
+Work through all 10 unsupervised learning and linear-algebra reasoning questions on paper before checking Stage 8:
+
+1. **Variance Domination:** Feature A has standard deviation `100` (variance `10,000`) and Feature B has standard deviation `1` (variance `1`). If you run K-Means **without** `StandardScaler`, roughly what percentage of the total squared Euclidean distance comes from Feature A?
+2. **K-Means Inertia Monotonicity:** Why can't you simply pick the $k$ with the **lowest** K-Means inertia? What happens to inertia when $k = n$ (one cluster per patient)?
+3. **Silhouette Sign Interpretation:** A patient has average distance `a(i) = 1.8` to points in their own cluster and average distance `b(i) = 1.2` to the nearest neighboring cluster. Compute their exact Silhouette score $s(i)$ and explain what its sign means.
+4. **Local Minima & `n_init`:** In Section 25.3.2, our single-start pure-NumPy K-Means achieved inertia `549.53` while Scikit-Learn's `KMeans(n_init=10)` achieved `514.06`. Why did both converge yet reach different inertias?
+5. **K-Means vs. Ward Determinism:** If you run `AgglomerativeClustering(n_clusters=3, linkage="ward")` ten times without setting any `random_state`, will the clusters change between runs? Why or why not?
+6. **DBSCAN Label Count Trap:** Suppose `DBSCAN(eps=0.5, min_samples=5).fit_predict(X)` returns `labels = np.array([-1, 0, 0, -1, 1, 1, 1, -1])`. What are the true `n_clusters` and `n_noise`, and what bug occurs if you compute `len(set(labels))`?
+7. **Mean-Centering Before SVD:** What goes wrong geometrically if you run `np.linalg.svd(X)` directly on a dataset whose column means are `[50, 120, 37]` instead of subtracting `X.mean(axis=0)` first?
+8. **Singular Values to Explained Variance:** A centered dataset produces singular values $S = [6, 3, 1]$. Compute the exact explained variance ratio of PC1, PC2, and PC3 by hand (as fractions or decimals).
+9. **Standardized Reconstruction MSE Identity:** After standardizing 10 clinical features, you keep $k = 4$ principal components whose cumulative explained variance ratio is `0.8200`. Without running Python, what is the exact mean squared reconstruction error `np.mean((X_scaled - X_hat) ** 2)`?
+10. **t-SNE Scientific Caveat:** A colleague runs 2D `TSNE` on gene expression data, runs K-Means on the 2D t-SNE coordinates, and claims "Cluster A is 3x wider than Cluster B, so Cluster A is biologically more heterogeneous." Identify the **two** methodological errors in that claim.
+
+---
+
+## Stage 7 — Chapter 25 Coding Exam (100 Points) {#sec-ch25-exam}
+
+Open `part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch25", exam_submissions)` to earn your Chapter 25 score out of 100 points.
+
+### Exam Task 25.1 (30 Points): `select_optimal_k_silhouette(X, k_range, seed=42)`
+
+Without mutating `X`:
+
+- Standardize `X` via `StandardScaler().fit_transform(X)`.
+- Sweep every `k` in `k_range` using `KMeans(n_clusters=k, n_init=10, random_state=seed)` and build `table` as a `pd.DataFrame` with columns `["k", "inertia", "silhouette"]` rounded to **4 decimals**.
+- Return `{"best_k": int, "best_silhouette": round4, "table": table}` picking the `k` with the highest silhouette score.
+
+### Exam Task 25.2 (35 Points): `district_risk_phenotyping(clinic_df, n_clusters=3, seed=42)`
+
+Without mutating `clinic_df`:
+
+- Aggregate `clinic_df` per `district` (`groupby("district", as_index=False)`) computing `mean_temp` (`temp_c`), `mean_sbp` (`systolic_bp`), `mean_hb` (`hemoglobin_g_dl`), and `urgent_rate` (`(triage_priority != "Routine").mean()`).
+- Standardize those 4 aggregate indicators with `StandardScaler()` and cluster the districts using `KMeans(n_clusters=n_clusters, n_init=10, random_state=seed)`.
+- Add integer `"cluster"` labels to the aggregated DataFrame and return `{"district_clusters": df, "silhouette": round4}`.
+
+### Exam Task 25.3 (35 Points): `pca_clinical_compression_audit(X, variance_threshold=0.85)`
+
+Without mutating `X`:
+
+- Standardize `X` via `StandardScaler().fit_transform(X)` and fit full `PCA()` to find the smallest integer `k` where `np.cumsum(explained_variance_ratio_)[k - 1] >= variance_threshold`.
+- Fit `PCA(n_components=k)` on `X_scaled`, project `Z = pca_k.fit_transform(X_scaled)`, and reconstruct `X_hat = pca_k.inverse_transform(Z)`.
+- Return `{"n_components": int, "cumulative_variance": round4, "top_pc1_feature_idx": int, "reconstruction_mse": round5}` where `top_pc1_feature_idx` uses `np.abs(pca_k.components_[0])` and `reconstruction_mse` is `np.mean((X_scaled - X_hat) ** 2)`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch25-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Roughly **99.99%** ($10{,}000 / 10{,}001 \approx 99.99\%$) of squared Euclidean distance comes from Feature A, completely drowning out Feature B until both are standardized.
+2. Inertia strictly decreases as $k$ grows; at $k = n$, every point sits at its own centroid so **inertia equals `0.0`**—a useless overfitted partition!
+3. $s(i) = (1.2 - 1.8) / \max(1.8, 1.2) = -0.6 / 1.8 = \mathbf{-0.3333}$. A negative silhouette means point $i$ is closer on average to a neighboring cluster than to its own cluster (likely misassigned).
+4. K-Means optimizes a **non-convex** objective with multiple local minima. One random draw can trap centroids in a higher-inertia local basin (`549.53`), whereas `n_init=10` with `k-means++` explores 10 smart starts and selects the lowest-inertia basin (`514.06`).
+5. **No**—Ward agglomerative clustering is **100% deterministic** because it merges pairs strictly by minimum variance increase from the full pairwise distance matrix (no random centroid seeding).
+6. True `n_clusters = 2` (labels `0` and `1`) and `n_noise = 3` (the three `-1` entries). Calling `len(set(labels))` returns `3`, erroneously counting `-1` noise as a third cluster.
+7. Without mean-centering, the first singular vector points from the origin `(0, 0, 0)` straight toward the data cloud's mean vector `[50, 120, 37]`, inflating PC1's variance ratio instead of capturing covariance around the center.
+8. Squared singular values are $[36, 9, 1]$, summing to $46$. Therefore: $\text{EVR}_1 = 36/46 \approx \mathbf{0.7826}$, $\text{EVR}_2 = 9/46 \approx \mathbf{0.1957}$, and $\text{EVR}_3 = 1/46 \approx \mathbf{0.0217}$.
+9. On standardized features (unit variance per column), reconstruction MSE equals $1 - 0.8200 = \mathbf{0.18000}$!
+10. First, **t-SNE distorts cluster sizes and global distances** to equalize local densities—visual spread on a t-SNE plot does *not* measure biological variance. Second, **running K-Means on 2D t-SNE axes** clusters a distorted nonlinear visualization rather than the true standardized feature or PCA space.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+
+# To-Do 25.1
+def kmeans_from_scratch(X, k, max_iter=50, seed=42):
+    """Run pure-NumPy K-Means and return (labels, centroids, inertia)."""
+    X_arr = np.asarray(X, dtype=float)
+    rng = np.random.default_rng(seed)
+    init_idx = rng.choice(len(X_arr), size=k, replace=False)
+    centroids = X_arr[init_idx].copy()
+    for _ in range(max_iter):
+        dists = ((X_arr[:, None, :] - centroids[None, :, :]) ** 2)
+        labels = np.argmin(dists.sum(axis=2), axis=1).astype(int)
+        new_c = centroids.copy()
+        for cid in range(k):
+            mask = labels == cid
+            if np.any(mask):
+                new_c[cid] = X_arr[mask].mean(axis=0)
+        if np.allclose(new_c, centroids):
+            centroids = new_c
+            break
+        centroids = new_c
+    dists = ((X_arr[:, None, :] - centroids[None, :, :]) ** 2)
+    labels = np.argmin(dists.sum(axis=2), axis=1).astype(int)
+    inertia = float(np.sum((X_arr - centroids[labels]) ** 2))
+    return labels, centroids, inertia
+
+# To-Do 25.2
+def evaluate_k_range(X_scaled, k_values, seed=42):
+    """Sweep k_values with KMeans and return inertia/silhouette table."""
+    rows = []
+    for k in k_values:
+        km = KMeans(n_clusters=k, n_init=10, random_state=seed)
+        labels = km.fit_predict(X_scaled)
+        sil = silhouette_score(X_scaled, labels)
+        rows.append({
+            "k": int(k),
+            "inertia": round(float(km.inertia_), 4),
+            "silhouette": round(float(sil), 4),
+        })
+    return pd.DataFrame(rows)
+
+# To-Do 25.3
+def fit_agglomerative_ward(X_scaled, n_clusters=3):
+    """Fit Ward agglomerative clustering and summarize silhouette/sizes."""
+    model = AgglomerativeClustering(
+        n_clusters=n_clusters, linkage="ward"
+    )
+    labels = model.fit_predict(X_scaled)
+    unique, counts = np.unique(labels, return_counts=True)
+    sizes = {int(c): int(n) for c, n in zip(unique, counts)}
+    sil = round(float(silhouette_score(X_scaled, labels)), 4)
+    return {
+        "labels": labels,
+        "silhouette": sil,
+        "cluster_sizes": sizes,
+    }
+
+# To-Do 25.4
+def detect_dbscan_anomalies(X_scaled, eps=0.8, min_samples=5):
+    """Run DBSCAN and separate dense cluster count from -1 noise count."""
+    model = DBSCAN(eps=eps, min_samples=min_samples)
+    labels = model.fit_predict(X_scaled)
+    n_clusters = int(len(set(labels.tolist()) - {-1}))
+    n_noise = int(np.sum(labels == -1))
+    return {
+        "n_clusters": n_clusters,
+        "n_noise": n_noise,
+        "labels": labels,
+    }
+
+# To-Do 25.5
+def pca_from_scratch_svd(X, n_components=2):
+    """Center X, run SVD, and return (X_projected, explained_var_ratio)."""
+    X_arr = np.asarray(X, dtype=float)
+    X_c = X_arr - X_arr.mean(axis=0)
+    _, S, Vt = np.linalg.svd(X_c, full_matrices=False)
+    X_proj = X_c @ Vt[:n_components].T
+    evr = (S ** 2) / np.sum(S ** 2)
+    return X_proj, evr[:n_components]
+
+# To-Do 25.6
+def components_for_variance_target(X_scaled, target_var=0.90):
+    """Return smallest int k reaching target_var cumulative variance."""
+    pca = PCA().fit(X_scaled)
+    cum_var = np.cumsum(pca.explained_variance_ratio_)
+    return int(np.argmax(cum_var >= target_var) + 1)
+```
+
+### C. Annotated Solutions — Chapter 25 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from sklearn.preprocessing import StandardScaler
+
+# Exam Task 25.1 (30 pts)
+def select_optimal_k_silhouette(X, k_range, seed=42):
+    """Standardize X, sweep k_range, and pick k maximizing silhouette."""
+    X_sc = StandardScaler().fit_transform(X)
+    rows = []
+    for k in k_range:
+        km = KMeans(n_clusters=k, n_init=10, random_state=seed)
+        labels = km.fit_predict(X_sc)
+        sil = silhouette_score(X_sc, labels)
+        rows.append({
+            "k": int(k),
+            "inertia": round(float(km.inertia_), 4),
+            "silhouette": round(float(sil), 4),
+        })
+    table = pd.DataFrame(rows)
+    best = table.loc[table["silhouette"].idxmax()]
+    return {
+        "best_k": int(best["k"]),
+        "best_silhouette": round(float(best["silhouette"]), 4),
+        "table": table,
+    }
+
+# Exam Task 25.2 (35 pts)
+def district_risk_phenotyping(clinic_df, n_clusters=3, seed=42):
+    """Aggregate district triage profiles, scale, and cluster."""
+    agg = clinic_df.groupby("district", as_index=False).agg(
+        mean_temp=("temp_c", "mean"),
+        mean_sbp=("systolic_bp", "mean"),
+        mean_hb=("hemoglobin_g_dl", "mean"),
+        urgent_rate=(
+            "triage_priority", lambda s: (s != "Routine").mean()
+        ),
+    )
+    cols = ["mean_temp", "mean_sbp", "mean_hb", "urgent_rate"]
+    X_sc = StandardScaler().fit_transform(agg[cols].to_numpy(dtype=float))
+    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=seed)
+    labels = km.fit_predict(X_sc).astype(int)
+    agg["cluster"] = labels
+    sil = round(float(silhouette_score(X_sc, labels)), 4)
+    return {
+        "district_clusters": agg,
+        "silhouette": sil,
+    }
+
+# Exam Task 25.3 (35 pts)
+def pca_clinical_compression_audit(X, variance_threshold=0.85):
+    """Scale X, pick PCs for variance_threshold, and audit recon MSE."""
+    X_sc = StandardScaler().fit_transform(X)
+    full_pca = PCA().fit(X_sc)
+    cum = np.cumsum(full_pca.explained_variance_ratio_)
+    k = int(np.argmax(cum >= variance_threshold) + 1)
+    pca_k = PCA(n_components=k)
+    Z = pca_k.fit_transform(X_sc)
+    X_hat = pca_k.inverse_transform(Z)
+    cum_var = round(float(np.sum(pca_k.explained_variance_ratio_)), 4)
+    top_idx = int(np.argmax(np.abs(pca_k.components_[0])))
+    mse = round(float(np.mean((X_sc - X_hat) ** 2)), 5)
+    return {
+        "n_components": k,
+        "cumulative_variance": cum_var,
+        "top_pc1_feature_idx": top_idx,
+        "reconstruction_mse": mse,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 25 Failure Modes
+
+1. **Running Euclidean Clustering or PCA on Unscaled Units:** Leaving raw features unstandardized lets large-unit variables (`age_years` variance `451.44` vs. `temp_c` variance `0.60`) monopolize both cluster boundaries and PC1 loadings. Always apply `StandardScaler()` before K-Means, Ward, DBSCAN, or PCA unless all features share identical physical units.
+2. **Miscounting DBSCAN `-1` Noise or Crashing `silhouette_score`:** Forgetting `- {-1}` turns DBSCAN outliers into a phantom cluster, and calling `silhouette_score` when only one cluster exists immediately raises `ValueError`. Always separate noise counts first and verify at least two clusters exist before scoring.
+3. **Forgetting Mean-Centering or `np.abs(...)` in PCA Analysis:** Running `np.linalg.svd` without subtracting column means points PC1 toward the global mean rather than maximum variance, while taking `np.argmax(pca.components_[0])` without `np.abs(...)` misses strong negative loadings because PCA eigenvector signs are arbitrary.

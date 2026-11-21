@@ -1,0 +1,889 @@
+# Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning {#sec-ch26}
+
+> **Chapter Mission:** Complete **Part V (Classical Machine Learning with Scikit-Learn)** by engineering publication-grade, leak-free machine learning workflows from raw survey tables to serialized production artifacts. Using `mch_survey_sample` and `epi_surveillance`, you will build custom Scikit-Learn transformers, mix numeric and categorical preprocessing inside `ColumnTransformer` + `Pipeline`, match cross-validation splitters (`StratifiedKFold`, `GroupKFold`, `TimeSeriesSplit`) to study design, eliminate tuning optimism bias via **Nested Cross-Validation**, explore efficient hyperparameter search (`GridSearchCV`, `RandomizedSearchCV`, and Bayesian/Optuna concepts), and package verified models with `joblib`.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch26 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch26 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch26 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Author a Scikit-Learn compliant custom transformer (`BaseEstimator`, `TransformerMixin`) that safely replaces field-survey sentinel codes (such as `anc_visits == 999`) with `np.nan` on both DataFrames and NumPy arrays without mutating caller data.
+2. Assemble a single leak-free `ColumnTransformer` + `Pipeline` that routes mixed numeric and categorical features through imputation, scaling, and `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` cleanly inside every cross-validation fold.
+3. Match the cross-validation splitter to your study's statistical structure—**`StratifiedKFold`** for i.i.d. imbalanced cohorts, **`GroupKFold`** for clustered DHS surveys or multi-center hospitals, and **`TimeSeriesSplit`** for chronological epidemic forecasting.
+4. Distinguish flat `GridSearchCV` from true **Nested Cross-Validation**, quantifying and eliminating hyperparameter-selection optimism bias in peer-reviewed ML manuscripts.
+5. Compare **Grid Search**, **Randomized Search** (`RandomizedSearchCV`), and **Bayesian/TPE Optimization (Optuna)** using double-underscore (`step__param`) pipeline parameter notation.
+6. Serialize and verify complete fitted `Pipeline` objects via `joblib.dump` / `joblib.load` inside isolated temporary directories so preprocessing and model weights never drift apart in deployment.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Notebooks Break in Peer Review and Production {#sec-ch26-intuition}
+
+Across Chapters 21–25, you trained linear models, regularized regressions, decision trees, random forests, gradient boosting ensembles, clustering algorithms, and explainability audits. Yet **more than half of published clinical ML papers suffer from subtle methodological leakage** that silently inflates reported ROC-AUC before the model ever touches a new clinic.
+
+Four production engineering failures account for nearly every collapse between a promising Jupyter experiment and real-world deployment:
+
+- **Preprocessing Leakage Across Folds:** Imputing missing hemoglobin with the *entire* dataset's median or fitting `StandardScaler` before `train_test_split` leaks test-set distribution statistics into training. Wrapping every preprocessing step inside a Scikit-Learn `Pipeline` guarantees that medians, means, and category vocabularies are learned *exclusively* on each training fold.
+- **Wrong Cross-Validation Splitter for the Study Design:** Randomly splitting households from the same Bangladesh DHS primary sampling unit (`cluster_id`) lets a model memorize village-level wealth patterns instead of generalizing to unseen communities (`GroupKFold`). Likewise, randomly shuffling weekly dengue surveillance rows lets a model peek at next week's monsoon outbreak to predict last week (`TimeSeriesSplit`).
+- **Tuning Optimism Bias (Reporting `GridSearchCV.best_score_`):** When you evaluate 20 hyperparameter combinations via 5-fold CV and publish the highest CV score as your model's generalization performance, you have overfitted the validation folds! **Nested Cross-Validation** separates hyperparameter selection (*inner loop*) from unbiased performance estimation (*outer loop*).
+- **Training–Serving Skew (Saving Bare Models Without Preprocessing):** Saving only a trained `LogisticRegression` object while keeping sentinel-`999` cleanup, median imputation, and one-hot encoding scattered across notebook cells guarantees silent bugs in production. Serializing the **entire fitted `Pipeline`** with `joblib` locks preprocessing and model weights into one atomic artifact.
+
+::: {.callout-note title="Mental Model — One Pipeline, Two Nested Loops, One Artifact"}
+Think of a production ML workflow as three nested protective shells:
+
+1. **Inner Shell (`ColumnTransformer` + `Pipeline`):** Turns messy raw clinical rows (containing `999`, `NaN`, and unseen districts) into clean numeric tensors with zero leakage.
+2. **Middle Shell (Study-Matched CV & Nested CV):** Evaluates the *entire* tuning procedure on held-out clusters, future epi-weeks, or untouched outer folds so reported ROC-AUC / RMSE is reviewer-proof.
+3. **Outer Shell (`joblib` Serialization):** Packages the refitted winning `Pipeline` into a single reproducible file verified for bit-exact prediction parity.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: ColumnTransformer Pipeline & Nested Cross-Validation {#sec-ch26-mental-model}
+
+Study this end-to-end architecture before writing code—every component in Stage 3 through Stage 7 maps directly onto a box in this diagram:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph RawData["Raw Survey Data"]
+        D0["mch_survey_sample<br/>999 Sentinels, NaN, Mixed Types"]
+    end
+    subgraph NestedCV["Nested CV Audit"]
+        O1["Outer Split (K=4 / GroupKFold)<br/>Hold Out Untouched Test Fold"]
+        I1["Inner GridSearchCV (K=3)<br/>Tune model__C / max_depth"]
+        O2["Score best_estimator_<br/>Unbiased Outer AUC +/- SD"]
+    end
+    subgraph PipeBox["Leak-Free Pipeline"]
+        P0["ColumnTransformer ('prep')"]
+        N1["Numeric Branch<br/>Sentinel -> Median -> Scale"]
+        C1["Categorical Branch<br/>MostFreq -> OneHot(ignore)"]
+        M1["Estimator Step<br/>('model', LR / RF / HGB)"]
+        P0 --> N1
+        P0 --> C1
+        N1 --> M1
+        C1 --> M1
+    end
+    subgraph Artifact["Deployment"]
+        J1["Refit Best Pipeline on Train<br/>joblib.dump -> Parity Check"]
+    end
+    D0 --> O1
+    O1 -->|"Outer Train"| I1
+    I1 -->|"Fits Inside Fold"| P0
+    M1 -->|"Inner Winner"| O2
+    O1 -.->|"Outer Test Only"| O2
+    O2 --> J1
+```
+
+Look carefully at the dashed arrow from **Outer Split** to **Unbiased Outer AUC**: the outer test fold **never** enters `SimpleImputer`, `StandardScaler`, `OneHotEncoder`, or `GridSearchCV` hyperparameter selection. Only after the inner loop chooses the winning configuration does `best_estimator_` score the untouched outer test fold.
+
+::: {.callout-warning title="Two Silent Scikit-Learn Traps to Watch For"}
+1. **Unseen Test Categories:** `OneHotEncoder` defaults to `handle_unknown="error"`, which crashes inference the instant a new district or clinic tier appears at test time. Always set `handle_unknown="ignore"` and `sparse_output=False` (required by dense-input models like `HistGradientBoostingClassifier`).
+2. **Pipeline Parameter Naming:** Inside a `Pipeline([("prep", prep), ("model", clf)])`, hyperparameters for `GridSearchCV` MUST use double-underscore prefixes (`"model__C"`, `"prep__num__imputer__strategy"`). Passing bare `"C"` raises `ValueError: Invalid parameter 'C'`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch26-walkthrough}
+
+Open `part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading Survey & Epidemiological Surveillance Data {#sec-ch26-setup}
+
+```python
+from pathlib import Path
+import tempfile
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import (
+    GridSearchCV,
+    GroupKFold,
+    RandomizedSearchCV,
+    StratifiedKFold,
+    TimeSeriesSplit,
+    cross_val_score,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+epi_raw = tutor.load_data("epi_surveillance", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+print("Loaded mch_survey_sample:", mch.shape,
+      "| clusters:", mch["cluster_id"].nunique())
+print("Loaded epi_surveillance:", epi_raw.shape,
+      "| districts:", epi_raw["district"].nunique())
+```
+
+**Expected Output:**
+```text
+Loaded mch_survey_sample: (500, 12) | clusters: 50
+Loaded epi_surveillance: (416, 8) | districts: 4
+```
+
+Notice the two complementary clinical structures: `mch_survey_sample` contains **500 households nested inside 50 survey clusters (`cluster_id`)** with 8 sentinel `anc_visits == 999` values and 22 missing `maternal_hb_g_dl` values, while `epi_surveillance` contains **416 weekly dengue and respiratory counts across 4 Bangladesh districts** over 2024–2025.
+
+---
+
+### Custom Scikit-Learn Transformer (`SentinelToNaNTransformer`) {#sec-ch26-sentinel}
+
+```python
+class SentinelToNaNTransformer(BaseEstimator, TransformerMixin):
+    """Replace a survey sentinel code (e.g., 999) with np.nan."""
+
+    def __init__(self, sentinel=999):
+        self.sentinel = sentinel
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        if isinstance(X, pd.DataFrame):
+            return X.copy().replace(self.sentinel, np.nan)
+        arr = np.asarray(X, dtype=float).copy()
+        arr[arr == self.sentinel] = np.nan
+        return arr
+
+raw_anc = mch_raw[["anc_visits", "maternal_hb_g_dl"]].copy()
+tr = SentinelToNaNTransformer(sentinel=999)
+clean_anc = tr.fit_transform(raw_anc)
+print("Raw anc_visits max:", raw_anc["anc_visits"].max(),
+      "| 999 count:", int((raw_anc["anc_visits"] == 999).sum()))
+print("Transformed anc_visits max:", clean_anc["anc_visits"].max(),
+      "| NaN count:", int(clean_anc["anc_visits"].isna().sum()))
+print("Original raw_anc mutated?:",
+      bool((raw_anc["anc_visits"] == 999).sum() != 8))
+```
+
+**Expected Output:**
+```text
+Raw anc_visits max: 999 | 999 count: 8
+Transformed anc_visits max: 10.0 | NaN count: 8
+Original raw_anc mutated?: False
+```
+
+Why does inheriting from `(BaseEstimator, TransformerMixin)` matter so much?
+
+- `BaseEstimator` automatically supplies `.get_params()` and `.set_params()`, letting `sklearn.base.clone()` and `GridSearchCV` clone your custom transformer inside every CV fold—provided `__init__` assigns `self.sentinel = sentinel` without altering it.
+- `TransformerMixin` automatically supplies `.fit_transform(X, y)` by chaining `.fit(X, y)` (which returns `self`) and `.transform(X)`.
+- Branching cleanly on `isinstance(X, pd.DataFrame)` vs. `np.asarray(X, dtype=float).copy()` prevents both caller mutation and integer-array `NaN` assignment crashes.
+
+---
+
+### Leak-Free `ColumnTransformer` + `Pipeline` for Mixed Clinical Data {#sec-ch26-pipeline}
+
+```python
+num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+cat_cols = ["residence", "wealth_quintile"]
+X = mch[num_cols + cat_cols]
+y = mch["child_stunted"]
+groups = mch["cluster_id"]
+
+num_pipe = Pipeline([
+    ("sentinel", SentinelToNaNTransformer(999)),
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler()),
+])
+cat_pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("encoder", OneHotEncoder(
+        handle_unknown="ignore", sparse_output=False
+    )),
+])
+prep = ColumnTransformer([
+    ("num", num_pipe, num_cols),
+    ("cat", cat_pipe, cat_cols),
+])
+pipe_lr = Pipeline([
+    ("prep", prep),
+    ("model", LogisticRegression(max_iter=500)),
+])
+
+Z_demo = prep.fit_transform(X)
+print("Prepared matrix shape:", Z_demo.shape,
+      "| any NaN?:", bool(np.isnan(Z_demo).any()))
+unseen_row = pd.DataFrame([{
+    "maternal_age_years": 26,
+    "anc_visits": 999,
+    "maternal_hb_g_dl": np.nan,
+    "residence": "PeriUrban",
+    "wealth_quintile": "Middle",
+}])
+pipe_lr.fit(X, y)
+prob = pipe_lr.predict_proba(unseen_row)[0, 1]
+print("Unseen-category + 999 prob:", round(float(prob), 4))
+```
+
+**Expected Output:**
+```text
+Prepared matrix shape: (500, 10) | any NaN?: False
+Unseen-category + 999 prob: 0.055
+```
+
+Trace how `unseen_row` flowed safely through `pipe_lr.predict_proba(unseen_row)`:
+
+1. `SentinelToNaNTransformer(999)` converted `anc_visits = 999` to `np.nan`.
+2. `SimpleImputer(strategy="median")` filled both `anc_visits` and `maternal_hb_g_dl` using the *training-fold* medians.
+3. `StandardScaler()` standardized all 3 numeric columns using the *training-fold* means and SDs.
+4. `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` encoded the unseen `"PeriUrban"` residence category as `[0.0, 0.0]` instead of crashing, producing a clean 10-column dense array (`3 numeric + 2 residence + 5 wealth_quintile`).
+
+---
+
+### Matching CV Splitters to Study Design (`StratifiedKFold`, `GroupKFold`, `TimeSeriesSplit`) {#sec-ch26-cv-splitters}
+
+```python
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+skf_auc = cross_val_score(pipe_lr, X, y, cv=skf, scoring="roc_auc")
+
+gkf = GroupKFold(n_splits=5)
+gkf_auc = cross_val_score(
+    pipe_lr, X, y, groups=groups, cv=gkf, scoring="roc_auc"
+)
+
+dhaka = (
+    epi_raw[epi_raw["district"] == "Dhaka"]
+    .sort_values(["year", "epi_week"])
+    .reset_index(drop=True)
+)
+X_epi = dhaka[["rainfall_mm", "mean_temp_c", "epi_week"]]
+y_epi = dhaka["dengue_cases"]
+ts_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", Ridge(alpha=1.0)),
+])
+tscv = TimeSeriesSplit(n_splits=4)
+ts_rmse = -cross_val_score(
+    ts_pipe, X_epi, y_epi, cv=tscv,
+    scoring="neg_root_mean_squared_error",
+)
+print(f"StratifiedKFold (5-fold) AUC: "
+      f"{skf_auc.mean():.4f} +/- {skf_auc.std():.4f}")
+print(f"GroupKFold (50 clusters) AUC: "
+      f"{gkf_auc.mean():.4f} +/- {gkf_auc.std():.4f}")
+print(f"TimeSeriesSplit (Dhaka) RMSE: {ts_rmse.mean():.4f} | "
+      f"folds: {[round(float(r), 2) for r in ts_rmse]}")
+```
+
+**Expected Output:**
+```text
+StratifiedKFold (5-fold) AUC: 0.6844 +/- 0.0535
+GroupKFold (50 clusters) AUC: 0.7168 +/- 0.0802
+TimeSeriesSplit (Dhaka) RMSE: 92.6077 | folds: [242.89, 25.03, 59.17, 43.34]
+```
+
+Study the scientific contrast across all three validation strategies:
+
+- **`StratifiedKFold`** preserves the 14% stunting class prevalence (`70/500`) across folds (`AUC = 0.6844 +/- 0.0535`), appropriate for independent patient cohorts.
+- **`GroupKFold`** holds out **entire DHS clusters** (`10 clusters` per validation fold, zero cluster overlap between train and test), revealing larger fold-to-fold variance (`+/- 0.0802`) driven by community-level heterogeneity.
+- **`TimeSeriesSplit`** enforces strict chronological ordering on Dhaka's 104 weekly dengue counts. Notice why Fold 1 has high RMSE (`242.89`) while Folds 2–4 drop to `25.03–59.17`: Fold 1 predicts the very first unseen monsoon peak from winter training weeks alone, whereas later expanding windows have observed a full seasonal cycle! Remember also to **negate** `neg_root_mean_squared_error` so RMSE is positive.
+
+---
+
+### Eliminating Tuning Optimism Bias With True Nested Cross-Validation {#sec-ch26-nested-cv}
+
+Suppose you tune a `RandomForestClassifier` grid with flat `GridSearchCV` and report `flat_gs.best_score_`. How optimistic is that score compared to true **Nested CV** where every outer fold tunes hyperparameters strictly on its own inner folds?
+
+```python
+pipe_rf = Pipeline([
+    ("prep", prep),
+    ("model", RandomForestClassifier(
+        n_estimators=25, random_state=42
+    )),
+])
+rf_grid = {
+    "model__max_depth": [2, 4, 8],
+    "model__min_samples_leaf": [1, 5, 15],
+}
+outer_cv = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
+flat_gs = GridSearchCV(pipe_rf, rf_grid, cv=outer_cv, scoring="roc_auc")
+flat_gs.fit(X, y)
+
+nested_scores = []
+for tr_i, te_i in outer_cv.split(X, y):
+    inner_cv = StratifiedKFold(
+        n_splits=3, shuffle=True, random_state=42
+    )
+    gs = GridSearchCV(
+        pipe_rf, rf_grid, cv=inner_cv, scoring="roc_auc"
+    )
+    gs.fit(X.iloc[tr_i], y.iloc[tr_i])
+    prob = gs.best_estimator_.predict_proba(X.iloc[te_i])[:, 1]
+    nested_scores.append(round(float(roc_auc_score(y.iloc[te_i], prob)), 4))
+
+bias = float(flat_gs.best_score_ - np.mean(nested_scores))
+print(f"Naive Flat GridSearchCV AUC: {flat_gs.best_score_:.4f} | "
+      f"best: {flat_gs.best_params_}")
+print(f"True Nested CV AUC:          {np.mean(nested_scores):.4f} "
+      f"+/- {np.std(nested_scores):.4f}")
+print("Outer fold scores:", nested_scores)
+print(f"Optimism bias (flat - nested): {bias:.4f}")
+```
+
+**Expected Output:**
+```text
+Naive Flat GridSearchCV AUC: 0.6827 | best: {'model__max_depth': 8, 'model__min_samples_leaf': 5}
+True Nested CV AUC:          0.6716 +/- 0.0360
+Outer fold scores: [0.6266, 0.6495, 0.7199, 0.6903]
+Optimism bias (flat - nested): 0.0112
+```
+
+There it is in black and white: even on a modest 9-configuration grid, reporting `flat_gs.best_score_` (`0.6827`) inflates expected generalization by **`+0.0112` ROC-AUC** over unbiased Nested CV (`0.6716`). On larger 100-configuration grids in small clinical cohorts ($n < 500$), this selection optimism easily reaches `+0.03` to `+0.07` AUC!
+
+---
+
+### Efficient Hyperparameter Search (`RandomizedSearchCV` & Optuna Concepts) {#sec-ch26-tuning}
+
+Exhaustive grid search scales exponentially ($O(m^d)$) in the number of hyperparameters $d$. Sampling random combinations (`RandomizedSearchCV`) or using adaptive **Tree-structured Parzen Estimator (TPE) Bayesian optimization** (as in **Optuna**) explores far more unique values of important hyperparameters within the same compute budget:
+
+```python
+param_dist = {
+    "model__max_depth": [2, 3, 4, 6, 8, None],
+    "model__min_samples_leaf": [1, 2, 5, 10, 15],
+    "model__max_features": ["sqrt", "log2", 0.7],
+}
+rs = RandomizedSearchCV(
+    pipe_rf,
+    param_dist,
+    n_iter=6,
+    cv=StratifiedKFold(n_splits=4, shuffle=True, random_state=42),
+    scoring="roc_auc",
+    random_state=42,
+)
+rs.fit(X, y)
+print(f"RandomizedSearchCV (6 draws) best AUC: {rs.best_score_:.4f}")
+print("Best params:", rs.best_params_)
+```
+
+**Expected Output:**
+```text
+RandomizedSearchCV (6 draws) best AUC: 0.6862
+Best params: {'model__min_samples_leaf': 5, 'model__max_features': 'log2', 'model__max_depth': 3}
+```
+
+With only **6 random draws** from a 90-point search space, `RandomizedSearchCV` outperformed the 9-point rigid grid (`0.6862` vs. `0.6827`) while running 33% fewer model fits! In large deep-learning or gradient-boosting sweeps, **Optuna** (`optuna.create_study(direction="maximize")`) takes this one step further by fitting a probabilistic surrogate model (TPE) over completed trials to focus subsequent trials on high-AUC regions while pruning hopeless runs early.
+
+---
+
+### Reproducible Serialization With `joblib` Inside `tempfile.TemporaryDirectory()` {#sec-ch26-joblib}
+
+```python
+X_clean = X.replace(999, np.nan)
+deploy_prep = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ]), num_cols),
+    ("cat", cat_pipe, cat_cols),
+])
+deploy_pipe = Pipeline([
+    ("prep", deploy_prep),
+    ("model", LogisticRegression(max_iter=500)),
+])
+deploy_pipe.fit(X_clean, y)
+X_sample = X_clean.iloc[:5]
+with tempfile.TemporaryDirectory() as tmpdir:
+    artifact = Path(tmpdir) / "stunting_lr_pipeline.joblib"
+    joblib.dump(deploy_pipe, artifact)
+    reloaded = joblib.load(artifact)
+    p_orig = deploy_pipe.predict_proba(X_sample)[:, 1]
+    p_load = reloaded.predict_proba(X_sample)[:, 1]
+    print("Saved artifact bytes:", artifact.stat().st_size)
+    print("Predictions bit-identical?:",
+          bool(np.allclose(p_orig, p_load)))
+    print("Reloaded risk probs:",
+          [round(float(p), 4) for p in p_load])
+```
+
+**Expected Output:**
+```text
+Saved artifact bytes: 4474
+Predictions bit-identical?: True
+Reloaded risk probs: [0.2576, 0.3069, 0.2505, 0.1818, 0.3862]
+```
+
+The entire production pipeline—training medians, scaling parameters, one-hot vocabulary, and logistic weights—serializes into just **4,474 bytes** and reloads with bit-identical probabilities. Notice a subtle Python MLOps rule demonstrated here: pipelines composed of built-in Scikit-Learn steps reload anywhere out-of-the-box, whereas custom classes (like `SentinelToNaNTransformer`) must be defined in an importable `.py` module—not an interactive `__main__` notebook cell—before `joblib.dump` can pickle them cleanly for another server. Wrapping verification demos in `tempfile.TemporaryDirectory()` guarantees automatic cleanup so stray `.joblib` binaries never pollute your Git repository.
+
+---
+
+### Break It On Purpose! (Production ML Error Anatomy) {#sec-ch26-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Unseen Category When `handle_unknown='error'`)"}
+```python
+enc_strict = OneHotEncoder(handle_unknown="error", sparse_output=False)
+enc_strict.fit(pd.DataFrame({"district": ["Dhaka", "Sylhet"]}))
+enc_strict.transform(pd.DataFrame({"district": ["Khulna"]}))
+```
+**Python's Traceback:**
+```text
+ValueError: Found unknown categories ['Khulna'] in column 0 during transform
+```
+**Diagnosis:** `OneHotEncoder` defaults to `handle_unknown="error"`. The first time a validation fold or new clinic sends a district unseen during training (`"Khulna"`), inference crashes immediately.  
+**Fix:** Always configure `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` so unseen categories safely map to an all-zero indicator vector.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Missing `model__` Prefix in `GridSearchCV`)"}
+```python
+bad_gs = GridSearchCV(pipe_lr, {"C": [0.1, 1.0]}, cv=3)
+bad_gs.fit(X, y)
+```
+**Python's Traceback:**
+```text
+ValueError: Invalid parameter 'C' for estimator Pipeline(...).
+Valid parameters are: ['memory', 'steps', 'transform_input', 'verbose'].
+```
+**Diagnosis:** `GridSearchCV` inspects parameters of the outer `Pipeline` object, not its inner classifier. Bare `"C"` does not exist on `Pipeline`.  
+**Fix:** Prefix every inner parameter with `<step_name>__` (double underscore): `{"model__C": [0.1, 1.0]}`. You can inspect every valid key anytime with `pipe_lr.get_params().keys()`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Calling `GroupKFold` Without `groups=`)"}
+```python
+cross_val_score(
+    pipe_lr, X, y, cv=GroupKFold(n_splits=5), scoring="roc_auc"
+)
+```
+**Python's Traceback:**
+```text
+ValueError: The 'groups' parameter should not be None.
+```
+**Diagnosis:** `GroupKFold` cannot partition survey clusters without knowing which cluster each row belongs to. Passing `cv=GroupKFold(...)` alone leaves `groups=None`.  
+**Fix:** Always forward `groups=mch["cluster_id"]` explicitly into `cross_val_score(pipe, X, y, groups=groups, cv=gkf, scoring="roc_auc")` (and into `outer.split(X, y, groups=groups)` in manual nested loops).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch26-blueprint}
+
+**Scenario:** Your health-analytics team is preparing a manuscript and clinical risk API predicting child stunting (`child_stunted`) from `mch_survey_sample`. Peer reviewers require (1) **zero data leakage** across the 50 survey clusters (`cluster_id`), (2) **nested hyperparameter tuning** of `LogisticRegression`'s regularization strength `model__C`, and (3) a **refitted, `joblib`-verified production artifact** tested for exact reload parity without leaving temporary binaries on disk.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Input Hygiene Layer:**
+
+   - Copy `raw_df` first (`df = raw_df.copy()`), normalize `residence` casing (`str.strip().str.title()`), and convert numeric sentinel `999` codes to `np.nan` before building the portable built-in pipeline.
+   - Select `num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]`, `cat_cols = ["residence", "wealth_quintile"]`, `y = df["child_stunted"]`, and `grps = df["cluster_id"]`.
+
+2. **Leak-Free Pipeline & Group-Nested Audit:**
+
+   - Build a portable `ColumnTransformer` chaining `SimpleImputer(strategy="median")` $\rightarrow$ `StandardScaler()` on numeric features and `SimpleImputer(strategy="most_frequent")` $\rightarrow$ `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` on categorical features.
+   - Outer loop: `GroupKFold(n_splits=5)` on `grps`; inner loop: `GridSearchCV(cand, {"model__C": [0.05, 0.2, 1.0, 5.0]}, cv=StratifiedKFold(3, shuffle=True, random_state=seed), scoring="roc_auc")`.
+
+3. **Final Refit & Temporary Serialization Parity Check:**
+
+   - Fit `final_search` across the full dataset to choose `best_C` and extract `best_estimator_`.
+   - Inside `with tempfile.TemporaryDirectory() as tmpdir:`, dump and reload `best_pipe` via `joblib`, verifying `np.allclose` on predicted probabilities and recording `artifact_bytes`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def audit_and_package_dhs_model(raw_df, seed=42):
+    """Run Group-Nested CV, refit best DHS pipeline & verify joblib."""
+    df = raw_df.copy()
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    n_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+    c_cols = ["residence", "wealth_quintile"]
+    df[n_cols] = df[n_cols].replace(999, np.nan)
+    X_all, y_all = df[n_cols + c_cols], df["child_stunted"]
+    grps = df["cluster_id"]
+
+    n_pipe = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ])
+    c_pipe = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("encoder", OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )),
+    ])
+    pre = ColumnTransformer([
+        ("num", n_pipe, n_cols),
+        ("cat", c_pipe, c_cols),
+    ])
+    cand = Pipeline([
+        ("prep", pre),
+        ("model", LogisticRegression(max_iter=500)),
+    ])
+
+    grid = {"model__C": [0.05, 0.2, 1.0, 5.0]}
+    outer = GroupKFold(n_splits=5)
+    fold_aucs = []
+    for tr_i, te_i in outer.split(X_all, y_all, groups=grps):
+        inner = StratifiedKFold(
+            n_splits=3, shuffle=True, random_state=seed
+        )
+        search = GridSearchCV(cand, grid, cv=inner, scoring="roc_auc")
+        search.fit(X_all.iloc[tr_i], y_all.iloc[tr_i])
+        pr = search.best_estimator_.predict_proba(X_all.iloc[te_i])[:, 1]
+        auc_i = roc_auc_score(y_all.iloc[te_i], pr)
+        fold_aucs.append(round(float(auc_i), 4))
+
+    final_search = GridSearchCV(
+        cand, grid,
+        cv=StratifiedKFold(n_splits=3, shuffle=True, random_state=seed),
+        scoring="roc_auc",
+    )
+    final_search.fit(X_all, y_all)
+    best_pipe = final_search.best_estimator_
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = Path(tmpdir) / "dhs_production_pipe.joblib"
+        joblib.dump(best_pipe, out_path)
+        reloaded = joblib.load(out_path)
+        same = bool(np.allclose(
+            best_pipe.predict_proba(X_all.iloc[:5])[:, 1],
+            reloaded.predict_proba(X_all.iloc[:5])[:, 1],
+        ))
+        n_bytes = int(out_path.stat().st_size)
+
+    return {
+        "nested_group_auc": round(float(np.mean(fold_aucs)), 4),
+        "nested_group_std": round(float(np.std(fold_aucs)), 4),
+        "best_C": final_search.best_params_["model__C"],
+        "artifact_bytes": n_bytes,
+        "reload_verified": same,
+    }
+
+print(audit_and_package_dhs_model(mch_raw))
+```
+
+**Output:**
+```text
+{'nested_group_auc': 0.7147, 'nested_group_std': 0.0851, 'best_C': 0.2, 'artifact_bytes': 4474, 'reload_verified': True}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch26-todos}
+
+Open `part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six production ML workflow building blocks below. Pass each **class or function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 26.1 (`SentinelToNaNTransformer`):** Build a custom `(BaseEstimator, TransformerMixin)` class with `__init__(self, sentinel=999)`, `.fit(self, X, y=None)` returning `self`, and `.transform(self, X)` returning a non-mutated copy replacing `self.sentinel` with `np.nan` for both `pd.DataFrame` and `np.ndarray` inputs.
+- **To-Do 26.2 (`build_mixed_preprocessor(num_cols, cat_cols)`):** Return a `ColumnTransformer` with a numeric pipeline (`SimpleImputer(strategy="median")` + `StandardScaler()`) and a categorical pipeline (`SimpleImputer(strategy="most_frequent")` + `OneHotEncoder(handle_unknown="ignore", sparse_output=False)`).
+- **To-Do 26.3 (`cross_validate_pipeline(pipe, X, y, cv=5, seed=42)`):** Run `StratifiedKFold(n_splits=cv, shuffle=True, random_state=seed)` + `cross_val_score(..., scoring="roc_auc")` and return `{"mean_roc_auc": round4, "std_roc_auc": round4, "fold_scores": list_round4}`.
+- **To-Do 26.4 (`group_cv_evaluation(pipe, X, y, groups, n_splits=5)`):** Run `GroupKFold(n_splits=n_splits)` + `cross_val_score(..., groups=groups, scoring="roc_auc")` and return `{"mean_roc_auc": round4, "std_roc_auc": round4, "n_splits": int}`.
+- **To-Do 26.5 (`temporal_cv_forecast_rmse(pipe, X, y, n_splits=4)`):** Run `TimeSeriesSplit(n_splits=n_splits)` + `cross_val_score(..., scoring="neg_root_mean_squared_error")`, negate to positive RMSEs, and return `{"mean_rmse": round4, "fold_rmses": list_round4}`.
+- **To-Do 26.6 (`save_and_reload_pipeline(pipe, model_path, X_sample)`):** Save `pipe` via `joblib.dump`, reload via `joblib.load`, compare predictions on `X_sample`, and return `{"file_bytes": int, "predictions_match": bool, "reloaded_preds": preds}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch26-test}
+
+Work through all 10 production ML and Scikit-Learn reasoning questions on paper before checking Stage 8:
+
+1. **Leakage Mechanics:** A colleague computes `df["hb"] = df["hb"].fillna(df["hb"].median())` and `X_scaled = StandardScaler().fit_transform(X)` *before* running 5-fold cross-validation. What specific statistical information leaked from the validation folds into training, and how does `Pipeline` stop it?
+2. **`sklearn.base.clone()` Contract:** Why will `cross_val_score` or `GridSearchCV` fail if a custom transformer's `__init__(self, sentinel=999)` stores `self._sentinel = float(sentinel)` instead of `self.sentinel = sentinel`?
+3. **Integer Array `NaN` Trap:** Suppose `X` is an `int64` NumPy array `np.array([[3, 999], [4, 5]])`. What happens if `transform(X)` runs `arr = X.copy(); arr[arr == 999] = np.nan` without casting to `float`?
+4. **Step Ordering Inside `ColumnTransformer`:** You accidentally place `SimpleImputer(strategy="median")` *before* `SentinelToNaNTransformer(999)` in the numeric pipeline. What happens when `anc_visits` contains `999`?
+5. **Unseen Category Behavior:** A `ColumnTransformer` uses `OneHotEncoder(handle_unknown="ignore", sparse_output=False)` fitted on `["Rural", "Urban"]`. What 2-element vector does it output for a new test row with `"PeriUrban"`?
+6. **Choosing the Right CV Splitter:** Match each study to `StratifiedKFold`, `GroupKFold`, or `TimeSeriesSplit`: (a) 600 ICU admissions where 120 patients have multiple repeat visits; (b) 156 weekly cholera case counts in Chattogram; (c) 1,200 independent blood donors screened for rare (3%) hepatitis B.
+7. **Why `neg_root_mean_squared_error` Is Negative:** When you run `cross_val_score(..., scoring="neg_root_mean_squared_error")`, Scikit-Learn returns `[-242.89, -25.03, -59.17, -43.34]`. Why is it negative by design, and how do you convert it for a manuscript table?
+8. **Nested CV Fit Count:** You run **4-fold outer** $\times$ **3-fold inner** Nested CV over a hyperparameter grid of **5** candidate values of `model__C`, with `GridSearchCV(refit=True)`. Exactly how many total pipeline `.fit()` calls occur? (Hint: count inner CV fits + 1 refit per outer fold!)
+9. **Grid Search vs. Randomized Search vs. Optuna:** You have a compute budget of 20 model evaluations across 4 hyperparameters, only 1 of which strongly drives ROC-AUC. Why does `RandomizedSearchCV(n_iter=20)` typically beat a $2 \times 2 \times 2 \times 2$ grid—and what extra advantage does Optuna's TPE sampler add?
+10. **Training–Serving Skew:** Why is `joblib.dump(pipe.named_steps["model"], "model.joblib")` an anti-pattern in production compared to `joblib.dump(pipe, "pipeline.joblib")`?
+
+---
+
+## Stage 7 — Chapter 26 Part V Capstone Coding Exam (100 Points) {#sec-ch26-exam}
+
+Open `part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb`, implement all three capstone functions, and run `tutor.check_exam("ch26", exam_submissions)` to earn your **Part V Capstone** score out of 100 points.
+
+### Exam Task 26.1 (30 Points): `build_dhs_end_to_end_pipeline(num_cols, cat_cols, model)`
+
+Return a single leak-free `Pipeline([("prep", prep), ("model", model)])` whose `"prep"` `ColumnTransformer` chains:
+
+- On `num_cols`: `SentinelToNaNTransformer(999)` $\rightarrow$ `SimpleImputer(strategy="median")` $\rightarrow$ `StandardScaler()`.
+- On `cat_cols`: `SimpleImputer(strategy="most_frequent")` $\rightarrow$ `OneHotEncoder(handle_unknown="ignore", sparse_output=False)`.
+
+The verifier checks that your pipeline handles `999`, `NaN`, and unseen test categories without crashing—and that identical rows with `anc_visits=999` vs. `anc_visits=NaN` yield identical predictions.
+
+### Exam Task 26.2 (35 Points): `run_nested_cv_audit(pipe, param_grid, X, y, outer_splits=4, inner_splits=3, seed=42)`
+
+Implement true **Nested Stratified Cross-Validation**:
+
+- Outer splitter: `StratifiedKFold(n_splits=outer_splits, shuffle=True, random_state=seed)`.
+- Inner tuning on each outer training split: `GridSearchCV(pipe, param_grid, cv=StratifiedKFold(n_splits=inner_splits, shuffle=True, random_state=seed), scoring="roc_auc")`.
+- Evaluate `gs.best_estimator_` on the untouched outer test fold via `roc_auc_score` (rounded to 4 decimals) and log `gs.best_params_`.
+- Return `{"outer_mean_auc": round4, "outer_std_auc": round4, "outer_scores": list_round4, "fold_best_params": list_of_dicts}`.
+
+### Exam Task 26.3 (35 Points): `benchmark_part5_capstone(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Clean `residence` casing (`str.strip().str.title()`).
+- Predict `child_stunted` from `num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]` and `cat_cols = ["residence", "wealth_quintile"]`.
+- Use `GroupKFold(n_splits=5)` grouped by `cluster_id` (`scoring="roc_auc"`) to benchmark leak-free `build_dhs_end_to_end_pipeline` across:
+  - `"LogisticRegression"`: `LogisticRegression(max_iter=500)`
+  - `"RandomForestClassifier"`: `RandomForestClassifier(n_estimators=80, max_depth=6, random_state=seed)`
+  - `"HistGradientBoostingClassifier"`: `HistGradientBoostingClassifier(max_depth=4, random_state=seed)`
+- Return `{"leaderboard": df_sorted, "winner": str}` where `leaderboard` has columns `["model", "mean_auc", "std_auc"]` (rounded to 4 decimals), sorted descending by `mean_auc` with a clean integer index.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch26-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **Test-fold medians, means, and standard deviations** leaked into every training fold, subtly inflating validation accuracy. A `Pipeline` fits imputers and scalers *exclusively* on `X_train` inside each fold and applies `.transform(X_val)` using those training-only statistics.
+2. Scikit-Learn's `clone()` inspects `__init__` parameter names via `get_params()` and expects an identically named, unmodified attribute (`self.sentinel`). Renaming or mutating it breaks cloning inside `cross_val_score` and `GridSearchCV`.
+3. NumPy raises **`ValueError: cannot convert float NaN to integer`**. Always convert to a floating-point copy first: `arr = np.asarray(X, dtype=float).copy()`.
+4. `SimpleImputer` sees `999` as a valid number (leaving it untouched and skewing the training median), and *then* `SentinelToNaNTransformer` turns `999` into `NaN`—sending un-imputed `NaN`s straight into `StandardScaler` and crashing `LogisticRegression`!
+5. It outputs **`[0.0, 0.0]`** (all zeros across the known category columns) without raising an error.
+6. (a) **`GroupKFold`** grouped by `patient_id` (prevents repeat-visit patient leakage); (b) **`TimeSeriesSplit`** (prevents future-to-past look-ahead leakage); (c) **`StratifiedKFold`** (preserves the 3% rare positive class across independent donors).
+7. Scikit-Learn enforces a uniform **"higher is better"** convention across all scorers so `GridSearchCV` can always maximize. Multiply by `-1` (`rmses = -scores`) before reporting RMSE.
+8. Each of the 4 outer folds runs `3 inner folds * 5 grid configs = 15` inner fits plus **1 refit** of `best_estimator_` on the full outer training fold = `16` fits per outer fold $\Rightarrow 4 \times 16 = \mathbf{64}$ total pipeline `.fit()` calls!
+9. A $2^4$ grid tests only **2 unique values** along the single important hyperparameter, whereas `RandomizedSearchCV(n_iter=20)` probes **20 distinct values** along every axis. Optuna's TPE sampler further adapts sequentially, concentrating later trials near promising regions and pruning weak trials early.
+10. Saving only the bare model throws away the fitted sentinel cleaner, median imputer, scaler mean/SD, and one-hot encoder column order—causing silent feature misalignment or crashes when raw rows arrive in production.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+from pathlib import Path
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import (
+    GroupKFold,
+    StratifiedKFold,
+    TimeSeriesSplit,
+    cross_val_score,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+# To-Do 26.1
+class SentinelToNaNTransformer(BaseEstimator, TransformerMixin):
+    """Replace numeric sentinel codes (e.g., 999) with np.nan."""
+
+    def __init__(self, sentinel=999):
+        self.sentinel = sentinel
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        if isinstance(X, pd.DataFrame):
+            return X.copy().replace(self.sentinel, np.nan)
+        arr = np.asarray(X, dtype=float).copy()
+        arr[arr == self.sentinel] = np.nan
+        return arr
+
+# To-Do 26.2
+def build_mixed_preprocessor(num_cols, cat_cols):
+    """Return a ColumnTransformer for numeric + categorical features."""
+    num_pipe = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ])
+    cat_pipe = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("encoder", OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )),
+    ])
+    return ColumnTransformer([
+        ("num", num_pipe, num_cols),
+        ("cat", cat_pipe, cat_cols),
+    ])
+
+# To-Do 26.3
+def cross_validate_pipeline(pipe, X, y, cv=5, seed=42):
+    """Evaluate a pipeline via StratifiedKFold ROC-AUC cross-validation."""
+    skf = StratifiedKFold(
+        n_splits=cv, shuffle=True, random_state=seed
+    )
+    scores = cross_val_score(pipe, X, y, cv=skf, scoring="roc_auc")
+    return {
+        "mean_roc_auc": round(float(scores.mean()), 4),
+        "std_roc_auc": round(float(scores.std()), 4),
+        "fold_scores": [round(float(s), 4) for s in scores],
+    }
+
+# To-Do 26.4
+def group_cv_evaluation(pipe, X, y, groups, n_splits=5):
+    """Evaluate a pipeline via GroupKFold ROC-AUC without group leaks."""
+    gkf = GroupKFold(n_splits=n_splits)
+    scores = cross_val_score(
+        pipe, X, y, groups=groups, cv=gkf, scoring="roc_auc"
+    )
+    return {
+        "mean_roc_auc": round(float(scores.mean()), 4),
+        "std_roc_auc": round(float(scores.std()), 4),
+        "n_splits": int(n_splits),
+    }
+
+# To-Do 26.5
+def temporal_cv_forecast_rmse(pipe, X, y, n_splits=4):
+    """Evaluate chronological forecasting RMSE via TimeSeriesSplit."""
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    rmses = -cross_val_score(
+        pipe, X, y, cv=tscv, scoring="neg_root_mean_squared_error"
+    )
+    return {
+        "mean_rmse": round(float(rmses.mean()), 4),
+        "fold_rmses": [round(float(r), 4) for r in rmses],
+    }
+
+# To-Do 26.6
+def save_and_reload_pipeline(pipe, model_path, X_sample):
+    """Dump a fitted pipeline with joblib, reload, and verify preds."""
+    joblib.dump(pipe, model_path)
+    reloaded = joblib.load(model_path)
+    orig_preds = pipe.predict(X_sample)
+    reloaded_preds = reloaded.predict(X_sample)
+    return {
+        "file_bytes": int(Path(model_path).stat().st_size),
+        "predictions_match": bool(
+            np.allclose(orig_preds, reloaded_preds)
+        ),
+        "reloaded_preds": reloaded_preds,
+    }
+```
+
+### C. Annotated Solutions — Part V Capstone Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import GridSearchCV
+
+# Exam Task 26.1 (30 pts)
+def build_dhs_end_to_end_pipeline(num_cols, cat_cols, model):
+    """Return leak-free DHS Pipeline with sentinel-999 & mixed prep."""
+    num_pipe = Pipeline([
+        ("sentinel", SentinelToNaNTransformer(999)),
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ])
+    cat_pipe = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("encoder", OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )),
+    ])
+    prep = ColumnTransformer([
+        ("num", num_pipe, num_cols),
+        ("cat", cat_pipe, cat_cols),
+    ])
+    return Pipeline([("prep", prep), ("model", model)])
+
+# Exam Task 26.2 (35 pts)
+def run_nested_cv_audit(
+    pipe, param_grid, X, y, outer_splits=4, inner_splits=3, seed=42
+):
+    """Run true Nested Stratified CV and return outer AUC audit."""
+    outer_cv = StratifiedKFold(
+        n_splits=outer_splits, shuffle=True, random_state=seed
+    )
+    outer_scores = []
+    fold_best_params = []
+    for tr_idx, te_idx in outer_cv.split(X, y):
+        X_tr = X.iloc[tr_idx] if hasattr(X, "iloc") else X[tr_idx]
+        X_te = X.iloc[te_idx] if hasattr(X, "iloc") else X[te_idx]
+        y_tr = y.iloc[tr_idx] if hasattr(y, "iloc") else y[tr_idx]
+        y_te = y.iloc[te_idx] if hasattr(y, "iloc") else y[te_idx]
+        inner_cv = StratifiedKFold(
+            n_splits=inner_splits, shuffle=True, random_state=seed
+        )
+        gs = GridSearchCV(
+            pipe, param_grid, cv=inner_cv, scoring="roc_auc"
+        )
+        gs.fit(X_tr, y_tr)
+        probs = gs.best_estimator_.predict_proba(X_te)[:, 1]
+        outer_scores.append(round(float(roc_auc_score(y_te, probs)), 4))
+        fold_best_params.append(gs.best_params_)
+    return {
+        "outer_mean_auc": round(float(np.mean(outer_scores)), 4),
+        "outer_std_auc": round(float(np.std(outer_scores)), 4),
+        "outer_scores": outer_scores,
+        "fold_best_params": fold_best_params,
+    }
+
+# Exam Task 26.3 (35 pts)
+def benchmark_part5_capstone(mch_df, seed=42):
+    """Benchmark 3 leak-free DHS pipelines under 5-fold GroupKFold."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    num_cols = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl"
+    ]
+    cat_cols = ["residence", "wealth_quintile"]
+    X = work[num_cols + cat_cols]
+    y = work["child_stunted"]
+    groups = work["cluster_id"]
+    gkf = GroupKFold(n_splits=5)
+
+    models = {
+        "LogisticRegression": LogisticRegression(max_iter=500),
+        "RandomForestClassifier": RandomForestClassifier(
+            n_estimators=80, max_depth=6, random_state=seed
+        ),
+        "HistGradientBoostingClassifier": HistGradientBoostingClassifier(
+            max_depth=4, random_state=seed
+        ),
+    }
+    rows = []
+    for name, mdl in models.items():
+        pipe = build_dhs_end_to_end_pipeline(num_cols, cat_cols, mdl)
+        scores = cross_val_score(
+            pipe, X, y, groups=groups, cv=gkf, scoring="roc_auc"
+        )
+        rows.append({
+            "model": name,
+            "mean_auc": round(float(scores.mean()), 4),
+            "std_auc": round(float(scores.std()), 4),
+        })
+    leaderboard = (
+        pd.DataFrame(rows)
+        .sort_values("mean_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+    return {
+        "leaderboard": leaderboard,
+        "winner": str(leaderboard.loc[0, "model"]),
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 26 Failure Modes
+
+1. **Forgetting `SentinelToNaNTransformer(999)` Before `SimpleImputer` (or Mutating Inputs):** If sentinel `999` is left uncleaned or placed after median imputation, `999` corrupts training means/SDs and produces nonsensical risk probabilities. Always clean sentinels first inside the numeric sub-pipeline on a non-mutated copy.
+2. **Omitting `handle_unknown="ignore"` or `model__` Prefixes:** Default `OneHotEncoder(handle_unknown="error")` crashes whenever an unseen district appears in test data, while unprefixed keys like `"C"` fail inside `GridSearchCV(Pipeline(...))`. Always check `pipe.get_params().keys()` before writing a search grid.
+3. **Confusing Flat CV Tuning Scores With Unbiased Generalization (or Ignoring Clusters/Time):** Reporting `GridSearchCV.best_score_` introduces positive optimism bias, and applying random `KFold` to clustered DHS surveys (`cluster_id`) or weekly surveillance (`epi_week`) leaks community and temporal structure. Match the splitter to the study design and wrap hyperparameter search inside Nested CV.
+
+---
+
+::: {.callout-tip title="Part V Milestone Achieved — Welcome to Part VI: Deep Learning & PyTorch!"}
+**Congratulations!** By completing **Chapter 26**, you have mastered the complete **Classical Machine Learning (Part V)** toolkit: leak-free Scikit-Learn `Pipeline` and `ColumnTransformer` engineering, regularized linear models, tree ensembles, unsupervised clustering, model calibration & explainability, study-matched Nested Cross-Validation, and reproducible `joblib` deployment—all audited on real-world clinical and epidemiological datasets where regularized `LogisticRegression` (`0.7168` cluster-CV AUC) proved why disciplined baselines must always anchor a scientific benchmark!
+
+In **Part VI (Deep Learning & PyTorch)**, you will carry this exact scientific discipline—reproducible seeds, strict validation splits, and zero data leakage—into **neural networks**: PyTorch tensors and automatic differentiation (`autograd`), custom `Dataset`/`DataLoader` pipelines, multi-layer perceptrons, convolutional neural networks (CNNs) for medical imaging, and transfer learning for research manuscripts.
+:::

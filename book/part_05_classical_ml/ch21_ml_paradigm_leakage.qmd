@@ -1,0 +1,797 @@
+# The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff {#sec-ch21}
+
+> **Chapter Mission:** Launch **Part V (Classical Machine Learning with Scikit-Learn)** by mastering the scientific rules that separate trustworthy predictive models from retracted papers. Using Bangladesh maternal-child health survey records (`mch_survey_sample`) and weekly outbreak surveillance logs (`epi_surveillance`), you will reframe explanatory statistics into supervised prediction, engineer leak-free stratified, cluster-grouped, and chronological splits, benchmark against zero-skill baselines, and diagnose bias versus variance through learning curves.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch21 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch21 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch21 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Distinguish **explanatory statistical inference** (estimating $p$-values, confidence intervals, and causal/adjusted effects) from **predictive machine learning** (minimizing out-of-sample generalization error on unseen cohorts).
+2. Partition supervised datasets cleanly into **stratified train / validation / test splits** preserving exact row totals and target class balance without touching the locked test set during tuning.
+3. Prevent **structural data leakage** in clustered surveys (DHS enumeration clusters via `GroupShuffleSplit`) and longitudinal surveillance feeds (strict chronological cutoff splits via `year < cutoff_year`).
+4. Enforce the **fit-on-train-only preprocessing boundary** (`StandardScaler`), proving quantitatively how scaling before splitting injects phantom optimism into test accuracy.
+5. Benchmark every classifier against a zero-skill **`DummyClassifier(strategy="most_frequent")`** floor before claiming predictive utility.
+6. Diagnose **Underfitting (High Bias)** vs. **Overfitting (High Variance)** using model-complexity sweeps and multi-fraction **learning curves**.
+
+---
+
+## Stage 1 — First-Principles Intuition: From Explanatory $p$-Values to Out-of-Sample Generalization {#sec-ch21-intuition}
+
+In Chapter 20, you fitted a multivariable `statsmodels.api.Logit` model on `mch_survey_sample` and discovered a statistically significant protective association between antenatal care visits (`anc_visits`) and maternal anemia ($\text{aOR} = 0.9006$, $p = 0.0378$). That is **explanatory inference**: we used all 492 complete records to estimate population parameters and test null hypotheses.
+
+Machine learning asks a fundamentally different question: *Given a new mother arriving at a rural clinic tomorrow whose hemoglobin has not yet been measured, how accurately can our model predict whether she is anemic?*
+
+A feature can be highly statistically significant ($p < 0.001$) yet still yield mediocre individual-level predictions if unexplained biological variation is large. Conversely, a model can achieve **100.0% training accuracy** by memorizing noise and yet perform *worse than guessing the majority class* on unseen patients! Five foundational pillars govern every ML workflow in Part V:
+
+- **Target Generalization, Never Training Fit:** Training accuracy measures memorization; only performance on a **strictly unseen holdout set** estimates real-world clinical accuracy.
+- **Three-Way Discipline (Train / Validation / Test):** Fit model weights on **Train**, tune hyperparameters and compare architectures on **Validation**, and touch the locked **Test** set *once* at the end for your manuscript table.
+- **Match the Split to the Data-Generating Process:** Independent cross-sectional rows allow stratified random splitting. Clustered surveys (`cluster_id` in DHS, repeated `patient_id` visits in hospitals) require **group splitting** (`GroupShuffleSplit`). Outbreak time series (`epi_surveillance`) require **chronological splitting** (train on past years, test on future years).
+- **Zero-Leakage Preprocessing Boundary:** Any transformation that estimates statistics from data—means and standard deviations (`StandardScaler`), median imputation, or feature selection—must call `.fit()` on **training rows ONLY**, then apply `.transform()` to validation and test rows.
+- **Bias-Variance Tradeoff & Baselines:** Expected prediction error decomposes as $\text{Error} = \text{Bias}^2 + \text{Variance} + \sigma_{\epsilon}^2$. Simple models suffer **High Bias (Underfitting)** (low training and low validation scores); overly flexible models suffer **High Variance (Overfitting)** (high training score, large train–val gap). Always compare both against a zero-skill **`DummyClassifier`** baseline!
+
+::: {.callout-warning title="The Four Horsemen of Scientific Data Leakage"}
+Every year, high-profile clinical and bioinformatics ML papers are quietly retracted because test information leaked into training:
+
+1. **Preprocessing Leakage:** Fitting `StandardScaler()`, imputers, or top-$k$ feature filters on the full dataset *before* splitting.
+2. **Cluster / Patient Leakage:** Putting two visits from the same patient—or two neighboring households from the same DHS `cluster_id`—into both train and test.
+3. **Temporal Leakage:** Randomly shuffling `epi_surveillance` rows so 2025 outbreak weeks help predict 2024 weeks.
+4. **Target Leakage:** Including a proxy measured *after* diagnosis (for example, using `maternal_hb_g_dl` to predict `maternal_anemia`, which is literally defined by `Hb < 11.0 g/dL`!).
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Leak-Free Split & Preprocessing Boundary {#sec-ch21-mental-model}
+
+Follow this strict architectural firewall in every machine learning project—nothing ever crosses backward from the locked test vault into fitting or tuning:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph S1["1. Raw Cohort"]
+        A["Clean Predictors X & Target y<br/>Drop Target Proxies (e.g. Hb)"]
+    end
+    subgraph S2["2. Split Policy"]
+        B1["Stratified 3-Way<br/>Independent Rows"]
+        B2["GroupShuffleSplit<br/>DHS Clusters / Patients"]
+        B3["Temporal Cutoff<br/>year < cutoff vs >="]
+    end
+    subgraph S3["3. Fit on Train"]
+        C1["Fit Scaler & Model<br/>on Train Split ONLY"]
+        C2["Transform & Tune<br/>on Validation Split"]
+        C3["Audit Bias vs Variance<br/>& Dummy Floor"]
+    end
+    subgraph S4["4. Locked Test"]
+        D["Apply Frozen Scaler<br/>(.transform ONLY)<br/>Report Final Test Score"]
+    end
+    A --> B1
+    A --> B2
+    A --> B3
+    B1 --> C1
+    B2 --> C1
+    B3 --> C1
+    C1 --> C2
+    C2 --> C3
+    C3 -.->|"Iterate Model"| C1
+    C3 ==>|"Lock Model Once"| D
+```
+
+Notice the **dashed iteration arrow** lives strictly between **Train** and **Validation**, while the **bold one-way gate** enters the **Locked Test** vault exactly once at the end. Even the `StandardScaler` crosses that wall frozen—only `.transform()` is ever allowed on validation or test matrices.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch21-walkthrough}
+
+Open `part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Cleaning `mch_survey_sample` & Loading `epi_surveillance` {#sec-ch21-setup}
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+epi_raw = tutor.load_data("epi_surveillance", as_pandas=True)
+
+mch = mch_raw.copy()
+mch["residence"] = mch["residence"].astype(str).str.strip().str.title()
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+w_map = {"Poorest": 1, "Poorer": 2, "Middle": 3, "Richer": 4, "Richest": 5}
+mch["wealth_idx"] = mch["wealth_quintile"].map(w_map)
+
+feat_cols = [
+    "maternal_age_years", "anc_visits", "is_urban",
+    "wealth_idx", "child_haz",
+]
+keep_cols = ["household_id", "cluster_id"] + feat_cols + ["maternal_anemia"]
+clean_mch = mch[keep_cols].dropna().reset_index(drop=True)
+print("clean_mch shape:", clean_mch.shape)
+print("epi_surveillance shape:", epi_raw.shape)
+```
+
+**Expected Output:**
+```text
+clean_mch shape: (492, 8)
+epi_surveillance shape: (416, 8)
+```
+
+Look closely at what we intentionally **excluded** from `feat_cols`: `maternal_hb_g_dl`! Because clinical anemia (`maternal_anemia`) is directly thresholded from hemoglobin (`Hb < 11.0 g/dL`), including hemoglobin as a predictor would be **target leakage**—handing the model the answer key. Notice also that we clean `residence` casing and replace sentinel `anc_visits == 999` with `np.nan` on a non-mutating `.copy()`.
+
+---
+
+### Prediction vs. Explanatory Inference (Framing $X$ and $y$) {#sec-ch21-frame}
+
+```python
+X = clean_mch[feat_cols].copy()
+y = clean_mch["maternal_anemia"].copy()
+
+print("Feature matrix X shape:", X.shape)
+print("Target y class counts:", y.value_counts().to_dict())
+print(f"Overall anemia prevalence: {y.mean():.4f}")
+```
+
+**Expected Output:**
+```text
+Feature matrix X shape: (492, 5)
+Target y class counts: {0: 318, 1: 174}
+Overall anemia prevalence: 0.3537
+```
+
+In Scikit-Learn's universal convention, the feature matrix `X` is always 2-dimensional with shape `(n_samples, n_features)` = `(492, 5)`, and the target vector `y` is 1-dimensional with shape `(492,)`. Notice the class imbalance: `318` non-anemic (`64.63%`) vs. `174` anemic (`35.37%`).
+
+---
+
+### Stratified 3-Way Train / Validation / Test Split (60 / 20 / 20) {#sec-ch21-split3}
+
+```python
+X_tmp, X_test, y_tmp, y_test = train_test_split(
+    X, y, test_size=0.20, stratify=y, random_state=42
+)
+val_rel = 0.20 / (1.0 - 0.20)  # 0.25 of remaining 80% = 20% of total
+X_train, X_val, y_train, y_val = train_test_split(
+    X_tmp, y_tmp, test_size=val_rel, stratify=y_tmp, random_state=42
+)
+
+print(f"Rows -> train={len(X_train)}, val={len(X_val)}, "
+      f"test={len(X_test)} (total={len(X_train)+len(X_val)+len(X_test)})")
+print(f"Positive rate -> train={y_train.mean():.4f}, "
+      f"val={y_val.mean():.4f}, test={y_test.mean():.4f}")
+```
+
+**Expected Output:**
+```text
+Rows -> train=294, val=99, test=99 (total=492)
+Positive rate -> train=0.3537, val=0.3535, test=0.3535
+```
+
+Look at two subtle details that save countless bugs:
+
+- **Rescaling `val_rel`:** After carving off `20%` for `X_test`, `80%` remains in `X_tmp`. To make `X_val` equal `20%` of the *original* dataset (giving `99` rows, identical to `X_test`), we pass `val_rel = 0.20 / (1.0 - 0.20) = 0.25`. Passing `0.20` directly would silently shrink validation to `16%`!
+- **Stratifying BOTH calls:** Passing `stratify=y` and `stratify=y_tmp` locks the positive anemia rate to `0.3537 / 0.3535 / 0.3535` across all three splits.
+
+---
+
+### Preventing DHS Cluster Leakage with `GroupShuffleSplit` {#sec-ch21-group}
+
+In Demographic and Health Surveys (DHS), households within the same enumeration area (`cluster_id`) share water sources, clinics, and local socioeconomic shocks. Watch what happens when we compare a naive random split against `GroupShuffleSplit`:
+
+```python
+# Naive random split leaks DHS clusters across train and test
+tr_rand, te_rand = train_test_split(
+    clean_mch, test_size=0.20,
+    stratify=clean_mch["maternal_anemia"], random_state=42,
+)
+rand_overlap = len(set(tr_rand["cluster_id"]) & set(te_rand["cluster_id"]))
+print(f"Naive random split -> {rand_overlap} of "
+      f"{te_rand['cluster_id'].nunique()} test clusters leaked!")
+
+# Proper cluster-aware split using GroupShuffleSplit
+gss = GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=42)
+tr_idx, te_idx = next(
+    gss.split(clean_mch, groups=clean_mch["cluster_id"])
+)
+tr_grp = clean_mch.iloc[tr_idx].reset_index(drop=True).copy()
+te_grp = clean_mch.iloc[te_idx].reset_index(drop=True).copy()
+grp_overlap = len(set(tr_grp["cluster_id"]) & set(te_grp["cluster_id"]))
+n_tr_c = tr_grp["cluster_id"].nunique()
+n_te_c = te_grp["cluster_id"].nunique()
+print(f"GroupShuffleSplit -> train={len(tr_grp)} ({n_tr_c} clusters), "
+      f"test={len(te_grp)} ({n_te_c} clusters)")
+print(f"Cluster overlap: {grp_overlap}")
+```
+
+**Expected Output:**
+```text
+Naive random split -> 43 of 43 test clusters leaked!
+GroupShuffleSplit -> train=386 (40 clusters), test=106 (10 clusters)
+Cluster overlap: 0
+```
+
+That single output explains why peer reviewers reject random splits on clustered surveys: naive `train_test_split` leaked **43 out of 43 (100%)** of the test DHS clusters into training! `GroupShuffleSplit` holds out **10 completely unseen clusters** (`106` households) with **0 overlapping clusters**, testing whether your model generalizes to *new villages*, not just neighbors of training households.
+
+---
+
+### Chronological Temporal Split on Outbreak Surveillance {#sec-ch21-temporal}
+
+```python
+epi = epi_raw.copy()
+epi_train = epi.loc[epi["year"] < 2025].reset_index(drop=True).copy()
+epi_test = epi.loc[epi["year"] >= 2025].reset_index(drop=True).copy()
+
+print(f"Train weeks: {len(epi_train)} (max year={epi_train['year'].max()})")
+print(f"Test weeks:  {len(epi_test)} (min year={epi_test['year'].min()})")
+has_time_leak = bool(epi_train["year"].max() >= epi_test["year"].min())
+print("Temporal leak detected:", has_time_leak)
+```
+
+**Expected Output:**
+```text
+Train weeks: 208 (max year=2024)
+Test weeks:  208 (min year=2025)
+Temporal leak detected: False
+```
+
+In `epi_surveillance`, weekly dengue and respiratory counts exhibit strong monsoon seasonality and autocorrelation. Training strictly on `year < 2025` (`208` district-weeks) and evaluating strictly on `year >= 2025` (`208` future district-weeks) mirrors real-world epidemic forecasting. Notice the invariant check `train_max >= test_min`—using `>=` ensures even a shared boundary year triggers a temporal leak alert.
+
+---
+
+### Live Preprocessing Leakage vs. Fit-on-Train-Only Scaling {#sec-ch21-leakage}
+
+Does scaling features *before* splitting really distort test accuracy? Let's measure the exact optimism inflation live on a 30-feature clinical cohort with uneven measurement units (spanning `0.1` to `100.0`), and verify clean scaling on `mch_survey_sample`:
+
+```python
+# 1. High-dimensional cohort with uneven feature scales
+X_hd, y_hd = make_classification(
+    n_samples=60, n_features=30, n_informative=5,
+    n_redundant=5, random_state=2,
+)
+X_hd = X_hd * np.linspace(0.1, 100.0, 30)
+
+# LEAKY: fit StandardScaler on ALL rows before splitting
+X_all_s = StandardScaler().fit_transform(X_hd)
+Xl_tr, Xl_te, yl_tr, yl_te = train_test_split(
+    X_all_s, y_hd, test_size=0.20, stratify=y_hd, random_state=42
+)
+leaky_acc = LogisticRegression(max_iter=500).fit(Xl_tr, yl_tr).score(
+    Xl_te, yl_te
+)
+
+# CLEAN: split FIRST, fit StandardScaler on train ONLY
+Xc_tr, Xc_te, yc_tr, yc_te = train_test_split(
+    X_hd, y_hd, test_size=0.20, stratify=y_hd, random_state=42
+)
+scaler = StandardScaler().fit(Xc_tr)
+clean_acc = LogisticRegression(max_iter=500).fit(
+    scaler.transform(Xc_tr), yc_tr
+).score(scaler.transform(Xc_te), yc_te)
+
+print(f"Leaky accuracy: {leaky_acc:.4f} | Clean accuracy: {clean_acc:.4f}")
+print(f"Phantom optimism gap: {leaky_acc - clean_acc:+.4f}")
+
+# 2. Verify train-only scaling on MCH features
+mch_scaler = StandardScaler()
+X_tr_s = mch_scaler.fit_transform(X_train)
+X_te_s = mch_scaler.transform(X_test)
+print("MCH train scaled means:", np.round(X_tr_s.mean(axis=0), 3))
+print("MCH test scaled means: ", np.round(X_te_s.mean(axis=0), 3))
+```
+
+**Expected Output:**
+```text
+Leaky accuracy: 0.8333 | Clean accuracy: 0.7500
+Phantom optimism gap: +0.0833
+MCH train scaled means: [ 0.  0. -0.  0. -0.]
+MCH test scaled means:  [-0.007 -0.022 -0.073 -0.138 -0.121]
+```
+
+Look closely at those two results:
+
+- **+8.33 percentage points of phantom accuracy:** Merely moving `StandardScaler().fit_transform(X_hd)` *above* `train_test_split` leaked the test set's mean and variance into the L2-regularized `LogisticRegression`, inflating reported accuracy from **`0.7500`** to **`0.8333`**!
+- **Healthy non-zero test means:** On `clean_mch`, `X_tr_s` has exact column means of `0.000`, whereas `X_te_s` has small non-zero means (`[-0.007, -0.022, -0.073, -0.138, -0.121]`). Seeing non-zero test means is a **good sign**—it proves `mch_scaler` never peeked at `X_test`!
+
+---
+
+### Zero-Skill Baseline (`DummyClassifier`) {#sec-ch21-dummy}
+
+```python
+dummy = DummyClassifier(strategy="most_frequent")
+dummy.fit(X_train, y_train)
+maj_class = int(dummy.predict(X_test[:1])[0])
+dummy_acc = float(dummy.score(X_test, y_test))
+pos_rate = float(np.mean(y_test == 1))
+
+print(f"Majority class predicted: {maj_class}")
+print(f"Dummy accuracy floor:     {dummy_acc:.4f}")
+print(f"Test positive rate:       {pos_rate:.4f}")
+```
+
+**Expected Output:**
+```text
+Majority class predicted: 0
+Dummy accuracy floor:     0.6465
+Test positive rate:       0.3535
+```
+
+Because `64.65%` of test mothers are non-anemic (`0`), a classifier that ignores every single clinical feature and blindly predicts `0` for everyone automatically scores **`64.65%` accuracy**. Any complex model that scores `63%` is literally worse than doing nothing!
+
+---
+
+### Bias-Variance Tradeoff & Learning Curve Diagnostics {#sec-ch21-bv}
+
+```python
+# 1. Complexity sweep: DecisionTree max_depth from 1 to None
+for depth in [1, 3, 6, 12, None]:
+    dt = DecisionTreeClassifier(max_depth=depth, random_state=42)
+    dt.fit(X_train, y_train)
+    tr_s = dt.score(X_train, y_train)
+    va_s = dt.score(X_val, y_val)
+    print(f"depth={str(depth):>4} | train={tr_s:.4f} | "
+          f"val={va_s:.4f} | gap={tr_s - va_s:+.4f}")
+
+# 2. Learning curve: vary training sample size on 75/25 stratified split
+X_lc_tr, X_lc_val, y_lc_tr, y_lc_val = train_test_split(
+    X.to_numpy(), y.to_numpy(), test_size=0.25,
+    stratify=y, random_state=42,
+)
+lc_rows = []
+for frac in [0.2, 0.4, 0.6, 0.8, 1.0]:
+    n_sub = int(round(frac * len(X_lc_tr)))
+    clf = DecisionTreeClassifier(max_depth=4, random_state=42)
+    clf.fit(X_lc_tr[:n_sub], y_lc_tr[:n_sub])
+    tr_a = float(clf.score(X_lc_tr[:n_sub], y_lc_tr[:n_sub]))
+    va_a = float(clf.score(X_lc_val, y_lc_val))
+    lc_rows.append({
+        "fraction": frac, "n_train": n_sub,
+        "train_acc": round(tr_a, 4), "val_acc": round(va_a, 4),
+        "gap": round(tr_a - va_a, 4),
+    })
+print("\nLearning Curve Table (max_depth=4):")
+print(pd.DataFrame(lc_rows).to_string(index=False))
+```
+
+**Expected Output:**
+```text
+depth=   1 | train=0.6463 | val=0.6465 | gap=-0.0002
+depth=   3 | train=0.6905 | val=0.6162 | gap=+0.0743
+depth=   6 | train=0.8061 | val=0.6162 | gap=+0.1900
+depth=  12 | train=0.9966 | val=0.5152 | gap=+0.4814
+depth=None | train=1.0000 | val=0.5253 | gap=+0.4747
+
+Learning Curve Table (max_depth=4):
+ fraction  n_train  train_acc  val_acc    gap
+      0.2       74     0.8649   0.5610 0.3039
+      0.4      148     0.7297   0.6016 0.1281
+      0.6      221     0.7421   0.6179 0.1242
+      0.8      295     0.6881   0.5854 0.1028
+      1.0      369     0.6911   0.6341 0.0569
+```
+
+Read both diagnostic tables like a clinical researcher:
+
+- **Complexity Sweep:** At `depth=1`, the model is too rigid (**High Bias / Underfitting**, `train=0.6463`, matching the dummy floor). As depth grows to `6`, `12`, and `None`, training accuracy climbs all the way to **`1.0000`** while validation accuracy collapses to **`0.5253`** (`gap = +0.4747`)—textbook **High Variance / Overfitting**!
+- **Learning Curve:** Holding `max_depth=4` fixed while growing training size from `74` to `369` mothers shrinks the train–validation gap from **`0.3039`** down to **`0.0569`** and lifts validation accuracy from `0.5610` to `0.6341`. Learning curves reveal directly whether collecting more data will close a variance gap or whether stronger clinical biomarkers are needed to reduce bias.
+
+---
+
+### Break It On Purpose! (ML Splitting & Scaling Error Anatomy) {#sec-ch21-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Stratifying a Singleton Class)"}
+```python
+X_tiny = np.arange(10).reshape(-1, 1)
+y_singleton = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+train_test_split(X_tiny, y_singleton, test_size=0.2, stratify=y_singleton)
+```
+**Python's Traceback:**
+```text
+ValueError: The least populated classes in y have only 1 member, which is
+too few. The minimum number of groups for any class cannot be less than 2.
+Classes with too few members are: [1]
+```
+**Diagnosis:** Stratified splitting must place at least one member of every class into both train and test, which is mathematically impossible when a rare disease class has only `1` observation.  
+**Fix:** Inspect `y.value_counts()` before splitting; merge ultra-rare categories, collect more minority cases, or drop singleton strata with transparent documentation.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Mismatched X and y Lengths)"}
+```python
+X_ten = np.arange(10).reshape(-1, 1)
+y_five = [0, 1, 0, 1, 0]
+train_test_split(X_ten, y_five, test_size=0.2)
+```
+**Python's Traceback:**
+```text
+ValueError: Found input variables with inconsistent numbers of samples:
+[10, 5]
+```
+**Diagnosis:** This happens constantly when a researcher calls `X = df[feats].dropna()` while forgetting to drop the exact same rows from `y = df["target"]`!  
+**Fix:** Always drop missing values on the **combined** DataFrame `clean = df[feats + [target]].dropna()` *first*, then slice `X = clean[feats]` and `y = clean[target]`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — NotFittedError (Calling `.transform()` Before `.fit()`)"}
+```python
+unfitted_scaler = StandardScaler()
+unfitted_scaler.transform([[25.0, 4.0, 1.0]])
+```
+**Python's Traceback:**
+```text
+NotFittedError: This StandardScaler instance is not fitted yet. Call 'fit'
+with appropriate arguments before using this estimator.
+```
+**Diagnosis:** A freshly instantiated `StandardScaler` has not learned column means ($\mu$) or standard deviations ($\sigma$) yet, so calling `.transform()` directly raises `sklearn.exceptions.NotFittedError`.  
+**Fix:** Always call `scaler.fit(X_train)` (or `scaler.fit_transform(X_train)`) on the training split first, and only then call `scaler.transform(X_test)`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch21-blueprint}
+
+**Scenario:** Your health-data team needs a single reusable benchmark function `run_leak_free_mch_benchmark(raw_df, seed=42)` that takes the raw `mch_survey_sample` DataFrame (without mutating it), enforces DHS cluster-level splitting with a hard zero-leakage assertion, scales predictors strictly on training clusters, and compares four classifiers side-by-side (`DummyClassifier`, `LogisticRegression`, pruned `DecisionTree(max_depth=4)`, and unpruned `DecisionTree`) in one clean audit table.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Non-Mutating Hygiene & Target-Leakage Exclusion:**
+
+   - Copy `raw_df`, standardize `residence`, convert `anc_visits == 999` to `np.nan`, encode `is_urban` and ordinal `wealth_idx`, and explicitly exclude `maternal_hb_g_dl`.
+   - Call `.dropna().reset_index(drop=True)` jointly across IDs, predictors, and target so `X` and `y` remain perfectly aligned.
+
+2. **Cluster Firewall & Train-Only Scaling:**
+
+   - Partition by `cluster_id` with `GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=seed)`.
+   - Run `assert len(set(tr_df["cluster_id"]) & set(te_df["cluster_id"])) == 0` so cluster leakage halts execution immediately.
+   - Fit `StandardScaler()` on `tr_df[feats]` only, then transform both `tr_df[feats]` and `te_df[feats]`.
+
+3. **Benchmark & Bias-Variance Verification:**
+
+   - Fit all four models on `(X_tr, y_tr)` and log `train_acc`, `test_acc`, and `gap = train_acc - test_acc` rounded to 4 decimals.
+   - Verify that unpruned decision trees memorize training clusters (`1.0000`) yet drop below the zero-skill `DummyClassifier` floor on unseen DHS clusters.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_leak_free_mch_benchmark(raw_df, seed=42):
+    """Cluster-split, train-only scale, and benchmark 3 ML models."""
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3, "Richer": 4, "Richest": 5,
+    }
+    df["wealth_idx"] = df["wealth_quintile"].map(w_map)
+    feats = [
+        "maternal_age_years", "anc_visits", "is_urban",
+        "wealth_idx", "child_haz",
+    ]
+    cols = ["household_id", "cluster_id"] + feats + ["maternal_anemia"]
+    clean = df[cols].dropna().reset_index(drop=True)
+
+    # 1. DHS cluster-aware split + zero-leakage assertion
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=seed)
+    tr_i, te_i = next(gss.split(clean, groups=clean["cluster_id"]))
+    tr_df = clean.iloc[tr_i].reset_index(drop=True)
+    te_df = clean.iloc[te_i].reset_index(drop=True)
+    assert len(set(tr_df["cluster_id"]) & set(te_df["cluster_id"])) == 0
+
+    # 2. Fit scaler strictly on training clusters
+    scaler = StandardScaler().fit(tr_df[feats])
+    X_tr = scaler.transform(tr_df[feats])
+    X_te = scaler.transform(te_df[feats])
+    y_tr = tr_df["maternal_anemia"].to_numpy()
+    y_te = te_df["maternal_anemia"].to_numpy()
+
+    # 3. Benchmark Dummy vs Logistic vs Overfit Tree
+    dt4 = DecisionTreeClassifier(max_depth=4, random_state=seed)
+    dt_full = DecisionTreeClassifier(random_state=seed)
+    models = [
+        ("Dummy (Majority)", DummyClassifier(strategy="most_frequent")),
+        ("LogisticRegression", LogisticRegression(max_iter=500)),
+        ("Tree (depth=4)", dt4),
+        ("Tree (unpruned)", dt_full),
+    ]
+    records = []
+    for name, mdl in models:
+        mdl.fit(X_tr, y_tr)
+        tr_acc = float(mdl.score(X_tr, y_tr))
+        te_acc = float(mdl.score(X_te, y_te))
+        records.append({
+            "model": name, "train_acc": round(tr_acc, 4),
+            "test_acc": round(te_acc, 4),
+            "gap": round(tr_acc - te_acc, 4),
+        })
+    return pd.DataFrame(records)
+
+print(run_leak_free_mch_benchmark(mch_raw).to_string(index=False))
+```
+
+**Output:**
+```text
+             model  train_acc  test_acc    gap
+  Dummy (Majority)     0.6477    0.6415 0.0062
+LogisticRegression     0.6554    0.6415 0.0139
+    Tree (depth=4)     0.6891    0.5189 0.1703
+   Tree (unpruned)     1.0000    0.5943 0.4057
+```
+
+Pause and appreciate the scientific honesty of this table: once we forbid hemoglobin target leakage and hold out unseen DHS clusters, demographic survey features alone barely match the `64.15%` majority-class floor—while an unpruned tree boasts a deceptive `100.0%` training score yet drops to `59.43%` (`gap = 0.4057`)! In Chapters 22–26, you will learn feature engineering, pipelines, cross-validation, ROC-AUC/PR-AUC thresholds, and gradient-boosted ensembles to extract true signal responsibly.
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch21-todos}
+
+Open `part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reusable ML splitting, scaling, baseline, and diagnostic functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 21.1 (`stratified_three_way_split(X, y, test_size=0.2, val_size=0.2, seed=42)`):** Perform a two-stage stratified split returning `(X_train, X_val, X_test, y_train, y_val, y_test)` preserving exact row totals, disjoint splits, and class balance (scaling the second split by `val_size / (1.0 - test_size)`).
+- **To-Do 21.2 (`group_cluster_split(df, group_col, test_size=0.2, seed=42)`):** Use `GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=seed)` on `groups=df[group_col]` and return non-mutating `(train_df, test_df)` with `.reset_index(drop=True)` and **zero** overlapping `group_col` values.
+- **To-Do 21.3 (`temporal_outbreak_split(epi_df, cutoff_year=2025)`):** Split `epi_df` strictly by `year < cutoff_year` (train) vs. `year >= cutoff_year` (test), returning non-mutating `(train_df, test_df)` with `.reset_index(drop=True)`.
+- **To-Do 21.4 (`leak_free_standardize(X_train, X_test)`):** Fit `StandardScaler()` strictly on `X_train`, transform both splits (`fit_transform(X_train)` and `transform(X_test)`), and return `(X_train_s, X_test_s)`.
+- **To-Do 21.5 (`evaluate_dummy_baseline(X_train, y_train, X_test, y_test)`):** Fit `DummyClassifier(strategy="most_frequent")` on `(X_train, y_train)` and return `{"majority_class": int, "dummy_accuracy": round4, "positive_rate": round4}` evaluated on `(X_test, y_test)`.
+- **To-Do 21.6 (`diagnose_bias_variance(train_score, val_score, gap_threshold=0.10, low_threshold=0.70)`):** Return `"Underfitting (High Bias)"` if `train_score < low_threshold`, `"Overfitting (High Variance)"` if `(train_score - val_score) >= gap_threshold`, else `"Well-Balanced"`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch21-test}
+
+Work through all 10 machine learning paradigm, leakage, and bias-variance questions on paper before checking Stage 8:
+
+1. **Inference vs. Prediction:** In Chapter 20, `anc_visits` had a statistically significant Adjusted Odds Ratio ($p = 0.0378$) for maternal anemia. Why does statistical significance NOT guarantee 90% individual prediction accuracy?
+2. **Relative Validation Fraction:** You have $N = 1{,}000$ patients and want a `60%` train / `20%` validation / `20%` test split. After holding out `200` test patients (`test_size=0.20`), what `test_size` argument must you pass to the *second* `train_test_split` call so validation receives exactly `200` patients—and how many patients would you accidentally get if you passed `0.20` again?
+3. **Target Leakage Spot-Check:** A student builds an anemia classifier on `mch_survey_sample` using `["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]` and excitedly reports `99.8%` test accuracy. What went wrong?
+4. **Cluster Leakage Diagnosis:** A hospital dataset contains `400` ICU lab rows across `80` unique patients (5 lab draws per patient). If you run standard `train_test_split(..., stratify=y)` instead of `GroupShuffleSplit(groups=patient_id)`, what specific form of data leakage occurs and why does test accuracy look artificially high?
+5. **Temporal Boundary Trap:** Suppose `train_df["year"]` spans `2021..2024` and `test_df["year"]` spans `2024..2025`. Why should a temporal leakage auditor check `train_max >= test_min` rather than strict `train_max > test_min`?
+6. **Scaling Leakage Bug:** Spot the fatal bug in `scaler = StandardScaler(); X_train_s = scaler.fit_transform(X_train); X_test_s = scaler.fit_transform(X_test)`. What happens to the column means of `X_test_s` under this bug vs. the leak-free fix?
+7. **Zero-Skill Accuracy Trap:** A rare-disease screening cohort has `4%` positive cases (`y == 1`) and `96%` negative cases (`y == 0`). What accuracy does `DummyClassifier(strategy="most_frequent")` achieve, and is a deep neural network with `95.2%` accuracy clinically useful?
+8. **Bias-Variance Diagnosis Trace:** Trace `diagnose_bias_variance(train_score, val_score)` (default `gap_threshold=0.10, low_threshold=0.70`) on three models: Model A `(0.64, 0.48)`, Model B `(0.95, 0.77)`, and Model C `(0.84, 0.79)`. What label does each return?
+9. **Learning Curve Action Plan:** On a learning curve, training accuracy is `0.67` and validation accuracy is `0.66` across `n = 200, 400, 800, 1600`. Both curves have plateaued flat near `0.66`. Will collecting `10,000` more identical rows likely solve this problem? Why or why not?
+10. **Scikit-Learn `NotFittedError` vs. `ValueError`:** Which exact exception does Scikit-Learn raise for (a) calling `StandardScaler().transform(X_test)` without calling `.fit()`, and (b) passing `stratify=y` when class `1` appears only once in `y`?
+
+---
+
+## Stage 7 — Chapter 21 Coding Exam (100 Points) {#sec-ch21-exam}
+
+Open `part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch21", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 21.1 (30 Points): `audit_split_leakage(train_df, test_df, id_col, group_col=None, time_col=None)`
+
+Without mutating `train_df` or `test_df`, return a dictionary with exact keys:
+
+- `"id_overlap"`: integer count of unique `id_col` values present in both splits,
+- `"group_overlap"`: integer count of overlapping `group_col` values if `group_col is not None`, else `0`,
+- `"temporal_leak"`: `True` if `time_col is not None` and `train_df[time_col].max() >= test_df[time_col].min()`, else `False`,
+- `"is_leak_free"`: `True` only if `id_overlap == 0`, `group_overlap == 0`, and `not temporal_leak`.
+
+### Exam Task 21.2 (35 Points): `quantify_preprocessing_leakage(X, y, seed=42)`
+
+Compare a leaky pre-split scaling workflow vs. a clean split-then-scale workflow using `train_test_split(..., test_size=0.2, stratify=y, random_state=seed)` and `LogisticRegression(max_iter=500)`:
+
+- **Leaky path:** Fit `StandardScaler().fit_transform(X)` on all rows *before* splitting, fit `LogisticRegression(max_iter=500)` on train, and score test accuracy (`leaky_acc`).
+- **Clean path:** Split *first*, fit `StandardScaler()` strictly on `X_train`, transform both splits, fit `LogisticRegression(max_iter=500)` on train, and score test accuracy (`clean_acc`).
+- Return `{"leaky_acc": round4, "clean_acc": round4, "optimism_gap": round4}` where `optimism_gap = leaky_acc - clean_acc`.
+
+### Exam Task 21.3 (35 Points): `build_learning_curve_table(X, y, fractions, seed=42)`
+
+Construct a learning curve summary DataFrame:
+
+- Hold out a 25% stratified validation set using `train_test_split(np.asarray(X, dtype=float), np.asarray(y), test_size=0.25, stratify=y, random_state=seed)`.
+- For each `frac` in `fractions`, take the first `n_train = int(round(frac * len(X_train_full)))` rows of the shuffled training split and fit `DecisionTreeClassifier(max_depth=4, random_state=seed)`.
+- Evaluate `train_acc`, `val_acc`, and `gap = train_acc - val_acc`.
+- Return a `pd.DataFrame` with exact columns `["fraction", "n_train", "train_acc", "val_acc", "gap"]` with float columns rounded to **4 decimals**.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch21-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **Statistical significance** tests whether a population average effect differs from zero ($H_0: \beta = 0$), which becomes easy to detect even for modest effects when $N$ is large. **Individual prediction** depends on total signal-to-noise separation; large unexplained variance across mothers leaves substantial overlap between anemic and non-anemic distributions.
+2. Pass `test_size = 0.20 / (1.0 - 0.20) = 0.25` (25% of the remaining 800 rows = **200** validation rows). Passing `0.20` again would give only `0.20 * 800 = 160` rows (`16%` instead of `20%`).
+3. **Target leakage!** `maternal_anemia` is defined directly by `maternal_hb_g_dl < 11.0 g/dL`, so including hemoglobin hands the classifier the clinical outcome definition itself.
+4. **Group / patient leakage.** Because the same patient's longitudinal lab draws appear in both train and test, the model memorizes patient-specific baseline physiology rather than learning generalizable disease patterns, inflating test accuracy.
+5. When `train_max == test_min` (both contain year `2024`), observations from the same epidemic season appear in both training and test sets, violating strict future-only forecasting.
+6. Line 3 calls **`scaler.fit_transform(X_test)`** instead of **`scaler.transform(X_test)`**! That re-fits a brand-new mean and standard deviation on the test set—forcing `X_test_s` column means to `0.0` and leaking test distribution parameters—whereas a clean `scaler.transform(X_test)` applies training parameters and naturally leaves small non-zero test means.
+7. `DummyClassifier(strategy="most_frequent")` predicts `0` for everyone and achieves **`96.0%`** accuracy. A neural network scoring `95.2%` is *below* the zero-skill floor and clinically useless!
+8. **Model A** (`0.64 < 0.70`): `"Underfitting (High Bias)"` (underfitting is checked first!). **Model B** (`0.95 >= 0.70` and `0.95 - 0.77 = 0.18 >= 0.10`): `"Overfitting (High Variance)"`. **Model C** (`0.84 >= 0.70` and `0.84 - 0.79 = 0.05 < 0.10`): `"Well-Balanced"`.
+9. **No!** Both training and validation accuracy are low and have already converged (`gap = 0.01`), which is classic **High Bias (Underfitting)**. Adding more rows will not help; you need more expressive features, non-linear interactions, or a higher-capacity model.
+10. (a) **`sklearn.exceptions.NotFittedError`**; (b) **`ValueError`** (least populated class has fewer than 2 members).
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# To-Do 21.1
+def stratified_three_way_split(
+    X, y, test_size=0.2, val_size=0.2, seed=42
+):
+    """Return (X_train, X_val, X_test, y_train, y_val, y_test)."""
+    X_tmp, X_test, y_tmp, y_test = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=seed
+    )
+    val_rel = val_size / (1.0 - test_size)
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_tmp, y_tmp, test_size=val_rel, stratify=y_tmp, random_state=seed
+    )
+    return (X_train, X_val, X_test, y_train, y_val, y_test)
+
+# To-Do 21.2
+def group_cluster_split(df, group_col, test_size=0.2, seed=42):
+    """Split DataFrame with zero group_col overlap via GroupShuffleSplit."""
+    gss = GroupShuffleSplit(
+        n_splits=1, test_size=test_size, random_state=seed
+    )
+    tr_idx, te_idx = next(gss.split(df, groups=df[group_col]))
+    train_df = df.iloc[tr_idx].reset_index(drop=True).copy()
+    test_df = df.iloc[te_idx].reset_index(drop=True).copy()
+    return train_df, test_df
+
+# To-Do 21.3
+def temporal_outbreak_split(epi_df, cutoff_year=2025):
+    """Split surveillance data strictly by year < cutoff vs >= cutoff."""
+    train_df = (
+        epi_df.loc[epi_df["year"] < cutoff_year]
+        .reset_index(drop=True)
+        .copy()
+    )
+    test_df = (
+        epi_df.loc[epi_df["year"] >= cutoff_year]
+        .reset_index(drop=True)
+        .copy()
+    )
+    return train_df, test_df
+
+# To-Do 21.4
+def leak_free_standardize(X_train, X_test):
+    """Fit StandardScaler on X_train ONLY and transform both splits."""
+    scaler = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
+    return X_train_s, X_test_s
+
+# To-Do 21.5
+def evaluate_dummy_baseline(X_train, y_train, X_test, y_test):
+    """Fit most-frequent DummyClassifier and return baseline metrics."""
+    dummy = DummyClassifier(strategy="most_frequent")
+    dummy.fit(X_train, y_train)
+    majority_class = int(dummy.predict(X_test[:1])[0])
+    dummy_acc = float(dummy.score(X_test, y_test))
+    pos_rate = float(np.mean(np.asarray(y_test) == 1))
+    return {
+        "majority_class": majority_class,
+        "dummy_accuracy": round(dummy_acc, 4),
+        "positive_rate": round(pos_rate, 4),
+    }
+
+# To-Do 21.6
+def diagnose_bias_variance(
+    train_score, val_score, gap_threshold=0.10, low_threshold=0.70
+):
+    """Classify model fit into High Bias, High Variance, or Balanced."""
+    if train_score < low_threshold:
+        return "Underfitting (High Bias)"
+    if (train_score - val_score) >= gap_threshold:
+        return "Overfitting (High Variance)"
+    return "Well-Balanced"
+```
+
+### C. Annotated Solutions — Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+
+# Exam Task 21.1 (30 pts)
+def audit_split_leakage(
+    train_df, test_df, id_col, group_col=None, time_col=None
+):
+    """Audit ID, group, and temporal leakage across train/test splits."""
+    id_overlap = len(set(train_df[id_col]) & set(test_df[id_col]))
+    group_overlap = (
+        len(set(train_df[group_col]) & set(test_df[group_col]))
+        if group_col is not None
+        else 0
+    )
+    temporal_leak = (
+        bool(train_df[time_col].max() >= test_df[time_col].min())
+        if time_col is not None
+        else False
+    )
+    is_leak_free = bool(
+        id_overlap == 0 and group_overlap == 0 and not temporal_leak
+    )
+    return {
+        "id_overlap": int(id_overlap),
+        "group_overlap": int(group_overlap),
+        "temporal_leak": temporal_leak,
+        "is_leak_free": is_leak_free,
+    }
+
+# Exam Task 21.2 (35 pts)
+def quantify_preprocessing_leakage(X, y, seed=42):
+    """Compare pre-split vs. train-only StandardScaler accuracy."""
+    X_arr = np.asarray(X, dtype=float)
+    y_arr = np.asarray(y)
+
+    X_all_s = StandardScaler().fit_transform(X_arr)
+    Xl_tr, Xl_te, yl_tr, yl_te = train_test_split(
+        X_all_s, y_arr, test_size=0.2, stratify=y_arr, random_state=seed
+    )
+    leaky_acc = float(
+        LogisticRegression(max_iter=500)
+        .fit(Xl_tr, yl_tr)
+        .score(Xl_te, yl_te)
+    )
+
+    Xc_tr, Xc_te, yc_tr, yc_te = train_test_split(
+        X_arr, y_arr, test_size=0.2, stratify=y_arr, random_state=seed
+    )
+    scaler = StandardScaler().fit(Xc_tr)
+    clean_acc = float(
+        LogisticRegression(max_iter=500)
+        .fit(scaler.transform(Xc_tr), yc_tr)
+        .score(scaler.transform(Xc_te), yc_te)
+    )
+
+    return {
+        "leaky_acc": round(leaky_acc, 4),
+        "clean_acc": round(clean_acc, 4),
+        "optimism_gap": round(leaky_acc - clean_acc, 4),
+    }
+
+# Exam Task 21.3 (35 pts)
+def build_learning_curve_table(X, y, fractions, seed=42):
+    """Evaluate DecisionTreeClassifier(max_depth=4) across train sizes."""
+    X_arr = np.asarray(X, dtype=float)
+    y_arr = np.asarray(y)
+    X_tr, X_val, y_tr, y_val = train_test_split(
+        X_arr, y_arr, test_size=0.25, stratify=y_arr, random_state=seed
+    )
+    rows = []
+    for frac in fractions:
+        n_sub = int(round(frac * len(X_tr)))
+        clf = DecisionTreeClassifier(max_depth=4, random_state=seed)
+        clf.fit(X_tr[:n_sub], y_tr[:n_sub])
+        tr_acc = float(clf.score(X_tr[:n_sub], y_tr[:n_sub]))
+        val_acc = float(clf.score(X_val, y_val))
+        rows.append({
+            "fraction": round(float(frac), 4),
+            "n_train": int(n_sub),
+            "train_acc": round(tr_acc, 4),
+            "val_acc": round(val_acc, 4),
+            "gap": round(tr_acc - val_acc, 4),
+        })
+    cols = ["fraction", "n_train", "train_acc", "val_acc", "gap"]
+    return pd.DataFrame(rows, columns=cols)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 21 Failure Modes
+
+1. **Scaling or Imputing Before Splitting (or Calling `.fit_transform(X_test)`):** Fitting any transformer on the combined dataset—or re-fitting on `X_test`—contaminates evaluation with test distribution parameters and creates phantom accuracy gains (`+0.0833` in our benchmark). Always enforce `.fit()` on training data only and `.transform()` on validation/test.
+2. **Using Random `train_test_split` on Clustered or Temporal Data:** Randomly splitting `mch_survey_sample` leaked **43 / 43** test DHS clusters into training, and randomly splitting `epi_surveillance` lets 2025 outbreak weeks predict 2024. Match your split tool (`GroupShuffleSplit` or strict `year < cutoff_year`) to the study design and run an automated leakage audit every time.
+3. **Forgetting to Rescale `val_rel` or Slicing With `train_test_split(train_size=1.0)`:** In 3-way splits, failing to compute `val_size / (1.0 - test_size)` silently shrinks validation from `20%` to `16%`. In learning curves, calling `train_test_split(..., train_size=1.0)` throws a `ValueError`—slice `X_tr[:n_sub]` from the already-shuffled training split instead.
+
+---
+
+::: {.callout-tip title="Up Next — Chapter 22: Scikit-Learn Pipelines, ColumnTransformer & Cross-Validation"}
+In this chapter, you enforced the train/test preprocessing boundary manually with `StandardScaler().fit(X_train)` and `scaler.transform(X_test)`. In **Chapter 22**, you will encapsulate missing-value imputation, categorical one-hot encoding, scaling, and estimation inside Scikit-Learn **`Pipeline`** and **`ColumnTransformer`** objects—making preprocessing leakage structurally impossible even inside $k$-fold and grouped cross-validation!
+:::

@@ -1,0 +1,813 @@
+# Linear & Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn {#sec-ch22}
+
+> **Chapter Mission:** Master continuous-outcome supervised learning from mathematical first principles to leak-free Scikit-Learn production pipelines. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) to predict Child Height-for-Age Z-score (`child_haz`), you will derive and implement Ordinary Least Squares (Normal Equation and Batch Gradient Descent) in pure NumPy, diagnose multicollinearity collapse, control overfitting via Ridge ($L_2$), Lasso ($L_1$), and ElasticNet regularization, tune $\alpha$ via leak-free $K$-fold cross-validation, and audit test residuals.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch22 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch22 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch22 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Compute and interpret **MSE**, **RMSE**, **MAE**, and out-of-sample **$R^2$**—including why out-of-sample $R^2$ can become negative on noisy clinical cohorts.
+2. Derive and implement **Ordinary Least Squares (OLS)** from scratch in pure NumPy using both the rank-safe **Normal Equation** (`np.linalg.lstsq` / `pinv`) and iterative **Batch Gradient Descent** on MSE.
+3. Diagnose **multicollinearity instability** when correlated predictors cause OLS weights to explode in opposite directions, and verify how **$L_2$ Ridge shrinkage** stabilizes the coefficient norm.
+4. Contrast the geometry and behavior of **Ridge ($L_2$)**, **Lasso ($L_1$)**, and **ElasticNet ($L_1 + L_2$)**—explaining why Lasso drives weak features to exact zero while Ridge shrinks all weights smoothly.
+5. Build leak-free Scikit-Learn `Pipeline` workflows pairing `StandardScaler()` with regularized regressors and tune $\alpha$ via $K$-fold cross-validation (`neg_root_mean_squared_error`).
+6. Audit continuous-model predictions through **residual diagnostics** (mean bias, residual spread, and worst-case absolute error) and clean raw survey predictors without data leakage or DataFrame mutation.
+
+---
+
+## Stage 1 — First-Principles Intuition: Fitting Lines Without Fitting Noise {#sec-ch22-intuition}
+
+In **Chapter 21**, you learned the universal architecture of supervised machine learning: separate training from test data, prevent data leakage with `Pipeline`, and judge models by out-of-sample generalization rather than in-sample fit. Now we open the engine hood on the foundational workhorse of predictive modeling: **Linear Regression** and its regularized extensions.
+
+Given a matrix of $n$ observations and $p$ features $X \in \mathbb{R}^{n \times p}$, a linear regressor predicts a continuous outcome $\hat{y} \in \mathbb{R}^n$ via an affine combination of weights $w \in \mathbb{R}^p$ and intercept $b \in \mathbb{R}$:
+
+$$\hat{y} = X w + b$$
+
+Five core principles govern every algorithm in this chapter:
+
+- **Squared Error vs. Absolute Error:** Minimizing **Mean Squared Error** $\text{MSE} = \frac{1}{n}\sum_{i=1}^n (y_i - \hat{y}_i)^2$ produces a smooth, convex bowl with a unique analytical minimum, while **RMSE** $= \sqrt{\text{MSE}}$ restores the target's physical units (here, HAZ Z-scores). **MAE** $= \frac{1}{n}\sum |y_i - \hat{y}_i|$ weights outliers linearly rather than quadratically.
+- **Closed-Form vs. Iterative Solvers:** For moderate feature counts, the **Normal Equation** $\hat{\theta} = (X_b^T X_b)^+ X_b^T y$ (computed safely via SVD in `np.linalg.lstsq`) jumps straight to the global minimum in one shot. When $n$ or $p$ grows massive—or in deep neural networks later in Part VI—**Batch Gradient Descent** walks downhill iteratively along the negative gradient $-\nabla L(w, b)$.
+- **Why Multicollinearity Breaks Unregularized OLS:** When two predictors move almost identically (for example, duplicate antenatal clinic visit counters), $(X_b^T X_b)$ becomes nearly singular. OLS can add $+6.9$ to one weight and $-6.7$ to the other with nearly zero change in training error, creating massive variance on unseen test households.
+- **Regularization Geometry ($L_2$ vs. $L_1$ vs. ElasticNet):** Adding a penalty $\alpha \Omega(w)$ to the MSE objective trades a tiny increase in bias for a sharp drop in variance. **Ridge** ($\alpha \|w\|_2^2$) imposes a smooth circular constraint that shrinks correlated weights together; **Lasso** ($\alpha \|w\|_1$) imposes a sharp diamond constraint whose corners lie on the axes, driving weak predictors to **exact `0.0`**; **ElasticNet** blends both via `l1_ratio`.
+- **Scaling Is Mandatory Before Regularization:** Because penalties act directly on coefficient magnitudes $|w_j|$ or $w_j^2$, measuring maternal age in years vs. days would alter its penalty by $365^2$! Always place `StandardScaler()` **inside** a Scikit-Learn `Pipeline` so every predictor is penalized on a fair 1-SD scale with zero test-set leakage.
+
+::: {.callout-note title="Mental Model — Why Out-of-Sample R^2 Can Be Negative"}
+In introductory statistics, students learn that $R^2 \in [0, 1]$ on training data. On an **unseen holdout test set**, however, $R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y}_{\text{test}})^2}$ can drop **below zero**! A negative test $R^2$ simply means your model's test MSE is slightly worse than predicting the test-set mean $\bar{y}_{\text{test}}$—an immediate diagnostic cue to regularize harder, simplify noisy covariates, or engineer stronger features.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Gradient Descent Loop & Regularization Selector {#sec-ch22-mental-model}
+
+Use this two-part roadmap to connect how linear models optimize MSE under the hood and how to select the right penalty family for your dataset:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph GDLoop["Batch GD Loop"]
+        G1["Init w = 0, b = 0<br/>Standardize X_train"]
+        G2["Forward & MSE Loss<br/>err = Xw + b - y"]
+        G3["Update Step<br/>w -= lr * dw<br/>b -= lr * db"]
+    end
+    subgraph RegSelect["Penalty Selector"]
+        R0["Check Collinearity<br/>& Feature Sparsity"]
+        R1["OLS (alpha = 0)<br/>Low p, clean features"]
+        R2["Ridge (L2)<br/>Correlated features<br/>Shrinks smoothly"]
+        R3["Lasso (L1)<br/>Sparse signal<br/>Zeros weak weights"]
+        R4["ElasticNet<br/>Collinear + Sparse<br/>Grouped selection"]
+    end
+    G1 --> G2
+    G2 --> G3
+    G3 -->|"Repeat epochs"| G2
+    G3 -->|"Converged"| R0
+    R0 -->|"Independent, small p"| R1
+    R0 -->|"Collinear features"| R2
+    R0 -->|"Sparse signal"| R3
+    R0 -->|"Both collinear & sparse"| R4
+```
+
+Notice the direct link between optimization and regularization: **Gradient Descent** minimizes pure training MSE, whereas the **Penalty Selector** modifies the objective landscape (`Ridge`, `Lasso`, or `ElasticNet`)—always wrapped behind `StandardScaler()` inside a `Pipeline` and tuned with $K$-fold cross-validation.
+
+::: {.callout-warning title="Two Silent Regularization Traps in Scikit-Learn"}
+1. **Unscaled Penalties:** Calling `Ridge(alpha=1.0).fit(X_train, y_train)` directly on raw features penalizes small-range variables (e.g., binary `is_urban`) far less than large-range variables (e.g., `maternal_age_years`). Always wrap `StandardScaler()` inside a `Pipeline`.
+2. **Negative CV Scores:** Scikit-Learn maximizes every scorer inside `cross_val_score`, so `scoring="neg_root_mean_squared_error"` returns **negative** RMSE values (e.g., `-1.1359`). Always negate (`rmses = -scores`) before averaging or calling `.idxmin()`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch22-walkthrough}
+
+Open `part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading & Cleaning `mch_survey_sample` {#sec-ch22-setup}
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import (
+    ElasticNet, Lasso, LinearRegression, Ridge
+)
+from sklearn.metrics import (
+    mean_absolute_error, r2_score, root_mean_squared_error
+)
+from sklearn.model_selection import (
+    KFold, cross_val_score, train_test_split
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = mch["residence"].astype(str).str.strip().str.title()
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+
+feat_cols = [
+    "anc_visits", "maternal_hb_g_dl", "maternal_age_years", "is_urban"
+]
+clean = mch[feat_cols + ["child_haz"]].dropna()
+print(f"Raw rows: {len(mch_raw)} -> Complete rows: {len(clean)}")
+print(clean.mean().round(3).to_string())
+```
+
+**Expected Output:**
+```text
+Raw rows: 500 -> Complete rows: 470
+anc_visits             3.809
+maternal_hb_g_dl      11.476
+maternal_age_years    30.498
+is_urban               0.289
+child_haz             -0.805
+```
+
+Working strictly on a clean `.copy()` (zero mutation, zero `inplace=True` for Pandas 3.x compatibility), we standardize `residence` casing, convert sentinel `anc_visits == 999` to `np.nan`, encode `is_urban`, and retain the `470` complete records across our four maternal predictors and continuous outcome `child_haz` (mean `-0.805` Z-scores).
+
+---
+
+### Regression Metrics: MSE, RMSE, MAE & $R^2$ {#sec-ch22-metrics}
+
+```python
+X = clean[feat_cols]
+y = clean["child_haz"]
+X_tr, X_te, y_tr, y_te = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+ols_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("ols", LinearRegression()),
+])
+ols_pipe.fit(X_tr, y_tr)
+y_pred = ols_pipe.predict(X_te)
+
+err = y_te.to_numpy() - y_pred
+mse = float(np.mean(err ** 2))
+rmse = float(np.sqrt(mse))
+mae = float(np.mean(np.abs(err)))
+ss_tot = float(np.sum((y_te.to_numpy() - y_te.mean()) ** 2))
+r2 = 1.0 - float(np.sum(err ** 2)) / ss_tot
+
+print(f"From scratch -> MSE={mse:.4f}, RMSE={rmse:.4f}, "
+      f"MAE={mae:.4f}, R2={r2:.4f}")
+print(f"Scikit-Learn -> RMSE={root_mean_squared_error(y_te, y_pred):.4f}, "
+      f"MAE={mean_absolute_error(y_te, y_pred):.4f}, "
+      f"R2={r2_score(y_te, y_pred):.4f}")
+```
+
+**Expected Output:**
+```text
+From scratch -> MSE=1.9180, RMSE=1.3849, MAE=1.0509, R2=-0.0270
+Scikit-Learn -> RMSE=1.3849, MAE=1.0509, R2=-0.0270
+```
+
+Look closely at two clinical insights from this output:
+
+- **Exact Formula Verification:** Our pure-NumPy equations reproduce Scikit-Learn's `root_mean_squared_error`, `mean_absolute_error`, and `r2_score` to all four decimal places (`RMSE = 1.3849`, `MAE = 1.0509`).
+- **RMSE > MAE & Negative Holdout $R^2$:** Notice that `RMSE (1.3849)` exceeds `MAE (1.0509)` by 32%, signaling heavy-tailed errors from severely stunted children. Moreover, unregularized OLS achieves `R2 = -0.0270` on this noisy 94-child holdout split—a textbook motivation for regularization!
+
+---
+
+### Closed-Form OLS: The Normal Equation From Scratch {#sec-ch22-normal-eq}
+
+Prepending a column of ones $X_b = [\mathbf{1}, Z]$ absorbs the intercept $b$ into a single parameter vector $\theta = [b, w_1, \dots, w_p]^T$. Setting $\nabla_\theta \|X_b \theta - y\|_2^2 = 0$ yields the **Normal Equation**:
+
+$$X_b^T X_b \hat{\theta} = X_b^T y \implies \hat{\theta} = (X_b^T X_b)^+ X_b^T y$$
+
+```python
+# Standardize using training-fold statistics ONLY (zero leakage)
+mu_tr = X_tr.to_numpy().mean(axis=0)
+sd_tr = X_tr.to_numpy().std(axis=0)
+Z_tr = (X_tr.to_numpy() - mu_tr) / sd_tr
+y_tr_arr = y_tr.to_numpy()
+
+Zb = np.column_stack([np.ones(len(Z_tr)), Z_tr])
+theta_lstsq = np.linalg.lstsq(Zb, y_tr_arr, rcond=None)[0]
+theta_pinv = np.linalg.pinv(Zb.T @ Zb) @ Zb.T @ y_tr_arr
+
+sk_ols = ols_pipe.named_steps["ols"]
+print(f"Normal Eq (lstsq) b={theta_lstsq[0]:.4f}, "
+      f"w={np.round(theta_lstsq[1:], 4)}")
+print(f"Normal Eq (pinv)  b={theta_pinv[0]:.4f}, "
+      f"w={np.round(theta_pinv[1:], 4)}")
+print(f"Scikit-Learn OLS  b={sk_ols.intercept_:.4f}, "
+      f"w={np.round(sk_ols.coef_, 4)}")
+```
+
+**Expected Output:**
+```text
+Normal Eq (lstsq) b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]
+Normal Eq (pinv)  b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]
+Scikit-Learn OLS  b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]
+```
+
+All three solvers (`np.linalg.lstsq`, Moore-Penrose pseudoinverse `pinv`, and `sklearn.linear_model.LinearRegression`) produce identical standardized parameters down to the fourth decimal place. Notice why `lstsq` is preferred over `np.linalg.inv(Zb.T @ Zb)`: SVD-based `lstsq` stays numerically stable even when columns are perfectly collinear.
+
+---
+
+### Pure-NumPy Batch Gradient Descent on MSE {#sec-ch22-gd}
+
+Instead of inverting a $p \times p$ matrix (which costs $\mathcal{O}(p^3)$), **Batch Gradient Descent** differentiates the MSE loss $L(w, b) = \frac{1}{n} \sum_{i=1}^n (z_i^T w + b - y_i)^2$ directly:
+
+$$\nabla_w L = \frac{2}{n} Z^T (\hat{y} - y), \qquad \nabla_b L = \frac{2}{n} \sum_{i=1}^n (\hat{y}_i - y_i)$$
+
+```python
+def run_batch_gd(Z, y_vec, lr=0.05, epochs=300):
+    n, p = Z.shape
+    w = np.zeros(p, dtype=float)
+    b = 0.0
+    history = []
+    for _ in range(epochs):
+        err = (Z @ w + b) - y_vec
+        history.append(float(np.mean(err ** 2)))
+        w = w - lr * ((2.0 / n) * (Z.T @ err))
+        b = b - lr * ((2.0 / n) * float(np.sum(err)))
+    return w, b, history
+
+w_gd, b_gd, losses = run_batch_gd(Z_tr, y_tr_arr, lr=0.05, epochs=300)
+print(f"MSE Epoch 1: {losses[0]:.4f} -> Epoch 25: {losses[24]:.4f} "
+      f"-> Epoch 300: {losses[-1]:.4f}")
+print(f"Batch GD params   b={b_gd:.4f}, w={np.round(w_gd, 4)}")
+max_diff = float(np.max(np.abs(w_gd - sk_ols.coef_)))
+print(f"Max |w_gd - w_ols|: {max_diff:.6f}")
+```
+
+**Expected Output:**
+```text
+MSE Epoch 1: 1.8524 -> Epoch 25: 1.2607 -> Epoch 300: 1.2569
+Batch GD params   b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]
+Max |w_gd - w_ols|: 0.000000
+```
+
+Starting from all zeros (`MSE = 1.8524`), Batch Gradient Descent drops rapidly to `1.2607` by Epoch 25 and converges to the exact OLS minimum (`Max |w_gd - w_ols| = 0.000000`) by Epoch 300! Standardizing `Z_tr` first made the MSE contours nearly spherical so a single learning rate `lr = 0.05` descends smoothly without oscillating.
+
+---
+
+### Multicollinearity Instability: OLS Explosion vs. Ridge Stabilization {#sec-ch22-collinearity}
+
+Suppose a survey merges two nearly identical clinic-visit logs (`anc_visits` and `anc_proxy = anc_visits + tiny_noise`). Let's see what happens to OLS versus Ridge ($L_2$) regularization:
+
+```python
+rng = np.random.default_rng(42)
+X_col = X_tr.copy()
+# Add a nearly collinear duplicate clinic-visit counter (r > 0.9999)
+X_col["anc_proxy"] = (
+    X_col["anc_visits"] + rng.normal(0.0, 0.01, size=len(X_col))
+)
+
+for label, est in [
+    ("OLS (unregularized)", LinearRegression()),
+    ("Ridge (alpha=1.0)  ", Ridge(alpha=1.0)),
+    ("Ridge (alpha=10.0) ", Ridge(alpha=10.0)),
+]:
+    pipe = Pipeline([("scaler", StandardScaler()), ("m", est)])
+    pipe.fit(X_col, y_tr)
+    c = pipe.named_steps["m"].coef_
+    l2_norm = float(np.linalg.norm(c))
+    print(f"{label} anc={c[0]:+7.3f}, proxy={c[4]:+7.3f} "
+          f"| ||w||_2={l2_norm:.3f}")
+```
+
+**Expected Output:**
+```text
+OLS (unregularized) anc= -6.733, proxy= +6.902 | ||w||_2=9.643
+Ridge (alpha=1.0)   anc= +0.056, proxy= +0.113 | ||w||_2=0.153
+Ridge (alpha=10.0)  anc= +0.081, proxy= +0.087 | ||w||_2=0.146
+```
+
+Look at that dramatic collapse: unregularized **OLS** assigns `-6.733` to `anc_visits` and `+6.902` to its near-identical twin `anc_proxy`—inflating $\|w\|_2$ by more than **60-fold** to `9.643` just to chase random 0.01-visit noise! Adding Ridge's $L_2$ term $(Z^T Z + \alpha I)^{-1} Z^T y$ instantly stabilizes the matrix diagonal, splitting the true `+0.168` effect cleanly between both counters (`+0.081` and `+0.087` at $\alpha = 10.0$).
+
+---
+
+### Regularization Geometry: Ridge ($L_2$) vs. Lasso ($L_1$) vs. ElasticNet {#sec-ch22-regularizers}
+
+Compare the three regularized objectives on the four standardized MCH predictors:
+
+- **Ridge ($L_2$):** $\min_{w,b} \sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \|w\|_2^2$ (smooth shrinkage; keeps all features nonzero).
+- **Lasso ($L_1$):** $\min_{w,b} \frac{1}{2n}\sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \|w\|_1$ (sparse selection; sets weak coefficients to exact `0.0`).
+- **ElasticNet ($L_1 + L_2$):** $\min_{w,b} \frac{1}{2n}\sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \rho \|w\|_1 + \frac{\alpha (1 - \rho)}{2} \|w\|_2^2$ where $\rho =$ `l1_ratio`.
+
+```python
+models = [
+    ("OLS", LinearRegression()),
+    ("Ridge(1.0)", Ridge(alpha=1.0)),
+    ("Ridge(10.0)", Ridge(alpha=10.0)),
+    ("Lasso(0.05)", Lasso(alpha=0.05, max_iter=5000)),
+    ("ElasticNet(0.05)", ElasticNet(alpha=0.05, l1_ratio=0.5,
+                                    max_iter=5000)),
+]
+rows = []
+for name, est in models:
+    pipe = Pipeline([("scaler", StandardScaler()), ("m", est)])
+    pipe.fit(X_tr, y_tr)
+    pred = pipe.predict(X_te)
+    c = pipe.named_steps["m"].coef_
+    rows.append({
+        "model": name,
+        "rmse": round(float(root_mean_squared_error(y_te, pred)), 4),
+        "nonzero": int(np.sum(np.abs(c) > 1e-6)),
+        "anc": round(float(c[0]), 4),
+        "hb": round(float(c[1]), 4),
+        "age": round(float(c[2]), 4),
+        "urban": round(float(c[3]), 4),
+    })
+print(pd.DataFrame(rows).to_string(index=False))
+```
+
+**Expected Output:**
+```text
+           model   rmse  nonzero    anc     hb     age  urban
+             OLS 1.3849        4 0.1694 0.0797 -0.0340 0.0006
+      Ridge(1.0) 1.3849        4 0.1689 0.0796 -0.0340 0.0007
+     Ridge(10.0) 1.3847        4 0.1648 0.0783 -0.0333 0.0020
+     Lasso(0.05) 1.3804        2 0.1262 0.0398 -0.0000 0.0000
+ElasticNet(0.05) 1.3815        3 0.1443 0.0594 -0.0105 0.0000
+```
+
+Read this comparison table like a senior applied scientist:
+
+- **Ridge** shrinks coefficients smoothly toward zero but retains all `4` predictors (`nonzero = 4`).
+- **Lasso (`alpha = 0.05`)** hits the sharp corners of the $L_1$ diamond, setting both `maternal_age_years` (`-0.0000`) and `is_urban` (`0.0000`) to **exact zero**, retaining only the two biologically informative predictors (`anc_visits` and `maternal_hb_g_dl`), and achieving the lowest holdout RMSE (`1.3804`)!
+- **ElasticNet (`l1_ratio = 0.5`)** sits cleanly in between, zeroing `is_urban` while retaining a heavily shrunk `maternal_age_years` (`-0.0105`).
+
+---
+
+### Residual Diagnostics & Error Inspection {#sec-ch22-residuals}
+
+Never stop at a single headline RMSE. Inspect the residual vector $e = y_{\text{true}} - \hat{y}$ to catch systematic bias or extreme outliers:
+
+```python
+lasso_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("lasso", Lasso(alpha=0.05, max_iter=5000)),
+])
+lasso_pipe.fit(X_tr, y_tr)
+y_hat_lasso = lasso_pipe.predict(X_te)
+resid = y_te.to_numpy() - y_hat_lasso
+
+within_2sd = float(np.mean(np.abs(resid) <= 2.0 * np.std(resid)))
+print(f"Mean residual : {np.mean(resid):.4f}")
+print(f"Std residual  : {np.std(resid):.4f}")
+print(f"Max |error|   : {np.max(np.abs(resid)):.4f}")
+print(f"Share <= 2 SD : {within_2sd * 100:.1f}%")
+```
+
+**Expected Output:**
+```text
+Mean residual : -0.2955
+Std residual  : 1.3484
+Max |error|   : 4.7090
+Share <= 2 SD : 94.7%
+```
+
+Look at what these four diagnostic numbers tell us immediately:
+
+- **`Mean residual = -0.2955`:** On this holdout split, the model slightly over-predicts child HAZ by `0.30` Z-scores on average (because test households happen to have a slightly lower mean HAZ than training households).
+- **`Share <= 2 SD = 94.7%` vs. `Max |error| = 4.7090`:** Nearly 95% of test residuals fall cleanly within $\pm 2\sigma$ (consistent with approximate Normality), yet at least one extreme outlier sits `4.71` Z-scores away—explaining why RMSE (`1.3804`) substantially exceeds MAE (`1.0406`).
+
+---
+
+### Break It On Purpose! (Regression Error Anatomy) {#sec-ch22-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — LinAlgError (Inverting Singular Collinear X^T X)"}
+```python
+X_sing = np.array([[1.0, 2.0, 4.0], [1.0, 3.0, 6.0], [1.0, 5.0, 10.0]])
+np.linalg.inv(X_sing.T @ X_sing)
+```
+**Python's Traceback:**
+```text
+LinAlgError: Singular matrix
+```
+**Diagnosis:** Column 2 (`[4, 6, 10]`) equals exactly $2 \times$ Column 1 (`[2, 3, 5]`), so $\det(X^T X) = 0$ and the matrix has no inverse.  
+**Fix:** Never solve OLS with raw `np.linalg.inv(X.T @ X)`. Use SVD-based `np.linalg.lstsq(Xb, y, rcond=None)[0]`, `np.linalg.pinv(...)`, or add a Ridge penalty $(X^T X + \alpha I)$ which guarantees strict invertibility for any $\alpha > 0$.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Passing 1D X Instead of 2D (n, p))"}
+```python
+x_1d = clean["anc_visits"].to_numpy()[:5]
+y_1d = clean["child_haz"].to_numpy()[:5]
+LinearRegression().fit(x_1d, y_1d)
+```
+**Python's Traceback:**
+```text
+ValueError: Expected 2D array, got 1D array instead:
+array=[4. 3. 2. 2. 0.].
+Reshape your data either using array.reshape(-1, 1) if your data has a
+single feature or array.reshape(1, -1) if it contains a single sample.
+```
+**Diagnosis:** Every Scikit-Learn estimator requires a 2D design matrix `X` of shape `(n_samples, n_features)`. Indexing a single column with `clean["anc_visits"]` yields a 1D Series/array of shape `(n,)`.  
+**Fix:** Slice with double brackets `clean[["anc_visits"]]` (a 2D DataFrame) or reshape a 1D NumPy vector with `x_1d.reshape(-1, 1)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError / InvalidParameterError (Negative Ridge Alpha)"}
+```python
+Ridge(alpha=-1.0).fit(X_tr, y_tr)
+```
+**Python's Traceback:**
+```text
+InvalidParameterError: The 'alpha' parameter of Ridge must be a float
+in the range [0.0, inf) or an array-like. Got -1.0 instead.
+```
+**Diagnosis:** `InvalidParameterError` (a Scikit-Learn subclass of `ValueError`) catches negative regularization penalties. A negative $\alpha$ would *reward* arbitrarily large weights, destroying convexity and sending $\|w\|_2 \to \infty$.  
+**Fix:** Always search strictly non-negative penalties on a logarithmic grid such as `np.logspace(-3, 3, 7)` (`[0.001, 0.01, ..., 1000.0]`).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch22-blueprint}
+
+**Scenario:** Your health-analytics team needs a single reproducible function `build_haz_regression_report(raw_df, alphas=(0.1, 1.0, 10.0, 100.0))` that cleans raw `mch_survey_sample` without mutating it, holds out 20% of households for untouched final testing, tunes Ridge $\alpha$ via leak-free 5-fold cross-validation **strictly inside the 80% training split**, evaluates the winning Ridge model on the untouched holdout set, and audits test residuals.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Non-Mutating Survey Cleaning Layer:**
+
+   - Copy `raw_df` via `df = raw_df.copy()`.
+   - Normalize `residence` casing, replace sentinel `anc_visits == 999` with `np.nan`, engineer `is_urban`, and drop missing rows across the four predictors plus `child_haz`.
+
+2. **Strict Train/Test Isolation + Leak-Free CV Tuning:**
+
+   - Split 80/20 first (`train_test_split(..., test_size=0.2, random_state=42)`). Never touch `(X_b, y_b)` during hyperparameter selection!
+   - Run 5-fold `KFold(n_splits=5, shuffle=True, random_state=42)` over `alphas` using `Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=float(a)))])` and `scoring="neg_root_mean_squared_error"`, negating scores (`-scores`) to pick `best_a`.
+
+3. **Final Holdout Fit & Residual Audit:**
+
+   - Refit `Pipeline(StandardScaler, Ridge(alpha=best_a))` on `(X_a, y_a)`, score holdout `test_rmse` on `(X_b, y_b)`, and return residual diagnostics (`mean_resid`, `max_abs_err`).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def build_haz_regression_report(raw_df, alphas=(0.1, 1.0, 10.0, 100.0)):
+    """Clean MCH data, tune Ridge via 5-fold CV, and benchmark models."""
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    feats = [
+        "anc_visits", "maternal_hb_g_dl",
+        "maternal_age_years", "is_urban",
+    ]
+    cdf = df[feats + ["child_haz"]].dropna()
+    X_all, y_all = cdf[feats], cdf["child_haz"]
+    X_a, X_b, y_a, y_b = train_test_split(
+        X_all, y_all, test_size=0.2, random_state=42
+    )
+
+    # 1. Leak-free 5-fold CV on training split ONLY
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    cv_rows = []
+    for a in alphas:
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("ridge", Ridge(alpha=float(a))),
+        ])
+        rmses = -cross_val_score(
+            pipe, X_a, y_a, cv=kf,
+            scoring="neg_root_mean_squared_error",
+        )
+        cv_rows.append({
+            "alpha": float(a),
+            "cv_rmse": round(float(rmses.mean()), 4),
+        })
+    cv_df = pd.DataFrame(cv_rows)
+    best_a = float(cv_df.loc[cv_df["cv_rmse"].idxmin(), "alpha"])
+
+    # 2. Final holdout evaluation with tuned Ridge
+    best_pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("ridge", Ridge(alpha=best_a)),
+    ])
+    best_pipe.fit(X_a, y_a)
+    preds = best_pipe.predict(X_b)
+    test_rmse = round(float(root_mean_squared_error(y_b, preds)), 4)
+    resid = y_b.to_numpy() - preds
+    diag = {
+        "mean_resid": round(float(np.mean(resid)), 4),
+        "max_abs_err": round(float(np.max(np.abs(resid))), 4),
+    }
+    return len(cdf), cv_df, best_a, test_rmse, diag
+
+n_ok, cv_tbl, best_alpha, holdout_rmse, resid_diag = (
+    build_haz_regression_report(mch_raw)
+)
+print(f"Clean rows: {n_ok} | Best CV alpha: {best_alpha} "
+      f"| Test RMSE: {holdout_rmse}")
+print(cv_tbl.to_string(index=False))
+print("Residual diagnostics:", resid_diag)
+```
+
+**Output:**
+```text
+Clean rows: 470 | Best CV alpha: 100.0 | Test RMSE: 1.384
+ alpha  cv_rmse
+   0.1   1.1360
+   1.0   1.1359
+  10.0   1.1355
+ 100.0   1.1333
+Residual diagnostics: {'mean_resid': -0.2932, 'max_abs_err': 4.732}
+```
+
+Notice how cleanly every safeguard works together: cross-validation selects stronger regularization (`alpha = 100.0`, lowering CV RMSE from `1.1360` to `1.1333`) using **only** the 376 training households, and the untouched 94-household holdout set gives an honest `Test RMSE = 1.384` alongside residual diagnostics.
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch22-todos}
+
+Open `part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six regression functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 22.1 (`regression_metrics(y_true, y_pred)`):** Compute MAE, RMSE, and $R^2$ without mutating caller inputs, returning `{"mae": round4, "rmse": round4, "r2": round4}`.
+- **To-Do 22.2 (`ols_normal_equation(X, y)`):** Pure-NumPy OLS that prepends an intercept column of `1`s, solves safely via `np.linalg.lstsq` (or `np.linalg.pinv(Xb.T @ Xb) @ Xb.T @ y`), and returns `(float_intercept, 1D_coef_array)`.
+- **To-Do 22.3 (`gradient_descent_linear(X, y, lr=0.05, epochs=300)`):** Pure-NumPy batch gradient descent on MSE returning `(w_1d, b_float, loss_history_list)` with `len(loss_history) == epochs` and `loss_history[-1] < loss_history[0]`.
+- **To-Do 22.4 (`fit_ridge_standardized(X_train, y_train, X_test, alpha=1.0)`):** Build a leak-free `Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=alpha))])`, fit on training data only, and return `(y_pred_test, coef_array)`.
+- **To-Do 22.5 (`count_lasso_selected_features(X_train, y_train, alpha=0.1, tol=1e-6)`):** Fit standardized `Lasso(alpha=alpha, max_iter=5000)` inside a `Pipeline` and return the integer count of coefficients where `abs(coef) > tol`.
+- **To-Do 22.6 (`residual_summary(y_true, y_pred)`):** Define residuals `resid = y_true - y_pred` and return `{"mean_residual": round4, "std_residual": round4, "max_abs_error": round4}` using NumPy's default `np.std(resid)` (`ddof=0`).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch22-test}
+
+Work through all 10 linear and regularized regression questions on paper before checking Stage 8:
+
+1. **MSE, RMSE & MAE by Hand:** Given `y_true = [2.0, 4.0, 6.0]` and `y_pred = [2.0, 5.0, 4.0]`, compute exact **MAE**, **MSE**, and **RMSE**. Why is $\text{RMSE} > \text{MAE}$ here?
+2. **Negative Out-of-Sample $R^2$:** On a holdout set `y_true = [1.0, 2.0, 3.0, 4.0]`, a bad model predicts `y_pred = [4.0, 3.0, 2.0, 1.0]`. Compute $\text{SS}_{\text{tot}}$, $\text{SS}_{\text{res}}$, and $R^2$ by hand. What does a negative $R^2$ mean?
+3. **Why `np.linalg.inv(Xb.T @ Xb)` Fails:** Suppose feature column $x_2 = 3 x_1$ across every row. What exception does `np.linalg.inv(Xb.T @ Xb)` raise, and which NumPy solver avoids it?
+4. **One Step of Batch Gradient Descent:** With $n = 2$ observations $x = [1, 3]$, $y = [2, 6]$, initial $w = 0$, $b = 0$, and learning rate $\eta = 0.1$, compute $\hat{y}$, $\nabla_w L$, $\nabla_b L$, and the updated $(w^{(1)}, b^{(1)})$ after **one** epoch of MSE gradient descent.
+5. **Multicollinearity Under OLS vs. Ridge:** Two identical features $x_1 = x_2$ together explain $y \approx 2 x_1$. Why does Ridge ($\alpha > 0$) prefer $w_1 = 1, w_2 = 1$ over $w_1 = 100, w_2 = -98$ even though both give nearly identical training predictions?
+6. **Geometry of Sparsity ($L_1$ vs. $L_2$):** Geometrically, why does **Lasso** produce exact zeros (`w_j == 0.0`) whereas **Ridge** shrinks small coefficients close to zero without ever hitting exact zero?
+7. **Feature Scaling Before Regularization:** Feature A (`anc_visits`) ranges from `0` to `10`; Feature B (`income_bdt`) ranges from `5,000` to `100,000`. If you fit `Ridge(alpha=10.0)` **without** `StandardScaler()`, which feature's slope gets unfairly punished more—and why?
+8. **Data Leakage in Cross-Validation:** A colleague runs `X_scaled = StandardScaler().fit_transform(X)` **before** calling `cross_val_score(Ridge(alpha=1.0), X_scaled, y, cv=5)`. Why is this subtle data leakage, and how does `Pipeline` eliminate it?
+9. **Scikit-Learn Negative Scorers:** `cross_val_score(..., scoring="neg_root_mean_squared_error")` returns `[-1.24, -1.18, -1.30]`. What is the positive mean CV RMSE, and why does Scikit-Learn return negative numbers?
+10. **Residual Sign & Outlier Diagnosis:** On test data, your model reports `mean_residual = +0.85` (where `resid = y_true - y_pred`) and `max_abs_error = 5.4`. Is the model systematically **under-predicting** or **over-predicting**, and what does the large `max_abs_error` suggest?
+
+---
+
+## Stage 7 — Chapter 22 Coding Exam (100 Points) {#sec-ch22-exam}
+
+Open `part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch22", exam_submissions)` to earn your Chapter 22 score out of 100 points.
+
+### Exam Task 22.1 (30 Points): `compare_ols_ridge_lasso(X_train, y_train, X_test, y_test, ridge_alpha=1.0, lasso_alpha=0.1)`
+
+Without mutating caller inputs:
+
+- Wrap `LinearRegression()`, `Ridge(alpha=ridge_alpha)`, and `Lasso(alpha=lasso_alpha, max_iter=5000)` each in a leak-free `Pipeline([("scaler", StandardScaler()), ("model", est)])`.
+- Fit on `(X_train, y_train)`, evaluate on `(X_test, y_test)`, and count `nonzero_coefs = int(np.sum(np.abs(coef) > 1e-6))`.
+- Return a `pd.DataFrame` with exact columns `["model", "rmse", "mae", "r2", "nonzero_coefs"]`, rows ordered `["OLS", "Ridge", "Lasso"]`, and float metrics rounded to **4 decimals**.
+
+### Exam Task 22.2 (35 Points): `tune_ridge_alpha_cv(X, y, alphas, cv=5)`
+
+Without mutating `X` or `y`:
+
+- Create `kf = KFold(n_splits=cv, shuffle=True, random_state=42)`.
+- For every `a` in `alphas`, evaluate `Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=float(a)))])` via `cross_val_score(..., cv=kf, scoring="neg_root_mean_squared_error")` and negate scores (`rmses = -scores`).
+- Build `cv_table` with columns `["alpha", "mean_rmse", "std_rmse"]` (RMSE columns rounded to **4 decimals**), select the `alpha` minimizing `mean_rmse`, and return `{"best_alpha": float, "best_rmse": round4, "cv_table": DataFrame}`.
+
+### Exam Task 22.3 (35 Points): `predict_child_haz_pipeline(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Copy `mch_df`, standardize `residence` (`str.strip().str.title()`), replace sentinel `anc_visits == 999` with `np.nan`, and add binary `is_urban = (work["residence"] == "Urban").astype(int)`.
+- Drop rows with missing values in `["anc_visits", "maternal_hb_g_dl", "maternal_age_years", "is_urban", "child_haz"]`.
+- Split the four predictors and `child_haz` 80/20 via `train_test_split(..., test_size=0.2, random_state=seed)`.
+- Fit `Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=1.0))])` and return `{"n_clean": int, "test_rmse": round4, "test_r2": round4, "coefs": dict_feature_to_round4}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch22-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Residuals are `[0.0, -1.0, 2.0]`: $\text{MAE} = (0 + 1 + 2)/3 = \mathbf{1.0000}$, $\text{MSE} = (0 + 1 + 4)/3 = \mathbf{1.6667}$, $\text{RMSE} = \sqrt{5/3} \approx \mathbf{1.2910}$. $\text{RMSE} > \text{MAE}$ because squaring amplifies the larger error (`2.0`) disproportionately.
+2. Mean $\bar{y} = 2.5$, so $\text{SS}_{\text{tot}} = 1.5^2 + 0.5^2 + 0.5^2 + 1.5^2 = 5.0$. Errors are `[-3, -1, 1, 3]`, so $\text{SS}_{\text{res}} = 9 + 1 + 1 + 9 = 20.0$. Thus $R^2 = 1 - 20/5 = \mathbf{-3.0}$. A negative $R^2$ means the model performs worse than predicting the constant mean $\bar{y}$.
+3. `np.linalg.inv(Xb.T @ Xb)` raises **`np.linalg.LinAlgError: Singular matrix`** because $X_b^T X_b$ is rank-deficient ($\det = 0$). Using **`np.linalg.lstsq(Xb, y, rcond=None)`** (or `np.linalg.pinv`) computes the minimum-norm least-squares solution safely via SVD.
+4. At $w = 0, b = 0$: $\hat{y} = [0, 0]$, error $e = \hat{y} - y = [-2, -6]$. Gradients: $\nabla_w L = \frac{2}{2}(1(-2) + 3(-6)) = \mathbf{-20}$, $\nabla_b L = \frac{2}{2}(-2 + -6) = \mathbf{-8}$. Update with $\eta = 0.1$: $w^{(1)} = 0 - 0.1(-20) = \mathbf{2.0}$, $b^{(1)} = 0 - 0.1(-8) = \mathbf{0.8}$.
+5. Ridge minimizes $\text{SSE} + \alpha (w_1^2 + w_2^2)$. For $(1, 1)$, the penalty is $\alpha (1^2 + 1^2) = 2\alpha$; for $(100, -98)$, the penalty is $\alpha (10000 + 9604) = 19{,}604\alpha$! Squaring forces correlated features to share weight evenly.
+6. The $L_1$ constraint region $|w_1| + |w_2| \le t$ is a **diamond with sharp corners** sitting directly on the coordinate axes, where elliptical MSE contours naturally touch first (setting one coordinate to exact `0.0`). The $L_2$ sphere $w_1^2 + w_2^2 \le t$ is smooth everywhere with no corners.
+7. **Feature A (`anc_visits`)** gets punished far harder! Because `income_bdt` has $10{,}000\times$ larger units, its raw regression slope is tiny ($\sim 10^{-5}$), so its squared penalty $w_B^2 \approx 10^{-10}$ is negligible compared with $w_A^2$. Standardizing equalizes both features to mean `0`, SD `1`.
+8. Fitting `StandardScaler` on the full dataset `X` leaks validation-fold means and standard deviations into training folds, subtly inflating CV performance. Wrapping `StandardScaler()` inside a `Pipeline` refits the scaler independently inside every training fold.
+9. Negating gives `[1.24, 1.18, 1.30]`, whose positive mean CV RMSE is **$\mathbf{1.24}$**. Scikit-Learn follows a universal "higher score is better" API across all grid-search and CV utilities, so loss metrics are negated.
+10. Because `resid = y_true - y_pred > 0`, $y_{\text{true}} > \hat{y}$, meaning the model is systematically **under-predicting** by `0.85` units on average. The `max_abs_error = 5.4` warns of at least one severe outlier pulling up squared error (MSE/RMSE).
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+from sklearn.linear_model import Lasso, Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+# To-Do 22.1
+def regression_metrics(y_true, y_pred):
+    """Return dict with MAE, RMSE, and R^2 rounded to 4 decimals."""
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_pred, dtype=float)
+    err = yt - yp
+    mae = float(np.mean(np.abs(err)))
+    rmse = float(np.sqrt(np.mean(err ** 2)))
+    ss_res = float(np.sum(err ** 2))
+    ss_tot = float(np.sum((yt - np.mean(yt)) ** 2))
+    r2 = 1.0 - ss_res / ss_tot
+    return {
+        "mae": round(mae, 4),
+        "rmse": round(rmse, 4),
+        "r2": round(r2, 4),
+    }
+
+# To-Do 22.2
+def ols_normal_equation(X, y):
+    """Solve OLS via Normal Equation / lstsq; return (intercept, coef)."""
+    X_arr = np.asarray(X, dtype=float)
+    y_arr = np.asarray(y, dtype=float)
+    Xb = np.column_stack([np.ones(len(X_arr)), X_arr])
+    theta = np.linalg.lstsq(Xb, y_arr, rcond=None)[0]
+    return (float(theta[0]), theta[1:])
+
+# To-Do 22.3
+def gradient_descent_linear(X, y, lr=0.05, epochs=300):
+    """Run batch gradient descent on MSE; return (w, b, loss_history)."""
+    X_arr = np.asarray(X, dtype=float)
+    y_arr = np.asarray(y, dtype=float)
+    n, p = X_arr.shape
+    w = np.zeros(p, dtype=float)
+    b = 0.0
+    loss_history = []
+    for _ in range(epochs):
+        err = (X_arr @ w + b) - y_arr
+        loss_history.append(float(np.mean(err ** 2)))
+        dw = (2.0 / n) * (X_arr.T @ err)
+        db = (2.0 / n) * float(np.sum(err))
+        w = w - lr * dw
+        b = b - lr * db
+    return (w, float(b), loss_history)
+
+# To-Do 22.4
+def fit_ridge_standardized(X_train, y_train, X_test, alpha=1.0):
+    """Fit leak-free StandardScaler + Ridge; return (y_pred, coef)."""
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("ridge", Ridge(alpha=alpha)),
+    ])
+    pipe.fit(X_train, y_train)
+    y_pred = pipe.predict(X_test)
+    return (y_pred, pipe.named_steps["ridge"].coef_)
+
+# To-Do 22.5
+def count_lasso_selected_features(
+    X_train, y_train, alpha=0.1, tol=1e-6
+):
+    """Count standardized Lasso coefficients with |coef| > tol."""
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("lasso", Lasso(alpha=alpha, max_iter=5000)),
+    ])
+    pipe.fit(X_train, y_train)
+    coefs = pipe.named_steps["lasso"].coef_
+    return int(np.sum(np.abs(coefs) > tol))
+
+# To-Do 22.6
+def residual_summary(y_true, y_pred):
+    """Return mean, std (ddof=0), and max |error| of y_true - y_pred."""
+    resid = (
+        np.asarray(y_true, dtype=float)
+        - np.asarray(y_pred, dtype=float)
+    )
+    return {
+        "mean_residual": round(float(np.mean(resid)), 4),
+        "std_residual": round(float(np.std(resid)), 4),
+        "max_abs_error": round(float(np.max(np.abs(resid))), 4),
+    }
+```
+
+### C. Annotated Solutions — Chapter 22 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import pandas as pd
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
+from sklearn.metrics import (
+    mean_absolute_error, r2_score, root_mean_squared_error
+)
+from sklearn.model_selection import (
+    KFold, cross_val_score, train_test_split
+)
+
+# Exam Task 22.1 (30 pts)
+def compare_ols_ridge_lasso(
+    X_train, y_train, X_test, y_test,
+    ridge_alpha=1.0, lasso_alpha=0.1,
+):
+    """Benchmark standardized OLS, Ridge, and Lasso on a holdout set."""
+    specs = [
+        ("OLS", LinearRegression()),
+        ("Ridge", Ridge(alpha=ridge_alpha)),
+        ("Lasso", Lasso(alpha=lasso_alpha, max_iter=5000)),
+    ]
+    rows = []
+    for name, est in specs:
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", est),
+        ])
+        pipe.fit(X_train, y_train)
+        pred = pipe.predict(X_test)
+        coefs = pipe.named_steps["model"].coef_
+        rows.append({
+            "model": name,
+            "rmse": round(
+                float(root_mean_squared_error(y_test, pred)), 4
+            ),
+            "mae": round(
+                float(mean_absolute_error(y_test, pred)), 4
+            ),
+            "r2": round(float(r2_score(y_test, pred)), 4),
+            "nonzero_coefs": int(np.sum(np.abs(coefs) > 1e-6)),
+        })
+    return pd.DataFrame(rows)
+
+# Exam Task 22.2 (35 pts)
+def tune_ridge_alpha_cv(X, y, alphas, cv=5):
+    """Tune Ridge alpha via leak-free KFold CV on positive RMSE."""
+    kf = KFold(n_splits=cv, shuffle=True, random_state=42)
+    rows = []
+    for a in alphas:
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("ridge", Ridge(alpha=float(a))),
+        ])
+        rmses = -cross_val_score(
+            pipe, X, y, cv=kf,
+            scoring="neg_root_mean_squared_error",
+        )
+        rows.append({
+            "alpha": float(a),
+            "mean_rmse": round(float(rmses.mean()), 4),
+            "std_rmse": round(float(rmses.std()), 4),
+        })
+    cv_table = pd.DataFrame(rows)
+    best_idx = int(cv_table["mean_rmse"].idxmin())
+    return {
+        "best_alpha": float(cv_table.loc[best_idx, "alpha"]),
+        "best_rmse": float(cv_table.loc[best_idx, "mean_rmse"]),
+        "cv_table": cv_table,
+    }
+
+# Exam Task 22.3 (35 pts)
+def predict_child_haz_pipeline(mch_df, seed=42):
+    """Clean MCH survey data and fit a standardized Ridge HAZ model."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+
+    feats = [
+        "anc_visits", "maternal_hb_g_dl",
+        "maternal_age_years", "is_urban",
+    ]
+    clean = work[feats + ["child_haz"]].dropna()
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        clean[feats], clean["child_haz"],
+        test_size=0.2, random_state=seed,
+    )
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("ridge", Ridge(alpha=1.0)),
+    ])
+    pipe.fit(X_tr, y_tr)
+    y_pred = pipe.predict(X_te)
+    coefs = {
+        f: round(float(c), 4)
+        for f, c in zip(feats, pipe.named_steps["ridge"].coef_)
+    }
+    return {
+        "n_clean": int(len(clean)),
+        "test_rmse": round(
+            float(root_mean_squared_error(y_te, y_pred)), 4
+        ),
+        "test_r2": round(float(r2_score(y_te, y_pred)), 4),
+        "coefs": coefs,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 22 Failure Modes
+
+1. **Regularizing Without `StandardScaler()` Inside a `Pipeline`:** Fitting `Ridge` or `Lasso` on raw unscaled predictors distorts penalties by measurement units, while scaling before splitting or before `cross_val_score` leaks test/validation statistics into training. Always chain `Pipeline([("scaler", StandardScaler()), ...])`.
+2. **Inverting Singular Matrices or Flipping Gradient Signs:** Calling `np.linalg.inv(Xb.T @ Xb)` crashes on perfectly collinear features (`LinAlgError`), and flipping `err = y_hat - y` inside gradient descent turns minimization into explosive ascent. Prefer `np.linalg.lstsq` for closed-form OLS and always assert `loss_history[-1] < loss_history[0]` in gradient descent.
+3. **Forgetting to Negate `neg_root_mean_squared_error` or Clean Sentinel `999`:** Scikit-Learn returns negative RMSE scores during CV—negate them before selecting `idxmin()`. Likewise, leaving `anc_visits == 999` inside `mch_survey_sample` silently wrecks feature standardization and crushes the learned antenatal-care coefficient.
+
+---
+
+::: {.callout-tip title="Next Step — From Continuous Prediction to Binary Classification"}
+You now command linear models from raw NumPy gradients through regularized Scikit-Learn pipelines. In **Chapter 23**, you will extend this exact linear-combination framework through the **sigmoid function** and **binary cross-entropy loss** to build regularized Logistic Regression classifiers, tune decision thresholds, and evaluate ROC-AUC, Precision-Recall curves, and probability calibration!
+:::

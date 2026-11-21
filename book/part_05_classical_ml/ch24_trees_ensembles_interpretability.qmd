@@ -1,0 +1,961 @@
+# Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition {#sec-ch24}
+
+> **Chapter Mission:** Unlock the workhorse model family of modern tabular data science and clinical prediction. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) alongside Scikit-Learn's `DecisionTreeClassifier`, `RandomForestClassifier`, `HistGradientBoostingClassifier`, and `permutation_importance`, you will build impurity criteria and greedy decision stumps from scratch, tame overfitting with Bagging and Out-of-Bag (OOB) tuning, understand sequential residual Gradient Boosting (and how `HistGradientBoosting`, XGBoost, and LightGBM relate), expose default feature-importance bias, and code exact Shapley attributions from first principles.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch24 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch24 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch24 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Compute **Gini impurity** ($1 - \sum p_k^2$), **base-2 Shannon entropy** ($-\sum p_k \log_2 p_k$), and greedy **CART decision stump** midpoint splits from scratch in pure NumPy.
+2. Diagnose the **bias–variance trade-off** of single Decision Trees by sweeping `max_depth` and measuring the generalization gap (`train_auc - val_auc`).
+3. Contrast **Bagging** (`RandomForestClassifier` with parallel bootstrap trees and **Out-of-Bag (OOB)** validation) against **Gradient Boosting** (`HistGradientBoostingClassifier` fitting sequential residuals, plus its conceptual relationship to **XGBoost** and **LightGBM**).
+4. Explain why `HistGradientBoostingClassifier` handles missing (`NaN`) clinical measurements natively while classic `GradientBoostingClassifier` raises `ValueError`.
+5. Unmask the high-cardinality bias of default training-set **Mean Decrease in Impurity (MDI)** by contrasting `.feature_importances_` against held-out **Permutation Importance** (`sklearn.inspection.permutation_importance`).
+6. Implement exact **3-feature Shapley value attribution** across all $3! = 6$ permutations, verify the **Efficiency Axiom** ($\phi_0 + \sum_i \phi_i = f(x)$), and interpret local SHAP explanations for clinical risk prediction.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Trees & Ensembles Rule Tabular Science {#sec-ch24-intuition}
+
+Linear and logistic regression assume that every predictor shifts the log-odds smoothly along a straight line. Real clinical and epidemiological data rarely obey neat straight lines:
+
+- **Threshold Effects:** Maternal hemoglobin below $11.0\text{ g/dL}$ signals clinical anemia, and fewer than $4$ antenatal care (ANC) visits marks WHO-defined inadequate care. A **Decision Tree** discovers these exact cutoffs automatically.
+- **Automatic Feature Interactions:** Low wealth paired with fewer than $4$ ANC visits may elevate child stunting risk far beyond the sum of either factor alone. Every root-to-leaf path in a tree is a natural interaction rule (`wealth_rank <= 2.5 AND anc_visits <= 3.5`).
+- **Monotonic Scale Invariance:** Because trees split on order thresholds ($x \le t$), you do **not** need `StandardScaler` or log-transforms for tree splits to work.
+
+Yet a single unconstrained Decision Tree has an Achilles' heel: **extreme variance**. Grow a tree deep enough and it creates one tiny leaf per training household—scoring near `1.000` training AUC while collapsing on new patients.
+
+Modern machine learning solves single-tree fragility through two complementary **ensemble** philosophies:
+
+- **Bagging & Random Forests (Variance Reduction in Parallel):** Train $B$ deep trees independently on bootstrap resamples of the training rows, randomly restricting each split to a subset of features (`max_features="sqrt"`). Averaging decorrelated trees slashes variance dramatically, and the ~36.8% of rows omitted from each bootstrap sample provide near-free **Out-of-Bag (OOB)** validation!
+- **Gradient Boosting (Bias Reduction in Sequence):** Train shallow trees ("weak learners") one after another, where each new tree predicts the **residual error** left behind by the ensemble so far, scaled by a shrinkage **learning rate** $\eta$.
+- **Histogram Boosting, XGBoost & LightGBM:** Modern boosting libraries (`HistGradientBoostingClassifier`, XGBoost, and LightGBM) bin continuous features into ~255 quantile histograms (making split search $10\times$–$100\times$ faster), apply $L_2$ leaf regularization, and learn optimal split directions for missing (`NaN`) values natively.
+
+| Framework | Tree Growth | Native `NaN`? | Core Strengths in Research |
+| :--- | :--- | :---: | :--- |
+| **Scikit-Learn `HistGradientBoosting`** | Leaf-wise (binned) | Yes | Zero extra installs; native `Pipeline` fit |
+| **XGBoost (`xgboost`)** | Depth-wise (exact/hist) | Yes | $L_1$/$L_2$ leaf penalties; GPU & sparse data |
+| **LightGBM (`lightgbm`)** | Leaf-wise (GOSS/EFB) | Yes | Fastest on $100\text{k}+$ rows; native categories |
+
+: Conceptual comparison of modern Gradient Boosted Decision Tree (GBDT) engines.
+
+Finally, predictive accuracy alone never earns clinical trust. Peer reviewers demand **interpretability**—both **global** (which predictors drive discrimination on held-out patients?) and **local** (why did the model assign *this specific household* a 25.7% stunting probability?). Held-out **Permutation Importance** answers the global question without MDI's high-cardinality trap, while **Shapley values (SHAP)** answer the local question with game-theoretic fairness.
+
+::: {.callout-note title="Mental Model — Two Axes of Tree Interpretability"}
+Always separate **global** from **local** explanations in your methods section:
+
+1. **Global (Held-Out Permutation Importance):** Shuffle one feature column at a time on the **test set** and measure how much ROC-AUC drops. Noise features collapse near zero.
+2. **Local (Shapley / SHAP Values):** Explain one patient's prediction $f(x)$ as a baseline risk $\phi_0$ plus additive feature credits $\phi_1 + \phi_2 + \dots + \phi_p = f(x) - \phi_0$, averaged across every possible ordering of features.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Bagging vs. Boosting & Interpretability {#sec-ch24-mental-model}
+
+Compare how **Bagging (Random Forests)** averages independent parallel trees to cut variance, while **Boosting (`HistGradientBoosting`)** chains shallow residual trees sequentially to cut bias—and how both feed into held-out interpretability:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Data["Training Cohort"]
+        D0["Clean Features X, Target y<br/>(Stratified 75/25 Split)"]
+    end
+    subgraph Bag["Bagging: Parallel"]
+        B1["Bootstrap 1 -> Tree 1<br/>(max_features=sqrt)"]
+        B2["Bootstrap 2 -> Tree 2<br/>(OOB Rows Held Out)"]
+        B3["Average Probabilities<br/>Low Variance + OOB Score"]
+    end
+    subgraph Boost["Boosting: Serial"]
+        G1["Init F0 -> Shallow Tree 1<br/>Fits Residuals r1 = y - F0"]
+        G2["Update F1 = F0 + lr * T1<br/>Tree 2 Fits Residuals r2"]
+        G3["Additive Ensemble F_M<br/>Low Bias + Native NaNs"]
+    end
+    subgraph Explain["Interpretability"]
+        E1["Global: Permutation AUC<br/>(Held-Out Test Set)"]
+        E2["Local: Shapley Values<br/>phi_0 + sum(phi_i) = f(x)"]
+    end
+    D0 --> B1
+    D0 --> B2
+    B1 --> B3
+    B2 --> B3
+    D0 --> G1
+    G1 --> G2
+    G2 --> G3
+    B3 --> E1
+    G3 --> E1
+    E1 --> E2
+```
+
+Notice the structural contrast at a glance: in **Bagging**, Tree 1 and Tree 2 never communicate—they train in parallel on different bootstrap draws so their errors cancel when averaged. In **Boosting**, Tree 2 *cannot begin* until Tree 1 finishes and exposes the remaining residuals $r_1$.
+
+::: {.callout-warning title="Three Silent Tree & Ensemble Pitfalls in Real Studies"}
+1. **Default `.feature_importances_` (MDI) Favors Noise:** Impurity-based importance is computed on the *training* set and systematically inflates high-cardinality continuous features—even pure random IDs! Always audit with held-out `permutation_importance`.
+2. **Unbounded Depth Memorizes Small Cohorts:** A single tree with `max_depth=None` can hit `train_auc = 1.000` while dropping below a simple stump on validation. Always inspect `train_auc - val_auc`.
+3. **Never Assume Boosting Automatically Wins on Small $n$:** On a $500$-row public-health survey, shallow regularized trees or logistic models can rival or beat un-tuned ensembles. Always benchmark all three families empirically on the same stratified split!
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch24-walkthrough}
+
+Open `part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading & Preparing `mch_survey_sample` {#sec-ch24-setup}
+
+```python
+import itertools
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.inspection import permutation_importance
+from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = mch["residence"].astype(str).str.strip().str.title()
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+wealth_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3, "Richer": 4, "Richest": 5
+}
+mch["wealth_rank"] = mch["wealth_quintile"].map(wealth_map)
+
+features = [
+    "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+    "is_urban", "wealth_rank",
+]
+clean = mch[features + ["child_stunted"]].dropna()
+X = clean[features]
+y = clean["child_stunted"]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=42
+)
+print("Clean complete-case shape:", clean.shape)
+print(f"Train: {len(X_train)}, Test: {len(X_test)}, "
+      f"Stunting rate: {y.mean():.4f}")
+```
+
+**Expected Output:**
+```text
+Clean complete-case shape: (470, 6)
+Train: 352, Test: 118, Stunting rate: 0.1383
+```
+
+Notice two crucial data-hygiene steps before fitting any tree:
+
+- **Sentinel replacement (`999 -> np.nan`):** If `999` stayed inside `anc_visits`, a tree would treat missingness as "999 clinic visits"—an extreme right-tail artifact.
+- **Ordinal mapping (`wealth_rank` 1..5):** Mapping `"Poorest"` through `"Richest"` to integers `1..5` preserves the socioeconomic ordering so a single split (`wealth_rank <= 2.5`) separates the bottom two quintiles from the upper three cleanly.
+- **Stratified split (`stratify=y`):** Because child stunting prevalence is imbalanced (`13.83%`), stratifying preserves the exact same class ratio in both train (`352` rows) and test (`118` rows).
+
+---
+
+### Gini Impurity, Shannon Entropy & Greedy Decision Stump {#sec-ch24-impurity}
+
+For a node with class proportions $p_1, \dots, p_K$, CART measures node disorder using **Gini impurity** or **base-2 Shannon entropy**:
+
+$$G(y) = 1 - \sum_{k=1}^{K} p_k^2, \qquad H(y) = -\sum_{k=1}^{K} p_k \log_2(p_k)$$
+
+A **decision stump** tests every midpoint $t$ between consecutive sorted unique values of feature $x$ and picks the threshold minimizing weighted child Gini:
+
+$$G_{\text{split}}(t) = \frac{n_L}{n} G(y_{x \le t}) + \frac{n_R}{n} G(y_{x > t})$$
+
+```python
+def gini_demo(y_vals):
+    arr = np.asarray(y_vals)
+    if arr.size == 0:
+        return 0.0
+    _, counts = np.unique(arr, return_counts=True)
+    probs = counts / arr.size
+    return round(float(1.0 - np.sum(probs ** 2)), 4)
+
+def entropy_demo(y_vals):
+    arr = np.asarray(y_vals)
+    if arr.size == 0:
+        return 0.0
+    _, counts = np.unique(arr, return_counts=True)
+    probs = counts / arr.size
+    return round(float(-np.sum(probs * np.log2(probs))), 4)
+
+def stump_demo(x_vals, y_vals):
+    x = np.asarray(x_vals, dtype=float)
+    yv = np.asarray(y_vals)
+    uniq = np.unique(x)
+    mids = (uniq[:-1] + uniq[1:]) / 2.0
+    best_t, best_g = float(mids[0]), float("inf")
+    for t in mids:
+        left, right = yv[x <= t], yv[x > t]
+        wg = (len(left) / len(yv)) * gini_demo(left)
+        wg += (len(right) / len(yv)) * gini_demo(right)
+        if wg < best_g:
+            best_g, best_t = wg, float(t)
+    return (round(best_t, 4), round(best_g, 4))
+
+print("Root Gini:", gini_demo(y_train),
+      "| Root Entropy:", entropy_demo(y_train))
+for col in ["wealth_rank", "anc_visits", "maternal_hb_g_dl"]:
+    t, g = stump_demo(X_train[col], y_train)
+    print(f"Best stump on {col:16s}: thresh={t:.2f}, w_gini={g:.4f}")
+```
+
+**Expected Output:**
+```text
+Root Gini: 0.2397 | Root Entropy: 0.5822
+Best stump on wealth_rank     : thresh=2.50, w_gini=0.2171
+Best stump on anc_visits      : thresh=3.50, w_gini=0.2259
+Best stump on maternal_hb_g_dl: thresh=15.10, w_gini=0.2354
+```
+
+Look at the epidemiology our pure-NumPy stump just discovered automatically:
+
+- **`wealth_rank <= 2.50` (`w_gini = 0.2171`):** Achieves the largest impurity drop (`0.2397 -> 0.2171`) by separating `Poorest`/`Poorer` households from `Middle`/`Richer`/`Richest`.
+- **`anc_visits <= 3.50` (`w_gini = 0.2259`):** Rediscovers the World Health Organization's classic **4+ antenatal care visits** benchmark (`<= 3` vs. `>= 4`) directly from data!
+
+---
+
+### Decision Tree Overfitting & Depth Sweep {#sec-ch24-depth}
+
+```python
+depth_rows = []
+for d in [1, 2, 3, 5, 8, 12]:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    tr_auc = roc_auc_score(y_train, dt.predict_proba(X_train)[:, 1])
+    te_auc = roc_auc_score(y_test, dt.predict_proba(X_test)[:, 1])
+    depth_rows.append({
+        "max_depth": d,
+        "train_auc": round(float(tr_auc), 4),
+        "val_auc": round(float(te_auc), 4),
+        "gap": round(float(tr_auc - te_auc), 4),
+    })
+print(pd.DataFrame(depth_rows).to_string(index=False))
+```
+
+**Expected Output:**
+```text
+ max_depth  train_auc  val_auc    gap
+         1     0.7200   0.6213 0.0987
+         2     0.7544   0.6152 0.1392
+         3     0.7964   0.6400 0.1564
+         5     0.8854   0.6550 0.2304
+         8     0.9465   0.6354 0.3111
+        12     0.9993   0.5809 0.4184
+```
+
+This table is the textbook signature of **tree overfitting**:
+
+- From `max_depth = 1` to `5`, validation ROC-AUC climbs from `0.6213` to **`0.6550`**.
+- Beyond depth `5`, training AUC shoots to **`0.9993`** (nearly memorizing every single household!), while validation AUC plunges to **`0.5809`**—a massive generalization gap of **`0.4184`**!
+
+---
+
+### Bagging, Random Forests & Out-of-Bag (OOB) Validation {#sec-ch24-oob}
+
+When a Random Forest draws a bootstrap sample of size $n$ with replacement, the probability that any given household is *never* selected in a single tree is $(1 - 1/n)^n \approx e^{-1} \approx \mathbf{0.368}$. Evaluating every household using only the ~36.8% of trees that never saw it produces the **Out-of-Bag (OOB) score**—free internal validation without touching the test set!
+
+```python
+oob_rows = []
+for d in [2, 4, 6, 8, 12]:
+    rf = RandomForestClassifier(
+        n_estimators=120, max_depth=d, oob_score=True, random_state=42
+    ).fit(X_train, y_train)
+    oob_rows.append({
+        "max_depth": d,
+        "oob_score": round(float(rf.oob_score_), 4),
+    })
+print(pd.DataFrame(oob_rows).to_string(index=False))
+```
+
+**Expected Output:**
+```text
+ max_depth  oob_score
+         2     0.8608
+         4     0.8636
+         6     0.8580
+         8     0.8466
+        12     0.8494
+```
+
+OOB validation cleanly peaks at **`max_depth = 4` (`0.8636`)** and declines as deeper trees memorize noise in the bootstrap draws. Remember: `oob_score_` reports accuracy by default, so always confirm discrimination on imbalanced outcomes with ROC-AUC and PR-AUC.
+
+---
+
+### Gradient Boosting Residuals, Native `NaN`s & Ensemble Scaling {#sec-ch24-boost}
+
+In Gradient Boosting, each tree $h_m(x)$ fits the **pseudo-residuals** left over by the previous ensemble $F_{m-1}(x)$ and updates predictions cautiously via learning rate $\eta$:
+
+$$r_i^{(m)} = y_i - F_{m-1}(x_i), \qquad F_m(x) = F_{m-1}(x) + \eta \cdot h_m(x)$$
+
+```python
+# 1. Sequential residual fitting intuition (3 boosting rounds)
+y_hb = np.array([9.4, 10.1, 11.2, 12.6, 13.0])
+x_anc = np.array([[0], [1], [3], [6], [8]])
+pred = np.full_like(y_hb, y_hb.mean())
+lr = 0.5
+print(f"Step 0 (mean)   MSE: {np.mean((y_hb - pred) ** 2):.4f}")
+for step in range(1, 4):
+    resid = y_hb - pred
+    stump = DecisionTreeRegressor(max_depth=1, random_state=42)
+    stump.fit(x_anc, resid)
+    pred = pred + lr * stump.predict(x_anc)
+    print(f"Step {step} (boost) MSE: {np.mean((y_hb - pred) ** 2):.4f}")
+
+# 2. Native NaN handling of HistGradientBoosting on all 500 MCH rows
+X_full = mch[features]
+y_full = mch["child_stunted"]
+Xf_tr, Xf_te, yf_tr, yf_te = train_test_split(
+    X_full, y_full, test_size=0.25, stratify=y_full, random_state=42
+)
+hgb_nan = HistGradientBoostingClassifier(max_depth=4, random_state=42)
+hgb_nan.fit(Xf_tr, yf_tr)
+nan_auc = roc_auc_score(yf_te, hgb_nan.predict_proba(Xf_te)[:, 1])
+n_nans = int(X_full.isna().sum().sum())
+print(f"HGB native NaN (n={len(X_full)}, NaNs={n_nans}) "
+      f"test ROC-AUC: {nan_auc:.4f}")
+
+# 3. Ensemble scaling on a 600-row nonlinear cohort
+X_syn, y_syn = make_classification(
+    n_samples=600, n_features=6, n_informative=4, n_redundant=1,
+    weights=[0.80, 0.20], random_state=42,
+)
+Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(
+    X_syn, y_syn, test_size=0.25, stratify=y_syn, random_state=42
+)
+specs = [
+    ("DecisionTree", DecisionTreeClassifier(max_depth=5, random_state=42)),
+    ("RandomForest", RandomForestClassifier(
+        n_estimators=100, max_depth=6, random_state=42)),
+    ("HistGradientBoosting", HistGradientBoostingClassifier(
+        max_depth=4, random_state=42)),
+]
+for name, clf in specs:
+    clf.fit(Xs_tr, ys_tr)
+    p = clf.predict_proba(Xs_te)[:, 1]
+    print(f"Synth {name:20s} ROC={roc_auc_score(ys_te, p):.4f} "
+          f"PR={average_precision_score(ys_te, p):.4f}")
+```
+
+**Expected Output:**
+```text
+Step 0 (mean)   MSE: 1.9264
+Step 1 (boost) MSE: 0.7406
+Step 2 (boost) MSE: 0.2439
+Step 3 (boost) MSE: 0.1090
+HGB native NaN (n=500, NaNs=30) test ROC-AUC: 0.7004
+Synth DecisionTree         ROC=0.8162 PR=0.6082
+Synth RandomForest         ROC=0.8932 PR=0.7627
+Synth HistGradientBoosting ROC=0.9246 PR=0.8237
+```
+
+Three powerful lessons jump out of this output:
+
+1. **Residual Shrinkage in Action:** Just three depth-1 stumps shrink MSE from `1.9264` down to `0.1090` by focusing every new stump strictly on the unexplained error of earlier rounds.
+2. **Native Missing-Value Splitting Wins:** Instead of dropping 30 households with missing hemoglobin or ANC values, `HistGradientBoostingClassifier` trains directly on all **500** rows with `30` `NaN`s intact and leaps to **`ROC-AUC = 0.7004`**!
+3. **Ensemble Dominance on Nonlinear Tabular Signal:** On the 600-row nonlinear cohort, `HistGradientBoosting` (`ROC = 0.9246, PR = 0.8237`) decisively beats `RandomForest` (`0.8932 / 0.7627`), which in turn crushes a single `DecisionTree` (`0.8162 / 0.6082`).
+
+---
+
+### Interpretability: Permutation Importance vs. Default MDI Bias {#sec-ch24-perm}
+
+Let's test Scikit-Learn's default `.feature_importances_` (Mean Decrease in Impurity, MDI) by injecting a **pure random noise column** (`random_noise_id`) into `mch_survey_sample`:
+
+```python
+rng = np.random.default_rng(42)
+noisy = clean.copy()
+noisy["random_noise_id"] = rng.uniform(0, 1000, size=len(noisy))
+f_noise = features + ["random_noise_id"]
+Xn_tr, Xn_te, yn_tr, yn_te = train_test_split(
+    noisy[f_noise], noisy["child_stunted"],
+    test_size=0.25, stratify=noisy["child_stunted"], random_state=42,
+)
+rf_noise = RandomForestClassifier(
+    n_estimators=100, max_depth=6, random_state=42
+).fit(Xn_tr, yn_tr)
+pi_noise = permutation_importance(
+    rf_noise, Xn_te, yn_te, scoring="roc_auc",
+    n_repeats=10, random_state=42,
+)
+imp_df = pd.DataFrame({
+    "feature": f_noise,
+    "mdi_impurity": np.round(rf_noise.feature_importances_, 4),
+    "perm_auc_mean": np.round(pi_noise.importances_mean, 4),
+    "perm_auc_std": np.round(pi_noise.importances_std, 4),
+}).sort_values("mdi_impurity", ascending=False)
+print(imp_df.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+           feature  mdi_impurity  perm_auc_mean  perm_auc_std
+   random_noise_id        0.2316         0.0140        0.0185
+  maternal_hb_g_dl        0.2307         0.0081        0.0229
+        anc_visits        0.1795         0.0275        0.0489
+       wealth_rank        0.1719         0.1135        0.0626
+maternal_age_years        0.1500        -0.0129        0.0159
+          is_urban        0.0362         0.0069        0.0113
+```
+
+Pause and absorb how staggering that table is:
+
+- **Default MDI (`mdi_impurity`) ranked pure random noise #1 (`0.2316`)**—above genuine socioeconomic driver `wealth_rank` (`0.1719`)! Why? Because a continuous uniform column has 352 unique split candidates to slice training noise, whereas `wealth_rank` only has 4 possible split points (`1.5, 2.5, 3.5, 4.5`).
+- **Held-Out Permutation Importance (`perm_auc_mean`) immediately unmasks the fraud:** Shuffling `wealth_rank` on the test set slashes ROC-AUC by **`+0.1135`**, ranking it #1 by a landslide, while `random_noise_id` collapses to `0.0140 ± 0.0185` (indistinguishable from zero!).
+
+---
+
+### Exact 3-Feature Shapley Values (SHAP Intuition) From Scratch {#sec-ch24-shap}
+
+How do we explain **one individual household's** predicted stunting probability $f(x)$? Cooperative game theory's **Shapley value** treats each feature as a player joining a coalition from a reference `baseline_row` to `x_row`. Because tree models contain feature interactions, the marginal credit of revealing feature $i$ depends on *which features were already revealed*. Averaging across all $p!$ permutations yields the unique attribution satisfying **Efficiency**, **Symmetry**, **Dummy**, and **Additivity**:
+
+$$\phi_i(x) = \frac{1}{p!} \sum_{\pi \in S_p} \Big[ f\big(S_\pi(i) \cup \{i\}\big) - f\big(S_\pi(i)\big) \Big], \qquad \phi_0 + \sum_{i=1}^{p} \phi_i(x) = f(x)$$
+
+```python
+top3 = ["wealth_rank", "anc_visits", "maternal_hb_g_dl"]
+rf3 = RandomForestClassifier(
+    n_estimators=100, max_depth=4, random_state=42
+).fit(X_train[top3].to_numpy(), y_train.to_numpy())
+
+def rf3_proba(v):
+    arr = np.asarray(v, dtype=float).reshape(1, -1)
+    return float(rf3.predict_proba(arr)[0, 1])
+
+def shapley_3_demo(predict_fn, x_row, base_row):
+    x = np.asarray(x_row, dtype=float)
+    base = np.asarray(base_row, dtype=float)
+    base_val = float(predict_fn(base))
+    pred_val = float(predict_fn(x))
+    contribs = np.zeros(3, dtype=float)
+    perms = list(itertools.permutations([0, 1, 2]))
+    for perm in perms:
+        state = base.copy()
+        prev = base_val
+        for idx in perm:
+            state[idx] = x[idx]
+            curr = float(predict_fn(state))
+            contribs[idx] += curr - prev
+            prev = curr
+    shap_vals = contribs / len(perms)
+    return {
+        "base_value": round(base_val, 4),
+        "shap_values": [round(float(v), 4) for v in shap_vals],
+        "prediction": round(pred_val, 4),
+    }
+
+baseline = X_train[top3].median().to_numpy()
+high_risk = np.array([1.0, 1.0, 9.5])
+sh = shapley_3_demo(rf3_proba, high_risk, baseline)
+print("Baseline (median):", np.round(baseline, 2).tolist())
+print("High-risk patient:", high_risk.tolist())
+print("Base:", sh["base_value"], "| Pred:", sh["prediction"])
+print("Shapley values:", sh["shap_values"])
+eff = round(sh["base_value"] + sum(sh["shap_values"]), 4)
+print(f"Efficiency check: {eff} ~= {sh['prediction']}")
+```
+
+**Expected Output:**
+```text
+Baseline (median): [3.0, 4.0, 11.5]
+High-risk patient: [1.0, 1.0, 9.5]
+Base: 0.0365 | Pred: 0.257
+Shapley values: [0.1839, 0.0408, -0.0043]
+Efficiency check: 0.2569 ~= 0.257
+```
+
+Read this patient-level waterfall attribution like a clinician:
+
+- Starting from the median household baseline (`wealth_rank = 3`, `anc_visits = 4`, `Hb = 11.5 g/dL`), predicted stunting risk is **`3.65%`** (`base_value = 0.0365`).
+- For a household in the poorest quintile (`wealth_rank = 1`) with only `1` ANC visit and `Hb = 9.5 g/dL`, risk jumps to **`25.70%`** (`prediction = 0.2570`).
+- Exact Shapley values decompose that `+22.05` percentage-point surge cleanly: **`+18.39 pp`** from `wealth_rank`, **`+4.08 pp`** from low `anc_visits`, and **`-0.43 pp`** from `maternal_hb_g_dl`.
+- **Production Bridge (`shap` Library):** For $p = 3$ features, $3! = 6$ permutations is instant; for $p = 30$ features, $30! \approx 2.65 \times 10^{32}$ is impossible by brute force! In full research pipelines, the `shap` library's **TreeSHAP** (`shap.TreeExplainer(model)`) exploits tree path structure to compute these exact same Shapley values in polynomial time $O(T L D^2)$.
+
+---
+
+### Break It On Purpose! (Tree & Ensemble Error Anatomy) {#sec-ch24-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError / InvalidParameterError (`max_depth=0`)"}
+```python
+bad_tree = DecisionTreeClassifier(max_depth=0, random_state=42)
+bad_tree.fit(X_train, y_train)
+```
+**Python's Traceback:**
+```text
+InvalidParameterError: The 'max_depth' parameter of DecisionTreeClassifier
+must be an int in the range [1, inf) or None. Got 0 instead.
+```
+**Diagnosis:** `InvalidParameterError` (a subclass of `ValueError`) fires because a decision tree must have at least depth `1` (a decision stump) or `None` (grow until leaves are pure). Setting `max_depth=0` leaves zero splits possible.  
+**Fix:** Use `max_depth >= 1` (e.g., `1` for a stump, `3..6` for regularized trees) or `max_depth=None` when intentionally testing an unpruned tree.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (`oob_score=True` With `bootstrap=False`)"}
+```python
+bad_rf = RandomForestClassifier(
+    n_estimators=50, oob_score=True, bootstrap=False, random_state=42
+)
+bad_rf.fit(X_train, y_train)
+```
+**Python's Traceback:**
+```text
+ValueError: Out of bag estimation only available if bootstrap=True
+```
+**Diagnosis:** Out-of-Bag scoring depends mathematically on bootstrap resampling with replacement leaving ~36.8% of training rows unused in each tree. When `bootstrap=False`, every tree sees 100% of rows, so no out-of-bag rows exist!  
+**Fix:** Keep the default `bootstrap=True` whenever `oob_score=True`, or use $k$-fold cross-validation if you deliberately disable bootstrapping.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Passing `NaN`s Into Classic `GradientBoostingClassifier`)"}
+```python
+bad_gbc = GradientBoostingClassifier(random_state=42)
+bad_gbc.fit(Xf_tr, yf_tr)
+```
+**Python's Traceback:**
+```text
+ValueError: Input X contains NaN.
+GradientBoostingClassifier does not accept missing values encoded as NaN
+natively. For supervised learning, you might want to consider
+sklearn.ensemble.HistGradientBoostingClassifier and Regressor which
+accept missing values encoded as NaNs natively.
+```
+**Diagnosis:** Classic `GradientBoostingClassifier` (like `LogisticRegression` and pre-1.4 versions of `RandomForestClassifier`) refuses `NaN` inputs and crashes during `.fit()`.  
+**Fix:** Either wrap the estimator in a leakage-free `Pipeline([("imputer", SimpleImputer(strategy="median")), ("clf", ...)])`, drop incomplete rows intentionally, or switch directly to `HistGradientBoostingClassifier`, which learns optimal left/right branches for missing values natively.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch24-blueprint}
+
+**Scenario:** Your maternal-and-child health research team needs a single reproducible benchmark function `run_stunting_tree_audit(raw_df, seed=42)` that takes raw `mch_survey_sample` (without mutating it), cleans all survey artifacts, compares Decision Tree, Random Forest, and Histogram Gradient Boosting on a stratified 75/25 split using both ROC-AUC and PR-AUC, and identifies the top held-out risk driver via permutation importance on the winning model.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Hygiene & Feature Engineering (Zero Mutation):**
+
+   - Copy `raw_df` first (`work = raw_df.copy()`).
+   - Standardize `residence` casing, replace `anc_visits == 999` with `np.nan`, derive binary `is_urban`, map ordinal `wealth_quintile` (`Poorest: 1 .. Richest: 5`) to `wealth_rank`, and drop incomplete rows across the 5 features + `child_stunted`.
+
+2. **Stratified Multi-Family Benchmark:**
+
+   - Split 75/25 stratified on `child_stunted` with `random_state=seed`.
+   - Fit `DecisionTreeClassifier(max_depth=5)`, `RandomForestClassifier(n_estimators=100, max_depth=6)`, and `HistGradientBoostingClassifier(max_depth=4)`, scoring test probabilities (`[:, 1]`) with `roc_auc_score` and `average_precision_score`.
+   - Sort the leaderboard descending by `roc_auc`.
+
+3. **Held-Out Interpretability Audit & Verification:**
+
+   - Run `permutation_importance` (`scoring="roc_auc", n_repeats=10`) on the **winning** fitted model using `(X_test, y_test)` to extract `top_feature`.
+   - Verify complete-case size (`n = 470`), confirm the winning model empirically rather than assuming boosting always wins on small $n$, and check that `wealth_rank` emerges as the top held-out driver.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_stunting_tree_audit(raw_df, seed=42):
+    """Clean MCH data, benchmark 3 tree models, and audit top driver."""
+    work = raw_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_rank"] = (
+        work["wealth_quintile"].astype(str).str.strip().str.title()
+        .map(w_map)
+    )
+    feats = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+        "is_urban", "wealth_rank",
+    ]
+    df = work[feats + ["child_stunted"]].dropna()
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        df[feats], df["child_stunted"].astype(int),
+        test_size=0.25, stratify=df["child_stunted"], random_state=seed,
+    )
+    models = [
+        ("DecisionTree", DecisionTreeClassifier(
+            max_depth=5, random_state=seed)),
+        ("RandomForest", RandomForestClassifier(
+            n_estimators=100, max_depth=6, random_state=seed)),
+        ("HistGradientBoosting", HistGradientBoostingClassifier(
+            max_depth=4, random_state=seed)),
+    ]
+    rows, fitted = [], {}
+    for name, clf in models:
+        clf.fit(X_tr, y_tr)
+        proba = clf.predict_proba(X_te)[:, 1]
+        rows.append({
+            "model": name,
+            "roc_auc": round(float(roc_auc_score(y_te, proba)), 4),
+            "pr_auc": round(
+                float(average_precision_score(y_te, proba)), 4
+            ),
+        })
+        fitted[name] = clf
+    board = (
+        pd.DataFrame(rows)
+        .sort_values("roc_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+    winner = str(board.iloc[0]["model"])
+    pi = permutation_importance(
+        fitted[winner], X_te, y_te, scoring="roc_auc",
+        n_repeats=10, random_state=seed,
+    )
+    top_feat = feats[int(np.argmax(pi.importances_mean))]
+    return board, winner, top_feat
+
+board, winner, top_feat = run_stunting_tree_audit(mch_raw, seed=42)
+print(board.to_string(index=False))
+print(f"Winning model: {winner} | Top held-out driver: {top_feat}")
+```
+
+**Output:**
+```text
+               model  roc_auc  pr_auc
+        DecisionTree   0.6550  0.2242
+HistGradientBoosting   0.6029  0.1897
+        RandomForest   0.5827  0.1776
+Winning model: DecisionTree | Top held-out driver: wealth_rank
+```
+
+Notice the authentic scientific takeaway: on a small complete-case survey ($n = 470$, $118$ test households), a regularized shallow `DecisionTree(max_depth=5)` actually outperforms default ensembles on this split—reminding us why **No Free Lunch** holds and why every manuscript must benchmark simple baselines fairly!
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch24-todos}
+
+Open `part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 24.1 (`gini_impurity(y)`):** Compute Gini impurity $1 - \sum p_k^2$ in pure NumPy rounded to **4 decimals**, returning `0.0` for an empty array.
+- **To-Do 24.2 (`shannon_entropy(y)`):** Compute base-2 Shannon entropy $-\sum p_k \log_2(p_k)$ rounded to **4 decimals**, returning `0.0` for pure or empty arrays.
+- **To-Do 24.3 (`best_stump_split(x_feature, y)`):** Test all midpoints between consecutive sorted unique values of `x_feature` to minimize weighted Gini impurity (`x <= t` vs. `x > t`), returning `(best_thresh, best_weighted_gini)` rounded to **4 decimals**.
+- **To-Do 24.4 (`compare_tree_depths(X_train, y_train, X_val, y_val, depths, seed=42)`):** Fit `DecisionTreeClassifier(max_depth=d, random_state=seed)` across `depths` and return a `pd.DataFrame` with columns `["max_depth", "train_auc", "val_auc", "gap"]` rounded to **4 decimals**.
+- **To-Do 24.5 (`fit_ensemble_comparison(X_train, y_train, X_test, y_test, seed=42)`):** Fit `"DecisionTree"` (`max_depth=5`), `"RandomForest"` (`n_estimators=100, max_depth=6`), and `"HistGradientBoosting"` (`max_depth=4`), all with `random_state=seed`, returning a `pd.DataFrame` with columns `["model", "roc_auc", "pr_auc"]` rounded to **4 decimals**.
+- **To-Do 24.6 (`compute_permutation_ranking(model, X_test, y_test, feature_names, seed=42)`):** Run `permutation_importance(..., scoring="roc_auc", n_repeats=10, random_state=seed)` and return a `pd.DataFrame` with columns `["feature", "importance_mean", "importance_std"]` sorted by `importance_mean` descending and rounded to **4 decimals**.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch24-test}
+
+Work through all 10 tree, ensemble, and interpretability questions on paper before checking Stage 8:
+
+1. **Gini vs. Entropy Hand Calculation:** A leaf node contains `3` stunted children and `1` non-stunted child ($p = [0.75, 0.25]$). Compute its exact **Gini impurity** by hand, and state whether its base-2 **Shannon entropy** is less than, equal to, or greater than `1.0` bit.
+2. **Midpoint Split Candidate:** A sorted feature vector has unique values `[2.0, 4.0, 10.0]` with labels `[1, 0, 0]`. What exact midpoint threshold $t$ produces a weighted Gini impurity of `0.0`?
+3. **Reading an Overfitting Table:** At `max_depth=12`, a Decision Tree hits `train_auc = 0.9993` and `val_auc = 0.5809`, whereas `max_depth=5` hits `train_auc = 0.8854` and `val_auc = 0.6550`. Is the depth-12 tree suffering from **high bias** or **high variance**, and why?
+4. **Bootstrap OOB Mathematics:** When a Random Forest draws a bootstrap sample of size $n$ with replacement from a large cohort, approximately what percentage of training rows are **Out-of-Bag (OOB)** for any single tree—and why does setting `bootstrap=False` break `oob_score=True`?
+5. **Why `max_features="sqrt"` Matters:** Suppose one dominant predictor (`wealth_rank`) always yields the best root split. If you build 100 bagged trees using *all* features (`max_features=None`) vs. `max_features="sqrt"`, which forest produces more decorrelated trees and better variance reduction?
+6. **Bagging vs. Boosting Parallelism:** Can the 100 trees inside `RandomForestClassifier` be trained completely in parallel across CPU cores? What about the 100 boosting iterations inside `HistGradientBoostingClassifier`? Explain why.
+7. **Gradient Boosting Learning Rate Trade-Off:** If you shrink the boosting learning rate $\eta$ from `0.1` to `0.01`, what must you generally do to `max_iter` (the number of boosting trees) to avoid underfitting?
+8. **Unmasking MDI Feature-Importance Bias:** A student adds a random 10-digit hospital registration ID column to a Random Forest and sees it rank #1 in `rf.feature_importances_`. Explain *why* default MDI made this error and which Scikit-Learn tool catches it.
+9. **Exact 2-Feature Shapley Hand Calculation:** Suppose $f(x_1, x_2) = 1.0 + 2 x_1 + 4 x_1 x_2$, with `baseline = [0, 0]` and `x = [1, 1]`. Trace both permutations `(0, 1)` and `(1, 0)` by hand to compute exact $\phi_0$, $\phi_1$, $\phi_2$, and verify the **Efficiency Axiom** $\phi_0 + \phi_1 + \phi_2 = f(x)$.
+10. **Native `NaN` Error Anatomy:** Your dataset contains missing hemoglobin values (`np.nan`). You call `GradientBoostingClassifier().fit(X, y)` and Python raises `ValueError: Input X contains NaN`. Name **two** valid engineering fixes (one using a different tree estimator and one using preprocessing).
+
+---
+
+## Stage 7 — Chapter 24 Coding Exam (100 Points) {#sec-ch24-exam}
+
+Open `part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch24", exam_submissions)` to earn your Chapter 24 score out of 100 points.
+
+### Exam Task 24.1 (30 Points): `exact_shapley_3features(predict_fn, x_row, baseline_row)`
+
+Without mutating `x_row` or `baseline_row`, where `predict_fn(v)` accepts a 1D 3-element numeric vector and returns a scalar float:
+
+- Evaluate `base_value = predict_fn(baseline_row)` and `prediction = predict_fn(x_row)`.
+- Average each feature's marginal contribution across all $3! = 6$ permutations of `[0, 1, 2]`.
+- Return `{"base_value": round4, "shap_values": [round4, round4, round4], "prediction": round4}` satisfying $\phi_0 + \sum_i \phi_i \approx f(x)$.
+
+### Exam Task 24.2 (35 Points): `tune_random_forest_oob(X_train, y_train, max_depths, seed=42)`
+
+Evaluate `RandomForestClassifier(n_estimators=120, max_depth=d, oob_score=True, random_state=seed)` across every depth `d` in `max_depths`:
+
+- Construct `oob_table` as a `pd.DataFrame` with columns `["max_depth", "oob_score"]` rounded to **4 decimals**.
+- Return `{"best_depth": int, "best_oob_score": round4, "oob_table": oob_table}` selecting the depth with maximum `oob_score`.
+
+### Exam Task 24.3 (35 Points): `public_health_tree_benchmark(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Clean `residence` casing, replace `anc_visits == 999` with `np.nan`, create binary `is_urban` and ordinal `wealth_rank` (`Poorest: 1 .. Richest: 5`), and `.dropna()` across `["maternal_age_years", "anc_visits", "maternal_hb_g_dl", "is_urban", "wealth_rank", "child_stunted"]`.
+- Split 75/25 stratified on `child_stunted` with `random_state=seed`.
+- Fit `"DecisionTree"` (`max_depth=5`), `"RandomForest"` (`n_estimators=100, max_depth=6`), and `"HistGradientBoosting"` (`max_depth=4`), all with `random_state=seed`, building `leaderboard` (`["model", "roc_auc", "pr_auc"]`) sorted by `roc_auc` descending (4 decimals).
+- Compute held-out `permutation_importance` (`scoring="roc_auc", n_repeats=10, random_state=seed`) on the winning `best_model` to extract `top_feature`, and return `{"leaderboard": leaderboard, "best_model": best_model, "top_feature": top_feature}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch24-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **Gini:** $1 - (0.75^2 + 0.25^2) = 1 - (0.5625 + 0.0625) = \mathbf{0.375}$. **Entropy:** **Less than `1.0` bit** (specifically `0.8113` bits), because binary Shannon entropy achieves its maximum of `1.0` bit only at a 50/50 split.
+2. Midpoints are `(2.0 + 4.0) / 2 = 3.0` and `(4.0 + 10.0) / 2 = 7.0`. Threshold **`t = 3.0`** places `[1]` on the left (pure, Gini = `0.0`) and `[0, 0]` on the right (pure, Gini = `0.0`), giving weighted Gini **`0.0`**.
+3. **High variance (overfitting):** The depth-12 tree has near-zero training error (`0.9993`) because it memorized idiosyncratic training noise, causing test AUC to collapse (`0.5809`).
+4. Approximately **`36.8%`** ($1/e$) of training rows are Out-of-Bag for any single bootstrap tree. Setting `bootstrap=False` trains every tree on 100% of training rows, leaving zero OOB rows to evaluate and triggering `ValueError`.
+5. **`max_features="sqrt"`** produces much better decorrelation! With `max_features=None`, nearly every tree splits on `wealth_rank` at the root, yielding highly correlated trees whose average barely reduces variance.
+6. **`RandomForestClassifier`: Yes**, all 100 bootstrap trees are completely independent and train in parallel (`n_jobs=-1`). **`HistGradientBoostingClassifier`: No across trees**, because tree $m$ depends sequentially on the residuals of tree $m - 1$ (parallelism happens *within* each tree's histogram bin search instead).
+7. You must **increase `max_iter`** (train more boosting rounds), because each smaller step $\eta = 0.01$ corrects only 1% of the residual per tree.
+8. Default MDI sums training-set impurity reductions across splits; a unique 10-digit ID offers $n - 1$ split thresholds to memorize training labels. Held-out **`sklearn.inspection.permutation_importance`** on `(X_test, y_test)` exposes the ID immediately by showing near-zero (or negative) test-AUC drop.
+9. $\phi_0 = f(0, 0) = \mathbf{1.0}$ and $f(1, 1) = 1 + 2 + 4 = \mathbf{7.0}$.
+   - Order `(0, 1)`: reveal $x_1$: $f(1, 0) - f(0, 0) = 3 - 1 = +2$; reveal $x_2$: $f(1, 1) - f(1, 0) = 7 - 3 = +4$.
+   - Order `(1, 0)`: reveal $x_2$: $f(0, 1) - f(0, 0) = 1 - 1 = 0$; reveal $x_1$: $f(1, 1) - f(0, 1) = 7 - 1 = +6$.
+   - Averaging both orders: $\phi_1 = (2 + 6)/2 = \mathbf{4.0}$, $\phi_2 = (4 + 0)/2 = \mathbf{2.0}$. Efficiency check: $1.0 + 4.0 + 2.0 = \mathbf{7.0} = f(1, 1)$!
+10. (a) Switch to **`HistGradientBoostingClassifier`**, which learns optimal missing-value branch routing natively; or (b) wrap `GradientBoostingClassifier` inside a **`Pipeline`** preceded by `SimpleImputer(strategy="median")` fit strictly on `X_train`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.inspection import permutation_importance
+from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.tree import DecisionTreeClassifier
+
+# To-Do 24.1
+def gini_impurity(y):
+    """Compute Gini impurity 1 - sum(p_k^2) rounded to 4 decimals."""
+    arr = np.asarray(y)
+    if arr.size == 0:
+        return 0.0
+    _, counts = np.unique(arr, return_counts=True)
+    probs = counts / arr.size
+    return round(float(1.0 - np.sum(probs ** 2)), 4)
+
+# To-Do 24.2
+def shannon_entropy(y):
+    """Compute base-2 Shannon entropy rounded to 4 decimals."""
+    arr = np.asarray(y)
+    if arr.size == 0:
+        return 0.0
+    _, counts = np.unique(arr, return_counts=True)
+    probs = counts / arr.size
+    probs = probs[probs > 0]
+    ent = float(-np.sum(probs * np.log2(probs)))
+    return round(0.0 if ent == 0.0 else ent, 4)
+
+# To-Do 24.3
+def best_stump_split(x_feature, y):
+    """Find midpoint threshold minimizing weighted Gini impurity."""
+    def _gini(arr):
+        if arr.size == 0:
+            return 0.0
+        _, counts = np.unique(arr, return_counts=True)
+        probs = counts / arr.size
+        return float(1.0 - np.sum(probs ** 2))
+
+    x = np.asarray(x_feature, dtype=float)
+    y_arr = np.asarray(y)
+    uniq = np.unique(x)
+    mids = (uniq[:-1] + uniq[1:]) / 2.0
+    best_t, best_g = float(mids[0]), float("inf")
+    n = y_arr.size
+    for t in mids:
+        left = y_arr[x <= t]
+        right = y_arr[x > t]
+        wg = (left.size / n) * _gini(left) + (right.size / n) * _gini(right)
+        if wg < best_g:
+            best_g = wg
+            best_t = float(t)
+    return (round(best_t, 4), round(best_g, 4))
+
+# To-Do 24.4
+def compare_tree_depths(X_train, y_train, X_val, y_val, depths, seed=42):
+    """Compare DecisionTree train/val ROC-AUC and gap across depths."""
+    rows = []
+    for d in depths:
+        clf = DecisionTreeClassifier(max_depth=d, random_state=seed)
+        clf.fit(X_train, y_train)
+        tr = float(roc_auc_score(y_train, clf.predict_proba(X_train)[:, 1]))
+        va = float(roc_auc_score(y_val, clf.predict_proba(X_val)[:, 1]))
+        rows.append({
+            "max_depth": d,
+            "train_auc": round(tr, 4),
+            "val_auc": round(va, 4),
+            "gap": round(tr - va, 4),
+        })
+    return pd.DataFrame(rows)
+
+# To-Do 24.5
+def fit_ensemble_comparison(X_train, y_train, X_test, y_test, seed=42):
+    """Fit DecisionTree, RandomForest, and HistGradientBoosting."""
+    models = [
+        ("DecisionTree", DecisionTreeClassifier(
+            max_depth=5, random_state=seed)),
+        ("RandomForest", RandomForestClassifier(
+            n_estimators=100, max_depth=6, random_state=seed)),
+        ("HistGradientBoosting", HistGradientBoostingClassifier(
+            max_depth=4, random_state=seed)),
+    ]
+    rows = []
+    for name, clf in models:
+        clf.fit(X_train, y_train)
+        proba = clf.predict_proba(X_test)[:, 1]
+        rows.append({
+            "model": name,
+            "roc_auc": round(float(roc_auc_score(y_test, proba)), 4),
+            "pr_auc": round(
+                float(average_precision_score(y_test, proba)), 4
+            ),
+        })
+    return pd.DataFrame(rows)
+
+# To-Do 24.6
+def compute_permutation_ranking(
+    model, X_test, y_test, feature_names, seed=42
+):
+    """Rank features by held-out ROC-AUC permutation importance."""
+    res = permutation_importance(
+        model, X_test, y_test, scoring="roc_auc",
+        n_repeats=10, random_state=seed,
+    )
+    df = pd.DataFrame({
+        "feature": list(feature_names),
+        "importance_mean": np.round(res.importances_mean, 4),
+        "importance_std": np.round(res.importances_std, 4),
+    })
+    return df.sort_values(
+        "importance_mean", ascending=False
+    ).reset_index(drop=True)
+```
+
+### C. Annotated Solutions — Chapter 24 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import itertools
+from sklearn.model_selection import train_test_split
+
+# Exam Task 24.1 (30 pts)
+def exact_shapley_3features(predict_fn, x_row, baseline_row):
+    """Compute exact 3-feature Shapley values over all 6 permutations."""
+    x = np.asarray(x_row, dtype=float)
+    base = np.asarray(baseline_row, dtype=float)
+    base_val = float(predict_fn(base))
+    pred_val = float(predict_fn(x))
+    contribs = np.zeros(3, dtype=float)
+    perms = list(itertools.permutations([0, 1, 2]))
+    for perm in perms:
+        state = base.copy()
+        prev = base_val
+        for idx in perm:
+            state[idx] = x[idx]
+            curr = float(predict_fn(state))
+            contribs[idx] += curr - prev
+            prev = curr
+    shap_vals = contribs / len(perms)
+    return {
+        "base_value": round(base_val, 4),
+        "shap_values": [round(float(v), 4) for v in shap_vals],
+        "prediction": round(pred_val, 4),
+    }
+
+# Exam Task 24.2 (35 pts)
+def tune_random_forest_oob(X_train, y_train, max_depths, seed=42):
+    """Select best RandomForest max_depth using Out-of-Bag accuracy."""
+    rows = []
+    best_depth = int(max_depths[0])
+    best_oob = -1.0
+    for d in max_depths:
+        rf = RandomForestClassifier(
+            n_estimators=120, max_depth=d,
+            oob_score=True, random_state=seed,
+        ).fit(X_train, y_train)
+        score = float(rf.oob_score_)
+        rows.append({"max_depth": int(d), "oob_score": round(score, 4)})
+        if score > best_oob:
+            best_oob = score
+            best_depth = int(d)
+    return {
+        "best_depth": best_depth,
+        "best_oob_score": round(best_oob, 4),
+        "oob_table": pd.DataFrame(rows),
+    }
+
+# Exam Task 24.3 (35 pts)
+def public_health_tree_benchmark(mch_df, seed=42):
+    """Benchmark 3 tree families on MCH stunting and rank top driver."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_rank"] = (
+        work["wealth_quintile"].astype(str).str.strip().str.title()
+        .map(w_map)
+    )
+    feats = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+        "is_urban", "wealth_rank",
+    ]
+    clean = work[feats + ["child_stunted"]].dropna()
+    X = clean[feats]
+    y = clean["child_stunted"].astype(int)
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.25, stratify=y, random_state=seed
+    )
+    specs = [
+        ("DecisionTree", DecisionTreeClassifier(
+            max_depth=5, random_state=seed)),
+        ("RandomForest", RandomForestClassifier(
+            n_estimators=100, max_depth=6, random_state=seed)),
+        ("HistGradientBoosting", HistGradientBoostingClassifier(
+            max_depth=4, random_state=seed)),
+    ]
+    rows, fitted = [], {}
+    for name, clf in specs:
+        clf.fit(X_tr, y_tr)
+        proba = clf.predict_proba(X_te)[:, 1]
+        rows.append({
+            "model": name,
+            "roc_auc": round(float(roc_auc_score(y_te, proba)), 4),
+            "pr_auc": round(
+                float(average_precision_score(y_te, proba)), 4
+            ),
+        })
+        fitted[name] = clf
+    leaderboard = (
+        pd.DataFrame(rows)
+        .sort_values("roc_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+    best_model = str(leaderboard.iloc[0]["model"])
+    pi = permutation_importance(
+        fitted[best_model], X_te, y_te, scoring="roc_auc",
+        n_repeats=10, random_state=seed,
+    )
+    top_feature = feats[int(np.argmax(pi.importances_mean))]
+    return {
+        "leaderboard": leaderboard,
+        "best_model": best_model,
+        "top_feature": top_feature,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 24 Failure Modes
+
+1. **Passing Hard Class Predictions (`.predict`) Instead of Probabilities (`.predict_proba[:, 1]`) Into ROC-AUC / PR-AUC:** Hard binary labels collapse all probability thresholds to a single operating point, distorting both `roc_auc_score` and `average_precision_score`. Always slice column `1` of `.predict_proba(X)`.
+2. **Trusting Default MDI `.feature_importances_` on Mixed-Cardinality Clinical Data:** Training-set impurity gain rewards continuous or ID-like columns with many split thresholds—even pure noise! Always validate global driver rankings with held-out `permutation_importance` on `(X_test, y_test)`.
+3. **Evaluating Only One Feature Order When Explaining Nonlinear Models:** In models with feature interactions, changing which feature is turned on first shifts marginal credit dramatically. Averaging across permutations (exact Shapley / TreeSHAP) is the only way to preserve fair attribution and guarantee the Efficiency Axiom $\phi_0 + \sum_i \phi_i = f(x)$.

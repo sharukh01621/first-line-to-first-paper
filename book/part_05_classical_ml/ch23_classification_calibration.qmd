@@ -1,0 +1,871 @@
+# Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance {#sec-ch23}
+
+> **Chapter Mission:** Master binary classification as **calibrated probability estimation followed by cost-aware decision making**. Starting from pure NumPy sigmoid and binary cross-entropy gradient descent and progressing to leak-free Scikit-Learn pipelines on Bangladesh maternal and child health survey data (`mch_survey_sample`), you will unmask the **Accuracy Paradox**, evaluate rare-outcome classifiers with **ROC-AUC**, **PR-AUC**, **Brier score**, and **Expected Calibration Error (ECE)**, tune operating thresholds via **Youden's $J$**, and handle class imbalance without silently destroying clinical probability calibration.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch23 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch23 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch23 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Implement numerically stable **binary cross-entropy (log-loss)** and **batch gradient descent for logistic regression** from scratch in pure NumPy.
+2. Translate confusion matrix counts into clinical metrics—**Sensitivity (Recall)**, **Specificity**, **Precision (PPV)**, **Negative Predictive Value (NPV)**, and **$F_1$**—with clean zero-denominator guards, and diagnose the **Accuracy Paradox** on imbalanced cohorts.
+3. Contrast **ROC-AUC** against **Precision-Recall AUC (PR-AUC)** and explain why PR-AUC is essential when positive outcomes (such as child stunting or rare disease) have low prevalence.
+4. Audit **probability calibration** separately from ranking discrimination using the **Brier score**, equal-width reliability bins, **Expected Calibration Error (ECE)**, and Platt scaling (`CalibratedClassifierCV(..., method="sigmoid", cv=5)`).
+5. Optimize clinical decision thresholds using **Youden's $J = \text{TPR} - \text{FPR}$** and build multi-threshold operating tables trading off case capture (`sensitivity`) against clinic workload (`flagged_pct`).
+6. Compare default vs. `class_weight="balanced"` logistic pipelines and explain why naive reweighting or SMOTE distorts predicted probabilities unless recalibrated or replaced by threshold tuning.
+
+---
+
+## Stage 1 — First-Principles Intuition: Classification Is Probability Estimation First, Decision Second {#sec-ch23-intuition}
+
+New machine learning practitioners often treat classification as a black box that outputs hard `0` or `1` labels via `.predict(X)`—and then evaluate that model using a single number: **accuracy**. In clinical medicine, epidemiology, and policy science, that shortcut fails catastrophically.
+
+Consider predicting child stunting (`child_stunted`, 13.8% prevalence) in `mch_survey_sample`. A trivial model that predicts `0` ("not stunted") for every single child achieves **86.2% accuracy** while missing **100% of stunted children**! Even worse, two models can achieve the **exact same ROC-AUC** while one outputs honest risks (`0.30` means 30% of similar mothers have anemia) and the other outputs dangerously overconfident scores (`0.70` when true risk is only 30%).
+
+Five first-principles pillars anchor every trustworthy classifier:
+
+- **Log-Odds & Sigmoid Mapping:** Logistic regression computes a linear risk score $z = \mathbf{w}^\top \mathbf{x} + b$ and squashes it onto $(0, 1)$ via the sigmoid function $\sigma(z) = 1 / (1 + e^{-z})$. Minimizing **binary cross-entropy (log-loss)** directly rewards well-calibrated probabilities because confident wrong predictions incur unbounded penalty ($-\ln(\varepsilon)$).
+- **The Accuracy Paradox:** When positive prevalence is low (14% stunting, or 2% sepsis), overall accuracy rewards ignoring the minority class. Clinical evaluation always inspects **Sensitivity (Recall)**, **Specificity**, **Precision (PPV)**, **NPV**, and **$F_1$** alongside prevalence.
+- **Discrimination vs. Calibration:** **ROC-AUC** and **PR-AUC** measure *ranking* (whether true cases score higher than non-cases) across all thresholds. **Brier score** and **Expected Calibration Error (ECE)** measure *calibration* (whether predicted probabilities match observed event frequencies). You need **both**!
+- **Thresholding Is a Clinical Policy Decision, Not a Law of Nature:** Calling `.predict(X)` silently hardcodes threshold $\tau = 0.50$. On a 14% prevalence outcome, almost no calibrated probability exceeds `0.50`, producing zero flags! Tuning $\tau$ via **Youden's $J$** or a clinic capacity constraint preserves calibrated risk estimates while achieving target recall.
+- **Imbalance Reweighting & SMOTE Caveats:** Passing `class_weight="balanced"` or oversampling with **SMOTE** forces the model to act as if prevalence were 50%. Recall jumps immediately, yet ranking (ROC-AUC / PR-AUC) barely changes—while **predicted probabilities become severely inflated** (Brier score more than doubles!). Prefer tuning the threshold on a calibrated model, or recalibrate after reweighting.
+
+::: {.callout-note title="Mental Model — Two Separate Questions for Every Classifier"}
+Before deploying any clinical classifier, separate its evaluation into **two distinct stages**:
+
+1. **Are the continuous probabilities $\hat{p}$ both discriminative and honest?** Check **ROC-AUC**, **PR-AUC** (against baseline prevalence), **Brier score**, and **ECE**.
+2. **Given clinic costs and capacity, which cutoff $\tau$ converts $\hat{p}$ into action ($\hat{y} = \mathbb{I}[\hat{p} \ge \tau]$)?** Inspect the threshold operating table (`sensitivity`, `specificity`, `precision`, `flagged_pct`) and **Youden's $J$**.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Probabilities $\rightarrow$ Calibration $\rightarrow$ Threshold Pipeline {#sec-ch23-mental-model}
+
+Follow this leakage-free classification architecture whenever you move from raw survey or clinical records to an actionable screening tool:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Model["1. Risk Model"]
+        direction LR
+        S1["Stratified Split (75/25)<br/>Drop Target Leaks (Hb)"]
+        S2["Scaled Pipeline (Train)<br/>Scaler + LogisticReg"]
+        S1 --> S2
+    end
+    subgraph Calib["2. Calibration"]
+        direction LR
+        C1["Platt Scaling (cv=5)<br/>CalibratedClassifierCV"]
+        C2["Audit Probabilities<br/>ROC-AUC, PR-AUC, Brier, ECE"]
+        C1 --> C2
+    end
+    subgraph Decision["3. Thresholding"]
+        direction LR
+        D1["Select Cutoff tau<br/>Youden J = max(TPR-FPR)"]
+        D2["Clinical Confusion Table<br/>Sens, Spec, PPV, NPV"]
+        D1 --> D2
+    end
+    Model --> Calib
+    Calib --> Decision
+```
+
+Notice how **no step touches `X_test` during fitting**: scaling, logistic regression weights, and 5-fold sigmoid calibration (`CalibratedClassifierCV`) all fit strictly inside the training split. Only after probabilities are calibrated and audited do we apply a clinical cutoff $\tau$ to flag high-risk patients.
+
+::: {.callout-warning title="Watch Out for Target Leakage in Clinical Datasets!"}
+In `mch_survey_sample`, `maternal_anemia` is defined clinically as `maternal_hb_g_dl < 11.0` (98% identical). Feeding `maternal_hb_g_dl` as a feature to "predict" `maternal_anemia` produces a fake `~0.99` ROC-AUC that collapses the moment you screen mothers *before* drawing a blood test. Always exclude diagnostic measurements that define the target!
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch23-walkthrough}
+
+Open `part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading & Cleaning `mch_survey_sample` (Leak-Free Features) {#sec-ch23-setup}
+
+```python
+import warnings
+import numpy as np
+import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.exceptions import UndefinedMetricWarning
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    confusion_matrix,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+wealth_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+mch["wealth_num"] = mch["wealth_quintile"].map(wealth_map)
+feat_cols = [
+    "maternal_age_years", "anc_visits", "wealth_num", "is_urban"
+]
+clean = mch[["maternal_anemia", "child_stunted"] + feat_cols].dropna()
+print(f"Raw shape: {mch_raw.shape} | Complete rows: {len(clean)}")
+print(
+    f"Anemia rate: {clean['maternal_anemia'].mean():.4f} | "
+    f"Stunting rate: {clean['child_stunted'].mean():.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Raw shape: (500, 12) | Complete rows: 492
+Anemia rate: 0.3537 | Stunting rate: 0.1382
+```
+
+Working strictly on a `.copy()`, we standardize mixed casing in `residence`, replace field sentinel `anc_visits == 999` with `np.nan`, map ordinal `wealth_quintile` to integers `1..5`, and retain four non-leaking socio-demographic & prenatal predictors across `492` complete records. Notice the two outcomes' contrasting prevalence: maternal anemia is moderately common (`35.37%`), whereas child stunting is imbalanced (`13.82%`).
+
+---
+
+### Sigmoid & Binary Cross-Entropy (Log-Loss) from Scratch {#sec-ch23-gd}
+
+Given standardized feature matrix $\mathbf{X} \in \mathbb{R}^{N \times d}$ and binary labels $y_i \in \{0, 1\}$, logistic regression predicts $\hat{p}_i = \sigma(\mathbf{x}_i^\top \mathbf{w} + b)$ and minimizes clipped **binary cross-entropy**:
+
+$$\mathcal{L}(\mathbf{w}, b) = -\frac{1}{N} \sum_{i=1}^N \Big[ y_i \ln(\tilde{p}_i) + (1 - y_i)\ln(1 - \tilde{p}_i) \Big], \qquad \tilde{p}_i = \text{clip}(\hat{p}_i, \varepsilon, 1 - \varepsilon)$$
+
+The gradient takes the remarkably clean residual form $\nabla_{\mathbf{w}} \mathcal{L} = \frac{1}{N}\mathbf{X}^\top (\hat{\mathbf{p}} - \mathbf{y})$ and $\frac{\partial \mathcal{L}}{\partial b} = \frac{1}{N}\sum_i (\hat{p}_i - y_i)$:
+
+```python
+def sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-np.clip(z, -500.0, 500.0)))
+
+def bce_loss(y_true, y_prob, eps=1e-15):
+    y = np.asarray(y_true, dtype=float)
+    p = np.clip(np.asarray(y_prob, dtype=float), eps, 1.0 - eps)
+    return float(-np.mean(y * np.log(p) + (1.0 - y) * np.log(1.0 - p)))
+
+# Standardized socio-demographic features -> maternal_anemia
+X_raw = clean[["anc_visits", "wealth_num"]].to_numpy(dtype=float)
+X_std = (X_raw - X_raw.mean(axis=0)) / X_raw.std(axis=0)
+y_anem = clean["maternal_anemia"].to_numpy(dtype=float)
+
+w = np.zeros(X_std.shape[1], dtype=float)
+b = 0.0
+losses = []
+for _ in range(400):
+    p = sigmoid(X_std @ w + b)
+    losses.append(bce_loss(y_anem, p))
+    err = p - y_anem
+    w -= 0.1 * (X_std.T @ err) / len(y_anem)
+    b -= 0.1 * float(np.mean(err))
+
+print(f"Initial log-loss: {losses[0]:.5f} -> Final: {losses[-1]:.5f}")
+print(f"Learned weights: {np.round(w, 4)} | Intercept b: {b:.4f}")
+```
+
+**Expected Output:**
+
+```text
+Initial log-loss: 0.69315 -> Final: 0.63341
+Learned weights: [-0.0579 -0.3541] | Intercept b: -0.6248
+```
+
+Look closely at three mathematical checks:
+
+- **Initial loss $= \ln(2) \approx 0.69315$:** When $\mathbf{w} = \mathbf{0}$ and $b = 0$, every patient gets $\hat{p}_i = 0.50$, so $-\ln(0.5) = 0.69315$!
+- **Negative weights (`-0.0579`, `-0.3541`):** Higher antenatal visits and higher household wealth both *reduce* the log-odds of maternal anemia.
+- **Numerical safety guards:** Clipping `z` to `[-500, 500]` prevents `np.exp` overflow, and clipping `p` to `[eps, 1 - eps]` prevents `np.log(0) -> -inf` and `0 * -inf -> nan`.
+
+---
+
+### Clinical Confusion Matrix & The Accuracy Paradox {#sec-ch23-cm}
+
+Now train a leak-free scaled `LogisticRegression` on the imbalanced outcome `child_stunted` (13.82% prevalence) using a stratified 75/25 split and evaluate default `.predict(X_test)` (threshold `0.50`):
+
+```python
+X_all = clean[feat_cols]
+y_stunt = clean["child_stunted"].astype(int)
+Xs_tr, Xs_te, ys_tr, ys_te = train_test_split(
+    X_all, y_stunt, test_size=0.25, stratify=y_stunt, random_state=42
+)
+
+stunt_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=500)),
+])
+stunt_pipe.fit(Xs_tr, ys_tr)
+ys_pred = stunt_pipe.predict(Xs_te)
+ys_prob = stunt_pipe.predict_proba(Xs_te)[:, 1]
+
+tn, fp, fn, tp = confusion_matrix(ys_te, ys_pred).ravel()
+acc = (tp + tn) / len(ys_te)
+sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+npv = tn / (tn + fn) if (tn + fn) > 0 else 0.0
+print(f"Confusion Matrix -> TN={tn}, FP={fp}, FN={fn}, TP={tp}")
+print(f"Accuracy={acc:.4f} | Sensitivity={sens:.4f} | Spec={spec:.4f}")
+print(f"Precision (PPV)={prec:.4f} | NPV={npv:.4f}")
+```
+
+**Expected Output:**
+
+```text
+Confusion Matrix -> TN=106, FP=0, FN=17, TP=0
+Accuracy=0.8618 | Sensitivity=0.0000 | Spec=1.0000
+Precision (PPV)=0.0000 | NPV=0.8618
+```
+
+Behold the **Accuracy Paradox** in live clinical data:
+
+- Overall accuracy is **`86.18%`**—yet **`TP = 0`** and **`FN = 17`**! Every single stunted child in the test set was missed (`Sensitivity = 0.0000`).
+- Notice how our zero-denominator guard (`if (tp + fp) > 0 else 0.0`) cleanly prevented a `ZeroDivisionError` when computing `Precision (PPV)`!
+- Why did `.predict()` flag zero children? Because the underlying calibrated probabilities are realistic (mostly `0.02–0.42` on a 14% prevalence condition), so **none crossed the arbitrary default `0.50` cutoff**!
+
+---
+
+### ROC-AUC vs. PR-AUC on Imbalanced Clinical Outcomes {#sec-ch23-roc-pr}
+
+Even though `.predict()` at `0.50` gave zero sensitivity, does `stunt_pipe` actually rank high-risk children above low-risk children? Threshold-free metrics reveal the truth:
+
+```python
+roc_st = roc_auc_score(ys_te, ys_prob)
+pr_st = average_precision_score(ys_te, ys_prob)
+brier_st = brier_score_loss(ys_te, ys_prob)
+prev_st = float(ys_te.mean())
+
+print(f"Stunting test prevalence (PR baseline): {prev_st:.4f}")
+print(
+    f"ROC-AUC: {roc_st:.4f} | PR-AUC: {pr_st:.4f} | "
+    f"Brier Score: {brier_st:.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Stunting test prevalence (PR baseline): 0.1382
+ROC-AUC: 0.7772 | PR-AUC: 0.3138 | Brier Score: 0.1066
+```
+
+Read these three numbers together:
+
+- **ROC-AUC (`0.7772` vs. random baseline `0.50`):** The model *does* separate stunted from non-stunted children well! If you pick one stunted child and one non-stunted child at random, the model assigns a higher risk probability to the stunted child 77.7% of the time.
+- **PR-AUC (`0.3138` vs. prevalence baseline `0.1382`):** Because `FPR = FP / (FP + TN)` is diluted by 106 true negatives, ROC-AUC stays high even when false positives outnumber true positives. **PR-AUC** (`average_precision_score`) focuses strictly on the minority class, comparing against random prevalence (`0.1382`)—showing a solid `2.3x` lift while keeping us realistic about precision.
+- **Brier Score (`0.1066`):** Mean squared probability error $\frac{1}{N}\sum (y_i - \hat{p}_i)^2$—lower is better (`0.0` is perfect).
+
+---
+
+### Probability Calibration, Platt Scaling & Expected Calibration Error (ECE) {#sec-ch23-calib}
+
+Ranking alone (`ROC-AUC`) cannot tell whether a predicted risk of `0.60` actually means a 60% event rate. Let's compare raw `LogisticRegression`, 5-fold Platt scaling (`CalibratedClassifierCV(..., method="sigmoid", cv=5)`), and an artificially **overconfident** transformation ($\hat{p}^{0.35}$) that preserves exact rank order:
+
+```python
+y_anemia = clean["maternal_anemia"].astype(int)
+Xa_tr, Xa_te, ya_tr, ya_te = train_test_split(
+    X_all, y_anemia, test_size=0.25, stratify=y_anemia, random_state=42
+)
+anem_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=500)),
+])
+anem_pipe.fit(Xa_tr, ya_tr)
+p_raw = anem_pipe.predict_proba(Xa_te)[:, 1]
+
+anem_cal = CalibratedClassifierCV(anem_pipe, method="sigmoid", cv=5)
+anem_cal.fit(Xa_tr, ya_tr)
+p_cal = anem_cal.predict_proba(Xa_te)[:, 1]
+
+# Same ranking, badly overconfident probabilities (p**0.35)
+p_overconf = np.clip(p_cal ** 0.35, 0.0, 1.0)
+
+def quick_ece(y_true, y_prob, n_bins=5):
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_prob, dtype=float)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    for i in range(n_bins):
+        lo, hi = edges[i], edges[i + 1]
+        m = (yp >= lo) & (yp < hi) if i < n_bins - 1 else (yp >= lo)
+        if np.any(m):
+            ece += (np.sum(m) / len(yt)) * abs(yt[m].mean() - yp[m].mean())
+    return float(ece)
+
+for name, probs in [
+    ("Raw LogReg", p_raw),
+    ("Platt Calib", p_cal),
+    ("Overconfident", p_overconf),
+]:
+    print(
+        f"{name:13s} | ROC={roc_auc_score(ya_te, probs):.4f} | "
+        f"Brier={brier_score_loss(ya_te, probs):.4f} | "
+        f"ECE={quick_ece(ya_te, probs):.4f}"
+    )
+```
+
+**Expected Output:**
+
+```text
+Raw LogReg    | ROC=0.6246 | Brier=0.2162 | ECE=0.0444
+Platt Calib   | ROC=0.6275 | Brier=0.2164 | ECE=0.0128
+Overconfident | ROC=0.6275 | Brier=0.3382 | ECE=0.3531
+```
+
+Stare at the last two rows—this is one of the most important tables in applied clinical ML:
+
+- **Platt scaling** cut Expected Calibration Error (ECE) by more than 3x (`0.0444 -> 0.0128`), meaning predicted probabilities deviate from observed bin frequencies by only **1.3 percentage points** on average!
+- **The overconfident model** has the **exact same ROC-AUC (`0.6275`)** as the calibrated model because `p ** 0.35` is strictly monotonic—yet its **Brier score jumps from `0.2164` to `0.3382`** and its **ECE explodes 27x to `0.3531`**! Never judge probability quality from ROC-AUC alone.
+
+---
+
+### Decision Threshold Tuning & Youden's $J$ Statistic {#sec-ch23-youden}
+
+To rescue our stunting classifier from the `0.50` Accuracy Paradox without corrupting its calibrated probabilities, find the cutoff $\tau^*$ that maximizes **Youden's $J$**:
+
+$$J(\tau) = \text{Sensitivity}(\tau) + \text{Specificity}(\tau) - 1 = \text{TPR}(\tau) - \text{FPR}(\tau)$$
+
+```python
+fpr, tpr, thresholds = roc_curve(ys_te, ys_prob)
+j_scores = tpr - fpr
+best_idx = int(np.argmax(j_scores))
+best_t = float(thresholds[best_idx])
+best_j = float(j_scores[best_idx])
+print(f"Stunting Youden threshold: {best_t:.4f} (J={best_j:.4f})")
+
+rows = []
+for t in [0.10, round(best_t, 4), 0.25, 0.50]:
+    pred_t = (ys_prob >= t).astype(int)
+    tn_t, fp_t, fn_t, tp_t = confusion_matrix(ys_te, pred_t).ravel()
+    sens_t = tp_t / (tp_t + fn_t) if (tp_t + fn_t) > 0 else 0.0
+    spec_t = tn_t / (tn_t + fp_t) if (tn_t + fp_t) > 0 else 0.0
+    prec_t = tp_t / (tp_t + fp_t) if (tp_t + fp_t) > 0 else 0.0
+    rows.append({
+        "thresh": round(t, 4),
+        "sens": round(sens_t, 4),
+        "spec": round(spec_t, 4),
+        "prec": round(prec_t, 4),
+        "flagged_pct": round(100.0 * pred_t.mean(), 2),
+    })
+print(pd.DataFrame(rows).to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+Stunting Youden threshold: 0.1918 (J=0.5477)
+ thresh   sens   spec   prec  flagged_pct
+ 0.1000 0.8824 0.3962 0.1899        64.23
+ 0.1918 0.7059 0.7830 0.3429        28.46
+ 0.2500 0.4706 0.8962 0.4211        15.45
+ 0.5000 0.0000 1.0000 0.0000         0.00
+```
+
+Look how actionable this operating table is for a district health officer:
+
+- At Youden's cutoff (`0.1918`), sensitivity leaps from **`0.00%` to `70.59%`** while specificity stays strong at **`78.30%`**, flagging **`28.46%`** of children for nutrition follow-up!
+- If the district clinic can only afford to evaluate `~15%` of children, switching to `thresh = 0.2500` flags `15.45%` with `42.11%` precision—all without retraining a single weight!
+
+---
+
+### Handling Class Imbalance: `class_weight="balanced"` & SMOTE Caveats {#sec-ch23-imbalance}
+
+What happens if instead of tuning the decision threshold, we train `LogisticRegression(class_weight="balanced")` on `child_stunted`? Let's measure recall, PR-AUC, and Brier score side by side:
+
+```python
+for label, cw in [("default", None), ("balanced", "balanced")]:
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=500, class_weight=cw)),
+    ])
+    model.fit(Xs_tr, ys_tr)
+    yp = model.predict(Xs_te)
+    yprob = model.predict_proba(Xs_te)[:, 1]
+    print(
+        f"{label:8s} | acc={(yp == ys_te).mean():.4f} | "
+        f"recall={recall_score(ys_te, yp):.4f} | "
+        f"PR-AUC={average_precision_score(ys_te, yprob):.4f} | "
+        f"Brier={brier_score_loss(ys_te, yprob):.4f}"
+    )
+```
+
+**Expected Output:**
+
+```text
+default  | acc=0.8618 | recall=0.0000 | PR-AUC=0.3138 | Brier=0.1066
+balanced | acc=0.6260 | recall=0.8824 | PR-AUC=0.3124 | Brier=0.2289
+```
+
+Look closely at what `class_weight="balanced"` actually did (the same mathematical caveat applies to **SMOTE** synthetic oversampling!):
+
+- **Recall jumped from `0.0000` to `0.8824`** solely because upweighting positives shifted the intercept upward so more cases crossed `0.50`.
+- **PR-AUC stayed virtually identical (`0.3138` vs. `0.3124`):** Reweighting did **not** conjure new biological information out of thin air.
+- **Brier score more than doubled (`0.1066 -> 0.2289`):** Because the model was trained on an artificially 50/50 reweighted objective, its predicted probabilities are now systematically overconfident! If you use `class_weight="balanced"` or SMOTE (and never apply SMOTE outside CV folds!), always recalibrate probabilities afterward—or better yet, fit an unweighted calibrated model and tune $\tau$.
+
+---
+
+### Break It On Purpose! (Classification Error Anatomy) {#sec-ch23-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — UndefinedMetricWarning / ValueError (Single-Class `y_true` in `roc_auc_score`)"}
+```python
+with warnings.catch_warnings():
+    warnings.simplefilter("error", UndefinedMetricWarning)
+    roc_auc_score([0, 0, 0, 0], [0.1, 0.4, 0.7, 0.9])
+```
+**Python's Traceback:**
+
+```text
+UndefinedMetricWarning: Only one class is present in y_true.
+ROC AUC score is not defined in that case.
+```
+**Diagnosis:** Computing TPR vs. FPR requires at least one positive (`1`) and one negative (`0`) sample. In rare-disease subsamples or unstratified CV folds, a fold can accidentally contain only `0`s—raising `ValueError` in older Scikit-Learn and returning silent `nan` with `UndefinedMetricWarning` in Scikit-Learn 1.9+.  
+**Fix:** Always pass `stratify=y` to `train_test_split` and use `StratifiedKFold` for cross-validation, and check `len(np.unique(y_true)) == 2` before scoring.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Passing Continuous Probabilities to `confusion_matrix`)"}
+```python
+confusion_matrix([0, 1, 0, 1], [0.12, 0.85, 0.34, 0.67])
+```
+**Python's Traceback:**
+
+```text
+ValueError: Classification metrics can't handle a mix of binary
+and continuous targets
+```
+**Diagnosis:** `confusion_matrix`, `precision_score`, `recall_score`, and `f1_score` require discrete binary predictions (`0` or `1`), whereas `predict_proba(X)[:, 1]` returns continuous floats in `[0, 1]`. Conversely, passing hard `0/1` predictions into `roc_auc_score` throws away ranking information and severely underestimates AUC!  
+**Fix:** Threshold continuous probabilities explicitly via `y_pred = (y_prob >= threshold).astype(int)` before calling discrete confusion metrics, and pass continuous `y_prob` to `roc_auc_score`, `average_precision_score`, and `brier_score_loss`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Out-of-Range Probability in `brier_score_loss` / Unclipped `log(0)`)"}
+```python
+brier_score_loss([0, 1, 0, 1], [0.2, 1.35, 0.1, 0.8])
+```
+**Python's Traceback:**
+
+```text
+ValueError: y_prob contains values greater than 1: 1.35
+```
+**Diagnosis:** Passing raw linear-model logits (`decision_function(X)`) or corrupted scores outside `[0, 1]` (or `NaN` values) violates the definition of a probability and crashes `brier_score_loss`. Similarly, passing exact `0.0` or `1.0` into an unclipped log-loss triggers `np.log(0) -> -inf` and `0 * -inf -> nan`.  
+**Fix:** Extract probabilities via `.predict_proba(X)[:, 1]` (or apply `sigmoid`), drop/impute `NaN`s inside a `Pipeline`, and clip probabilities to `[eps, 1 - eps]` inside custom cross-entropy code.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch23-blueprint}
+
+**Scenario:** Your maternal-health analytics team needs a single reusable function `build_clinical_triage_report(raw_df, target="maternal_anemia", seed=42)` that cleans `mch_survey_sample` without mutating it, avoids target leakage, trains both raw and 5-fold Platt-calibrated logistic pipelines on a stratified 75/25 split, and outputs test sample size, ROC-AUC, PR-AUC, raw vs. calibrated Brier score, 5-bin ECE, and Youden's optimal threshold.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Leak-Free Hygiene Layer:**
+
+   - Copy `raw_df` first (`df = raw_df.copy()`).
+   - Standardize `residence` casing, replace `anc_visits == 999` with `np.nan`, encode `is_urban` (`0/1`) and ordinal `wealth_num` (`1..5`), and keep only the 4 non-leaking features `["maternal_age_years", "anc_visits", "wealth_num", "is_urban"]`.
+
+2. **Stratified Split & Dual Calibration Fit:**
+
+   - Split 75/25 with `stratify=sub[target]` and `random_state=seed`.
+   - Fit `base = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])` on `(X_tr, y_tr)` to obtain `p_raw`.
+   - Fit `CalibratedClassifierCV(base, method="sigmoid", cv=5)` on `(X_tr, y_tr)` to obtain `p_cal`.
+
+3. **Verification Plan:**
+
+   - Verify `n_test == 123` (25% of 492 complete rows) for both `maternal_anemia` and `child_stunted`.
+   - Confirm stunting's Youden threshold (`~0.18`) sits well below `0.50`, matching its lower prevalence (`13.8%`), while anemia's sits near `~0.30` (prevalence `35.4%`).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def build_clinical_triage_report(raw_df, target="maternal_anemia", seed=42):
+    """Train leak-free scaled + Platt-calibrated classifier & audit it."""
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    df["wealth_num"] = df["wealth_quintile"].map(w_map)
+    cols = ["maternal_age_years", "anc_visits", "wealth_num", "is_urban"]
+    sub = df[[target] + cols].dropna()
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        sub[cols], sub[target].astype(int),
+        test_size=0.25, stratify=sub[target], random_state=seed,
+    )
+    base = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=500)),
+    ])
+    base.fit(X_tr, y_tr)
+    p_raw = base.predict_proba(X_te)[:, 1]
+    cal = CalibratedClassifierCV(base, method="sigmoid", cv=5)
+    cal.fit(X_tr, y_tr)
+    p_cal = cal.predict_proba(X_te)[:, 1]
+    fpr, tpr, th = roc_curve(y_te, p_cal)
+    bi = int(np.argmax(tpr - fpr))
+    return {
+        "n_test": int(len(y_te)),
+        "roc_auc": round(float(roc_auc_score(y_te, p_cal)), 4),
+        "pr_auc": round(float(average_precision_score(y_te, p_cal)), 4),
+        "brier_raw": round(float(brier_score_loss(y_te, p_raw)), 4),
+        "brier_cal": round(float(brier_score_loss(y_te, p_cal)), 4),
+        "ece_cal": round(quick_ece(y_te, p_cal, n_bins=5), 4),
+        "youden_t": round(float(th[bi]), 4),
+    }
+
+for name, col in [
+    ("Anemia", "maternal_anemia"),
+    ("Stunting", "child_stunted"),
+]:
+    rep = build_clinical_triage_report(mch_raw, target=col)
+    print(
+        f"{name:8s} (n={rep['n_test']}) | ROC={rep['roc_auc']:.4f} | "
+        f"PR={rep['pr_auc']:.4f} | Youden={rep['youden_t']:.4f}"
+    )
+    print(
+        f"         Brier raw={rep['brier_raw']:.4f} -> "
+        f"cal={rep['brier_cal']:.4f} | ECE={rep['ece_cal']:.4f}"
+    )
+```
+
+**Output:**
+
+```text
+Anemia   (n=123) | ROC=0.6275 | PR=0.4880 | Youden=0.2968
+         Brier raw=0.2162 -> cal=0.2164 | ECE=0.0128
+Stunting (n=123) | ROC=0.7722 | PR=0.3077 | Youden=0.1832
+         Brier raw=0.1066 -> cal=0.1089 | ECE=0.0590
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch23-todos}
+
+Open `part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six classification & calibration functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 23.1 (`binary_cross_entropy(y_true, y_prob, eps=1e-15)`):** Clip `y_prob` to `[eps, 1 - eps]` and return the mean binary cross-entropy as a `float` rounded to **5 decimals**.
+- **To-Do 23.2 (`logistic_gd_from_scratch(X, y, lr=0.1, epochs=400)`):** Implement pure NumPy sigmoid + batch gradient descent returning `(w_1d, b_float, loss_history)` where final loss is strictly lower than initial loss and training accuracy is $\ge 0.85$ on separable data.
+- **To-Do 23.3 (`clinical_confusion_metrics(y_true, y_pred)`):** Compute `{"sensitivity": round4, "specificity": round4, "precision": round4, "npv": round4, "f1": round4}`, guarding every zero denominator cleanly with `0.0`.
+- **To-Do 23.4 (`roc_and_pr_auc(y_true, y_prob)`):** Compute `{"roc_auc": round4, "pr_auc": round4, "brier_score": round4}` using `roc_auc_score`, `average_precision_score`, and `brier_score_loss`.
+- **To-Do 23.5 (`find_youden_threshold(y_true, y_prob)`):** Use `roc_curve` to find the threshold maximizing $J = \text{TPR} - \text{FPR}$, returning `(best_thresh_round4, best_j_round4)`.
+- **To-Do 23.6 (`compare_balanced_logistic(X_train, y_train, X_test, y_test)`):** Fit default vs. `class_weight="balanced"` scaled `LogisticRegression(max_iter=500)` inside `Pipeline`s and return `{"default_recall": round4, "balanced_recall": round4, "default_pr_auc": round4, "balanced_pr_auc": round4}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch23-test}
+
+Work through all 10 classification, calibration, and imbalance reasoning questions on paper before checking Stage 8:
+
+1. **Sigmoid & Log-Odds:** A logistic regression model outputs logit $z = 0.0$ for Patient A and $z = \ln(3) \approx 1.0986$ for Patient B. Compute the exact predicted probability $\hat{p} = \sigma(z)$ for both patients.
+2. **Why Clip Log-Loss?** Suppose `y_true = [1, 0]` and an unclipped model outputs `y_prob = [1.0, 0.0]`. In IEEE 754 floating-point arithmetic, what happens when NumPy evaluates `y * np.log(p) + (1 - y) * np.log(1 - p)` without clipping?
+3. **The Accuracy Paradox:** A rare congenital disorder affects `2%` of newborns ($n = 1{,}000$, 20 cases, 980 non-cases). A classifier predicts `0` for all `1,000` infants. Compute its **accuracy**, **sensitivity**, **specificity**, and **NPV**.
+4. **Confusion Matrix Hand Calculation:** A screening test produces `TP = 30`, `FP = 20`, `FN = 10`, and `TN = 140`. Compute **Sensitivity**, **Specificity**, **Precision (PPV)**, and **$F_1$** by hand.
+5. **ROC-AUC vs. PR-AUC Under Class Imbalance:** On a dataset with `1%` positive prevalence, what is the expected **ROC-AUC** of a random coin-flip classifier, and what is its expected **PR-AUC**?
+6. **Calibration vs. Discrimination:** Suppose you replace every predicted probability $\hat{p}$ from a calibrated classifier with $\hat{p}_{\text{bad}} = \hat{p}^{0.4}$ (a strictly increasing transform on $[0, 1]$). How do **ROC-AUC**, **Brier score**, and **ECE** respond?
+7. **Youden's $J$ Interpretation:** If a clinical cutoff achieves `Sensitivity = 0.80` and `Specificity = 0.75`, what is its **False Positive Rate (FPR)** and its **Youden's $J$** statistic?
+8. **`class_weight="balanced"` & SMOTE Side Effect:** Why does training `LogisticRegression(class_weight="balanced")` or applying SMOTE on a 10%-prevalence disease dramatically *increase* the Brier score even when recall improves?
+9. **Target Leakage in `mch_survey_sample`:** A teammate includes `maternal_hb_g_dl` as an input feature when predicting `maternal_anemia` and celebrates a `0.99` test ROC-AUC. Why is this model scientifically invalid for pre-blood-test community screening?
+10. **Calibration Bin Right-Endpoint Bug:** When partitioning $[0, 1]$ into 5 equal bins (`[0.0, 0.2)`, `[0.2, 0.4)`, ..., `[0.8, 1.0)`), what silently goes wrong if a model outputs an exact probability `1.0`, and how do you fix the final bin condition?
+
+---
+
+## Stage 7 — Chapter 23 Coding Exam (100 Points) {#sec-ch23-exam}
+
+Open `part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch23", exam_submissions)` to earn your Chapter 23 Exam score out of 100 points.
+
+### Exam Task 23.1 (30 Points): `evaluate_screening_thresholds(y_true, y_prob, thresholds)`
+
+Given binary labels `y_true`, continuous probabilities `y_prob`, and an iterable of cutoffs `thresholds`:
+
+- For each cutoff `t`, form `y_pred = (y_prob >= t).astype(int)`.
+- Compute `sensitivity`, `specificity`, `precision`, and `f1` (guarding zero denominators cleanly with `0.0`), plus `flagged_pct = 100.0 * mean(y_pred)` (percentage flagged on the `0–100` scale).
+- Return a `pd.DataFrame` with exact columns `["threshold", "sensitivity", "specificity", "precision", "f1", "flagged_pct"]` rounded to **4 decimals**.
+
+### Exam Task 23.2 (35 Points): `calibration_audit_bins(y_true, y_prob, n_bins=5)`
+
+Audit probability calibration across equal-width bins on `[0, 1]`:
+
+- Create bin edges with `np.linspace(0.0, 1.0, n_bins + 1)`. Use half-open `[lo, hi)` for bins `0..n_bins-2` and closed `[lo, hi]` for the final bin so `p == 1.0` is included.
+- Skip empty bins (`count == 0`). For each non-empty bin, record `mean_pred` (4 decimals), `obs_rate` (4 decimals), and `count` (`int`).
+- Compute Expected Calibration Error $\text{ECE} = \sum_b (n_b / N) \cdot |\text{obs}_b - \text{pred}_b|$ and `brier_score` (`brier_score_loss`), both rounded to **4 decimals**.
+- Return `{"ece": round4, "brier_score": round4, "bins": DataFrame}` where `bins` has columns `["mean_pred", "obs_rate", "count"]`.
+
+### Exam Task 23.3 (35 Points): `train_calibrated_anemia_classifier(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Copy `mch_df`, clean `residence` casing (`str.strip().str.title()`), replace `anc_visits == 999` with `np.nan`, derive `is_urban = (residence == "Urban").astype(int)`, and map `wealth_quintile` (`Poorest` $\rightarrow$ 1 through `Richest` $\rightarrow$ 5) into `wealth_num`.
+- Drop rows with missing values across `["maternal_anemia", "maternal_age_years", "anc_visits", "wealth_num", "is_urban"]` (excluding `maternal_hb_g_dl` to avoid target leakage!).
+- Run a stratified 75/25 split (`test_size=0.25, stratify=y, random_state=seed`).
+- Fit `pipe = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])` on `(X_tr, y_tr)` for `prob_raw`, and fit `CalibratedClassifierCV(pipe, method="sigmoid", cv=5)` on `(X_tr, y_tr)` for `prob_cal`.
+- Return `{"roc_auc": round4, "pr_auc": round4, "brier_raw": round4, "brier_calibrated": round4, "youden_threshold": round4}` (computing `roc_auc`, `pr_auc`, `brier_calibrated`, and `youden_threshold` from `prob_cal`, and `brier_raw` from `prob_raw`).
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch23-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Patient A: $\sigma(0) = 1 / (1 + e^0) = \mathbf{0.50}$. Patient B: $\sigma(\ln 3) = 1 / (1 + 1/3) = 3/4 = \mathbf{0.75}$ (odds $= 3:1$).
+2. Evaluating `0.0 * np.log(0.0)` produces `0.0 * (-inf) = nan`! Clipping probabilities to `[eps, 1 - eps]` guarantees finite logarithms for every observation.
+3. **Accuracy** $= 980 / 1000 = \mathbf{0.9800}$ (98%), **Sensitivity** $= 0 / 20 = \mathbf{0.0000}$, **Specificity** $= 980 / 980 = \mathbf{1.0000}$, **NPV** $= 980 / 1000 = \mathbf{0.9800}$.
+4. **Sensitivity** $= 30 / (30 + 10) = \mathbf{0.7500}$; **Specificity** $= 140 / (140 + 20) = \mathbf{0.8750}$; **Precision (PPV)** $= 30 / (30 + 20) = \mathbf{0.6000}$; **$F_1$** $= 2 \times 0.60 \times 0.75 / (0.60 + 0.75) = 0.90 / 1.35 \approx \mathbf{0.6667}$.
+5. A random classifier gets **ROC-AUC $= 0.50$** regardless of prevalence, whereas its **PR-AUC equals the positive prevalence $= 0.01$**!
+6. Because $\hat{p}^{0.4}$ is strictly monotonic, **ROC-AUC stays completely unchanged**—while **Brier score and ECE worsen sharply** because predicted probabilities are inflated far above true event rates.
+7. $\text{FPR} = 1 - \text{Specificity} = 1 - 0.75 = \mathbf{0.25}$, so Youden's $J = \text{TPR} - \text{FPR} = 0.80 - 0.25 = \mathbf{0.55}$.
+8. Both `class_weight="balanced"` and SMOTE train the model as if positive prevalence were `50%` instead of `10%`, shifting predicted probabilities upward away from real-world risks and inflating squared probability error (Brier score).
+9. `maternal_anemia` is defined clinically by `maternal_hb_g_dl < 11.0`—using hemoglobin to predict anemia is **target leakage**. At pre-blood-test screening time, hemoglobin has not been measured yet!
+10. An exact `p == 1.0` fails `p < 1.0` and is silently dropped from all bins, causing `sum(count) < N` and corrupting ECE. Fix: make the final bin right-closed (`(yp >= lo) & (yp <= hi)`).
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+# To-Do 23.1
+def binary_cross_entropy(y_true, y_prob, eps=1e-15):
+    """Compute clipped mean binary cross-entropy rounded to 5 decimals."""
+    y = np.asarray(y_true, dtype=float)
+    p = np.clip(np.asarray(y_prob, dtype=float), eps, 1.0 - eps)
+    loss = -np.mean(y * np.log(p) + (1.0 - y) * np.log(1.0 - p))
+    return round(float(loss), 5)
+
+# To-Do 23.2
+def logistic_gd_from_scratch(X, y, lr=0.1, epochs=400):
+    """Fit binary logistic regression via pure NumPy gradient descent."""
+    X_arr = np.asarray(X, dtype=float)
+    y_arr = np.asarray(y, dtype=float)
+    n_samples, n_features = X_arr.shape
+    w = np.zeros(n_features, dtype=float)
+    b = 0.0
+    loss_history = []
+    for _ in range(epochs):
+        z = np.clip(X_arr @ w + b, -500.0, 500.0)
+        p = 1.0 / (1.0 + np.exp(-z))
+        pc = np.clip(p, 1e-15, 1.0 - 1e-15)
+        loss = -np.mean(
+            y_arr * np.log(pc) + (1.0 - y_arr) * np.log(1.0 - pc)
+        )
+        loss_history.append(float(loss))
+        err = p - y_arr
+        w -= lr * (X_arr.T @ err) / n_samples
+        b -= lr * float(np.mean(err))
+    return (w, float(b), loss_history)
+
+# To-Do 23.3
+def clinical_confusion_metrics(y_true, y_pred):
+    """Compute clinical confusion metrics guarding zero denominators."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_pred, dtype=int)
+    tp = int(np.sum((yt == 1) & (yp == 1)))
+    fp = int(np.sum((yt == 0) & (yp == 1)))
+    tn = int(np.sum((yt == 0) & (yp == 0)))
+    fn = int(np.sum((yt == 1) & (yp == 0)))
+    sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+    prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    npv = tn / (tn + fn) if (tn + fn) > 0 else 0.0
+    f1 = 2.0 * prec * sens / (prec + sens) if (prec + sens) > 0 else 0.0
+    return {
+        "sensitivity": round(sens, 4),
+        "specificity": round(spec, 4),
+        "precision": round(prec, 4),
+        "npv": round(npv, 4),
+        "f1": round(f1, 4),
+    }
+
+# To-Do 23.4
+def roc_and_pr_auc(y_true, y_prob):
+    """Compute ROC-AUC, PR-AUC (average precision), and Brier score."""
+    return {
+        "roc_auc": round(float(roc_auc_score(y_true, y_prob)), 4),
+        "pr_auc": round(float(average_precision_score(y_true, y_prob)), 4),
+        "brier_score": round(float(brier_score_loss(y_true, y_prob)), 4),
+    }
+
+# To-Do 23.5
+def find_youden_threshold(y_true, y_prob):
+    """Find probability threshold maximizing Youden's J = TPR - FPR."""
+    fpr, tpr, thresholds = roc_curve(y_true, y_prob)
+    j_scores = tpr - fpr
+    best_idx = int(np.argmax(j_scores))
+    return (
+        round(float(thresholds[best_idx]), 4),
+        round(float(j_scores[best_idx]), 4),
+    )
+
+# To-Do 23.6
+def compare_balanced_logistic(X_train, y_train, X_test, y_test):
+    """Compare default vs balanced scaled LogisticRegression on test."""
+    out = {}
+    for prefix, cw in [("default", None), ("balanced", "balanced")]:
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=500, class_weight=cw)),
+        ])
+        pipe.fit(X_train, y_train)
+        yp = pipe.predict(X_test)
+        yprob = pipe.predict_proba(X_test)[:, 1]
+        out[f"{prefix}_recall"] = round(float(recall_score(y_test, yp)), 4)
+        out[f"{prefix}_pr_auc"] = round(
+            float(average_precision_score(y_test, yprob)), 4
+        )
+    return out
+```
+
+### C. Annotated Solutions — Chapter 23 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import train_test_split
+
+# Exam Task 23.1 (30 pts)
+def evaluate_screening_thresholds(y_true, y_prob, thresholds):
+    """Evaluate clinical screening metrics across probability thresholds."""
+    yt = np.asarray(y_true, dtype=int)
+    yprob = np.asarray(y_prob, dtype=float)
+    rows = []
+    for t in thresholds:
+        yp = (yprob >= t).astype(int)
+        tp = int(np.sum((yt == 1) & (yp == 1)))
+        fp = int(np.sum((yt == 0) & (yp == 1)))
+        tn = int(np.sum((yt == 0) & (yp == 0)))
+        fn = int(np.sum((yt == 1) & (yp == 0)))
+        sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        f1 = 2.0 * prec * sens / (prec + sens) if (prec + sens) > 0 else 0.0
+        rows.append({
+            "threshold": round(float(t), 4),
+            "sensitivity": round(sens, 4),
+            "specificity": round(spec, 4),
+            "precision": round(prec, 4),
+            "f1": round(f1, 4),
+            "flagged_pct": round(100.0 * float(np.mean(yp)), 4),
+        })
+    cols = [
+        "threshold", "sensitivity", "specificity",
+        "precision", "f1", "flagged_pct",
+    ]
+    return pd.DataFrame(rows, columns=cols)
+
+# Exam Task 23.2 (35 pts)
+def calibration_audit_bins(y_true, y_prob, n_bins=5):
+    """Audit probability calibration via equal-width bins, ECE & Brier."""
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_prob, dtype=float)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    rows = []
+    ece = 0.0
+    n_total = len(yt)
+    for idx in range(n_bins):
+        lo, hi = edges[idx], edges[idx + 1]
+        if idx < n_bins - 1:
+            mask = (yp >= lo) & (yp < hi)
+        else:
+            mask = (yp >= lo) & (yp <= hi)
+        cnt = int(np.sum(mask))
+        if cnt == 0:
+            continue
+        mp = float(np.mean(yp[mask]))
+        obs = float(np.mean(yt[mask]))
+        ece += (cnt / n_total) * abs(obs - mp)
+        rows.append({
+            "mean_pred": round(mp, 4),
+            "obs_rate": round(obs, 4),
+            "count": cnt,
+        })
+    bins_df = pd.DataFrame(rows, columns=["mean_pred", "obs_rate", "count"])
+    return {
+        "ece": round(ece, 4),
+        "brier_score": round(float(brier_score_loss(yt, yp)), 4),
+        "bins": bins_df,
+    }
+
+# Exam Task 23.3 (35 pts)
+def train_calibrated_anemia_classifier(mch_df, seed=42):
+    """Train leak-free scaled + sigmoid-calibrated anemia classifier."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    wealth_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_num"] = work["wealth_quintile"].map(wealth_map)
+    feat_cols = [
+        "maternal_age_years", "anc_visits", "wealth_num", "is_urban"
+    ]
+    clean = work[["maternal_anemia"] + feat_cols].dropna()
+    X = clean[feat_cols]
+    y = clean["maternal_anemia"].astype(int)
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.25, stratify=y, random_state=seed
+    )
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=500)),
+    ])
+    pipe.fit(X_tr, y_tr)
+    prob_raw = pipe.predict_proba(X_te)[:, 1]
+    cal = CalibratedClassifierCV(pipe, method="sigmoid", cv=5)
+    cal.fit(X_tr, y_tr)
+    prob_cal = cal.predict_proba(X_te)[:, 1]
+    fpr, tpr, thresholds = roc_curve(y_te, prob_cal)
+    best_idx = int(np.argmax(tpr - fpr))
+    return {
+        "roc_auc": round(float(roc_auc_score(y_te, prob_cal)), 4),
+        "pr_auc": round(float(average_precision_score(y_te, prob_cal)), 4),
+        "brier_raw": round(float(brier_score_loss(y_te, prob_raw)), 4),
+        "brier_calibrated": round(
+            float(brier_score_loss(y_te, prob_cal)), 4
+        ),
+        "youden_threshold": round(float(thresholds[best_idx]), 4),
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 23 Failure Modes
+
+1. **Trusting `.predict()` at Threshold `0.50` on Imbalanced Outcomes:** On `child_stunted` (13.8% prevalence), default `.predict()` yielded `86.2%` accuracy with **`0.0%` sensitivity**. Always inspect continuous probabilities (`predict_proba[:, 1]`), evaluate ROC-AUC/PR-AUC/Brier/ECE, and select a domain-appropriate cutoff such as Youden's $J$.
+2. **Treating Reweighting (`class_weight="balanced"`) or SMOTE as Free Calibration:** Upweighting minority cases boosts recall at `0.50` but leaves PR-AUC unchanged while more than doubling Brier score (`0.1066 -> 0.2289`). Either keep unweighted calibrated probabilities and tune the threshold, or apply post-hoc Platt/isotonic calibration after reweighting.
+3. **Mixing Continuous Probabilities and Binary Labels (or Dropping `p == 1.0`):** Passing continuous scores to `confusion_matrix` raises `ValueError`, passing binary labels to `roc_auc_score` destroys ranking resolution, and using half-open `[lo, hi)` on the final calibration bin silently drops exact `1.0` probabilities.
+
+---
+
+::: {.callout-tip title="Bridge to Chapter 24 — Trees, Random Forests & Gradient Boosting"}
+Now that you can rigorously evaluate **discrimination (ROC-AUC, PR-AUC)**, **calibration (Brier, ECE)**, and **clinical decision thresholds (Youden's $J$)** on linear classifiers, you have the exact yardstick needed for **non-linear tree ensembles** (Decision Trees, Random Forests, and Histogram/LightGBM/XGBoost Gradient Boosting) in Chapter 24—where flexible splits capture complex clinical interactions and post-hoc calibration becomes even more valuable!
+:::
