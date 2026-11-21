@@ -1,0 +1,498 @@
+# Variables, Memory Models, Data Types, and Arithmetic Logic {#sec-ch02}
+
+> **Chapter Mission:** Build a rock-solid mental model of how Python stores data in memory using **name bindings** (not boxes), master Python's core primitive types (`int`, `float`, `str`, `bool`, and `None`), conquer real-world survey type-casting traps, and solve the binary floating-point mystery from Chapter 1 once and for all.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch02 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch02 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch02 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Explain why Python variables are **name tags pointing to typed objects in memory**, and trace variable rebinding using `id()` and execution trace tables.
+2. Choose and inspect Python's five foundational data types (`int`, `float`, `str`, `bool`, and `NoneType`) using `type()` and `isinstance()`.
+3. Update running counters cleanly with **augmented assignment operators** (`+=`, `-=`, `*=`, `/=`).
+4. Safely convert messy text strings exported from CSV/DHS surveys into exact numbers—including the two-step `int(float("24.0"))` idiom.
+5. Explain why `0.1 + 0.2 != 0.3` in binary floating-point math and compare decimals reliably using `math.isclose()`.
+6. Compute core biostatistics metrics—including clinical screening flags and **$2 \times 2$ contingency table Odds Ratios**—without silent type or rounding errors.
+
+---
+
+## Stage 1 — First-Principles Intuition: Sticky-Note Name Tags, Not Storage Boxes {#sec-ch02-intuition}
+
+Many introductory books tell beginners: *"A variable is a box that holds a value."* That analogy feels cozy on Day 1—and then breaks painfully in Chapter 7 (when two list names point to the *same* patient list!) and Chapter 28 (when PyTorch tensors share GPU memory).
+
+Let us learn the **true Python mental model** from Day 1.
+
+::: {.callout-note title="Mental Model — Hospital Sample Tubes & Sticky-Note Labels"}
+Picture a busy clinical laboratory shelf holding sealed sample tubes (**Objects in Memory**). Every tube has three permanent traits stamped on it the moment it is created:
+
+1. **A Type** (e.g., `int`, `float`, `str`, `bool`) — what kind of specimen it is.
+2. **A Value** (e.g., `1000`, `10.6`, `"UHC-0042"`, `True`) — the data inside.
+3. **A Memory Address (`id`)** — its exact physical slot on the shelf.
+
+When you write `cases = 1000`, Python does **not** stuff `1000` into a box named `cases`. Instead, Python creates an `int` object holding `1000` on the memory shelf and attaches a **sticky-note name tag** labeled `cases` pointing to that object.
+
+When you later write `cases = cases + 250`, Python computes a **brand-new** `int` object (`1250`) in a new memory slot, peels the `cases` sticky note off `1000`, and sticks it onto `1250`!
+:::
+
+### Variable Naming Rules & Researcher Hygiene
+
+Python enforces four strict grammar rules for variable names:
+
+1. May contain only letters (`a-z`, `A-Z`), digits (`0-9`), and underscores (`_`).
+2. **Cannot start with a digit** (`visit_2` is valid; `2nd_visit` triggers a `SyntaxError`).
+3. **No spaces** (`patient_age` is valid; `patient age` is invalid).
+4. **Cannot reuse Python reserved keywords** (such as `if`, `for`, `class`, `return`, `True`, `None`).
+
+Beyond what Python requires, disciplined researchers follow **PEP 8 `snake_case` + explicit units**:
+
+| Poor Name | Disciplined Researcher Name | Why It Matters |
+| :--- | :--- | :--- |
+| `w = 62.0` | `weight_kg = 62.0` | Prevents kilograms-vs-pounds confusion. |
+| `h = 165` | `height_cm = 165` | Immediately alerts you to divide by `100` for BMI. |
+| `f = True` | `has_fever = True` | `has_` / `is_` prefixes scream *"this is a `bool`!"* |
+| `x1 = 10.4` | `maternal_hb_g_dl = 10.4` | Self-documenting six months later during peer review. |
+
+---
+
+## Stage 2 — Visual Mental Model: Object Creation & Rebinding in Memory {#sec-ch02-mental-model}
+
+Watch what happens inside memory across two lines of Python code:
+
+```python
+cases = 1000
+cases = cases + 250
+```
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.2
+%%| fig-align: center
+flowchart LR
+    subgraph Names["Name Tags (Namespace)"]
+        N1["cases"]
+    end
+    subgraph Memory["Python Object Memory"]
+        O1["Object A (old)<br/>type: int | val: 1000"]
+        O2["Object B (new)<br/>type: int | val: 1250"]
+    end
+    N1 -. "1. Initial binding" .-> O1
+    N1 ==>|"2. Rebound after + 250"| O2
+```
+
+Notice the crucial direction of `=`: in mathematics, $x = x + 1$ is impossible. In Python, `=` is **NOT mathematical equality**—it is the **assignment (binding) arrow**:
+
+> **Golden Rule of Assignment:** Python *always* evaluates the **entire right-hand side first** to produce an object, and *then* attaches the **left-hand side name tag** to that resulting object.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch02-walkthrough}
+
+Open `part_01_python_foundations/ch02_variables_types/01_walkthrough.ipynb` in Colab and run every cell alongside the dissections below.
+
+### Proving Rebinding with `id()` {#sec-ch02-rebinding}
+
+```python
+# A variable is a name tag attached to an object in memory
+cases = 1000
+print("Initial value:", cases, "| Memory ID:", id(cases))
+
+# Rebinding attaches the tag 'cases' to a BRAND NEW integer object (1250)
+cases = cases + 250
+print("Updated value:", cases, "| Memory ID:", id(cases))
+```
+
+When you run this in Colab, you will see **two completely different Memory IDs**—direct experimental proof that `cases` moved to a brand-new `int` object (`1250`) rather than mutating `1000` in place!
+
+---
+
+### The Four Core Primitive Types + `None` {#sec-ch02-types}
+
+Every piece of clinical, demographic, or statistical data you will work with starts as one of five foundational Python types:
+
+```python
+patient_id = "UHC-0042"    # str  (text)
+age_years = 29             # int  (exact whole number)
+hb_g_dl = 10.6             # float (decimal measurement)
+is_anemic = hb_g_dl < 11.0 # bool (True or False)
+follow_up_date = None      # NoneType (explicitly missing / not yet recorded)
+
+print(patient_id,     "->", type(patient_id))
+print(age_years,      "->", type(age_years))
+print(hb_g_dl,        "->", type(hb_g_dl))
+print(is_anemic,      "->", type(is_anemic))
+print(follow_up_date, "->", type(follow_up_date))
+```
+
+**Expected Output:**
+```text
+UHC-0042 -> <class 'str'>
+29 -> <class 'int'>
+10.6 -> <class 'float'>
+True -> <class 'bool'>
+None -> <class 'NoneType'>
+```
+
+::: {.callout-tip title="Researcher's Note — Why None Matters in Biostatistics"}
+Never store a missing lab measurement as `0`! A patient with `hb_g_dl = 0` is clinically dead—and including `0` in an average hemoglobin calculation will severely bias your entire study downward. In pure Python, **`None`** explicitly represents *"no value recorded."* (In Part IV, Pandas extends this idea with `NaN`.)
+:::
+
+---
+
+### Augmented Assignment & Execution Trace Tables {#sec-ch02-augmented}
+
+Updating a running total—such as vaccine vials in stock or cumulative outbreak cases—happens constantly in code. Python provides shorthand **augmented assignment** operators:
+
+| Shorthand | Exact Meaning | Clinic Example |
+| :---: | :--- | :--- |
+| `x += 5` | `x = x + 5` | `waiting_patients += 5` |
+| `x -= 3` | `x = x - 3` | `vaccine_stock -= 85` |
+| `x *= 2` | `x = x * 2` | `buffer_dose *= 1.15` |
+| `x /= 4` | `x = x / 4` | `total_sbp /= 3` |
+
+```python
+vaccine_stock = 500
+vaccine_stock -= 85   # 85 doses administered in morning clinic -> 415
+vaccine_stock += 200  # District cold-chain resupply arrives    -> 615
+print("End-of-day vaccine doses:", vaccine_stock)
+```
+
+**Execution Trace Table (Step-by-Step State):**
+
+| Step | Executed Statement | `vaccine_stock` Before | `vaccine_stock` After |
+| :---: | :--- | :---: | :---: |
+| `1` | `vaccine_stock = 500` | *(unbound)* | `500` |
+| `2` | `vaccine_stock -= 85` | `500` | `415` |
+| `3` | `vaccine_stock += 200` | `415` | `615` |
+
+---
+
+### Explicit Type Conversion (Casting Messy Survey Strings) {#sec-ch02-casting}
+
+When you read raw text files, web forms, or CSV exports from DHS/MICS surveys, **every field arrives as a string (`str`)**—even ages and blood pressures (`"34"`, `"38.5"`, `"24.0"`). Before doing math, you must explicitly cast them:
+
+```python
+# Raw CSV rows always arrive as strings!
+raw_age = "34"
+raw_temp = "38.5"
+raw_months = "24.0"
+
+age_int = int(raw_age)
+temp_float = float(raw_temp)
+months_int = int(float(raw_months))  # Two-step idiom for decimal-strings!
+
+print(age_int, type(age_int))
+print(temp_float, type(temp_float))
+print(months_int, type(months_int))
+```
+
+**Expected Output:**
+```text
+34 <class 'int'>
+38.5 <class 'float'>
+24 <class 'int'>
+```
+
+::: {.callout-warning title="Common Trap — int('24.0') Crashes, and int(3.9) Does NOT Round!"}
+Two casting traps catch almost every beginner:
+
+1. **`int("24.0")` raises `ValueError`:** Python's `int()` expects pure whole-number digits when given a string. Whenever SPSS, Stata, or Pandas exports integer counts with a `.0` suffix (`"24.0"`), always chain **`int(float(raw_months))`**.
+2. **`int(3.9)` evaluates to `3`, NOT `4`:** `int()` **truncates toward zero**—it violently chops off everything after the decimal point. Always use `round(3.9)` when you want nearest-integer rounding!
+:::
+
+---
+
+### Solving Chapter 1's Mystery: Binary Floating-Point Precision {#sec-ch02-floats}
+
+Remember the surprise in Chapter 1's Coding Exam where `420 * 1.15` evaluated to `482.99999999999994`? Here is the exact mathematical reason—and it takes just 60 seconds to understand permanently.
+
+In base-10 (human decimal math), the fraction $\frac{1}{3}$ cannot be written finitely: $0.3333333\ldots$ repeats forever. Computers do not count in base-10; their transistors only have two states (`0` and `1`, **base-2 binary**). In base-2, simple base-10 decimals like $0.1 = \frac{1}{10}$ and $1.15 = \frac{23}{20}$ are repeating infinite binary fractions! Under the universal **IEEE-754 64-bit floating-point standard**, Python stores the closest 53-bit binary approximation.
+
+Run Cell 5 of `01_walkthrough.ipynb` to see this live:
+
+```python
+import math
+
+print("0.1 + 0.2      =", 0.1 + 0.2)
+print("0.1 + 0.2 == 0.3 ->", (0.1 + 0.2) == 0.3)
+print("math.isclose()   ->", math.isclose(0.1 + 0.2, 0.3))
+
+# Paying off Chapter 1's ORS supply mystery:
+print("420 * 1.15       =", 420 * 1.15)
+print("int(420 * 1.15)  =", int(420 * 1.15), "  <-- chops decimal!")
+print("round(420 * 1.15)=", round(420 * 1.15), " <-- exact nearest integer!")
+```
+
+**Expected Output:**
+```text
+0.1 + 0.2      = 0.30000000000000004
+0.1 + 0.2 == 0.3 -> False
+math.isclose()   -> True
+420 * 1.15       = 482.99999999999994
+int(420 * 1.15)  = 482   <-- chops decimal!
+round(420 * 1.15)= 483  <-- exact nearest integer!
+```
+
+::: {.callout-tip title="Researcher's Rule — Never Compare Floats with =="}
+Across statistics, econometrics, and deep learning tests, **never write `a == b` on floats**. Always use **`math.isclose(a, b)`** (or `np.isclose(a, b)` in Part IV), which checks whether two decimals agree within tiny numerical tolerance (default relative tolerance $10^{-9}$).
+:::
+
+---
+
+### Break It On Purpose! (Type & Casting Error Anatomy) {#sec-ch02-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError on Decimal String"}
+```python
+months = int("24.0")
+```
+**Python's Traceback:**
+```text
+ValueError: invalid literal for int() with base 10: '24.0'
+```
+**Diagnosis:** `int()` received the *right type* (`str`), so it is not a `TypeError`—but the *value* inside the string contains a dot `.`, which is not a base-10 integer digit.  
+**Fix:** Convert through `float()` first: `months = int(float("24.0"))`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError on Survey Missing Text"}
+```python
+hb = float("N/A")
+```
+**Python's Traceback:**
+```text
+ValueError: could not convert string to float: 'N/A'
+```
+**Diagnosis:** Real public health CSVs routinely encode missing lab readings as `"N/A"`, `"."`, or `"unknown"`. Calling `float()` directly crashes cleanly rather than inventing a fake number. (In Chapters 4 and 10, we will detect `"N/A"` and convert it safely to `None`!)
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — TypeError on Uncast Comparison"}
+```python
+raw_temp = "38.5"
+has_fever = raw_temp >= 38.0
+```
+**Python's Traceback:**
+```text
+TypeError: '>=' not supported between instances of 'str' and 'float'
+```
+**Diagnosis:** Python refuses to ask whether a text string `"38.5"` is greater than the number `38.0`—saving you from subtle alphabetical sorting bugs (where `"9.0" > "38.5"` would be `True` as text because `'9'` comes after `'3'`!).  
+**Fix:** Cast first: `has_fever = float(raw_temp) >= 38.0`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch02-blueprint}
+
+**Scenario:** A community health worker's mobile form submits a single patient intake row where every field arrives as raw text: `raw_weight_kg = "64.5"`, `raw_height_cm = "168"`, `raw_hb = "10.4"`, `raw_temp_c = "38.2"`. Parse all values into proper numeric types, compute BMI (rounded to 2 decimals), flag fever ($\ge 38.0^\circ\text{C}$) and maternal anemia ($< 11.0\text{ g/dL}$) as booleans, and set `needs_priority_review` to `True` if *either* condition is triggered.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Units:** Four raw `str` fields representing kg, cm, g/dL, and °C.
+2. **Edge Cases & Traps:**
+   - Comparing uncast strings to thresholds raises `TypeError`.
+   - Height arrives in centimeters (`"168"`) and must be divided by `100` before squaring.
+   - Use Python's logical `or` operator so `needs_priority_review` is `True` whenever *at least one* clinical flag is `True`.
+3. **Step-by-Step Algorithm:**
+   1. Cast all four raw strings using `float(...)`.
+   2. Convert `height_cm` $\rightarrow$ `height_m = float(raw_height_cm) / 100`.
+   3. Compute `bmi = round(weight_kg / (height_m ** 2), 2)`.
+   4. Compute `is_febrile = temp_c >= 38.0`, `is_anemic = hb_g_dl < 11.0`, and `needs_priority_review = is_febrile or is_anemic`.
+4. **Verification Plan (Hand Check):**
+   - $1.68^2 = 2.8224$; $64.5 / 2.8224 = 22.8528\ldots \approx 22.85$.
+   - $38.2 \ge 38.0 \Rightarrow \text{True}$; $10.4 < 11.0 \Rightarrow \text{True}$; $\text{True or True} \Rightarrow \text{True}$.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+# Step 1: Raw CSV-like string inputs
+raw_weight_kg = "64.5"
+raw_height_cm = "168"
+raw_hb = "10.4"
+raw_temp_c = "38.2"
+
+# Step 2: Explicit type normalization & unit conversion
+weight_kg = float(raw_weight_kg)
+height_m = float(raw_height_cm) / 100
+hb_g_dl = float(raw_hb)
+temp_c = float(raw_temp_c)
+
+# Step 3: Derived metrics & boolean clinical screening flags
+bmi = round(weight_kg / (height_m ** 2), 2)
+is_febrile = temp_c >= 38.0
+is_anemic = hb_g_dl < 11.0
+needs_priority_review = is_febrile or is_anemic
+
+# Step 4: Clean clinical triage summary
+print(f"BMI: {bmi} kg/m^2 | Febrile: {is_febrile} | Anemic: {is_anemic}")
+print(f"Priority Review Needed: {needs_priority_review}")
+```
+
+**Output:**
+```text
+BMI: 22.85 kg/m^2 | Febrile: True | Anemic: True
+Priority Review Needed: True
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch02-todos}
+
+Open `part_01_python_foundations/ch02_variables_types/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and solve all six exercises below:
+
+- **To-Do 2.1 (Warm-Up — Casting Raw Survey Strings):** Convert `raw_age = "34"`, `raw_hb = "11.8"`, `raw_visits = "4"` into `age_int` (`int`), `hb_float` (`float`), and `visits_int` (`int`).
+- **To-Do 2.2 (Rebinding — Augmented Assignment Queue):** Start `waiting_patients = 12`, then apply `+= 7`, `-= 4`, and `+= 5` so `waiting_patients` equals `20`.
+- **To-Do 2.3 (Boolean Screening — Clinical Triage Flags):** Given `temp_c = 37.2`, `sbp_mmhg = 146`, `hb_g_dl = 10.2`, compute `has_fever` ($\ge 38.0$), `is_hypertensive` ($\ge 140$), and `is_anemic` ($< 11.0$).
+- **To-Do 2.4 (Real Survey Trap — Two-Step Decimal-String Cast):** Convert `raw_months = "24.0"` cleanly into an exact integer `months_int` (`24`) without triggering `ValueError`.
+- **To-Do 2.5 (Scientific Precision — `==` vs. `math.isclose()`):** Given `dose_a = 0.1`, `dose_b = 0.2`, `target_dose = 0.3`, compute `exact_eq = (dose_a + dose_b) == target_dose` and `safe_eq = math.isclose(dose_a + dose_b, target_dose)`.
+- **To-Do 2.6 (Stretch Clinical Math — Pediatric Dosage):** For `weight_kg = 18.5`, `15` mg/kg per dose, `3` doses/day, and `250` mg tablets, compute `daily_mg`, `exact_tablets` (rounded to 2 decimals), and `dose_is_float = isinstance(daily_mg, float)`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch02-test}
+
+Test your understanding on paper before checking Stage 8:
+
+1. **Memory Model:** After running `a = 500`, `b = a`, `a = 600`, what exact value does `b` point to—`500` or `600`? Why?
+2. **Valid Identifiers:** Which of these variable names will trigger a `SyntaxError`: `sbp_1`, `_temp`, `2nd_dose`, `total_cases`, `class`?
+3. **Type Prediction:** What does `type(10 / 2)` return? What about `type(10 // 2)`?
+4. **Truncation vs. Rounding:** What does `int(9.99)` evaluate to? What does `round(9.99)` evaluate to?
+5. **Spot the Error:** What exact exception does `int("18.0")` raise, and how do you fix it in one expression?
+6. **Silent String Comparison Trap:** What does `"9" > "38"` evaluate to in Python, and why is it dangerous when filtering ages?
+7. **Execution Trace Table:** Trace `stock` after each line:
+   ```python
+   stock = 100
+   stock -= 35
+   stock *= 2
+   stock += 10
+   ```
+8. **Missing Value Discipline:** Why is `hb_g_dl = None` safer than `hb_g_dl = 0` for a patient whose blood test was not performed?
+9. **Float Equality:** Why does `(0.1 + 0.2) == 0.3` evaluate to `False`, and what function should replace `==`?
+10. **Boolean Type Check:** What is the difference between `is_anemic = True` and `is_anemic = "True"`?
+
+---
+
+## Stage 7 — Chapter 2 Hands-On Coding Exam (100 Points) {#sec-ch02-exam}
+
+Open `part_01_python_foundations/ch02_variables_types/03_coding_exam.ipynb`, complete all three tasks, and run `tutor.check_exam("ch02", exam_submissions)` to grade your work out of 100 points.
+
+### Exam Task 2.1 (30 Points): DHS Survey Record Normalization
+
+Given raw survey strings `raw_weight_kg = "54.6"`, `raw_height_cm = "156.0"`, and `raw_anc_visits = "4.0"`, compute with exact types:
+
+- `weight_kg` (`float`)
+- `height_m` (`float`, converted from centimeters to meters)
+- `anc_visits` (`int`, parsed cleanly from `"4.0"`)
+- `bmi` (`float`, rounded to 2 decimal places)
+
+### Exam Task 2.2 (35 Points): 4-Day Outbreak Accumulator & Threshold Alert
+
+A district of `population = 250000` records 4 days of dengue cases: `18`, `27`, `34`, `21`. Compute:
+
+- `total_cases` (`int`, accumulated starting from `0` using `+=`)
+- `mean_daily_cases` (`total_cases / 4`)
+- `incidence_per_100k` (`(total_cases / population) * 100000`)
+- `outbreak_alert` (`bool`: `True` if `incidence_per_100k >= 35.0`)
+
+### Exam Task 2.3 (35 Points): Biostatistics $2 \times 2$ Table Odds & Odds Ratio
+
+In a maternal anemia study comparing mothers without iron supplementation (Exposed: `a = 45` anemic, `b = 105` non-anemic) against iron-supplemented mothers (Unexposed: `c = 20` anemic, `d = 130` non-anemic), compute:
+
+- `odds_exposed`: $\frac{a}{b}$ rounded to 4 decimal places
+- `odds_unexposed`: $\frac{c}{d}$ rounded to 4 decimal places
+- `odds_ratio`: exact cross-product $\frac{a \times d}{b \times c}$ rounded to 2 decimal places
+- `elevated_risk`: boolean `odds_ratio > 1.0`
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch02-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `b` still points to **`500`**! Rebinding `a = 600` peels `a`'s sticky note off `500` and moves it to a new object `600`, leaving `b` untouched on `500`.
+2. `2nd_dose` (starts with a digit) and `class` (reserved Python keyword) trigger `SyntaxError`.
+3. `type(10 / 2)` is `<class 'float'>` (`5.0`); `type(10 // 2)` is `<class 'int'>` (`5`).
+4. `int(9.99)` is `9` (truncation); `round(9.99)` is `10`.
+5. Raises `ValueError`; fix with `int(float("18.0"))`.
+6. Evaluates to **`True`**! Strings compare character-by-character alphabetically (`'9'` > `'3'`), so sorting uncast age strings puts a 9-year-old as "older" than a 38-year-old.
+7. `100` $\rightarrow$ `65` $\rightarrow$ `130` $\rightarrow$ `140`.
+8. `0` is a numeric value that silently corrupts means, minimums, and regression models; `None` explicitly signals missingness.
+9. `0.1` and `0.2` are repeating binary fractions in IEEE-754 base-2 (`0.1 + 0.2 == 0.30000000000000004`); replace `==` with `math.isclose(...)`.
+10. `True` is a genuine `bool`; `"True"` is a 4-character text `str` (even `"False"` is truthy when evaluated as a string!).
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import math
+
+# To-Do 2.1
+age_int = int("34")          # 34 (int)
+hb_float = float("11.8")     # 11.8 (float)
+visits_int = int("4")        # 4 (int)
+
+# To-Do 2.2
+waiting_patients = 12
+waiting_patients += 7        # 19
+waiting_patients -= 4        # 15
+waiting_patients += 5        # 20
+
+# To-Do 2.3
+temp_c, sbp_mmhg, hb_g_dl = 37.2, 146, 10.2
+has_fever = temp_c >= 38.0           # False
+is_hypertensive = sbp_mmhg >= 140    # True
+is_anemic = hb_g_dl < 11.0           # True
+
+# To-Do 2.4
+months_int = int(float("24.0"))      # 24 (int)
+
+# To-Do 2.5
+dose_a, dose_b, target_dose = 0.1, 0.2, 0.3
+exact_eq = (dose_a + dose_b) == target_dose            # False
+safe_eq = math.isclose(dose_a + dose_b, target_dose)   # True
+
+# To-Do 2.6
+daily_mg = 18.5 * 15 * 3                     # 832.5
+exact_tablets = round(daily_mg / 250, 2)     # 3.33
+dose_is_float = isinstance(daily_mg, float)  # True
+```
+
+### C. Annotated Solutions — Chapter 2 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 2.1 (30 pts)
+weight_kg = float("54.6")                           # 54.6
+height_m = float("156.0") / 100                     # 1.56
+anc_visits = int(float("4.0"))                      # 4
+bmi = round(weight_kg / (height_m ** 2), 2)         # 22.44
+
+# Exam Task 2.2 (35 pts)
+population = 250000
+total_cases = 0
+total_cases += 18
+total_cases += 27
+total_cases += 34
+total_cases += 21                                   # 100
+mean_daily_cases = total_cases / 4                  # 25.0
+incidence_per_100k = (total_cases / population) * 100000  # 40.0
+outbreak_alert = incidence_per_100k >= 35.0         # True
+
+# Exam Task 2.3 (35 pts)
+a, b = 45, 105
+c, d = 20, 130
+odds_exposed = round(a / b, 4)                      # 0.4286
+odds_unexposed = round(c / d, 4)                    # 0.1538
+odds_ratio = round((a * d) / (b * c), 2)            # 2.79
+elevated_risk = odds_ratio > 1.0                    # True
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 2 Failure Modes
+
+1. **Missing Denominator Parentheses in the Odds Ratio (`(a * d) / b * c`):** Because `/` and `*` share equal precedence and evaluate left-to-right, omitting parentheses around `(b * c)` multiplies by `c` instead of dividing—producing an impossible Odds Ratio of **1,114.29** instead of **2.79**!
+2. **Intermediate Rounding Drift:** Computing `odds_ratio = round(odds_exposed / odds_unexposed, 2)` divides two *already-rounded* numbers (`0.4286 / 0.1538 = 2.7867...`). Always compute statistical ratios from full-precision inputs `(a * d) / (b * c)` and round **only once** at final presentation.
+3. **Confusing Odds with Probability (Risk):** In Task 2.3, the **risk (prevalence)** of anemia in the exposed group is $\frac{45}{45 + 105} = 0.30$ (30%), whereas the **odds** of anemia are $\frac{45}{105} = 0.4286$. Mastering this exact distinction now makes logistic regression coefficients in Chapter 23 effortless!

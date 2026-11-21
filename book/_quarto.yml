@@ -13,7 +13,8 @@ book:
     - part: "Computational Thinking & Python from Absolute Zero"
       chapters:
         - part_01_python_foundations/ch01_first_program.qmd
-    # Subsequent chapters (Ch 2–36) and Appendices (A–D) plug in seamlessly here
+        - part_01_python_foundations/ch02_variables_types.qmd
+    # Subsequent chapters (Ch 3–36) and Appendices (A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:
