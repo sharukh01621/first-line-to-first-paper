@@ -1,0 +1,719 @@
+# Object-Oriented Programming (OOP) for Data Scientists & Researchers {#sec-ch12}
+
+> **Chapter Mission:** Launch **Part III (Engineering Workflow, Architecture & Reproducibility)** by demystifying **Object-Oriented Programming (OOP)** for scientific Python and machine learning. Master classes, `__init__`, `self`, `@dataclass`, dunder protocols (`__repr__`, `__len__`, `__call__`), and object composition—and see firsthand how every Scikit-Learn `.fit()` / `.transform()` estimator and PyTorch `nn.Module` (`forward` / `__call__`) is simply a clean Python class.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch12 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch12 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch12 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Design Python classes using `class`, `__init__`, and `self` to bundle domain data (attributes), validation guards, and behavior (methods) into cohesive scientific objects.
+2. Eliminate boilerplate for structured clinical and experimental records using Python's standard `@dataclass` decorator with automatic `__init__`, `__repr__`, and value equality (`__eq__`).
+3. Implement core **dunder (magic) protocols**—`__repr__`, `__len__`, and `__call__`—so custom research containers and models integrate seamlessly with Python's built-in idioms (`repr(obj)`, `len(cohort)`, `layer(x)`).
+4. Prefer **object composition** ("a cohort *has-a* list of patients") over fragile inheritance hierarchies, while avoiding the notorious **mutable class-attribute leak** (`patients = []` at class scope).
+5. Build from scratch both the **Scikit-Learn Estimator API** (`.fit()` / `.transform()` with trailing-underscore fitted state and zero train/test leakage) and the **PyTorch `nn.Module` pattern** (`__call__` delegating to `.forward()`).
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Researchers Need Classes {#sec-ch12-intuition}
+
+In **Part I** and **Part II**, you mastered pure functions, lists, dictionaries, sets, strings, files, and clean error handling. Pure functions remain the bedrock of scientific code—so when should you reach for a `class`?
+
+Whenever **data and the rules that operate on that data travel together**—or whenever a computation must **remember learned state** between two steps.
+
+Consider two ubiquitous situations in data science and public health research:
+
+- **Validated Domain Records:** A `MaternalPatient` carries `patient_id`, `district`, and `hb_g_dl`, and must *never* accept an impossible sentinel like `999.0` or `-4.5`. Passing loose dicts around lets typos (`"hb_gdl"` vs. `"hb_g_dl"`) and corrupted values slip silently across 500 lines of analysis.
+- **Stateful ML Transformers & Neural Layers:** In Scikit-Learn, `StandardScaler().fit(X_train)` *learns* the training mean $\mu$ and standard deviation $\sigma$, stores them inside the object (`self.mean_`, `self.std_`), and later applies those exact frozen statistics during `.transform(X_test)` without leaking test-set information. In PyTorch, a neural layer holds learned `weight` and `bias` parameters inside `self` and lets you call `layer(x)` like a mathematical function.
+
+::: {.callout-note title="Mental Model — Blueprint Form vs. Filled Patient Charts"}
+Think of a Python `class` as a **standardized hospital intake form template**, and each object (**instance**) as a **filled-out chart for one patient**:
+
+- **The Class (`class ClinicalSample`):** Defines *what fields exist* (`patient_id`, `weight_kg`, `height_cm`) and *what calculations every chart knows how to run* (`.bmi()`). There is only **one** template.
+- **The Instances (`s1`, `s2`):** Calling `ClinicalSample("P-101", 64.5, 168.0)` stamps out a fresh chart in memory. Python runs `__init__(self, ...)` automatically, passing the newly created chart as **`self`** so `s1` and `s2` hold completely independent measurements.
+- **Dunder Protocols (`__repr__`, `__len__`, `__call__`):** Double-underscore methods teach Python's built-in syntax how to talk to your objects—printing a clean chart summary (`repr(s1)`), counting enrolled patients (`len(cohort)`), or invoking a neural layer directly (`layer(x)`).
+:::
+
+### Composition Over Inheritance (The Scientific Engineering Rule)
+
+Introductory OOP textbooks often obsess over deep inheritance chains (`Animal -> Mammal -> Dog`). In real data science and ML engineering, **composition** ("has-a") wins 90% of the time: a `ClinicCohort` *has a* list of `PatientRecord` objects; a `ClinicalRiskPipeline` *has an* imputer, a scaler, and a linear scorer. Small, composable classes are easier to read, test, debug, and swap without breaking downstream experiments.
+
+---
+
+## Stage 2 — Visual Mental Model: Class Blueprint, Live Instances & ML Bridge {#sec-ch12-mental-model}
+
+Trace how a single class blueprint stamps out isolated instances in memory—and how that exact mechanism powers both Scikit-Learn estimators and PyTorch modules:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph Blueprint["Class Blueprint"]
+        C1["class ClinicalSample<br/>__init__(self, id, w, h)<br/>bmi(self) / __repr__(self)"]
+    end
+    subgraph Instances["Live Instances"]
+        I1["s1 (self #1)<br/>id='P-101', w=64.5, h=168"]
+        I2["s2 (self #2)<br/>id='P-102', w=54.6, h=156"]
+    end
+    subgraph MLBridge["ML Framework API"]
+        SK["Estimator API (Sklearn)<br/>fit(X_train) -> stores mean_, std_<br/>transform(X_test) -> new list"]
+        PT["PyTorch Module Pattern<br/>__init__(weight, bias)<br/>__call__(x) -> forward(x)"]
+    end
+    C1 -->|"instantiate"| I1
+    C1 -->|"instantiate"| I2
+    I1 -. "stateful object" .-> SK
+    I2 -. "callable object" .-> PT
+```
+
+Notice the unifying insight at the bottom of the diagram: **Scikit-Learn and PyTorch are not magic syntax.** Every estimator stores learned parameters on `self` (marked by a trailing underscore like `self.mean_` and `self.std_`), and every PyTorch `nn.Module` stores weights on `self` and hooks `model(x)` into `self.forward(x)` via `__call__`.
+
+::: {.callout-warning title="Never Put Mutable Lists Directly in the Class Body!"}
+If you write `patients = []` directly under `class ClinicCohort:` instead of `self.patients = []` inside `def __init__(self, ...):`, Python creates **one shared list on the class blueprint**. Appending to `cohort_dhaka` will silently pollute `cohort_sylhet`! Always initialize mutable containers (`[]`, `{}`) on `self` inside `__init__`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch12-walkthrough}
+
+Open `part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Classes, `__init__`, `self`, and Instance State {#sec-ch12-classes}
+
+```python
+class ClinicalSample:
+    """Anthropometric record pairing patient data with BMI behavior."""
+
+    def __init__(self, patient_id, weight_kg, height_cm):
+        self.patient_id = patient_id
+        self.weight_kg = weight_kg
+        self.height_cm = height_cm
+
+    def bmi(self):
+        height_m = self.height_cm / 100
+        return round(self.weight_kg / (height_m ** 2), 2)
+
+    def __repr__(self):
+        return (
+            f"ClinicalSample(patient_id={self.patient_id!r}, "
+            f"weight_kg={self.weight_kg}, height_cm={self.height_cm})"
+        )
+
+s1 = ClinicalSample("P-101", 64.5, 168.0)
+s2 = ClinicalSample("P-102", 54.6, 156.0)
+
+print(s1)
+print("s1 BMI:", s1.bmi(), "| s2 BMI:", s2.bmi())
+print("Independent objects?", s1 is not s2)
+print("Is ClinicalSample?  ", isinstance(s1, ClinicalSample))
+```
+
+**Expected Output:**
+```text
+ClinicalSample(patient_id='P-101', weight_kg=64.5, height_cm=168.0)
+s1 BMI: 22.85 | s2 BMI: 22.44
+Independent objects? True
+Is ClinicalSample?   True
+```
+
+Trace three vital mechanics here:
+
+- **Automatic `self` binding:** When you write `s1.bmi()`, Python quietly translates the call to `ClinicalSample.bmi(s1)`. That is why `self` is always the first parameter in the method definition, yet you never pass it manually at the call site.
+- **Namespace isolation:** `self.weight_kg` attaches `64.5` to `s1`'s private dictionary (`s1.__dict__`), leaving `s2.weight_kg` completely untouched at `54.6`.
+- **Readable `__repr__`:** Without `__repr__`, printing `s1` displays `<__main__.ClinicalSample object at 0x7f...>`. Using `{self.patient_id!r}` keeps the quotes around string IDs so the output reads like valid Python constructor code.
+
+---
+
+### Structured Scientific Records with `@dataclass` {#sec-ch12-dataclass}
+
+When a class primarily holds typed data fields plus a couple of helper methods, Python's standard-library `@dataclass` decorator automatically generates `__init__`, `__repr__`, and value-based `__eq__`:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class VitalsSnapshot:
+    """Single bedside vitals observation."""
+    patient_id: str
+    temp_c: float
+    sbp_mmhg: int
+
+    def has_fever(self):
+        return self.temp_c >= 38.0
+
+v1 = VitalsSnapshot("P-201", 38.4, 128)
+v2 = VitalsSnapshot(patient_id="P-201", temp_c=38.4, sbp_mmhg=128)
+v3 = VitalsSnapshot("P-202", 36.8, 118)
+
+print("v1:", v1)
+print("v1 has fever?: ", v1.has_fever())
+print("v1 == v2 value:", v1 == v2, "| same object?:", v1 is v2)
+print("v1 == v3 value:", v1 == v3)
+```
+
+**Expected Output:**
+```text
+v1: VitalsSnapshot(patient_id='P-201', temp_c=38.4, sbp_mmhg=128)
+v1 has fever?:  True
+v1 == v2 value: True | same object?: False
+v1 == v3 value: False
+```
+
+Look closely at `v1 == v2` (`True`) versus `v1 is v2` (`False`). On a plain class without `@dataclass`, `==` falls back to memory identity (`is`), so two distinct objects with identical measurements compare unequal! With `@dataclass`, equality compares field values—making unit testing and deduplication effortless.
+
+---
+
+### Dunder Protocols (`__len__`) & Object Composition {#sec-ch12-dunder}
+
+Watch how `WardMonitor` **composes** `VitalsSnapshot` objects and implements `__len__` so Python's built-in `len(ward_a)` works natively:
+
+```python
+class WardMonitor:
+    """Composes VitalsSnapshot objects into an isolated ward tracker."""
+
+    def __init__(self, ward_name):
+        self.ward_name = ward_name
+        self.records = []  # Always create mutable lists inside __init__!
+
+    def add_record(self, snapshot):
+        self.records.append(snapshot)
+
+    def __len__(self):
+        return len(self.records)
+
+    def fever_count(self):
+        return sum(1 for r in self.records if r.has_fever())
+
+ward_a = WardMonitor("Dhaka Ward A")
+ward_b = WardMonitor("Sylhet Ward B")
+
+ward_a.add_record(v1)
+ward_a.add_record(v3)
+
+for w in (ward_a, ward_b):
+    print(f"{w.ward_name}: len={len(w)}, fevers={w.fever_count()}")
+```
+
+**Expected Output:**
+```text
+Dhaka Ward A: len=2, fevers=1
+Sylhet Ward B: len=0, fevers=0
+```
+
+Notice how `WardMonitor` delegates fever logic to `r.has_fever()` instead of re-checking `r.temp_c >= 38.0`. If the hospital updates the fever threshold tomorrow, you change **one line** in `VitalsSnapshot` and every monitor inherits the fix automatically.
+
+---
+
+### The ML Bridge: Mini Scikit-Learn (`fit`/`transform`) & Mini PyTorch (`forward`/`__call__`) {#sec-ch12-ml-bridge}
+
+Now connect pure Python OOP directly to the two frameworks that dominate modern ML research:
+
+```python
+class MiniStandardizer:
+    """Scikit-Learn style transformer: fit on train, transform test."""
+
+    def __init__(self):
+        self.mean_ = None
+        self.std_ = None
+
+    def fit(self, values):
+        mean = sum(values) / len(values)
+        var = sum((x - mean) ** 2 for x in values) / len(values)
+        self.mean_ = mean
+        self.std_ = var ** 0.5
+        return self
+
+    def transform(self, values):
+        if self.std_ == 0:
+            return [0.0 for _ in values]
+        return [round((x - self.mean_) / self.std_, 3) for x in values]
+
+class RiskNeuron:
+    """Mini PyTorch nn.Module pattern: __call__ delegates to forward."""
+
+    def __init__(self, weight, bias):
+        self.weight = weight
+        self.bias = bias
+
+    def forward(self, x):
+        return round(self.weight * x + self.bias, 3)
+
+    def __call__(self, x):
+        return self.forward(x)
+
+train_hb = [10.0, 11.0, 12.0, 13.0]
+test_hb = [9.5, 11.5, 13.5]
+
+scaler = MiniStandardizer().fit(train_hb)
+z_test = scaler.transform(test_hb)
+print("Fitted mean_:", scaler.mean_, "| z_test:", z_test)
+
+neuron = RiskNeuron(weight=-0.8, bias=1.2)
+print("forward(z):  ", [neuron.forward(z) for z in z_test])
+print("neuron(z):   ", [neuron(z) for z in z_test])
+```
+
+**Expected Output:**
+```text
+Fitted mean_: 11.5 | z_test: [-1.789, 0.0, 1.789]
+forward(z):   [2.631, 1.2, -0.231]
+neuron(z):    [2.631, 1.2, -0.231]
+```
+
+Three production ML conventions are packed into those 35 lines:
+
+| ML Convention | Python Mechanism | Why It Matters in Research |
+| :--- | :--- | :--- |
+| Trailing underscore (`mean_`, `std_`) | Attributes set during `.fit()` | Visually distinguishes *learned* state from constructor hyperparameters |
+| `return self` inside `.fit()` | Method chaining | Enables `scaler = MiniStandardizer().fit(train_hb)` cleanly |
+| `__call__(self, x)` $\rightarrow$ `self.forward(x)` | Dunder callable protocol | Powers PyTorch's `y_pred = model(x)` while keeping hooks intact |
+
+---
+
+### Break It On Purpose! (OOP Error Anatomy) {#sec-ch12-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — AttributeError (Accessing an Unfitted Attribute)"}
+```python
+class RawMeanScaler:
+    def fit(self, values):
+        self.mean_ = sum(values) / len(values)
+        return self
+
+unfitted_scaler = RawMeanScaler()
+print(unfitted_scaler.mean_)
+```
+**Python's Traceback:**
+```text
+AttributeError: 'RawMeanScaler' object has no attribute 'mean_'
+```
+**Diagnosis:** `mean_` is only created inside `.fit()`, so reading it on a freshly instantiated object raises `AttributeError`.  
+**Fix:** Initialize `self.mean_ = None` inside `__init__`, and guard `.transform()` with `if self.mean_ is None: raise RuntimeError("Call fit() first.")` (mirroring Scikit-Learn's `NotFittedError`).
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — TypeError (Forgetting `self` in a Method)"}
+```python
+class Sample:
+    def __init__(self, weight_kg):
+        self.weight_kg = weight_kg
+
+    def double():
+        return self.weight_kg * 2
+
+sample = Sample(60.0)
+print(sample.double())
+```
+**Python's Traceback:**
+```text
+TypeError: Sample.double() takes 0 positional arguments but 1 was given
+```
+**Diagnosis:** Calling `sample.double()` automatically passes `sample` as the 1st positional argument—even though the parentheses looked empty! Because `def double():` forgot `self`, Python reports "takes 0 positional arguments but 1 was given."  
+**Fix:** Declare `def double(self):`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Domain Guard Inside `__init__`)"}
+```python
+class GuardedPatient:
+    def __init__(self, patient_id, hb_g_dl):
+        if not (2.0 <= hb_g_dl <= 25.0):
+            raise ValueError(
+                f"Invalid hb_g_dl={hb_g_dl}: expected [2.0, 25.0]"
+            )
+        self.patient_id = patient_id
+        self.hb_g_dl = hb_g_dl
+
+bad_patient = GuardedPatient("P-999", 999.0)
+```
+**Python's Traceback:**
+```text
+ValueError: Invalid hb_g_dl=999.0: expected [2.0, 25.0]
+```
+**Diagnosis:** This is a **deliberate fail-fast boundary guard**—far better than silently letting sentinel `999.0` corrupt a cohort mean or regression fit!  
+**Fix:** Catch `ValueError` in your ingestion pipeline to quarantine malformed rows into an audit log.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch12-blueprint}
+
+**Scenario:** A clinical ML team needs a reproducible hemoglobin risk-scoring pipeline that (1) learns the training mean while skipping `None` and sentinel `999`, (2) standardizes imputed training values to $z$-scores, and (3) scores unseen test patients through a callable linear neuron—without mutating either input list or leaking test statistics into training.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Component Decomposition (Composition Architecture):**
+
+   - `SentinelMeanImputer`: learns `self.mean_` on valid training values (skipping `None`/`999`); guards against unfitted `.transform()` with `RuntimeError`.
+   - `MiniStandardizer`: learns `self.mean_` and population `self.std_` on imputed training values.
+   - `RiskNeuron`: stores `(weight, bias)` and computes `weight * z + bias` via `__call__` $\rightarrow$ `forward`.
+   - `ClinicalRiskPipeline`: composes all three components inside `__init__` (`self.imputer`, `self.scaler`, `self.scorer`).
+
+2. **Anti-Leakage & Purity Contract:**
+
+   - `.fit(raw_train)` fits the imputer on `raw_train`, transforms `raw_train` into `clean_train`, and fits `self.scaler` strictly on `clean_train`.
+   - `.predict_scores(raw_values)` calls `.transform()` (never `.fit()`!) on both preprocessors and returns a new list of risk scores, leaving `raw_values` completely untouched.
+
+3. **Verification Plan (Hand Check):**
+
+   - `raw_train = [10.4, None, 11.8, 999, 13.2]` $\rightarrow$ valid `[10.4, 11.8, 13.2]`, learned `mean_ = 11.8`, imputed train `[10.4, 11.8, 11.8, 11.8, 13.2]`.
+   - `raw_test = [9.8, None, 12.5]` $\rightarrow$ imputed `[9.8, 11.8, 12.5]` $\rightarrow$ `None` maps to $z = 0.0$ $\rightarrow$ score equals `bias = 0.5`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+class SentinelMeanImputer:
+    """Learns clean mean on training data and fills None/999 safely."""
+
+    def __init__(self):
+        self.mean_ = None
+
+    def fit(self, values):
+        valid = [v for v in values if v is not None and v != 999]
+        self.mean_ = round(sum(valid) / len(valid), 2)
+        return self
+
+    def transform(self, values):
+        if self.mean_ is None:
+            raise RuntimeError("Fit imputer before calling transform().")
+        return [
+            self.mean_ if (v is None or v == 999) else v
+            for v in values
+        ]
+
+class ClinicalRiskPipeline:
+    """Composes an imputer, standardizer, and callable linear scorer."""
+
+    def __init__(self, weight=-1.5, bias=0.5):
+        self.imputer = SentinelMeanImputer()
+        self.scaler = MiniStandardizer()
+        self.scorer = RiskNeuron(weight=weight, bias=bias)
+
+    def fit(self, raw_train):
+        clean_train = self.imputer.fit(raw_train).transform(raw_train)
+        self.scaler.fit(clean_train)
+        return self
+
+    def predict_scores(self, raw_values):
+        imputed = self.imputer.transform(raw_values)
+        scaled = self.scaler.transform(imputed)
+        return [self.scorer(z) for z in scaled]
+
+raw_train = [10.4, None, 11.8, 999, 13.2]
+raw_test = [9.8, None, 12.5]
+
+pipe = ClinicalRiskPipeline(weight=-1.5, bias=0.5).fit(raw_train)
+scores = pipe.predict_scores(raw_test)
+
+print("Train mean_ learned:", pipe.imputer.mean_)
+print("Test risk scores:   ", scores)
+print("Raw test untouched: ", raw_test)
+```
+
+**Output:**
+```text
+Train mean_ learned: 11.8
+Test risk scores:    [3.888, 0.5, -0.687]
+Raw test untouched:  [9.8, None, 12.5]
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch12-todos}
+
+Open `part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six classes below. Pass each **class name (without parentheses!)** to `tutor.check(...)`—for example, `tutor.check("ch12_todo_01", PatientRecord)`.
+
+- **To-Do 12.1 (Class Anatomy & `__repr__` — `PatientRecord`):** Implement `__init__(self, patient_id, weight_kg, height_cm)`, `.bmi(self)` (converting cm to m and rounding to 2 decimals), and a custom `__repr__(self)` including `'PatientRecord'` and `self.patient_id`.
+- **To-Do 12.2 (Composition & `__len__` — `ClinicCohort`):** Implement `__init__(self, name)` with an instance-owned `self.patients = []`, `.add_patient(self, patient)`, `__len__(self)`, and `.mean_bmi(self)` rounded to 2 decimals (or `None` if empty).
+- **To-Do 12.3 (Structured Records — `@dataclass LabResult`):** Define `@dataclass class LabResult` with typed fields `patient_id: str` and `hb_g_dl: float`, plus `.is_anemic(self)` returning `bool` (`self.hb_g_dl < 11.0`).
+- **To-Do 12.4 (Scikit-Learn Estimator — `MeanImputer`):** Implement `.fit(self, values)` skipping `None` and `999` (learning `self.mean_` rounded to 2 decimals) and `.transform(self, values)` returning a new list with `None`/`999` replaced by `self.mean_` without mutating input.
+- **To-Do 12.5 (Scikit-Learn Scaling — `MinMaxScaler`):** Implement `.fit(self, values)` and `.transform(self, values)` scaling to $[0.0, 1.0]$ rounded to 4 decimals, returning `0.0` for all items when `max == min`, without mutating input.
+- **To-Do 12.6 (Mini PyTorch Layer — `LinearLayer`):** Implement `__init__(self, weight, bias)`, `.forward(self, x)` returning `self.weight * x + self.bias`, and `__call__(self, x)` delegating directly to `self.forward(x)`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch12-test}
+
+Trace every OOP snippet carefully on paper before checking Stage 8:
+
+1. **Hidden `self` Argument:** If `class Meter` defines `def read(): return 1`, why does `Meter().read()` raise `TypeError: Meter.read() takes 0 positional arguments but 1 was given`?
+2. **Mutable Class Attribute Trap:** What does `print(len(b.items))` output here, and why?
+   ```python
+   class Bag:
+       items = []
+       def add(self, x):
+           self.items.append(x)
+
+   a, b = Bag(), Bag()
+   a.add("sample_1")
+   print(len(b.items))
+   ```
+3. **Plain Class vs. `@dataclass` Equality:** Given two instances `r1` and `r2` constructed with identical arguments `("P-01", 10.4)`, what does `r1 == r2` return for a plain `class` (without `__eq__`) versus a `@dataclass`?
+4. **Dunder `__len__` Protocol:** You create a container `cohort = ClinicCohort("Dhaka")` storing `self.patients = [p1, p2, p3]`, but forget to implement `__len__`. What exact exception does `len(cohort)` raise?
+5. **Train/Test Data Leakage:** Why is calling `scaler.fit(X_test)` inside your evaluation script a severe scientific bug, and what method should you call on `X_test` instead?
+6. **Trailing-Underscore Convention:** In Scikit-Learn estimators like `ZScoreScaler`, what is the difference between a hyperparameter set in `__init__` (e.g., `self.clip`) and an attribute ending with `_` (e.g., `self.mean_`, `self.std_`)?
+7. **PyTorch `__call__` Delegation:** Given `layer = LinearLayer(2.0, 5.0)`, why does `layer(3.0)` return `11.0`, and why should `__call__` call `self.forward(x)` rather than copy-pasting `self.weight * x + self.bias`?
+8. **Population vs. Sample Standard Deviation:** For `[10.0, 12.0, 14.0, 16.0]`, the mean is $\mu = 13.0$ and squared deviations sum to $20.0$. What is the **population** standard deviation $\sigma$ (dividing by $N = 4$), and what is the $z$-score of $x = 13.0$?
+9. **Unfitted Guard:** If `ZScoreScaler.__init__` sets `self.mean_ = None` and `self.std_ = None`, what happens if you forget the `if self.mean_ is None:` guard and immediately run `ZScoreScaler().transform([10.0])`?
+10. **Composition vs. Inheritance:** Should `EpidemicRegistry` inherit from `MaternalPatient` (`class EpidemicRegistry(MaternalPatient):`) or **compose** `MaternalPatient` objects inside `self.patients`? Explain in one sentence.
+
+---
+
+## Stage 7 — Chapter 12 Hands-On Coding Exam (100 Points) {#sec-ch12-exam}
+
+Open `part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb`, implement all three classes, and run `tutor.check_exam("ch12", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 12.1 (30 Points): Validated `MaternalPatient`
+
+Build `MaternalPatient(patient_id, district, hb_g_dl)`:
+
+- In `__init__`, validate that `2.0 <= hb_g_dl <= 25.0` (inclusive). Raise `ValueError` for any out-of-range value.
+- Store `self.patient_id`, `self.district`, and `self.hb_g_dl`.
+- Implement `.anemia_grade(self)` returning `"Severe"` (`< 7.0`), `"Moderate"` (`< 10.0`), `"Mild"` (`< 11.0`), or `"Normal"` (`>= 11.0`).
+- Implement a custom `__repr__(self)` containing `'MaternalPatient'` and `self.patient_id`.
+
+### Exam Task 12.2 (35 Points): Production `ZScoreScaler`
+
+Build `ZScoreScaler` following the Scikit-Learn estimator pattern:
+
+- `__init__(self)` initializes `self.mean_ = None` and `self.std_ = None`.
+- `.fit(self, values)` computes and stores `self.mean_` and **population** standard deviation `self.std_` (dividing variance by $N = \text{len}(\text{values})$), without mutating `values`, and returns `self`.
+- `.transform(self, values)` raises `RuntimeError` if called before `.fit()`, returns `[0.0 for _ in values]` when `self.std_ == 0`, and otherwise returns a **new list** with `round((x - self.mean_) / self.std_, 4)` without mutating `values`.
+
+### Exam Task 12.3 (35 Points): Composed `EpidemicRegistry`
+
+Build `EpidemicRegistry`, a typed composition container storing `MaternalPatient` objects:
+
+- `__init__(self)` initializes an instance-owned `self.patients = []`.
+- `__len__(self)` returns `len(self.patients)`.
+- `.add(self, patient)` raises `TypeError` if `not isinstance(patient, MaternalPatient)`, else appends `patient`.
+- `.anemia_prevalence_pct(self)` returns the percentage of enrolled patients whose `.anemia_grade() != "Normal"` rounded to **1 decimal place**, or `None` if empty.
+- `.count_by_district(self)` returns a `dict` mapping each district name to its patient count (`{}` if empty).
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch12-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Python automatically passes the instance (`Meter()`) as the first positional argument (`self`) to every bound method call; `def read():` accepted 0 parameters, causing `TypeError`.
+2. Prints **`1`** — `items = []` lives on the `Bag` class blueprint, so `a` and `b` share the exact same list! Moving `self.items = []` inside `__init__` fixes the leak.
+3. For a plain class, `r1 == r2` returns **`False`** (compares object identity `is`); for a `@dataclass`, `r1 == r2` returns **`True`** (compares field values).
+4. **`TypeError: object of type 'ClinicCohort' has no len()`**.
+5. Calling `.fit(X_test)` leaks test-set distribution statistics ($\mu_{\text{test}}, \sigma_{\text{test}}$) into model preprocessing, inflating evaluation metrics artificially. Always call `.fit(X_train)` once, then `.transform(X_test)`.
+6. Constructor hyperparameters are chosen by the researcher *before* seeing data; trailing-underscore attributes (`mean_`, `std_`) are *learned from data* during `.fit()`.
+7. `layer(3.0)` invokes `LinearLayer.__call__(layer, 3.0)`, which calls `self.forward(3.0)` $\rightarrow 2.0 \times 3.0 + 5.0 = 11.0$. Delegating prevents duplicated math and allows subclasses or frameworks (like PyTorch hooks) to wrap `forward` cleanly.
+8. $\sigma = \sqrt{20.0 / 4} = \sqrt{5.0} \approx 2.2361$, and $z = (13.0 - 13.0) / \sigma = 0.0$.
+9. Computing `x - self.mean_` attempts `10.0 - None`, raising a confusing **`TypeError`** instead of a clear `RuntimeError`.
+10. **Compose** `MaternalPatient` objects inside `self.patients`: a registry *has* patients ("has-a"), it *is not* a patient ("is-a").
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+from dataclasses import dataclass
+
+# To-Do 12.1
+class PatientRecord:
+    """Clinical anthropometric record for a single patient."""
+
+    def __init__(self, patient_id, weight_kg, height_cm):
+        self.patient_id = patient_id
+        self.weight_kg = weight_kg
+        self.height_cm = height_cm
+
+    def bmi(self):
+        height_m = self.height_cm / 100
+        return round(self.weight_kg / (height_m ** 2), 2)
+
+    def __repr__(self):
+        return (
+            f"PatientRecord(patient_id={self.patient_id!r}, "
+            f"weight_kg={self.weight_kg}, height_cm={self.height_cm})"
+        )
+
+# To-Do 12.2
+class ClinicCohort:
+    """Container managing a cohort of patient records."""
+
+    def __init__(self, name):
+        self.name = name
+        self.patients = []
+
+    def add_patient(self, patient):
+        self.patients.append(patient)
+
+    def __len__(self):
+        return len(self.patients)
+
+    def mean_bmi(self):
+        if not self.patients:
+            return None
+        total_bmi = sum(p.bmi() for p in self.patients)
+        return round(total_bmi / len(self.patients), 2)
+
+# To-Do 12.3
+@dataclass
+class LabResult:
+    """Structured clinical hemoglobin reading using @dataclass."""
+
+    patient_id: str
+    hb_g_dl: float
+
+    def is_anemic(self):
+        return self.hb_g_dl < 11.0
+
+# To-Do 12.4
+class MeanImputer:
+    """Scikit-Learn style mean imputer skipping None and 999."""
+
+    def __init__(self):
+        self.mean_ = None
+
+    def fit(self, values):
+        valid = [v for v in values if v is not None and v != 999]
+        self.mean_ = round(sum(valid) / len(valid), 2)
+        return self
+
+    def transform(self, values):
+        return [
+            self.mean_ if (v is None or v == 999) else v
+            for v in values
+        ]
+
+# To-Do 12.5
+class MinMaxScaler:
+    """Scikit-Learn style [0, 1] feature scaler with constant guard."""
+
+    def __init__(self):
+        self.min_ = None
+        self.max_ = None
+
+    def fit(self, values):
+        self.min_ = min(values)
+        self.max_ = max(values)
+        return self
+
+    def transform(self, values):
+        span = self.max_ - self.min_
+        if span == 0:
+            return [0.0 for _ in values]
+        return [round((x - self.min_) / span, 4) for x in values]
+
+# To-Do 12.6
+class LinearLayer:
+    """Mini PyTorch-style callable linear layer."""
+
+    def __init__(self, weight, bias):
+        self.weight = weight
+        self.bias = bias
+
+    def forward(self, x):
+        return self.weight * x + self.bias
+
+    def __call__(self, x):
+        return self.forward(x)
+```
+
+### C. Annotated Solutions — Chapter 12 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 12.1 (30 pts)
+class MaternalPatient:
+    """Validated maternal hemoglobin record with WHO anemia grading."""
+
+    def __init__(self, patient_id, district, hb_g_dl):
+        if not (2.0 <= hb_g_dl <= 25.0):
+            raise ValueError(
+                f"hb_g_dl must be in [2.0, 25.0], got {hb_g_dl}"
+            )
+        self.patient_id = patient_id
+        self.district = district
+        self.hb_g_dl = hb_g_dl
+
+    def anemia_grade(self):
+        if self.hb_g_dl < 7.0:
+            return "Severe"
+        if self.hb_g_dl < 10.0:
+            return "Moderate"
+        if self.hb_g_dl < 11.0:
+            return "Mild"
+        return "Normal"
+
+    def __repr__(self):
+        return (
+            f"MaternalPatient(patient_id={self.patient_id!r}, "
+            f"district={self.district!r}, hb_g_dl={self.hb_g_dl})"
+        )
+
+# Exam Task 12.2 (35 pts)
+class ZScoreScaler:
+    """Standardizes features to z-scores using population mean & std."""
+
+    def __init__(self):
+        self.mean_ = None
+        self.std_ = None
+
+    def fit(self, values):
+        mean = sum(values) / len(values)
+        var = sum((x - mean) ** 2 for x in values) / len(values)
+        self.mean_ = mean
+        self.std_ = var ** 0.5
+        return self
+
+    def transform(self, values):
+        if self.mean_ is None or self.std_ is None:
+            raise RuntimeError("ZScoreScaler must be fitted first.")
+        if self.std_ == 0:
+            return [0.0 for _ in values]
+        return [
+            round((x - self.mean_) / self.std_, 4)
+            for x in values
+        ]
+
+# Exam Task 12.3 (35 pts)
+class EpidemicRegistry:
+    """Typed composition registry for MaternalPatient surveillance."""
+
+    def __init__(self):
+        self.patients = []
+
+    def __len__(self):
+        return len(self.patients)
+
+    def add(self, patient):
+        if not isinstance(patient, MaternalPatient):
+            raise TypeError("Expected a MaternalPatient instance.")
+        self.patients.append(patient)
+
+    def anemia_prevalence_pct(self):
+        if not self.patients:
+            return None
+        anemic = sum(
+            1 for p in self.patients if p.anemia_grade() != "Normal"
+        )
+        return round((anemic / len(self.patients)) * 100, 1)
+
+    def count_by_district(self):
+        counts = {}
+        for p in self.patients:
+            counts[p.district] = counts.get(p.district, 0) + 1
+        return counts
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 12 Failure Modes
+
+1. **Shared Mutable Class Attributes (`patients = []` Outside `__init__`):** Declaring a list or dict at the class body level makes every instance silently share one memory container. Always create mutable state inside `__init__` (`self.patients = []`).
+2. **Re-Fitting Inside `.transform()` (Silent Data Leakage):** Computing `min(values)`, `max(values)`, or `mean` inside `.transform()` instead of reusing `self.min_`, `self.max_`, or `self.mean_` breaks the fundamental train/test boundary in machine learning.
+3. **Forgetting `self.` When Reading or Writing Attributes:** Writing `mean_ = sum(valid) / len(valid)` inside `.fit()` creates a temporary local variable that vanishes as soon as `.fit()` returns, leaving `self.mean_` permanently stuck at `None`!
+
+---
+
+::: {.callout-note title="Up Next — Modules, Packages & Reproducible Research Environments"}
+You can now design clean, composable classes that mirror Scikit-Learn and PyTorch architectures. Putting 1,000 lines of classes inside a single notebook cell, however, quickly turns messy and hard to share with co-authors. In **Chapter 13**, you will organize your classes and functions into **importable Python modules and packages**, manage isolated virtual environments, and structure a publication-ready research repository.
+:::

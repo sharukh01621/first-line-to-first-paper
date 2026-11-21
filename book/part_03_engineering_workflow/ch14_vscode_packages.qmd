@@ -1,0 +1,698 @@
+# Professional Engineering with VS Code, Virtual Environments, Modules, and Packages {#sec-ch14}
+
+> **Chapter Mission:** Graduate from single-notebook prototypes to installable, peer-review-ready Python software. Master VS Code interpreter selection and breakpoint debugging, isolated virtual environments (`venv` and `uv`), exact dependency pinning (`requirements.txt` and `pyproject.toml`), the standard `src/` package layout, `if __name__ == "__main__":` module guards, `.env` secret hygiene, and testable command-line interfaces with `argparse`.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch14 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch14 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch14 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Configure **VS Code** with a project-specific Python interpreter and inspect live program state with breakpoints, step-over controls, and the Variables/Call Stack panels.
+2. Create isolated project environments with `python -m venv .venv` or `uv venv`, explain why exact version pins (`==`) prevent silent numerical drift, and parse or audit `requirements.txt` files programmatically.
+3. Refactor exploratory Jupyter notebook cells into reusable `.py` modules protected by `if __name__ == "__main__":` entry guards.
+4. Structure and validate a modern **`src/`-layout Python package** (`pyproject.toml`, `src/<pkg>/__init__.py`, `tests/`) and normalize messy project titles into valid snake_case Python import names.
+5. Separate local API keys and database URLs from source code using gitignored `.env` files parsed safely with `split("=", 1)`.
+6. Build testable command-line tools using `argparse.ArgumentParser` and explicit `parse_args(argv)` lists, and diagnose `ModuleNotFoundError`, `SystemExit`, and malformed `.env` `ValueError` failures.
+
+---
+
+## Stage 1 — First-Principles Intuition: Escaping the Single-Notebook Cliff {#sec-ch14-intuition}
+
+Jupyter notebooks and Google Colab are unmatched for *exploration*: loading a fresh maternal-health CSV, plotting hemoglobin histograms, and checking edge cases interactively. Yet every growing research project eventually hits the **Single-Notebook Cliff**:
+
+- Cell 47 silently depends on a variable you mutated back in Cell 12 and forgot to re-run.
+- Copy-pasting your triage helper across three manuscript notebooks creates three slightly incompatible versions of the same clinical cutoff.
+- Six months later, upgrading `pandas` globally for a new project breaks your published paper's analysis script—the dreaded *"it worked on my laptop last semester"* failure.
+
+Professional research software engineering solves all three problems by separating **exploration** (thin notebooks) from **reusable logic** (importable `.py` modules inside a `src/` package), **execution** (typed `argparse` CLIs), and **isolation** (one virtual environment per project).
+
+::: {.callout-note title="Mental Model — The Sterile Clinical Laboratory Bench"}
+Think of a professional Python project like a biosafety-certified wet lab:
+
+1. **Sealed Reagent Cabinet (`.venv` / `uv`):** Every study gets its own private shelf of exact reagent concentrations (`pandas==2.2.0`, `numpy==1.26.4`). Updating a package in Project B can never contaminate Project A.
+2. **Standard Operating Procedures (`src/<pkg>/`):** Validated helper functions live in clean `.py` modules with unit tests (`tests/`), while notebooks stay short and import directly from your package (`from mch_tools import classify_hb`).
+3. **Lab Instrument Dial (`argparse` CLI):** Instead of editing hardcoded filenames inside a script before every batch run, you pass typed flags (`--input dhaka.csv --threshold 11.0`) from the terminal—creating an auditable command history.
+4. **Locked Safe (`.env`):** Private tokens, clinic server credentials, and local paths stay in a gitignored `.env` file, never committed into public GitHub repositories.
+5. **Microscope Under Glass (VS Code Debugger):** Rather than scattering temporary `print()` statements everywhere, VS Code breakpoints pause execution mid-flight so you can inspect every local variable and step line-by-line.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Notebook-to-Package & Environment Isolation {#sec-ch14-mental-model}
+
+Trace how an exploratory notebook matures into an installable `src/` package running inside an isolated virtual environment and VS Code debugger:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.6
+%%| fig-align: center
+flowchart TD
+    subgraph S1["1. Explore"]
+        N1["Jupyter / Colab Notebook<br/>Prototype & Inspect"]
+    end
+    subgraph S2["2. src/ Package"]
+        direction LR
+        P1["pyproject.toml<br/>& requirements.txt"]
+        P2["src/pkg/<br/>__init__.py & cli.py"]
+        P3["tests/<br/>& .env (gitignored)"]
+        P1 --- P2 --- P3
+    end
+    subgraph S3["3. Isolated .venv"]
+        direction LR
+        V1["Project .venv / uv<br/>Pinned Packages"]
+        V2["VS Code Debugger<br/>Breakpoints & CLI"]
+        V1 --> V2
+    end
+    S1 -->|"Extract Functions"| S2
+    S2 -->|"pip install -e ."| S3
+```
+
+Notice why the **`src/` layout** is recommended by the Python Packaging Authority (PyPA):
+
+- **No Accidental Local Imports:** If your package lives directly in the repository root (`./mch_tools/`), Python can import the uninstalled local folder by mistake and hide packaging bugs. Placing code inside `src/mch_tools/` forces you to install the package properly (`pip install -e .` or `uv pip install -e .`) inside `.venv`—guaranteeing your tests verify the exact package your collaborators will install.
+- **Exact Reproducibility Boundary:** A project's `pyproject.toml` declares its build metadata and broad compatibility, while a pinned lockfile (`requirements.txt` with `==` or `uv.lock`) freezes every exact package version for manuscript replication.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch14-walkthrough}
+
+Open `part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb` in Colab and run every cell alongside the dissections below.
+
+### Working Professionally in VS Code: Interpreters & Breakpoints {#sec-ch14-vscode}
+
+When you open your project folder locally in **Visual Studio Code**, follow this three-step engineering checklist before writing a single line:
+
+1. **Select the Virtual Environment Interpreter:** Press `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`), run **`Python: Select Interpreter`**, and pick `.venv/bin/python` (Windows: `.venv\Scripts\python.exe`). Check the bottom-right status bar to confirm VS Code is bound to your project's `.venv`, not the global system Python.
+2. **Use Breakpoints Instead of `print()` Spam:** Click the left gutter next to any line number to place a red **breakpoint dot**, then press `F5` (`Python Debugger: Current File`). Execution pauses *before* that line runs so you can inspect every local variable in the **Variables** pane, evaluate expressions in the **Debug Console**, and step through code with **Step Over (`F10`)** or **Step Into (`F11`)**.
+3. **Create & Activate `.venv` from the Integrated Terminal (`Ctrl+``):**
+
+```bash
+# Built-in standard-library venv (works everywhere)
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -e .
+
+# Ultra-fast modern alternative with uv
+uv venv .venv
+uv pip install -e .
+```
+
+::: {.callout-tip title="Why `pip install -e .` (Editable Install) Changes Everything"}
+Passing `-e` ("editable mode") links your `src/<pkg>/` folder directly into `.venv/lib/.../site-packages`. Any edit you save in VS Code takes effect immediately in every notebook, CLI command, and `pytest` run—without ever re-running `pip install` or hacking `sys.path`.
+:::
+
+---
+
+### Notebook-to-Module Refactoring & `if __name__ == "__main__":` {#sec-ch14-modules}
+
+When you extract a tested function out of a notebook into a `.py` file, wrap any demo or CLI execution inside `if __name__ == "__main__":`. Python sets `__name__` to `"__main__"` **only** when the file is executed directly (`python triage_utils.py`), and to the module's own name (`"triage_utils"`) whenever another file imports it:
+
+```python
+import importlib.util
+from pathlib import Path
+import tempfile
+
+module_code = '''
+def classify_hb(hb_g_dl, cutoff=11.0):
+    """Return 'Anemic' if hb_g_dl < cutoff else 'Normal'."""
+    return "Anemic" if hb_g_dl < cutoff else "Normal"
+
+if __name__ == "__main__":
+    print("CLI smoke test:", classify_hb(10.2))
+'''
+
+with tempfile.TemporaryDirectory() as tmp:
+    mod_path = Path(tmp) / "triage_utils.py"
+    mod_path.write_text(module_code.strip() + "\n", encoding="utf-8")
+
+    spec = importlib.util.spec_from_file_location(
+        "triage_utils", mod_path
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    print("Imported __name__:", mod.__name__)
+    print("Hb 10.4 ->", mod.classify_hb(10.4))
+    print("Hb 12.1 ->", mod.classify_hb(12.1))
+```
+
+**Expected Output:**
+```text
+Imported __name__: triage_utils
+Hb 10.4 -> Anemic
+Hb 12.1 -> Normal
+```
+
+Notice that `"CLI smoke test: Anemic"` did **not** print on import! Because `mod.__name__` evaluated to `"triage_utils"`, the `if __name__ == "__main__":` guard kept the import completely side-effect-free.
+
+---
+
+### Virtual Environments, `sys.prefix`, & Dependency Files {#sec-ch14-venv}
+
+Python itself knows whether it is running inside an isolated virtual environment by comparing `sys.prefix` against `sys.base_prefix`. Meanwhile, auditing `requirements.txt` lets you verify whether every dependency is pinned with `==` rather than loose ranges (`>=`, `<=`, `~=`) or bare names:
+
+```python
+from pathlib import Path
+import sys
+import tempfile
+
+in_venv = sys.prefix != sys.base_prefix
+print("Python version:", sys.version.split()[0])
+print("Inside virtual env:", in_venv)
+
+req_text = (
+    "# Pinned cohort pipeline dependencies\n"
+    "pandas==2.2.0\n"
+    "numpy>=1.26\n"
+    "scipy\n"
+)
+
+with tempfile.TemporaryDirectory() as tmp:
+    req_path = Path(tmp) / "requirements.txt"
+    req_path.write_text(req_text, encoding="utf-8")
+    reqs = {}
+    with open(req_path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            for op in ("==", ">=", "<=", "~="):
+                if op in line:
+                    pkg, ver = line.split(op, 1)
+                    reqs[pkg.strip().lower()] = op + ver.strip()
+                    break
+            else:
+                reqs[line.lower()] = ""
+    print("Parsed requirements:", reqs)
+```
+
+**Expected Output (version and venv status depend on your runtime):**
+```text
+Python version: 3.12.x
+Inside virtual env: True
+Parsed requirements: {'pandas': '==2.2.0', 'numpy': '>=1.26', 'scipy': ''}
+```
+
+Key mechanics in the parser loop:
+
+- **Operator preservation (`op + ver.strip()`):** Calling `line.split(op, 1)` consumes `op`, so concatenating `op` back keeps `"==2.2.0"` distinct from `">=2.2.0"`.
+- **`for ... else:` idiom:** Python runs the `else:` block *only* if the `for op` loop finishes without hitting `break`—catching bare package names like `"scipy"` cleanly.
+
+---
+
+### Standard `src/` Package Layout & `.env` Configuration {#sec-ch14-src-env}
+
+A minimal, production-ready scientific package contains `pyproject.toml`, `src/<pkg>/__init__.py`, and `tests/`, while keeping local tokens in a gitignored `.env` file:
+
+```python
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    (root / "src" / "mch_tools").mkdir(parents=True)
+    (root / "tests").mkdir()
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "mch_tools"\nversion = "0.1.0"\n',
+        encoding="utf-8",
+    )
+    (root / "src" / "mch_tools" / "__init__.py").write_text(
+        '__version__ = "0.1.0"\n', encoding="utf-8"
+    )
+    env_path = root / ".env"
+    env_path.write_text(
+        '# Local secrets (never commit to Git!)\n'
+        'STUDY_ID="MCH-BD-2026"\n'
+        "API_TOKEN='demo-key-99'\n",
+        encoding="utf-8",
+    )
+
+    has_pyp = (root / "pyproject.toml").is_file()
+    has_init = (root / "src" / "mch_tools" / "__init__.py").is_file()
+    has_tests = (root / "tests").is_dir()
+    print("Layout valid:", has_pyp and has_init and has_tests)
+
+    env_vars = {}
+    for raw in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, val = line.split("=", 1)
+        val = val.strip()
+        if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+            val = val[1:-1]
+        env_vars[key.strip()] = val
+    print("Loaded .env keys:", env_vars)
+```
+
+**Expected Output:**
+```text
+Layout valid: True
+Loaded .env keys: {'STUDY_ID': 'MCH-BD-2026', 'API_TOKEN': 'demo-key-99'}
+```
+
+::: {.callout-warning title="Why `split('=', 1)` Beats `split('=')` for `.env` Files"}
+API tokens, base64 keys, and query URLs frequently contain `=` characters inside the value (for example, `QUERY_URL="https://api.clinic.org/v1?site=dhaka"`). Passing `maxsplit=1` via `line.split("=", 1)` splits **only on the first `=`**, keeping the value completely intact.
+:::
+
+---
+
+### Reproducible CLI Tools with `argparse.parse_args([...])` {#sec-ch14-argparse}
+
+Python's standard-library `argparse` module validates required flags, converts strings directly to `float` or `int`, handles boolean switches (`action="store_true"`), and generates `--help` documentation automatically. Passing an explicit list into `parser.parse_args([...])` lets you test your CLI inside notebooks and `pytest` without touching `sys.argv`:
+
+```python
+import argparse
+
+parser = argparse.ArgumentParser(
+    description="Screen a cohort CSV for maternal anemia."
+)
+parser.add_argument("--input", type=str, required=True)
+parser.add_argument("--threshold", type=float, default=11.0)
+parser.add_argument("--verbose", action="store_true")
+
+args = parser.parse_args(
+    ["--input", "dhaka_mch.csv", "--threshold", "10.5", "--verbose"]
+)
+print("Input file:", args.input)
+print("Cutoff (g/dL):", args.threshold, type(args.threshold).__name__)
+print("Verbose mode:", args.verbose)
+```
+
+**Expected Output:**
+```text
+Input file: dhaka_mch.csv
+Cutoff (g/dL): 10.5 float
+Verbose mode: True
+```
+
+---
+
+### Break It On Purpose! (Packaging, CLI & `.env` Error Anatomy) {#sec-ch14-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ModuleNotFoundError on Uninstalled Package"}
+```python
+# Intentional Bug #1: ModuleNotFoundError — missing or uninstalled pkg
+import nonexistent_clinic_pkg
+```
+**Python's Traceback:**
+```text
+ModuleNotFoundError: No module named 'nonexistent_clinic_pkg'
+```
+**Diagnosis:** Python searched every directory in `sys.path` (standard library + active `.venv/site-packages`) and found no package with that name. In real projects, this almost always means either you forgot to activate `.venv` in VS Code or you haven't run `pip install -e .` yet.  
+**Fix:** Select the `.venv` interpreter in VS Code, run `pip install -e .`, and confirm your import name uses underscores (`_`), not hyphens (`-`).
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — SystemExit from Missing Required argparse Flag"}
+```python
+# Intentional Bug #2: SystemExit — missing required --input CLI flag
+import argparse
+
+parser = argparse.ArgumentParser(prog="screen_cohort")
+parser.add_argument("--input", type=str, required=True)
+parser.parse_args([])
+```
+**Python's Traceback:**
+```text
+usage: screen_cohort [-h] --input INPUT
+screen_cohort: error: the following arguments are required: --input
+SystemExit: 2
+```
+**Diagnosis:** When a required flag is omitted (or a `--threshold` receives non-numeric text), `argparse` prints a usage hint to `stderr` and raises `SystemExit(2)` to halt the script cleanly with a non-zero exit code.  
+**Fix:** Supply every required flag (`["--input", "cohort.csv"]`), and remember to pass an explicit `argv` list when testing CLI parsers inside Jupyter or Colab!
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError Unpacking Malformed .env Line"}
+```python
+# Intentional Bug #3: ValueError — malformed .env line missing '='
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    bad_env = Path(tmp) / ".env"
+    bad_env.write_text("API_TOKEN_WITHOUT_EQUALS\n", encoding="utf-8")
+    for raw in bad_env.read_text(encoding="utf-8").splitlines():
+        key, value = raw.split("=", 1)
+```
+**Python's Traceback:**
+```text
+ValueError: not enough values to unpack (expected 2, got 1)
+```
+**Diagnosis:** `raw.split("=", 1)` returned a 1-element list because the line lacked `=`, so tuple unpacking into `key, value` raised `ValueError`.  
+**Fix:** Always skip empty lines and `#` comments first, and validate `"=" in line` (or raise a clear diagnostic error with the offending line number) before unpacking.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch14-blueprint}
+
+**Scenario:** Before submitting supplementary code to a peer-reviewed journal, your lab runs an automated pre-submission gatekeeper. Write `check_package_readiness(root_dir, raw_pkg_name, req_path)` that normalizes a messy repository name (like `"Dhaka-Epi"`), verifies the three required `src/` layout artifacts (`pyproject.toml`, `src/<pkg>/__init__.py`, `tests/`), scans `requirements.txt` for any dependency missing an exact `==` pin, and returns a structured readiness report dictionary.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Input & Output Contract:**
+   - Inputs: `root_dir` (`Path` or `str`), `raw_pkg_name` (`str`), `req_path` (`Path` or `str`).
+   - Output: `{"package": str, "layout_ok": bool, "unpinned": list[str], "ready": bool}`.
+2. **Edge Cases & Traps:**
+   - Normalize `raw_pkg_name` (strip, lowercase, replace `-` and spaces with `_`, collapse repeated `_`, strip outer `_`) *before* constructing `root / "src" / pkg / "__init__.py"`.
+   - Ignore blank lines and `#` comments in `requirements.txt`.
+   - Sort `unpinned` alphabetically for deterministic reports.
+3. **Step-by-Step Algorithm:**
+   1. Normalize `raw_pkg_name` into `pkg`.
+   2. Check `.is_file()` for `pyproject.toml` and `src/<pkg>/__init__.py`, and `.is_dir()` for `tests`.
+   3. Read `req_path`; for each non-comment line lacking `"=="`, split off any version operator (`>`, `<`, `~`, `=`) and collect the lowercased package name.
+   4. Sort `unpinned`, set `ready = layout_ok and len(unpinned) == 0`, and return the report dict.
+4. **Verification Plan (Hand Check):**
+   - For `"Dhaka-Epi"` with valid `src/dhaka_epi/__init__.py` and `requirements.txt` containing `pandas==2.2.0` + `numpy>=1.26`: `package="dhaka_epi"`, `layout_ok=True`, `unpinned=["numpy"]`, `ready=False`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+from pathlib import Path
+import re
+import tempfile
+
+def check_package_readiness(root_dir, raw_pkg_name, req_path):
+    """Normalize name, check src/ layout, and flag unpinned deps."""
+    cleaned = raw_pkg_name.strip().lower()
+    cleaned = cleaned.replace("-", "_").replace(" ", "_")
+    pkg = re.sub(r"_+", "_", cleaned).strip("_")
+
+    root = Path(root_dir)
+    layout_ok = (
+        (root / "pyproject.toml").is_file()
+        and (root / "src" / pkg / "__init__.py").is_file()
+        and (root / "tests").is_dir()
+    )
+
+    unpinned = []
+    for raw in Path(req_path).read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "==" not in line:
+            name = re.split(r"[><~=]", line, maxsplit=1)[0]
+            unpinned.append(name.strip().lower())
+
+    unpinned.sort()
+    return {
+        "package": pkg,
+        "layout_ok": layout_ok,
+        "unpinned": unpinned,
+        "ready": layout_ok and len(unpinned) == 0,
+    }
+
+with tempfile.TemporaryDirectory() as tmp:
+    proj = Path(tmp)
+    (proj / "src" / "dhaka_epi").mkdir(parents=True)
+    (proj / "tests").mkdir()
+    (proj / "pyproject.toml").write_text(
+        '[project]\nname = "dhaka_epi"\n', encoding="utf-8"
+    )
+    (proj / "src" / "dhaka_epi" / "__init__.py").write_text(
+        '__version__ = "0.1.0"\n', encoding="utf-8"
+    )
+    req = proj / "requirements.txt"
+    req.write_text("pandas==2.2.0\nnumpy>=1.26\n", encoding="utf-8")
+    report = check_package_readiness(proj, "Dhaka-Epi", req)
+    print("Readiness audit:", report)
+```
+
+**Output:**
+```text
+Readiness audit: {'package': 'dhaka_epi', 'layout_ok': True,
+'unpinned': ['numpy'], 'ready': False}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch14-todos}
+
+Open `part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six software-engineering helpers below. Every file check executes inside an isolated `tempfile.TemporaryDirectory()`:
+
+- **To-Do 14.1 (Warm-Up — `parse_requirements_file(req_path)`):** Read a UTF-8 `requirements.txt`, ignore blank lines and `#` comments, split on `==`, `>=`, `<=`, or `~=` (or bare package name), and return a dictionary mapping `pkg_lower -> full_spec_or_empty_str`.
+- **To-Do 14.2 (Dependency Pinning — `find_unpinned_packages(req_dict)`):** Return a sorted list of package names whose version specifier does **not** start with `"=="`.
+- **To-Do 14.3 (CLI Design — `build_cli_parser()`):** Build and return an `argparse.ArgumentParser` supporting `--input` (required `str`), `--threshold` (`float`, default `11.0`), and `--verbose` (`action="store_true"`).
+- **To-Do 14.4 (Package Hygiene — `validate_src_package_layout(root_dir, pkg_name)`):** Check for `pyproject.toml`, `src/<pkg_name>/__init__.py`, and `tests/`, returning `{"has_pyproject", "has_init", "has_tests", "is_valid"}`.
+- **To-Do 14.5 (Import Naming — `normalize_package_name(raw_name)`):** Strip, lowercase, replace `-` and spaces with `_`, collapse repeated `_`, and strip leading/trailing `_`.
+- **To-Do 14.6 (Config Hygiene — `load_env_file(env_path)`):** Parse `KEY=VALUE` lines ignoring blank lines and `#` comments, strip matching surrounding single or double quotes from values, and return the dictionary.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch14-test}
+
+Test your understanding on paper before consulting Stage 8:
+
+1. **Module Entry Guard:** A file `metrics.py` contains `print("Loading...")` at top level and `print("Running CLI...")` inside `if __name__ == "__main__":`. What prints when another script runs `import metrics`?
+2. **Virtual Environment Detection:** How does Python distinguish whether it is running inside a `.venv` versus the global system interpreter using the `sys` module?
+3. **Why Pin with `==`?** Why can `numpy>=1.26` in a manuscript's `requirements.txt` fail reproducibility two years later, whereas `numpy==1.26.4` locks the environment?
+4. **Editable Install (`-e`):** After running `pip install -e .` on a `src/`-layout package, do you need to re-run `pip install` every time you edit a function in `src/mch_tools/stats.py`?
+5. **Why `src/` Beats Flat Layout:** What subtle testing bug does placing your package inside `src/<pkg>/` prevent compared to placing `<pkg>/` directly in the repository root?
+6. **Notebook `argparse` Crash:** Why does calling `parser.parse_args()` *with no arguments* inside a Jupyter or Colab cell crash with `SystemExit: 2`? How do you make it testable?
+7. **`action="store_true"` Default:** In `parser.add_argument("--verbose", action="store_true")`, what value does `args.verbose` hold when `--verbose` is *omitted* from `argv`?
+8. **PyPI vs. Python Identifier:** Why is `sharukh-tutor` valid in `pip install sharukh-tutor` and `pyproject.toml`, yet `import sharukh-tutor` raises `SyntaxError`?
+9. **`.env` Splitting Trap:** Given the `.env` line `DB_URL="postgres://host/db?sslmode=require"`, what happens if you parse it with `key, val = line.split("=")` instead of `line.split("=", 1)`?
+10. **VS Code Breakpoint Advantage:** During debugging in VS Code, what is the difference between **Step Over (`F10`)** and **Step Into (`F11`)** when paused on a function call like `clean_vitals(row)`?
+
+---
+
+## Stage 7 — Chapter 14 Hands-On Coding Exam (100 Points) {#sec-ch14-exam}
+
+Open `part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb`, implement all three engineering-workflow functions, and run `tutor.check_exam("ch14", exam_submissions)` to earn your Chapter 14 score out of 100 points.
+
+### Exam Task 14.1 (30 Points): Dependency Reproducibility Auditor
+
+Write `audit_dependencies(req_path)` to inspect a `requirements.txt` file:
+
+- Parse `req_path` (ignoring blanks and `#` comments, lowercasing package names, splitting on `==`, `>=`, `<=`, `~=` or bare names).
+- Return `{"total": int, "pinned_count": int, "unpinned": sorted_list, "reproducible": bool}`, where `"reproducible"` is `True` if and only if `len(unpinned) == 0`.
+
+### Exam Task 14.2 (35 Points): Research Package Scaffolder (`src/` Layout)
+
+Write `scaffold_research_package(base_dir, pkg_name)` to generate a starter repository inside `base_dir`:
+
+- Normalize `pkg_name` (strip, lowercase, replace `-` and spaces with `_`, collapse repeated `_`, strip leading/trailing `_`).
+- Create `pyproject.toml`, `README.md`, `src/<pkg>/__init__.py`, and `tests/test_smoke.py` inside `base_dir`, each containing non-empty UTF-8 starter text.
+- Return the **sorted list** of created relative **POSIX** paths (using forward slashes `/`).
+
+### Exam Task 14.3 (35 Points): Clinical Vitals Triage CLI Runner
+
+Write `run_triage_cli(argv)` to power a reproducible command-line triage tool:
+
+- Parse `argv` via `argparse.ArgumentParser` with required flags `--temp` (`float`), `--hb` (`float`), and `--sbp` (`int`).
+- Classify `priority` as `"Urgent"` if `temp >= 39.5` or `sbp >= 170` or `hb < 8.5`; `"Moderate"` if `temp >= 38.0` or `sbp >= 140` or `hb < 11.0`; else `"Routine"`.
+- Return `{"temp_c": args.temp, "hb_g_dl": args.hb, "sbp_mmhg": args.sbp, "priority": priority}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch14-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Only **`Loading...`** prints. During `import metrics`, Python sets `__name__ == "metrics"`, so the `if __name__ == "__main__":` block is skipped.
+2. Compare `sys.prefix != sys.base_prefix`. Inside an active virtual environment, `sys.prefix` points to `.venv` while `sys.base_prefix` points to the base Python installation.
+3. `numpy>=1.26` allows future major releases (such as `2.x`) with breaking API or floating-point changes; `numpy==1.26.4` pins the exact release used for your paper.
+4. **No.** Editable mode (`-e`) links `.venv` directly to your live `src/` directory, so saved code edits are reflected immediately on the next import or test run.
+5. In a flat layout, Python can import the uninstalled local directory directly, masking missing files or broken `pyproject.toml` metadata that would fail for external users. The `src/` layout forces tests to import the installed package.
+6. Without arguments, `parser.parse_args()` inspects `sys.argv[1:]`, which contains Jupyter's internal kernel flags (like `-f kernel.json`) that your parser doesn't recognize. Pass an explicit list `parser.parse_args(argv)` instead.
+7. **`False`** (`action="store_true"` defaults to `False` when omitted and switches to `True` when present).
+8. Python parses `-` as the **subtraction operator** in `import` statements, so importable package directories must use underscores (`sharukh_tutor`).
+9. `line.split("=")` produces **3 parts** (`"DB_URL"`, `'"postgres://host/db?sslmode'`, `'require"'`), raising `ValueError: too many values to unpack (expected 2)`. Using `line.split("=", 1)` splits only once.
+10. **Step Over (`F10`)** executes `clean_vitals(row)` as a single step and pauses on the next line of the caller; **Step Into (`F11`)** jumps inside the body of `clean_vitals` so you can trace it line by line.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import argparse
+from pathlib import Path
+import re
+
+# To-Do 14.1
+def parse_requirements_file(req_path):
+    """Parse requirements.txt into dict of pkg_lower -> spec_or_empty."""
+    reqs = {}
+    with open(req_path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            for op in ("==", ">=", "<=", "~="):
+                if op in line:
+                    name, version = line.split(op, 1)
+                    reqs[name.strip().lower()] = op + version.strip()
+                    break
+            else:
+                reqs[line.lower()] = ""
+    return reqs
+
+# To-Do 14.2
+def find_unpinned_packages(req_dict):
+    """Return sorted list of package names not pinned with '=='."""
+    return sorted(
+        pkg for pkg, spec in req_dict.items()
+        if not spec.startswith("==")
+    )
+
+# To-Do 14.3
+def build_cli_parser():
+    """Return an ArgumentParser with --input, --threshold, --verbose."""
+    parser = argparse.ArgumentParser(
+        description="Clinical cohort analysis CLI"
+    )
+    parser.add_argument("--input", type=str, required=True)
+    parser.add_argument("--threshold", type=float, default=11.0)
+    parser.add_argument("--verbose", action="store_true")
+    return parser
+
+# To-Do 14.4
+def validate_src_package_layout(root_dir, pkg_name):
+    """Check pyproject.toml, src/<pkg>/__init__.py, and tests/ dir."""
+    root = Path(root_dir)
+    has_pyproject = (root / "pyproject.toml").is_file()
+    has_init = (root / "src" / pkg_name / "__init__.py").is_file()
+    has_tests = (root / "tests").is_dir()
+    return {
+        "has_pyproject": has_pyproject,
+        "has_init": has_init,
+        "has_tests": has_tests,
+        "is_valid": has_pyproject and has_init and has_tests,
+    }
+
+# To-Do 14.5
+def normalize_package_name(raw_name):
+    """Normalize raw project name into snake_case package name."""
+    cleaned = raw_name.strip().lower()
+    cleaned = cleaned.replace("-", "_").replace(" ", "_")
+    cleaned = re.sub(r"_+", "_", cleaned)
+    return cleaned.strip("_")
+
+# To-Do 14.6
+def load_env_file(env_path):
+    """Parse KEY=VALUE pairs from .env ignoring comments and blanks."""
+    env = {}
+    with open(env_path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, val = line.split("=", 1)
+            key, val = key.strip(), val.strip()
+            if len(val) >= 2 and val[0] == val[-1]:
+                if val[0] in ('"', "'"):
+                    val = val[1:-1]
+            env[key] = val
+    return env
+```
+
+### C. Annotated Solutions — Chapter 14 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import argparse
+from pathlib import Path
+import re
+
+# Exam Task 14.1 (30 pts)
+def audit_dependencies(req_path):
+    """Audit requirements.txt and return reproducibility report."""
+    reqs = {}
+    with open(req_path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            for op in ("==", ">=", "<=", "~="):
+                if op in line:
+                    name, ver = line.split(op, 1)
+                    reqs[name.strip().lower()] = op + ver.strip()
+                    break
+            else:
+                reqs[line.lower()] = ""
+
+    unpinned = sorted(
+        pkg for pkg, spec in reqs.items()
+        if not spec.startswith("==")
+    )
+    total = len(reqs)
+    return {
+        "total": total,
+        "pinned_count": total - len(unpinned),
+        "unpinned": unpinned,
+        "reproducible": len(unpinned) == 0,
+    }
+
+# Exam Task 14.2 (35 pts)
+def scaffold_research_package(base_dir, pkg_name):
+    """Create a src-layout research package and return POSIX paths."""
+    cleaned = pkg_name.strip().lower()
+    cleaned = cleaned.replace("-", "_").replace(" ", "_")
+    pkg = re.sub(r"_+", "_", cleaned).strip("_")
+
+    root = Path(base_dir)
+    files = {
+        "pyproject.toml": (
+            f'[project]\nname = "{pkg}"\nversion = "0.1.0"\n'
+        ),
+        "README.md": f"# {pkg}\n\nReproducible research package.\n",
+        f"src/{pkg}/__init__.py": (
+            f'"""Core module for {pkg}."""\n__version__ = "0.1.0"\n'
+        ),
+        "tests/test_smoke.py": (
+            f"import {pkg}\n\n"
+            f"def test_version():\n"
+            f"    assert hasattr({pkg}, '__version__')\n"
+        ),
+    }
+    created = []
+    for rel_path, content in files.items():
+        target = root / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        created.append(target.relative_to(root).as_posix())
+    return sorted(created)
+
+# Exam Task 14.3 (35 pts)
+def run_triage_cli(argv):
+    """Parse clinical vitals from argv and return triage dict."""
+    parser = argparse.ArgumentParser(
+        description="Clinical vitals triage CLI"
+    )
+    parser.add_argument("--temp", type=float, required=True)
+    parser.add_argument("--hb", type=float, required=True)
+    parser.add_argument("--sbp", type=int, required=True)
+    args = parser.parse_args(argv)
+
+    if args.temp >= 39.5 or args.sbp >= 170 or args.hb < 8.5:
+        priority = "Urgent"
+    elif args.temp >= 38.0 or args.sbp >= 140 or args.hb < 11.0:
+        priority = "Moderate"
+    else:
+        priority = "Routine"
+
+    return {
+        "temp_c": args.temp,
+        "hb_g_dl": args.hb,
+        "sbp_mmhg": args.sbp,
+        "priority": priority,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 14 Failure Modes
+
+1. **Wrong Interpreter Selected in VS Code (`ModuleNotFoundError`):** Installing packages into `.venv` while VS Code's terminal or notebook kernel still points to the global Python triggers immediate `ModuleNotFoundError`. Always check the bottom-right Python version badge in VS Code and confirm `sys.prefix != sys.base_prefix`.
+2. **Calling `parser.parse_args()` Without `argv` Inside Functions:** Hardcoding `parser.parse_args()` inside library helpers reads `sys.argv` globally, breaking both Jupyter notebooks and `pytest` suites. Design CLI entrypoints around `def main(argv=None): args = parser.parse_args(argv)` so tests pass explicit lists cleanly.
+3. **Leaking `.env` Files or Leaving Unpinned Dependencies:** Committing `.env` exposes credentials permanently in Git history, while leaving `pandas` or `numpy>=1.26` unpinned invites silent breaking upgrades. Pair `.gitignore` (with `.env` and `.venv/`) with pinned lockfiles and an automated `audit_dependencies()` check before every release.
+
+---
+
+::: {.callout-note title="Engineering Foundations Locked In!"}
+You now have the exact project architecture used by professional scientific software teams: isolated `.venv` environments, `src/`-layout packages, breakpoint debugging in VS Code, secret-safe `.env` configs, and testable `argparse` CLIs. Next, we put these clean packages under automated version control with Git, GitHub, and `pytest`.
+:::

@@ -25,7 +25,13 @@ book:
         - part_02_data_structures_algorithms/ch09_files_csv_json.qmd
         - part_02_data_structures_algorithms/ch10_exceptions_testing.qmd
         - part_02_data_structures_algorithms/ch11_algorithms_complexity.qmd
-    # Subsequent Parts (Part III Ch 12–15 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
+    - part: "Software Engineering for Data Scientists"
+      chapters:
+        - part_03_engineering_workflow/ch12_oop_for_ml.qmd
+        - part_03_engineering_workflow/ch13_jupyter_colab.qmd
+        - part_03_engineering_workflow/ch14_vscode_packages.qmd
+        - part_03_engineering_workflow/ch15_git_clean_code.qmd
+    # Subsequent Parts (Part IV Ch 16–20 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:

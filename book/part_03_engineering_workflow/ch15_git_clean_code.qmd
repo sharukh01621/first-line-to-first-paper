@@ -1,0 +1,785 @@
+# Version Control with Git & GitHub, Clean Code, Type Hints, and Research Project Templates {#sec-ch15}
+
+> **Chapter Mission (Part III Capstone):** Transform personal analysis scripts into auditable, peer-review-ready scientific software. Master Git's three-zone architecture and feature branching, automated `.gitignore` and secret-leak guards, PEP 8 / Ruff code hygiene, Python type hints (`TypedDict`, `Optional`), structured `logging` with leak-proof `FileHandler` cleanup, cryptographic SHA-256 dataset provenance manifests, and standardized Cookiecutter research templates.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch15 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch15 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch15 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this Part III Capstone chapter, you will be able to:
+
+1. Navigate Git's three local zones (Working Directory, Staging Area, Local Repository) and collaborate safely via branches, clean commit subjects, and GitHub Pull Requests.
+2. Audit `.gitignore` rules programmatically with `fnmatch` and detect leaked credentials (`ghp_`, `AIza`, `sk-`, `API_KEY=`, `PASSWORD=`) before a commit ever leaves your laptop.
+3. Enforce readable, self-documenting research code using PEP 8, Ruff linting/formatting, Python type annotations, and `TypedDict` return contracts.
+4. Replace ephemeral `print()` statements with severity-leveled `logging` pipelines whose `FileHandler` resources always detach and close inside `finally:` blocks.
+5. Fingerprint raw clinical CSV and JSON datasets with `hashlib.sha256()` to build and verify cryptographic provenance manifests that detect even a single-byte edit.
+6. Organize multi-month studies inside a clean Cookiecutter research repository template and pass a 100-point Part III Capstone Engineering Exam.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why `analysis_FINAL_v3_fixed.py` Fails Peer Review {#sec-ch15-intuition}
+
+Six months after submitting a manuscript, Reviewer #2 asks a routine question: *"Table 2 reports a mean maternal hemoglobin of $11.15\text{ g/dL}$ across $N = 412$ mothers, yet your supplementary file has $415$ rows—which three records were dropped, and which version of the cleaning script generated Figure 1?"*
+
+If your research folder contains `clean_v1.py`, `clean_v2_new.py`, and `clean_FINAL_really.py` alongside an unlogged overwrite of `raw_data.csv`, answering Reviewer #2 becomes a forensic nightmare. Professional scientific engineering eliminates this guesswork with four interlocking pillars:
+
+::: {.callout-note title="Mental Model — The Audited Clinical Trial Lab Notebook"}
+Think of a reproducible research repository like a regulated clinical trial binder:
+
+1. **Tamper-Evident History (Git & GitHub):** Every edit is recorded as an immutable, cryptographically chained commit with a concise subject line, author, and timestamp—never overwritten by `v2_final` filenames.
+2. **Confidentiality Wall (`.gitignore` & Secret Scanners):** Raw patient registries (`*.csv`) and credentials (`.env`, API tokens) stay strictly off GitHub while code, tests, and tiny provenance manifests are shared openly.
+3. **Typed, Self-Explaining Contracts (PEP 8, Ruff & Type Hints):** Consistent formatting and explicit types (`list[float]`, `Optional[float]`, `TypedDict`) turn silent runtime surprises into immediate editor warnings.
+4. **Chain of Custody (`logging` & SHA-256 Fingerprints):** Every pipeline run records its exact input file's 64-character SHA-256 hash and logs every skipped sentinel row (`INFO` / `WARNING`) to disk.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Git's 3-Zone & Remote Workflow {#sec-ch15-mental-model}
+
+Before memorizing commands, lock in the four physical spaces where your research code lives and the exact commands that move snapshots between them:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.8
+%%| fig-align: center
+flowchart LR
+    W["1. Working Dir<br/>Edit scripts &<br/>notebooks"]
+    S["2. Staging Area<br/>Next snapshot<br/>(Index)"]
+    L["3. Local Repo<br/>Commit history<br/>(.git/ SHA-1)"]
+    R["4. GitHub Remote<br/>Shared origin<br/>(PR & Review)"]
+
+    W -->|"git add"| S
+    S -->|"git commit"| L
+    L -->|"git push"| R
+    R -. "git pull" .-> W
+```
+
+Understanding those four zones explains almost every Git command you will ever run:
+
+- **`git add <file>`** copies *selected* changes from your **Working Directory** into the **Staging Area**, letting you bundle related edits into one atomic commit while leaving half-finished experiments unstaged.
+- **`git commit -m "..."`** seals the Staging Area into a permanent, content-addressed snapshot inside `.git/` on your local machine—no internet connection required.
+- **`git switch -c feat/hb-audit`** creates an isolated feature branch so `main` always stays clean and paper-ready until your Pull Request passes review and `pytest`.
+- **`.gitignore` + Pre-Commit Guard:** Anything matching `.gitignore` never enters the Staging Area in the first place, keeping raw clinical files and `.env` secrets safely local.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch15-walkthrough}
+
+Open `part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Everyday Git Workflow, `.gitignore` Auditing & Secret Scanning {#sec-ch15-git-hygiene}
+
+In your local terminal (outside Colab), a clean feature-branch research cycle uses just seven core commands:
+
+```bash
+git status                               # Inspect working tree & stage
+git switch -c feat/add-sha256-manifest   # Isolate new work on a branch
+git add src/provenance.py tests/         # Stage only reviewed code
+git diff --staged                        # Audit exact lines before commit
+git commit -m "Add SHA-256 manifest builder for cohort CSVs"
+git log --oneline -n 5                   # Verify concise commit history
+git push -u origin feat/add-sha256-manifest
+```
+
+Notice the commit subject rule enforced by professional teams: keep the first line imperative, concise ($5 \le \text{len} \le 72$ characters), and free of a trailing period so `git log --oneline` and GitHub Pull Request headers never truncate awkwardly.
+
+Now let's audit `.gitignore` coverage with Python's standard-library `fnmatch` and scan a configuration snippet for leaked credentials—run this cell verbatim in `01_walkthrough.ipynb`:
+
+```python
+import fnmatch
+
+gitignore_text = (
+    "# Never commit raw clinical data or secrets\n"
+    "*.csv\n"
+    ".env\n"
+    "*.log\n"
+    "__pycache__/*\n"
+)
+staged_candidates = [
+    "README.md",
+    "src/clean_cohort.py",
+    "raw_mch_2026.csv",
+    ".env",
+    "run.log",
+]
+
+patterns = [
+    line.strip()
+    for line in gitignore_text.splitlines()
+    if line.strip() and not line.strip().startswith("#")
+]
+tracked = sorted(
+    fname for fname in staged_candidates
+    if not any(fnmatch.fnmatch(fname, pat) for pat in patterns)
+)
+print("Active .gitignore patterns:", patterns)
+print("Safe to track in Git:", tracked)
+
+config_sample = (
+    "STUDY_ID = 'MCH-BD-2026'\n"
+    "TOKEN = 'ghp_exampleLeak999'\n"
+    "API_KEY=demo_secret_token\n"
+)
+secret_tags = ("ghp_", "AIza", "sk-", "API_KEY=", "PASSWORD=")
+flagged_lines = [
+    idx for idx, ln in enumerate(config_sample.splitlines(), start=1)
+    if any(tag in ln for tag in secret_tags)
+]
+print("Flagged secret lines (1-based):", flagged_lines)
+```
+
+**Expected Output:**
+```text
+Active .gitignore patterns: ['*.csv', '.env', '*.log', '__pycache__/*']
+Safe to track in Git: ['README.md', 'src/clean_cohort.py']
+Flagged secret lines (1-based): [2, 3]
+```
+
+Key mechanics to inspect closely:
+
+- **Skipping Comments & Blank Lines:** Lines starting with `#` are documentation inside `.gitignore`; failing to skip them would mistakenly treat `# *.py` as an ignore rule.
+- **Negating `any(...)`:** `not any(fnmatch.fnmatch(fname, pat) ...)` returns the **unignored** files—the exact files Git is allowed to commit.
+- **1-Based Line Numbers:** `enumerate(..., start=1)` aligns flagged secret line numbers directly with VS Code, Vim, and GitHub diff line numbers.
+
+---
+
+### Clean Code (PEP 8 / Ruff), Type Hints, and `TypedDict` Contracts {#sec-ch15-clean-code}
+
+Clean research code follows **PEP 8** conventions—`snake_case` function/variable names, `PascalCase` class names, `UPPER_CASE` constants, 4-space indentation, short readable lines, and one clear responsibility per function. Modern Python teams enforce these rules automatically in milliseconds with **Ruff**:
+
+```bash
+ruff check src/ tests/     # Flag unused imports, bugs & PEP 8 violations
+ruff format src/ tests/    # Auto-format code to consistent style
+```
+
+Pairing Ruff with **Python type hints** (`list[float]`, `Optional[float]`, and `TypedDict`) documents the exact shape of every input and output without changing runtime speed:
+
+```python
+from typing import Optional, TypedDict
+
+
+class CohortSummary(TypedDict):
+    site: str
+    valid_n: int
+    mean_hb: Optional[float]
+
+
+def summarize_site_hb(
+    site: str,
+    readings: list[float],
+) -> CohortSummary:
+    """Return a typed hemoglobin summary for one clinic site."""
+    clean = [val for val in readings if 3.0 <= val <= 22.0]
+    mean_val: Optional[float] = (
+        round(sum(clean) / len(clean), 2) if clean else None
+    )
+    return {
+        "site": site.strip().title(),
+        "valid_n": len(clean),
+        "mean_hb": mean_val,
+    }
+
+
+dhaka_report = summarize_site_hb("  dhaka ", [10.4, 999.0, 11.6])
+empty_report = summarize_site_hb("sylhet", [999.0])
+print("Dhaka summary:", dhaka_report)
+print("Empty summary:", empty_report)
+```
+
+**Expected Output:**
+```text
+Dhaka summary: {'site': 'Dhaka', 'valid_n': 2, 'mean_hb': 11.0}
+Empty summary: {'site': 'Sylhet', 'valid_n': 0, 'mean_hb': None}
+```
+
+Notice how `Optional[float]` explicitly warns every collaborator (and static type checkers like `mypy` or `pyright`) that `mean_hb` can be `None` when a cohort has zero valid rows—preventing downstream `TypeError` crashes before the pipeline ever runs.
+
+---
+
+### Structured `logging` vs. `print()` (With Clean Handler Teardown) {#sec-ch15-logging}
+
+`print()` is handy for quick interactive exploration, but it vanishes from terminal scrollback, has no severity levels (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`), and cannot be routed cleanly to an audit log file. Python's standard-library `logging` module solves all three problems:
+
+```python
+import logging
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    log_path = Path(tmp) / "cohort_run.log"
+    logger = logging.getLogger("ch15_walkthrough_demo")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    fmt = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(fmt)
+    logger.addHandler(handler)
+
+    try:
+        logger.info("Pipeline started for Dhaka ANC cohort")
+        logger.warning("Row 4: skipped sentinel hb_g_dl='999'")
+        logger.info("Pipeline completed: 2 valid, 1 skipped")
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
+    print(log_path.read_text(encoding="utf-8").strip())
+```
+
+**Expected Output:**
+```text
+[INFO] Pipeline started for Dhaka ANC cohort
+[WARNING] Row 4: skipped sentinel hb_g_dl='999'
+[INFO] Pipeline completed: 2 valid, 1 skipped
+```
+
+::: {.callout-warning title="Mandatory Logging Habit — Always Detach & Close FileHandlers!"}
+Because `logging.getLogger(name)` returns the **same singleton logger object** across repeated function calls in a notebook or test suite, forgetting `logger.removeHandler(handler)` causes every future call to write duplicate lines, and forgetting `handler.close()` leaks open file handles that block `tempfile.TemporaryDirectory()` cleanup on Windows. Wrapping teardown in `finally:` guarantees spotless cleanup every single time.
+:::
+
+---
+
+### Cryptographic Dataset Provenance (`hashlib.sha256`) & Research Templates {#sec-ch15-provenance}
+
+Because raw clinical CSV files stay out of Git (`.gitignore`), how do you prove six months later that `data/raw/mch_v1.csv` was never accidentally edited in Excel? You compute its **SHA-256 cryptographic digest**—a deterministic 64-character hexadecimal fingerprint where flipping even a single digit changes roughly half of the output bits (the *avalanche effect*):
+
+```python
+import hashlib
+from pathlib import Path
+import tempfile
+
+
+def sha256_file(filepath: Path) -> str:
+    """Compute lowercase 64-char SHA-256 hex digest in 64 KB chunks."""
+    hasher = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        while chunk := f.read(65536):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    raw_csv = Path(tmp) / "mch_v1.csv"
+    raw_csv.write_text("id,hb_g_dl\nP1,10.8\n", encoding="utf-8")
+    digest_v1 = sha256_file(raw_csv)
+
+    # Flip a single digit (10.8 -> 10.9) to demonstrate avalanche effect
+    raw_csv.write_text("id,hb_g_dl\nP1,10.9\n", encoding="utf-8")
+    digest_v2 = sha256_file(raw_csv)
+
+    print("Digest v1 (first 16):", digest_v1[:16], "len=", len(digest_v1))
+    print("Digest v2 (first 16):", digest_v2[:16], "len=", len(digest_v2))
+    print("Identical files?:", digest_v1 == digest_v2)
+```
+
+**Expected Output:**
+```text
+Digest v1 (first 16): b89b84008541b87d len= 64
+Digest v2 (first 16): 8137e0963620b790 len= 64
+Identical files?: False
+```
+
+Combine Git, `.gitignore`, type-checked `src/` modules, `tests/`, and a tiny committed `data/manifest.json` inside a standardized **Cookiecutter Data Science** research project layout:
+
+```text
+mch_anemia_study/
+├── .gitignore              # Blocks data/raw/*.csv, .env, *.log, cache
+├── README.md               # Study overview, setup & reproduction steps
+├── pyproject.toml          # Dependencies, Ruff & pytest configuration
+├── data/
+│   ├── manifest.json       # Committed SHA-256 fingerprints (no PHI!)
+│   ├── raw/                # Read-only source CSVs (gitignored)
+│   └── processed/          # Regenerable clean cohorts (gitignored)
+├── notebooks/              # Numbered exploratory notebooks (01_eda.ipynb)
+├── src/
+│   └── mch_study/          # Reusable, type-hinted Python modules
+├── tests/                  # Automated pytest suite (Chapter 10)
+└── reports/                # Figures & manuscript tables
+```
+
+---
+
+### Break It On Purpose! (Provenance & Logging Error Anatomy) {#sec-ch15-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — FileNotFoundError Hashing a Missing Dataset"}
+```python
+import hashlib
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    missing_csv = Path(tmp) / "missing_cohort.csv"
+    with open(missing_csv, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+```
+**Python's Traceback:**
+```text
+FileNotFoundError: [Errno 2] No such file or directory:
+'.../missing_cohort.csv'
+```
+**Diagnosis:** Calling `open(path, "rb")` or `path.read_bytes()` assumes the dataset exists on disk. In a provenance verifier, a deleted file should be reported cleanly as `"missing"` rather than crashing the audit script.  
+**Fix:** Guard with `if not fpath.is_file():` before attempting to read bytes or compute a digest.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — TypeError Passing str Instead of bytes to hashlib.sha256"}
+```python
+import hashlib
+
+csv_text = "patient_id,hb_g_dl\nP01,11.2\n"
+digest = hashlib.sha256(csv_text).hexdigest()
+```
+**Python's Traceback:**
+```text
+TypeError: Strings must be encoded before hashing
+```
+**Diagnosis:** Cryptographic hashes operate on raw **bytes**, never Unicode `str` objects (because the same characters can be encoded differently in UTF-8 vs. UTF-16). Passing a text string—or opening a file in text mode `"r"` instead of `"rb"`—immediately triggers `TypeError`.  
+**Fix:** Open files in binary mode (`"rb"`) or call `csv_text.encode("utf-8")` before passing data into `hashlib.sha256(...)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError on Invalid Logging Level String"}
+```python
+import logging
+
+bad_logger = logging.getLogger("ch15_bad_level_demo")
+bad_logger.setLevel("URGENT")
+```
+**Python's Traceback:**
+```text
+ValueError: Unknown level: 'URGENT'
+```
+**Diagnosis:** Python's `logging` module recognizes only the standard severity names (`"DEBUG"`, `"INFO"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"`) or their integer constants. Passing a custom string like `"URGENT"` or a lowercase string like `"info"` directly to `setLevel(...)` raises `ValueError`.  
+**Fix:** Normalize input with `.strip().upper()` and validate it against the five standard level names before logging.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch15-blueprint}
+
+**Scenario:** Before tagging `v1.0.0` on GitHub for manuscript submission, your PI wants a single automated gatekeeper function `prepare_release_bundle(repo_dir, log_path)` that: (1) hashes every `.csv` and `.json` file inside `repo_dir / "data"` into `repo_dir / "manifest.json"`, (2) scans all `.py` scripts inside `repo_dir / "src"` for leaked secret prefixes, (3) writes an `INFO`/`WARNING` audit log to `log_path` with clean handler teardown, and (4) returns a typed `ReleaseAudit` dictionary indicating whether the bundle is `release_ready`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Input & Output Contract:**
+   - Inputs: `repo_dir: Path` (containing `data/` and `src/`) and `log_path: Path`.
+   - Side effects: Indented `manifest.json` written inside `repo_dir`; audit log written cleanly to `log_path`.
+   - Return value: `ReleaseAudit` (`TypedDict`) with `data_files`, `manifest_path`, `secret_leaks`, and `release_ready`.
+2. **Edge Cases & Traps:**
+   - Never leave the `FileHandler` attached or open—place `logger.removeHandler(handler)` and `handler.close()` inside `finally:`.
+   - Sort `data/` entries by filename so `manifest.json` diffs stay deterministic in Git.
+   - Check `p.is_file()` before reading bytes so subdirectories never raise `IsADirectoryError`.
+3. **Step-by-Step Algorithm:**
+   1. Configure an isolated logger (`propagate = False`) with a UTF-8 `FileHandler`.
+   2. Inside `try:`, hash all regular `.csv`/`.json` files in `repo_dir / "data"` into `manifest`.
+   3. Scan every `*.py` file in `repo_dir / "src"` line by line (1-based) for the five secret tokens; log a `WARNING` for every leak.
+   4. Write `manifest.json` with `indent=2`, compute `ready = len(manifest) > 0 and leaks == 0`, and log final status.
+   5. Detach and close the handler in `finally:`, then return the typed `ReleaseAudit` dict.
+4. **Verification Plan (Hand Check):**
+   - 1 CSV file in `data/` + 1 clean Python script in `src/` $\rightarrow$ `data_files = 1`, `secret_leaks = 0`, `release_ready = True`, and 2 `INFO` log lines.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+import hashlib
+import json
+import logging
+from pathlib import Path
+import tempfile
+from typing import TypedDict
+
+
+class ReleaseAudit(TypedDict):
+    data_files: int
+    manifest_path: str
+    secret_leaks: int
+    release_ready: bool
+
+
+def prepare_release_bundle(
+    repo_dir: Path,
+    log_path: Path,
+) -> ReleaseAudit:
+    """Build a SHA-256 manifest, scan src/ for secrets, and log audit."""
+    logger = logging.getLogger("ch15_release_gate")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+
+    secret_tags = ("ghp_", "AIza", "sk-", "API_KEY=", "PASSWORD=")
+    manifest: dict[str, dict[str, object]] = {}
+    leaks = 0
+
+    try:
+        data_dir = repo_dir / "data"
+        for p in sorted(data_dir.iterdir(), key=lambda x: x.name):
+            if p.is_file() and p.suffix.lower() in {".csv", ".json"}:
+                digest = hashlib.sha256(p.read_bytes()).hexdigest()
+                manifest[p.name] = {
+                    "bytes": p.stat().st_size,
+                    "sha256": digest,
+                }
+        logger.info("Hashed %d dataset file(s)", len(manifest))
+
+        src_dir = repo_dir / "src"
+        for py_file in sorted(src_dir.glob("*.py")):
+            text = py_file.read_text(encoding="utf-8")
+            for ln_no, line in enumerate(text.splitlines(), start=1):
+                if any(tag in line for tag in secret_tags):
+                    leaks += 1
+                    logger.warning(
+                        "Leak in %s line %d", py_file.name, ln_no
+                    )
+
+        manifest_file = repo_dir / "manifest.json"
+        with open(manifest_file, "w", encoding="utf-8") as out_f:
+            json.dump(manifest, out_f, indent=2)
+
+        ready = len(manifest) > 0 and leaks == 0
+        logger.info("Release ready: %s", ready)
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
+    return {
+        "data_files": len(manifest),
+        "manifest_path": manifest_file.name,
+        "secret_leaks": leaks,
+        "release_ready": ready,
+    }
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    repo = Path(tmp)
+    (repo / "data").mkdir()
+    (repo / "src").mkdir()
+    (repo / "data" / "mch_clean.csv").write_text(
+        "id,hb_g_dl\nP1,11.4\n", encoding="utf-8"
+    )
+    (repo / "src" / "analyze.py").write_text(
+        "STUDY = 'MCH-BD-2026'\n", encoding="utf-8"
+    )
+    audit_log = repo / "release_audit.log"
+    result = prepare_release_bundle(repo, audit_log)
+    print("Audit Result:\n" + json.dumps(result, indent=2))
+    print("Audit Log:\n" + audit_log.read_text(encoding="utf-8").strip())
+```
+
+**Output:**
+```text
+Audit Result:
+{
+  "data_files": 1,
+  "manifest_path": "manifest.json",
+  "secret_leaks": 0,
+  "release_ready": true
+}
+Audit Log:
+[INFO] Hashed 1 dataset file(s)
+[INFO] Release ready: True
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch15-todos}
+
+Open `part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reproducible-engineering functions below:
+
+- **To-Do 15.1 (`.gitignore` Auditing — `check_gitignore_coverage(gitignore_text, filenames)`):** Parse non-blank, non-`#` patterns from `gitignore_text`, match with `fnmatch.fnmatch`, and return a **sorted** list of **UNIGNORED** filenames.
+- **To-Do 15.2 (Commit Hygiene — `validate_commit_message(message)`):** Inspect only the first subject line (non-empty, $5 \le \text{len} \le 72$, no trailing `"."`) and return `(is_valid: bool, reason: str)`.
+- **To-Do 15.3 (Secret Scanner — `scan_for_leaked_secrets(text)`):** Scan lines 1-indexed for case-sensitive tokens `ghp_`, `AIza`, `sk-`, `API_KEY=`, and `PASSWORD=`, returning a sorted list of unique 1-based matching line numbers.
+- **To-Do 15.4 (Structured Logging — `write_structured_log(log_path, level, message)`):** Append a formatted `"[LEVEL] message"` UTF-8 log line with uppercase level and properly closed/detached file handler.
+- **To-Do 15.5 (Cryptographic Hashing — `compute_file_sha256(filepath)`):** Stream binary bytes (`"rb"`) into `hashlib.sha256()` and return the lowercase 64-character hex digest.
+- **To-Do 15.6 (Dataset Manifest — `build_dataset_manifest(data_dir)`):** Scan regular `.csv` and `.json` files in `data_dir` sorted by name, returning `filename -> {"bytes": int, "sha256": str}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch15-test}
+
+Test your Part III engineering intuition on paper before checking Stage 8:
+
+1. **Git 3-Zone Mechanics:** You edited `clean.py` and `notes.txt`, ran `git add clean.py`, and then ran `git commit -m "Fix sentinel filter"`. Which file is included in the new commit, and where do the edits to `notes.txt` remain?
+2. **Branch Isolation:** Why should you run `git switch -c feat/anemia-model` instead of committing experimental model changes directly onto `main`?
+3. **`.gitignore` Comment Trap:** A `.gitignore` contains `# *.py` on line 1 and `*.csv` on line 2. Should `analysis.py` be returned by `check_gitignore_coverage` as unignored? Why?
+4. **Multi-Line Commit Subjects:** A commit message has a 30-character first line (no period), a blank line, and a 120-character second paragraph ending with a period. Should `validate_commit_message` return `True` or `False`?
+5. **Case-Sensitive Secret Scanning:** Why does `scan_for_leaked_secrets` match `API_KEY=abc` and `ghp_xyz`, yet ignore `api_key=placeholder`?
+6. **Runtime Type Hints:** What happens when Python executes `def mean_hb(vals: list[float]) -> float:` and a caller passes a `tuple` of floats at runtime? Do Python type hints automatically raise `TypeError`?
+7. **Duplicate Log Lines Bug:** You write a helper function that creates `handler = logging.FileHandler(path)` and calls `logger.addHandler(handler)` on every invocation without calling `logger.removeHandler(handler)`. After calling the function 3 times, how many total lines appear in the log file ($1 + 2 + 3$)?
+8. **Binary Mode for Hashing:** Why does `hashlib.sha256(open(path, "r").read())` raise `TypeError` even on a valid UTF-8 `.csv` file?
+9. **SHA-256 Avalanche Property:** A $10\text{ MB}$ clinical CSV has one value changed from `10.8` to `10.9`. How much of its 64-character SHA-256 digest changes, and why is that useful for data provenance?
+10. **Manifest vs. Raw Data in Git:** Why do reproducible research templates put `data/raw/*.csv` inside `.gitignore` while committing `data/manifest.json` directly into Git?
+
+---
+
+## Stage 7 — Part III Capstone Hands-On Coding Exam (100 Points) {#sec-ch15-exam}
+
+Open `part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb`, complete all three capstone engineering tasks, and run `tutor.check_exam("ch15", exam_submissions)` to earn your Part III Capstone score out of 100 points.
+
+### Exam Task 15.1 (30 Points): Pre-Push Repository Hygiene Auditor
+
+Write `audit_repo_hygiene(repo_dir)` to inspect a research repository directory before pushing to GitHub:
+
+- Check four boolean conditions on `Path(repo_dir)`:
+  - `has_readme`: `README.md` exists as a regular file.
+  - `has_gitignore`: `.gitignore` exists as a regular file.
+  - `has_env_leak`: `.env` exists as a regular file.
+  - `has_checkpoints`: `.ipynb_checkpoints` exists as a directory.
+- Compute `ready_to_push = has_readme and has_gitignore and not has_env_leak and not has_checkpoints`.
+- Return a dictionary containing all five boolean keys.
+
+### Exam Task 15.2 (35 Points): Cryptographic Dataset Provenance Verifier
+
+Write `verify_data_provenance(data_dir, manifest_dict)` to verify datasets on disk against a saved manifest (`filename -> {"bytes": int, "sha256": str}`):
+
+- Iterate over `sorted(manifest_dict)` so all output lists stay alphabetically sorted.
+- If `Path(data_dir) / fname` does not exist as a file, record `fname` in `"missing"`.
+- Otherwise recompute its SHA-256 hex digest and place `fname` into `"matched"` (if equal to `manifest_dict[fname]["sha256"]`) or `"modified"` (if different).
+- Return `{"matched": ..., "modified": ..., "missing": ..., "all_verified": bool}` where `all_verified` is `True` iff both `"modified"` and `"missing"` are empty.
+
+### Exam Task 15.3 (35 Points): Logged, Provenance-Tracked Cleaning Pipeline
+
+Write `run_logged_cleaning_pipeline(in_csv, out_json, log_path)` combining CSV cleaning, SHA-256 provenance, structured logging, and indented JSON export:
+
+- Compute the lowercase 64-character SHA-256 hex digest of `in_csv`.
+- Read `in_csv` with `csv.DictReader` expecting column `hb_g_dl`; skip `""`, `"N/A"`, and `"999"` while counting `rejected_count` and emitting `WARNING` log lines to `log_path`, and collect valid `float` values.
+- Emit `INFO` log lines for pipeline start and completion, and guarantee `FileHandler` detachment and closure in a `finally:` block.
+- Compute `mean_hb` rounded to 2 decimal places (or `None` if `valid_count == 0`).
+- Write indented UTF-8 JSON (`indent=2`) with keys `{"source_sha256", "valid_count", "rejected_count", "mean_hb"}` to `out_json` and return that dictionary.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch15-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Only **`clean.py`** is recorded in the commit; the edits to `notes.txt` remain safely in the **Working Directory** (unstaged).
+2. Feature branches keep `main` always clean, tested, and ready to reproduce published tables while you iterate safely—and let collaborators review changes via a Pull Request before merging.
+3. **Yes**, `analysis.py` is returned as unignored because lines beginning with `#` are comments in `.gitignore`, not active ignore patterns.
+4. **`True`**—commit subject validation checks *only* the first subject line, allowing longer explanatory paragraphs and punctuation in the commit body.
+5. Real provider prefixes and environment variable keys (`ghp_`, `AIza`, `sk-`, `API_KEY=`, `PASSWORD=`) are case-sensitive; matching case-sensitively avoids false alarms on ordinary lowercase variable names or prose comments.
+6. **No**—Python executes the function normally without raising `TypeError` because type hints are metadata checked by static tools (`mypy`, `pyright`, IDE linters), not enforced at runtime.
+7. **$1 + 2 + 3 = 6$ total lines!** Call 1 attaches handler #1 (1 line), call 2 attaches handler #2 (writes 2 lines), and call 3 attaches handler #3 (writes 3 lines). Always call `logger.removeHandler(handler)` and `handler.close()` in `finally:`.
+8. `open(path, "r").read()` returns a decoded Unicode **`str`**, whereas `hashlib.sha256()` strictly requires raw **`bytes`** (from binary mode `"rb"`).
+9. Roughly **half of all 64 hex characters change completely** (producing a totally unrecognizable digest), so any silent spreadsheet edit, truncated download, or version mix-up is detected with near-certainty.
+10. Raw `.csv` files may be huge or contain restricted patient/field data that must never be uploaded to public GitHub, whereas `data/manifest.json` is tiny, contains zero patient records, and cryptographically locks the exact dataset version required to reproduce the paper.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import fnmatch
+import hashlib
+import logging
+from pathlib import Path
+
+# To-Do 15.1
+def check_gitignore_coverage(gitignore_text, filenames):
+    """Return sorted list of filenames NOT matched by .gitignore."""
+    patterns = [
+        line.strip()
+        for line in gitignore_text.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    unignored = [
+        fname for fname in filenames
+        if not any(fnmatch.fnmatch(fname, pat) for pat in patterns)
+    ]
+    return sorted(unignored)
+
+# To-Do 15.2
+def validate_commit_message(message):
+    """Validate first commit subject line; return (is_valid, reason)."""
+    lines = message.splitlines()
+    subject = lines[0].strip() if lines else ""
+    if not subject:
+        return (False, "Subject line cannot be empty")
+    if len(subject) < 5:
+        return (False, "Subject line must be at least 5 characters")
+    if len(subject) > 72:
+        return (False, "Subject line must be at most 72 characters")
+    if subject.endswith("."):
+        return (False, "Subject line should not end with a period")
+    return (True, "Valid commit subject")
+
+# To-Do 15.3
+def scan_for_leaked_secrets(text):
+    """Return 1-based line numbers containing sensitive secret tokens."""
+    patterns = ("ghp_", "AIza", "sk-", "API_KEY=", "PASSWORD=")
+    return [
+        line_no
+        for line_no, line in enumerate(text.splitlines(), start=1)
+        if any(pat in line for pat in patterns)
+    ]
+
+# To-Do 15.4
+_LOG_LEVELS = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
+
+def write_structured_log(log_path, level, message):
+    """Append '[LEVEL] message' to log_path via a closed FileHandler."""
+    level_name = level.strip().upper()
+    if level_name not in _LOG_LEVELS:
+        raise ValueError(f"Unknown log level: {level!r}")
+    logger = logging.getLogger("ch15_todo_logger")
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
+    handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+    try:
+        logger.log(_LOG_LEVELS[level_name], message)
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
+# To-Do 15.5
+def compute_file_sha256(filepath):
+    """Return lowercase 64-char SHA-256 hex digest of filepath."""
+    hasher = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        while chunk := f.read(65536):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+# To-Do 15.6
+def build_dataset_manifest(data_dir):
+    """Map sorted .csv/.json filenames to byte size and SHA-256."""
+    manifest = {}
+    for p in sorted(Path(data_dir).iterdir(), key=lambda x: x.name):
+        if p.is_file() and p.suffix.lower() in {".csv", ".json"}:
+            digest = hashlib.sha256(p.read_bytes()).hexdigest()
+            manifest[p.name] = {
+                "bytes": p.stat().st_size,
+                "sha256": digest,
+            }
+    return manifest
+```
+
+### C. Annotated Solutions — Part III Capstone Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import csv
+import hashlib
+import json
+import logging
+from pathlib import Path
+
+# Exam Task 15.1 (30 pts)
+def audit_repo_hygiene(repo_dir):
+    """Inspect repo_dir for docs, .gitignore, .env leaks & checkpoints."""
+    root = Path(repo_dir)
+    has_readme = (root / "README.md").is_file()
+    has_gitignore = (root / ".gitignore").is_file()
+    has_env_leak = (root / ".env").is_file()
+    has_checkpoints = (root / ".ipynb_checkpoints").is_dir()
+    ready_to_push = (
+        has_readme
+        and has_gitignore
+        and not has_env_leak
+        and not has_checkpoints
+    )
+    return {
+        "has_readme": has_readme,
+        "has_gitignore": has_gitignore,
+        "has_env_leak": has_env_leak,
+        "has_checkpoints": has_checkpoints,
+        "ready_to_push": ready_to_push,
+    }
+
+# Exam Task 15.2 (35 pts)
+def verify_data_provenance(data_dir, manifest_dict):
+    """Verify data_dir files against manifest_dict SHA-256 digests."""
+    root = Path(data_dir)
+    matched = []
+    modified = []
+    missing = []
+    for fname in sorted(manifest_dict):
+        fpath = root / fname
+        if not fpath.is_file():
+            missing.append(fname)
+            continue
+        actual_sha = hashlib.sha256(fpath.read_bytes()).hexdigest()
+        if actual_sha == manifest_dict[fname]["sha256"]:
+            matched.append(fname)
+        else:
+            modified.append(fname)
+    return {
+        "matched": matched,
+        "modified": modified,
+        "missing": missing,
+        "all_verified": len(modified) == 0 and len(missing) == 0,
+    }
+
+# Exam Task 15.3 (35 pts)
+def run_logged_cleaning_pipeline(in_csv, out_json, log_path):
+    """Hash, clean, log, and summarize hb_g_dl CSV to indented JSON."""
+    src_sha = hashlib.sha256(Path(in_csv).read_bytes()).hexdigest()
+    logger = logging.getLogger("ch15_capstone_pipeline")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    logger.addHandler(handler)
+
+    valid_vals = []
+    rejected = 0
+    try:
+        logger.info("Pipeline started (sha256=%s)", src_sha)
+        with open(in_csv, "r", encoding="utf-8", newline="") as in_f:
+            for row_num, row in enumerate(csv.DictReader(in_f), start=1):
+                raw = row["hb_g_dl"].strip()
+                if raw in ("", "N/A", "999"):
+                    rejected += 1
+                    logger.warning("Row %d rejected: %r", row_num, raw)
+                else:
+                    valid_vals.append(float(raw))
+
+        mean_hb = (
+            round(sum(valid_vals) / len(valid_vals), 2)
+            if valid_vals
+            else None
+        )
+        summary = {
+            "source_sha256": src_sha,
+            "valid_count": len(valid_vals),
+            "rejected_count": rejected,
+            "mean_hb": mean_hb,
+        }
+        logger.info(
+            "Pipeline finished: valid=%d, rejected=%d",
+            len(valid_vals),
+            rejected,
+        )
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
+    with open(out_json, "w", encoding="utf-8") as out_f:
+        json.dump(summary, out_f, indent=2)
+    return summary
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 15 Failure Modes
+
+1. **Leaking `logging.FileHandler` Across Calls:** Adding a `FileHandler` to a named logger without `logger.removeHandler(handler)` and `handler.close()` inside a `finally:` block silently duplicates every subsequent log message and can lock `tempfile.TemporaryDirectory()` folders on cleanup.
+2. **Hashing Text Mode Instead of Binary Mode (`"r"` vs. `"rb"`):** Passing decoded strings into `hashlib.sha256()` triggers `TypeError: Strings must be encoded before hashing` (or `UnicodeDecodeError` on binary assets). Always read raw bytes via `open(path, "rb")` or `Path(path).read_bytes()`.
+3. **Forgetting Existence & Negation Guards:** Returning matched files instead of unignored files in `.gitignore` audits, or hashing a missing manifest entry without checking `fpath.is_file()` first, flips security checks upside down or crashes mid-audit with `FileNotFoundError`.
+
+---
+
+::: {.callout-tip title="Part III Milestone Unlocked — Ready for Scientific Computing & Biostatistics!"}
+Congratulations on completing **Part III (Software Engineering & Reproducible Research Workflow)**! You now command the full modern Python engineering toolkit—modules, environments, object-oriented design, Git & GitHub version control, type hints, structured logging, and cryptographic dataset provenance. In **Part IV**, you will put these reproducible templates to work at scale with **NumPy**, **Pandas**, **publication-grade data visualization**, and **biostatistical inference**.
+:::

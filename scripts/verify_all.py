@@ -62,12 +62,13 @@ def execute_notebook(nb_path: Path, expect_all_pass: bool) -> Tuple[bool, List[s
             continue
 
         buf = io.StringIO()
+        err_buf = io.StringIO()
         try:
-            with contextlib.redirect_stdout(buf):
+            with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err_buf):
                 exec(compile(code, f"{nb_path.name}#cell-{idx}", "exec"), ns)
             if "expected-error" in tags:
                 errors.append(f"Cell {idx} tagged 'expected-error' did NOT raise an error as expected.")
-        except Exception as exc:
+        except (Exception, SystemExit) as exc:
             if "expected-error" in tags:
                 continue
             errors.append(f"Cell {idx} raised unexpected {type(exc).__name__}: {exc}")

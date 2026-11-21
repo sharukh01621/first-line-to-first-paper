@@ -1,0 +1,684 @@
+# Mastering Jupyter Notebooks & Google Colab Engineering {#sec-ch13}
+
+> **Chapter Mission:** Transform interactive notebooks from fragile scratchpads into publication-grade engineering instruments. Master the `.ipynb` JSON schema, eliminate hidden-state bugs via strict `Restart & Run All` discipline, manage Google Colab CPU/GPU runtimes, `drive.mount`, and IPython magics (`%timeit`, `%%writefile`) cleanly, build portable Drive/local path resolvers, protect long runs with atomic JSON checkpoints, and isolate randomness with `random.Random(seed)`.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch13 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch13 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch13 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Inspect and manipulate Jupyter `.ipynb` files directly as structured JSON documents (`cells`, `cell_type`, `execution_count`, `source`, `outputs`).
+2. Detect hidden-state execution traps by auditing `execution_count` monotonicity and enforcing `Restart & Run All` before sharing or publishing.
+3. Strip bulky code-cell outputs on a deep copy for clean Git diffs and construct canonical Google Colab GitHub launch URLs.
+4. Engineer portable Google Colab workflows—choosing CPU vs. GPU runtimes wisely, bridging `drive.mount` and local folders with a path resolver, and separating IPython magics (`%timeit`, `%%writefile`, `!pip`) from pure `.py` modules.
+5. Guard long Colab experiments against runtime disconnects using crash-proof atomic JSON checkpoints (`.tmp` $\rightarrow$ `.replace()`) and `resume_or_init` recovery.
+6. Guarantee deterministic train/test splits across cell re-runs using isolated `random.Random(seed)` generators instead of mutating global `random` state.
+
+---
+
+## Stage 1 — First-Principles Intuition: The Notebook File vs. the Live Kernel {#sec-ch13-intuition}
+
+Almost every beginner assumes a Jupyter notebook executes top-to-bottom like a standard Python script. In reality, a notebook consists of **two completely separate entities**:
+
+- **The `.ipynb` File on Disk (JSON Document):** A plain UTF-8 JSON file containing a list of cell dictionaries (`"cells"`), each holding its `"cell_type"` (`"markdown"` or `"code"`), `"source"` lines, saved `"outputs"`, and the integer `"execution_count"` printed inside `[3]:`.
+- **The Live Python Kernel in RAM (Stateful Process):** A long-running Python interpreter that remembers every variable, import, and mutated list from *whichever* cell you ran last—even if you later edited or deleted the cell that created that variable!
+
+::: {.callout-note title="Mental Model — The Wet-Lab Notebook vs. the Live Lab Bench"}
+Think of your `.ipynb` file as your **written lab protocol** and the Jupyter kernel as your **physical lab bench**:
+
+1. **Hidden State:** If you mix reagent `x = 10` in Cell 1, run Cell 2, then delete Cell 1 and run Cell 2 again, Cell 2 still succeeds because `x` is sitting on the bench (kernel RAM)—even though the protocol (`.ipynb`) no longer defines `x`. The moment a peer reviewer clicks **Restart & Run All**, your paper crashes with `NameError`.
+2. **Ephemeral Colab VMs:** Google Colab hands you a temporary Linux virtual machine (CPU for data cleaning and pandas; T4/L4/A100 GPU for deep learning). After an idle timeout or 12-hour cap, Google recycles the VM and wipes `/content/`. Only files saved to mounted Google Drive or downloaded to Git survive.
+3. **Magics Are Bench Tools, Not Pure Python:** Line magics (`%timeit`), cell magics (`%%writefile`), and shell escapes (`!pip install`) are conveniences parsed by IPython—not valid Python syntax. Before shipping reusable code into a `.py` module, every `!` and `%` line must be stripped.
+:::
+
+### Choosing Colab Runtimes & Mounting Drive Wisely
+
+In Google Colab (**Runtime $\rightarrow$ Change runtime type**), match hardware to workload:
+
+- **CPU Runtime (Default):** Use for CSV/JSON wrangling, exploratory plots, statistical tests, and chapters in Parts 1–5. CPU sessions start quickly and preserve your limited free GPU quota.
+- **GPU Runtime (T4 / L4 / A100):** Enable only when training neural networks or running matrix-heavy tensor workloads (Part 6 onward), and switch back to CPU once training finishes.
+- **Google Drive Persistence:** In an interactive Colab cell, researchers mount Drive once via `from google.colab import drive; drive.mount("/content/drive")`, exposing persistent folders under `/content/drive/MyDrive/...`. Never hardcode that raw path across 15 cells—wrap dataset lookup in a portable resolver that checks Drive first and falls back to a local directory on your laptop or CI runner.
+
+---
+
+## Stage 2 — Visual Mental Model: Kernel-State & Restart-Run-All Lifecycle {#sec-ch13-mental-model}
+
+Trace how a raw exploratory notebook matures into a crash-safe, Git-friendly, peer-reviewable research artifact:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart LR
+    A["1. Draft .ipynb<br/>Exploratory Edits"] --> B["2. Live Kernel RAM<br/>Out-of-Order Risk<br/>counts: 5, 2, 3"]
+    B -->|"Hidden State Trap"| B
+    B --> C["3. Restart & Run All<br/>Fresh Kernel RAM<br/>counts: 1, 2, 3"]
+    C --> D["4. Preflight Export<br/>Strip Outputs +<br/>Atomic .tmp Checkpt"]
+    D --> E["5. Reproducible Repo<br/>Clean Git Diff +<br/>Colab Badge URL"]
+```
+
+Notice the two engineering gates that separate fragile notebooks from reproducible research pipelines:
+
+- **Verification Gate (`Restart & Run All`):** Wiping kernel RAM and executing top-to-bottom proves every cell depends *only* on code written above it, stamping strictly increasing `execution_count` values ($1 < 2 < 3 < \dots$).
+- **Persistence & Git Gate (Strip Outputs + Atomic Checkpoints):** Stripping megabytes of base64 PNG plots before `git commit` keeps diffs clean, while writing experiment state to `ckpt.tmp` and atomically renaming via `.replace(ckpt)` guarantees a Colab disconnect never leaves a half-written JSON file behind.
+
+::: {.callout-tip title="IPython Magic Quick Reference (Bench Tools vs. `.py` Modules)"}
+| Magic / Escape | Scope | Typical Research Use | Valid in `.py`? |
+| :--- | :--- | :--- | :---: |
+| `%timeit expr` | Single line | Micro-benchmark a clean Python expression | No |
+| `%%writefile f.py` | Entire cell | Export a clean cell directly to a `.py` file | No |
+| `%matplotlib inline` | Notebook session | Render figures directly inside cell outputs | No |
+| `!pip install -q pkg` | Shell command | Install a missing package inside Colab VM | No |
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch13-walkthrough}
+
+Open `part_03_engineering_workflow/ch13_jupyter_colab/01_walkthrough.ipynb` in Colab and run every cell top-to-bottom alongside the dissections below. Every file demo executes inside `tempfile.TemporaryDirectory()` so zero junk files appear in your workspace.
+
+### `.ipynb` JSON Anatomy & Hidden-State Out-of-Order Audit {#sec-ch13-nb-anatomy}
+
+Because every `.ipynb` file is standard UTF-8 JSON, Python can audit any notebook programmatically for hidden-state risk before publication:
+
+```python
+import json
+from pathlib import Path
+import tempfile
+
+sample_nb = {
+    "nbformat": 4,
+    "nbformat_minor": 5,
+    "metadata": {},
+    "cells": [
+        {"cell_type": "markdown", "source": ["# Dengue Audit\n"]},
+        {
+            "cell_type": "code",
+            "execution_count": 5,
+            "source": ["threshold = 38.0\n"],
+            "outputs": [],
+        },
+        {
+            "cell_type": "code",
+            "execution_count": 2,
+            "source": ["print(threshold)\n"],
+            "outputs": [{"output_type": "stream", "text": ["38.0\n"]}],
+        },
+    ],
+}
+
+def is_out_of_order(nb_dict):
+    prev = 0
+    for cell in nb_dict["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        ec = cell["execution_count"]
+        if ec is None or ec <= prev:
+            return True
+        prev = ec
+    return False
+
+with tempfile.TemporaryDirectory() as tmp:
+    nb_file = Path(tmp) / "analysis.ipynb"
+    nb_file.write_text(json.dumps(sample_nb, indent=2), encoding="utf-8")
+    loaded = json.loads(nb_file.read_text(encoding="utf-8"))
+
+counts = [
+    c["execution_count"] for c in loaded["cells"]
+    if c["cell_type"] == "code"
+]
+print("Code cell counts:", counts)
+print("Hidden-state risk (out of order):", is_out_of_order(loaded))
+```
+
+**Expected Output:**
+```text
+Code cell counts: [5, 2]
+Hidden-state risk (out of order): True
+```
+
+Key mechanics to inspect closely:
+
+- **Skip non-code cells:** Markdown cells carry `"source"` text but have no `"execution_count"` or `"outputs"`. Always guard with `if cell["cell_type"] != "code": continue`.
+- **Strict monotonicity (`ec <= prev`):** Cell 1 ran at count `5` *after* Cell 2 ran at count `2`, meaning Cell 2's saved output was produced by an older value of `threshold`! Both `ec is None` (unexecuted) and `ec <= prev` (out-of-order or duplicate) flag hidden-state risk.
+
+---
+
+### Portable Colab/Local Path Resolver & Magic Awareness {#sec-ch13-portable-paths}
+
+Never scatter raw `/content/drive/MyDrive/...` strings across your analysis cells. Instead, resolve data files through one portable helper that prioritizes Google Drive when mounted and falls back to your local repository folder otherwise:
+
+```python
+from pathlib import Path
+import tempfile
+
+# Colab-only reference (never invoke live inside portable modules):
+# from google.colab import drive; drive.mount('/content/drive')
+# Interactive magics like '%timeit' or '%%writefile' are IPython-only.
+
+def find_dataset(filename, drive_dir=None, local_dir=None):
+    for folder in (drive_dir, local_dir):
+        if folder is not None:
+            candidate = Path(folder) / filename
+            if candidate.exists():
+                return candidate
+    raise FileNotFoundError(f"Missing dataset: {filename}")
+
+with tempfile.TemporaryDirectory() as tmp:
+    sim_drive = Path(tmp) / "colab_drive"
+    sim_local = Path(tmp) / "local_data"
+    sim_drive.mkdir()
+    sim_local.mkdir()
+    (sim_local / "mch_cohort.csv").write_text("id,hb\n1,11.2\n")
+
+    resolved = find_dataset("mch_cohort.csv", sim_drive, sim_local)
+    print("Resolved source folder:", resolved.parent.name)
+    print("First line:", resolved.read_text().splitlines()[0])
+```
+
+**Expected Output:**
+```text
+Resolved source folder: local_data
+First line: id,hb
+```
+
+Notice how cleanly this pattern decouples storage location from analysis code:
+
+- **Fail loudly with `FileNotFoundError`:** If neither Drive nor local storage contains the dataset, raising `FileNotFoundError` immediately stops execution with a clear diagnostic message instead of returning `None` and crashing ten cells later.
+- **No live Colab dependencies:** Because `drive.mount` stays isolated in a single Colab setup cell (or optional guard), the rest of your pipeline runs identically in Colab, local VS Code, and automated CI tests.
+
+---
+
+### Crash-Proof Atomic JSON Checkpointing {#sec-ch13-atomic-ckpt}
+
+If a Colab session disconnects halfway through `json.dump(state, open(ckpt, "w"))`, the target file is already truncated to zero bytes and left half-written—destroying hours of cross-validation or neural-network progress. **Atomic checkpointing** eliminates that window completely by writing to a sibling `.tmp` file first and swapping it into place with POSIX-atomic `Path.replace()`:
+
+```python
+import json
+from pathlib import Path
+import tempfile
+
+def write_checkpoint(ckpt_path, state_dict):
+    target = Path(ckpt_path)
+    tmp_path = target.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as out_f:
+        json.dump(state_dict, out_f, indent=2)
+    tmp_path.replace(target)
+
+with tempfile.TemporaryDirectory() as tmp:
+    ckpt = Path(tmp) / "train_state.json"
+    write_checkpoint(ckpt, {"epoch": 1, "val_auc": 0.81})
+    write_checkpoint(ckpt, {"epoch": 2, "val_auc": 0.86})
+
+    restored = json.loads(ckpt.read_text(encoding="utf-8"))
+    leftover_tmp = ckpt.with_suffix(".tmp").exists()
+    print("Restored checkpoint:", restored)
+    print("Leftover .tmp exists:", leftover_tmp)
+```
+
+**Expected Output:**
+```text
+Restored checkpoint: {'epoch': 2, 'val_auc': 0.86}
+Leftover .tmp exists: False
+```
+
+::: {.callout-warning title="Why `.replace()` Beats `.rename()` Across Operating Systems"}
+On Linux and macOS, `Path.rename()` overwrites an existing target file, but on Windows `Path.rename()` raises `FileExistsError` when `ckpt_path` already exists! Always use **`tmp_path.replace(target)`**—it atomically overwrites the destination cleanly on Linux, macOS, Windows, and Google Colab alike.
+:::
+
+---
+
+### Isolated RNG Reproducibility (`random.Random(seed)`) {#sec-ch13-isolated-rng}
+
+Calling global `random.seed(42)` at the top of a notebook is fragile: if a collaborator runs a plotting or bootstrap cell twice before reaching your train/test split, Python's global RNG advances and silently changes which patients land in your test fold! Instantiate a **local generator** `rng = random.Random(seed)` so your split is 100% immune to activity in other cells:
+
+```python
+import random
+
+def split_indices(n_samples, test_ratio=0.2, seed=42):
+    rng = random.Random(seed)
+    indices = list(range(n_samples))
+    rng.shuffle(indices)
+    n_test = int(n_samples * test_ratio)
+    return indices[n_test:], indices[:n_test]
+
+random.seed(999)
+before_global = random.getstate()
+train_a, test_a = split_indices(10, test_ratio=0.2, seed=42)
+after_global = random.getstate()
+
+random.seed(12345)
+train_b, test_b = split_indices(10, test_ratio=0.2, seed=42)
+
+print("Test fold indices:", test_a)
+print("Identical across global reseeds:", test_a == test_b)
+print("Global RNG untouched:", before_global == after_global)
+```
+
+**Expected Output:**
+```text
+Test fold indices: [7, 3]
+Identical across global reseeds: True
+Global RNG untouched: True
+```
+
+---
+
+### Break It On Purpose! (Notebook & Colab Error Anatomy) {#sec-ch13-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — FileNotFoundError on Unmounted Drive Path"}
+```python
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    unmounted_path = Path(tmp) / "MyDrive" / "raw_cohort.csv"
+    with open(unmounted_path, "r", encoding="utf-8") as f:
+        header = f.readline()
+```
+**Python's Traceback:**
+```text
+FileNotFoundError: [Errno 2] No such file or directory:
+'.../MyDrive/raw_cohort.csv'
+```
+**Diagnosis:** After a Colab runtime reset, `/content/drive/MyDrive` is no longer mounted, so any hardcoded Drive path immediately fails with `FileNotFoundError`.  
+**Fix:** Route all dataset lookups through `resolve_data_path(filename, drive_dir, local_dir)` and verify `candidate.exists()` cleanly.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — json.JSONDecodeError on Truncated Checkpoint"}
+```python
+import json
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    corrupt_ckpt = Path(tmp) / "train_state.json"
+    corrupt_ckpt.write_text('{"epoch": 8, "val_auc": ', encoding="utf-8")
+    with open(corrupt_ckpt, "r", encoding="utf-8") as f:
+        state = json.load(f)
+```
+**Python's Traceback:**
+```text
+json.decoder.JSONDecodeError: Expecting value: line 1 column 25 (char 24)
+```
+**Diagnosis:** Writing directly to a checkpoint file leaves truncated JSON if Colab disconnects mid-write, crashing every subsequent resume attempt with `json.JSONDecodeError`.  
+**Fix:** Write to `ckpt.with_suffix(".tmp")` followed by `tmp_path.replace(ckpt)`, and guard checkpoint loads with `try ... except json.JSONDecodeError:`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — KeyError on Malformed Notebook Missing 'cells'"}
+```python
+import json
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    bad_nb_path = Path(tmp) / "malformed.ipynb"
+    bad_nb_path.write_text('{"nbformat": 4}', encoding="utf-8")
+    with open(bad_nb_path, "r", encoding="utf-8") as f:
+        nb_data = json.load(f)
+    cell_count = len(nb_data["cells"])
+```
+**Python's Traceback:**
+```text
+KeyError: 'cells'
+```
+**Diagnosis:** Indexing `nb_data["cells"]` directly crashes with `KeyError` on truncated or non-standard JSON documents (such as a failed Git merge conflict inside a `.ipynb` file).  
+**Fix:** Use defensive access (`nb_data.get("cells", [])`) or validate required top-level schema keys before auditing notebook contents.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch13-blueprint}
+
+**Scenario:** Before pushing an exploratory Colab notebook to your paper's GitHub repository, you need an automated preflight tool `preflight_and_clean_notebook(in_nb, out_nb)` that inspects the raw `.ipynb` file, records whether any code cell ran out of order and whether saved outputs were present, strips all code-cell outputs and execution counts on a deep copy, atomically writes the Git-ready `.ipynb` to `out_nb`, and returns the audit report.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Input & Output Contract:**
+
+   - Input: `in_nb` (source `.ipynb` path) and `out_nb` (destination clean `.ipynb` path).
+   - Output: Clean UTF-8 `.ipynb` written atomically to `out_nb` + returned dict `{"out_of_order": bool, "had_outputs": bool}`.
+2. **Edge Cases & Traps:**
+
+   - Never mutate the parsed `raw` dictionary in place; work on `copy.deepcopy(raw)` so upstream inspection remains pure.
+   - Ignore markdown cells when checking `execution_count` and clearing `outputs`.
+   - Latch `out_of_order = True` permanently once *any* code cell has `ec is None` or `ec <= prev`.
+   - Write to `out_nb.with_suffix(".tmp")` and swap via `.replace(target)` so partial writes never corrupt `out_nb`.
+3. **Step-by-Step Algorithm:**
+
+   1. Load `raw` from `in_nb` using `json.load`.
+   2. Deep-copy `raw` into `cleaned`; initialize `prev = 0`, `out_of_order = False`, `had_outputs = False`.
+   3. Loop over `cleaned.get("cells", [])`; for each `"code"` cell, audit `execution_count` and `outputs`, then reset `outputs = []` and `execution_count = None`.
+   4. Write `cleaned` to `target.with_suffix(".tmp")` and atomically call `tmp_path.replace(target)`.
+   5. Return `{"out_of_order": out_of_order, "had_outputs": had_outputs}`.
+4. **Verification Plan (Hand Check):**
+
+   - Draft notebook with counts `[4, 2]` and one stream output $\rightarrow$ `out_of_order = True`, `had_outputs = True`, and saved `clean.ipynb` cell 0 has `outputs == []`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+import copy
+import json
+from pathlib import Path
+import tempfile
+
+def preflight_and_clean_notebook(in_nb, out_nb):
+    """Audit execution order, strip outputs, and save atomically."""
+    with open(in_nb, "r", encoding="utf-8") as in_f:
+        raw = json.load(in_f)
+
+    prev = 0
+    out_of_order = False
+    had_outputs = False
+    cleaned = copy.deepcopy(raw)
+
+    for cell in cleaned.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        ec = cell.get("execution_count")
+        if ec is None or ec <= prev:
+            out_of_order = True
+        else:
+            prev = ec
+        if cell.get("outputs"):
+            had_outputs = True
+        cell["outputs"] = []
+        cell["execution_count"] = None
+
+    target = Path(out_nb)
+    tmp_path = target.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as out_f:
+        json.dump(cleaned, out_f, indent=2)
+    tmp_path.replace(target)
+
+    return {"out_of_order": out_of_order, "had_outputs": had_outputs}
+
+with tempfile.TemporaryDirectory() as tmp:
+    raw_nb = Path(tmp) / "draft.ipynb"
+    git_nb = Path(tmp) / "clean.ipynb"
+    draft = {
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "metadata": {},
+        "cells": [
+            {
+                "cell_type": "code",
+                "execution_count": 4,
+                "source": ["x = 7\n"],
+                "outputs": [{"output_type": "stream", "text": ["7\n"]}],
+            },
+            {
+                "cell_type": "code",
+                "execution_count": 2,
+                "source": ["y = x + 1\n"],
+                "outputs": [],
+            },
+        ],
+    }
+    raw_nb.write_text(json.dumps(draft, indent=2), encoding="utf-8")
+    report = preflight_and_clean_notebook(raw_nb, git_nb)
+    saved = json.loads(git_nb.read_text(encoding="utf-8"))
+    print("Preflight report:", report)
+    print("Clean cell 0 outputs:", saved["cells"][0]["outputs"])
+```
+
+**Output:**
+```text
+Preflight report: {'out_of_order': True, 'had_outputs': True}
+Clean cell 0 outputs: []
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch13-todos}
+
+Open `part_03_engineering_workflow/ch13_jupyter_colab/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six notebook-engineering utilities below. Every file-based check runs inside `tempfile.TemporaryDirectory()`:
+
+- **To-Do 13.1 (Hidden-State Audit — `detect_out_of_order_cells(nb_dict)`):** Inspect code cells' `execution_count` (skipping markdown cells) and return `True` if any code cell has `execution_count is None` or `<=` the previous executed count, else `False`.
+- **To-Do 13.2 (Git Hygiene — `strip_notebook_outputs(nb_dict)`):** Return a deep-copied clean notebook dict with `outputs = []` and `execution_count = None` on every code cell without mutating the caller's input dictionary.
+- **To-Do 13.3 (Colab Launcher — `build_colab_url(owner, repo, branch, rel_path)`):** Return the exact URL `https://colab.research.google.com/github/{owner}/{repo}/blob/{branch}/{rel_path}` after stripping any leading `/` from `rel_path`.
+- **To-Do 13.4 (Portable Storage — `resolve_data_path(filename, drive_dir=None, local_dir=None)`):** Check `Path(drive_dir) / filename` first, then `Path(local_dir) / filename`; return the first existing `Path` or raise `FileNotFoundError`.
+- **To-Do 13.5 (Atomic Checkpointing — `save_checkpoint_atomic(ckpt_path, state_dict)`):** Serialize `state_dict` as UTF-8 JSON to `Path(ckpt_path).with_suffix(".tmp")`, then atomically rename it onto `ckpt_path` via `.replace()`.
+- **To-Do 13.6 (Isolated Reproducibility — `seeded_train_test_indices(n_samples, test_ratio=0.2, seed=42)`):** Use an isolated `random.Random(seed)` (never global `random.seed()`) to shuffle `list(range(n_samples))` and return `(train_idx, test_idx)` with `len(test_idx) == int(n_samples * test_ratio)`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch13-test}
+
+Test your understanding on paper before checking Stage 8:
+
+1. **Hidden-State Execution Counts:** A notebook has three code cells with `execution_count` values `[1, 4, 2]` and one markdown cell between them. Why is this notebook unsafe to submit as reproducible supplementary material?
+2. **Unexecuted Cell Risk:** A notebook has code cells with `execution_count` values `[1, None, 2]`. What does `detect_out_of_order_cells(nb_dict)` return, and why?
+3. **Shallow vs. Deep Copy Bug:** Why does `cleaned = nb_dict.copy()` fail to protect `nb_dict` when `strip_notebook_outputs` sets `cell["outputs"] = []`?
+4. **Colab Ephemeral Disk:** You save `cleaned_cohort.csv` directly to `/content/cleaned_cohort.csv` in Google Colab, close your laptop for 3 hours, and reconnect to a new runtime. What happened to `cleaned_cohort.csv`?
+5. **CPU vs. GPU Discipline:** Why is it poor practice to leave a Colab T4/A100 GPU runtime enabled while writing pandas data-cleaning code and reading documentation?
+6. **Magic Syntax Error:** You copy a Colab cell containing `!pip install -q pandas` and `%timeit sum(range(1000))` straight into `utils.py` and run `import utils`. What Python exception occurs?
+7. **`.replace()` vs. Direct Write:** Suppose `train_state.json` currently holds a valid epoch-10 checkpoint, and your code writes epoch 11 using `save_checkpoint_atomic`. If `json.dump()` crashes halfway through with a `TypeError`, what is inside `train_state.json` afterward?
+8. **Global vs. Isolated RNG:** Why is `rng = random.Random(42); rng.shuffle(idx)` strictly safer inside a notebook than `random.seed(42); random.shuffle(idx)`?
+9. **Zero Test-Ratio Slice Trap:** Suppose `indices` has length 10 and `n_test = int(10 * 0.0) == 0`. What does `indices[-n_test:]` evaluate to in Python, and why does `indices[:n_test]` avoid this bug?
+10. **Git Diff Bloat:** Why do research teams strip cell `"outputs"` before committing `.ipynb` files to Git?
+
+---
+
+## Stage 7 — Chapter 13 Hands-On Coding Exam (100 Points) {#sec-ch13-exam}
+
+Open `part_03_engineering_workflow/ch13_jupyter_colab/03_coding_exam.ipynb`, implement all three notebook-engineering functions, and run `tutor.check_exam("ch13", exam_submissions)` to earn your Chapter 13 score out of 100 points.
+
+### Exam Task 13.1 (30 Points): Audit Notebook Reproducibility
+
+Write `audit_notebook_reproducibility(nb_path)` to inspect any `.ipynb` file on disk:
+
+- Load `nb_path` as UTF-8 JSON and count `"code"` cells (`"code_cells"`) and `"markdown"` cells (`"markdown_cells"`).
+- Compute `"out_of_order"` (`True` if any code cell has `execution_count is None` or `<=` previous executed count, else `False`).
+- Compute `"has_outputs"` (`True` if any code cell has non-empty `"outputs"`, else `False`) and `"clean_for_git"` (`not has_outputs`).
+- Return the 5-key dictionary `{"code_cells": int, "markdown_cells": int, "out_of_order": bool, "has_outputs": bool, "clean_for_git": bool}`.
+
+### Exam Task 13.2 (35 Points): Extract Code Cells to Pure Python Module
+
+Write `extract_code_to_module(nb_path, py_out_path)` to graduate a prototype notebook into a clean importable `.py` module:
+
+- Load `nb_path` as UTF-8 JSON and extract only `"code"` cells (ignoring markdown cells).
+- Skip every line whose stripped text starts with `!` or `%` (shell escapes and line/cell magics).
+- Join non-empty code cell blocks with blank lines (`"\n\n"`), write the UTF-8 `.py` file to `py_out_path`, and return the integer count of non-empty code lines written.
+
+### Exam Task 13.3 (35 Points): Resume or Atomically Initialize Experiment
+
+Write `resume_or_init_experiment(ckpt_path, default_state)` for disconnect-proof Colab experiments:
+
+- If `ckpt_path` exists and parses cleanly as a JSON `dict`, load and return `(loaded_state, True)`.
+- Otherwise (missing file, corrupted/truncated JSON raising `json.JSONDecodeError`, or valid non-dict JSON such as a list), deep-copy `default_state`, atomically write it to `ckpt_path` via `.tmp` + `.replace()`, and return `(copy_of_default, False)`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch13-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Because cell 2 ran at count `4` *after* cell 3 ran at count `2`, cell 3's output was computed from stale kernel state—running **Restart & Run All** may produce completely different results or crash.
+2. It returns **`True`**, because an unexecuted code cell (`execution_count is None`) has never been verified during a clean top-to-bottom run.
+3. `.copy()` creates a **shallow copy** whose `"cells"` list still points to the exact same inner cell dictionaries in memory; mutating `cell["outputs"] = []` modifies the caller's original `nb_dict`. `copy.deepcopy(nb_dict)` copies all nested lists and dicts safely.
+4. It was **permanently deleted** when Google Colab recycled the ephemeral VM. Persistent outputs must be written to mounted Google Drive or exported to Git/cloud storage.
+5. Colab enforces rolling GPU usage quotas; burning GPU hours on CPU-bound data cleaning can lock you out of GPU access when you actually need to train a deep-learning model later.
+6. **`SyntaxError`**, because `!` shell escapes and `%` magics are IPython preprocessor directives, not valid Python grammar.
+7. `train_state.json` still contains the **intact epoch-10 checkpoint**, because the crash occurred while writing to `train_state.tmp` *before* `tmp_path.replace(target)` ever ran.
+8. `random.Random(seed)` isolates its internal PRNG state inside a local object so unrelated random calls in other notebook cells can never perturb your train/test split.
+9. In Python, `-0 == 0`, so `indices[-0:]` is identical to `indices[0:]` and wrongly returns all **10 elements**! Using `indices[:n_test]` returns `[]` cleanly when `n_test == 0`.
+10. Embedded outputs (especially base64-encoded matplotlib PNGs and noisy execution counts) bloat repository size and generate unreadable multi-thousand-line merge conflicts on every edit.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import copy
+import json
+from pathlib import Path
+import random
+
+# To-Do 13.1
+def detect_out_of_order_cells(nb_dict):
+    """Return True if any code cell is unexecuted or out of order."""
+    prev = 0
+    for cell in nb_dict.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        ec = cell.get("execution_count")
+        if ec is None or ec <= prev:
+            return True
+        prev = ec
+    return False
+
+# To-Do 13.2
+def strip_notebook_outputs(nb_dict):
+    """Return a deep copy of nb_dict with cleared code cell outputs."""
+    cleaned = copy.deepcopy(nb_dict)
+    for cell in cleaned.get("cells", []):
+        if cell.get("cell_type") == "code":
+            cell["outputs"] = []
+            cell["execution_count"] = None
+    return cleaned
+
+# To-Do 13.3
+def build_colab_url(owner, repo, branch, rel_path):
+    """Return the Google Colab GitHub launch URL for rel_path."""
+    clean_path = str(rel_path).lstrip("/")
+    return (
+        "https://colab.research.google.com/github/"
+        f"{owner}/{repo}/blob/{branch}/{clean_path}"
+    )
+
+# To-Do 13.4
+def resolve_data_path(filename, drive_dir=None, local_dir=None):
+    """Resolve filename from drive_dir first, then local_dir."""
+    for directory in (drive_dir, local_dir):
+        if directory is not None:
+            candidate = Path(directory) / filename
+            if candidate.exists():
+                return candidate
+    raise FileNotFoundError(f"Dataset not found: {filename}")
+
+# To-Do 13.5
+def save_checkpoint_atomic(ckpt_path, state_dict):
+    """Atomically write state_dict as UTF-8 JSON via a .tmp file."""
+    target = Path(ckpt_path)
+    tmp_path = target.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(state_dict, f, indent=2)
+    tmp_path.replace(target)
+
+# To-Do 13.6
+def seeded_train_test_indices(n_samples, test_ratio=0.2, seed=42):
+    """Return deterministic (train_idx, test_idx) via local RNG."""
+    rng = random.Random(seed)
+    indices = list(range(n_samples))
+    rng.shuffle(indices)
+    n_test = int(n_samples * test_ratio)
+    return indices[n_test:], indices[:n_test]
+```
+
+### C. Annotated Solutions — Chapter 13 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import copy
+import json
+from pathlib import Path
+
+# Exam Task 13.1 (30 pts)
+def audit_notebook_reproducibility(nb_path):
+    """Audit .ipynb cell counts, execution order, and Git cleanliness."""
+    with open(nb_path, "r", encoding="utf-8") as f:
+        nb = json.load(f)
+
+    code_cells = 0
+    markdown_cells = 0
+    out_of_order = False
+    has_outputs = False
+    prev = 0
+
+    for cell in nb.get("cells", []):
+        ctype = cell.get("cell_type")
+        if ctype == "markdown":
+            markdown_cells += 1
+        elif ctype == "code":
+            code_cells += 1
+            ec = cell.get("execution_count")
+            if ec is None or ec <= prev:
+                out_of_order = True
+            else:
+                prev = ec
+            if cell.get("outputs"):
+                has_outputs = True
+
+    return {
+        "code_cells": code_cells,
+        "markdown_cells": markdown_cells,
+        "out_of_order": out_of_order,
+        "has_outputs": has_outputs,
+        "clean_for_git": not has_outputs,
+    }
+
+# Exam Task 13.2 (35 pts)
+def extract_code_to_module(nb_path, py_out_path):
+    """Export code cells without !/% magics to .py and return line count."""
+    with open(nb_path, "r", encoding="utf-8") as f:
+        nb = json.load(f)
+
+    blocks = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        src = cell.get("source", [])
+        text = "".join(src) if isinstance(src, list) else src
+        kept = [
+            line for line in text.splitlines()
+            if not line.lstrip().startswith(("!", "%"))
+        ]
+        block = "\n".join(kept).strip("\n")
+        if block:
+            blocks.append(block)
+
+    content = ("\n\n".join(blocks) + "\n") if blocks else ""
+    with open(py_out_path, "w", encoding="utf-8") as out_f:
+        out_f.write(content)
+    return sum(1 for line in content.splitlines() if line.strip())
+
+# Exam Task 13.3 (35 pts)
+def resume_or_init_experiment(ckpt_path, default_state):
+    """Resume valid JSON dict checkpoint or atomically initialize it."""
+    target = Path(ckpt_path)
+    if target.exists():
+        try:
+            with open(target, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                return loaded, True
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    fresh = copy.deepcopy(default_state)
+    tmp_path = target.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as out_f:
+        json.dump(fresh, out_f, indent=2)
+    tmp_path.replace(target)
+    return fresh, False
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 13 Failure Modes
+
+1. **Mutating Input Notebooks via Shallow Copy or Touching Markdown Cells:** Calling `nb_dict.copy()` leaves the nested `"cells"` list shared with the caller, silently wiping original outputs in place; similarly, accessing `cell["execution_count"]` without checking `cell.get("cell_type") == "code"` crashes on the very first markdown heading.
+2. **Corrupting Checkpoints on Mid-Write Disconnects:** Writing JSON straight to `ckpt_path` truncates the previous good state the instant `open(..., "w")` executes. Always stage writes in `target.with_suffix(".tmp")`, swap with `tmp_path.replace(target)`, and catch `json.JSONDecodeError` during resume.
+3. **Leaving Magics in Exported `.py` Files or Sharing Global RNG State:** Failing to filter `!` and `%` lines produces broken `.py` modules that raise `SyntaxError` on import, while relying on global `random.seed()` lets an interactive exploration cell silently alter your held-out test indices.
+
+---
+
+::: {.callout-note title="Notebook & Colab Engineering Unlocked!"}
+Your notebooks are now auditable, Git-clean, crash-resilient, and deterministically reproducible across both Google Colab and local machines. In the next chapter, we scale these engineering habits to full scientific repositories with Git version control, virtual environments, and automated testing.
+:::
