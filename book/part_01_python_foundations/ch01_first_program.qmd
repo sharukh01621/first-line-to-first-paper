@@ -6,9 +6,9 @@
 
 | Lab Type | Notebook Path | Scan (Print Edition) |
 | :--- | :--- | :---: |
-| **Walkthrough** | `part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png){width=64px} |
-| **Guided To-Dos** | `part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png){width=64px} |
-| **Coding Exam** | `part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb` | ![](assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png){width=64px} |
+| **Walkthrough** | `part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb` | ![](../assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png){width=64px} |
+| **Guided To-Dos** | `part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb` | ![](../assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png){width=64px} |
+| **Coding Exam** | `part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb` | ![](../assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png){width=64px} |
 
 ### Learning Objectives
 
