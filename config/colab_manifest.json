@@ -42,6 +42,66 @@
       "qr_path": "assets/qr/part_01_python_foundations__ch02_variables_types__03_coding_exam.png",
       "is_solution": false
     },
+    "part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch03_strings_input__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch03_strings_input__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch03_strings_input__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch04_conditionals_logic__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch04_conditionals_logic__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch04_conditionals_logic__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch05_loops_tracing__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch05_loops_tracing__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch05_loops_tracing__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch06_functions_scope__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch06_functions_scope__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -60,6 +120,46 @@
     "solutions/part_01_python_foundations/ch02_variables_types/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch02_variables_types/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch02_variables_types__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch03_strings_input/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch03_strings_input/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch03_strings_input__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch03_strings_input/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch03_strings_input/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch03_strings_input__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch04_conditionals_logic__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch04_conditionals_logic__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch05_loops_tracing/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch05_loops_tracing/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch05_loops_tracing__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch05_loops_tracing/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch05_loops_tracing/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch05_loops_tracing__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch06_functions_scope/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch06_functions_scope/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch06_functions_scope__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_01_python_foundations/ch06_functions_scope/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch06_functions_scope/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_01_python_foundations__ch06_functions_scope__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }

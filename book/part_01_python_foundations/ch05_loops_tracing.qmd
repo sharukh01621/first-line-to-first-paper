@@ -1,0 +1,641 @@
+# Loops, Iteration Patterns, Accumulators, and Execution Tracing {#sec-ch05}
+
+> **Chapter Mission:** Automate repetitive epidemiological calculations across hundreds or millions of patient records using `for` and `while` loops, master the **4 Universal Loop Patterns** (Accumulator, Counter, Filter, Running Max/Min), control iteration flow with `range()`, `enumerate()`, `continue`, and `break`, and trace every variable state on paper using **Loop Execution Trace Tables**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch05 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch05 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch05 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Iterate cleanly over sequences and integer ranges using `for` loops and the half-open interval `range(start, stop, step)`.
+2. Implement the **4 Universal Loop Patterns**—**Accumulator**, **Counter**, **Filter**, and **Running Max/Min**—in a single clean pass over clinical data.
+3. Skip DHS missing-value sentinels (`999`, `None`) with `continue` and exit outbreak scans early with `break`.
+4. Track human-readable 1-based weeks or days alongside values using `enumerate(..., start=1)`.
+5. Model unknown-duration processes—such as epidemic doubling and hospital bed surge capacity—using condition-driven `while` loops without creating infinite loops.
+6. Build **Loop Execution Trace Tables** to verify nested loops, catch off-by-one bugs, and prevent `TypeError`, `NameError`, and `ZeroDivisionError`.
+
+---
+
+## Stage 1 — First-Principles Intuition: The Triage Conveyor Belt {#sec-ch05-intuition}
+
+In Chapter 2, you totaled 4 days of dengue cases by writing four copy-pasted lines: `total_cases += day_1`, `+= day_2`, `+= day_3`, `+= day_4`. That works for 4 days—and collapses completely when your thesis analyzes 365 days of national surveillance across 64 districts or 20,000 mothers in the Bangladesh DHS.
+
+Loops let you write the clinical rule **once** and instruct Python to apply it faithfully to every patient record automatically.
+
+::: {.callout-note title="Mental Model — The Hospital Triage Conveyor Belt"}
+Picture two different stations in a district hospital:
+
+1. **The `for` Loop (Fixed Stack of Patient Charts):** A triage nurse receives a finite stack of charts (`hb_readings`). She picks up Chart 1, checks hemoglobin, updates her clipboard tallies (`total_hb`, `anemic_count`), sets it down, and repeats for Chart 2, Chart 3, ..., stopping automatically when the stack is empty.
+2. **The `while` Loop (Emergency Ward Bed Monitor):** A hospital director watches active dengue admissions climb day by day. She does **not** know in advance whether beds will run out on Day 6 or Day 14—she simply keeps simulating *"as long as `occupied_beds <= bed_capacity`,"* stopping the moment capacity is breached.
+:::
+
+### Choosing `for` vs. `while`
+
+| Loop Type | When to Choose It | Public Health Example |
+| :--- | :--- | :--- |
+| **`for` loop** | You have a known collection (list of readings) or exact count (`range(1, 8)`). | Computing clean mean hemoglobin across 500 survey rows. |
+| **`while` loop** | You do **not** know how many steps it will take until a condition becomes `False`. | Simulating days until epidemic doubling overflows 200 hospital beds. |
+
+---
+
+## Stage 2 — Visual Mental Model: The Loop Execution Cycle {#sec-ch05-mental-model}
+
+Every loop in Python—whether processing 5 clinic rows or 50 million genomic reads—follows the exact same cyclic execution engine:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.0
+%%| fig-height: 3.6
+%%| fig-align: center
+flowchart TD
+    Init["1. Initialize State<br/>total = 0 | count = 0"]
+    Next{"2. Next item left<br/>or condition True?"}
+    Body["3. Run Loop Body<br/>Inspect current item"]
+    Skip{"Hit continue?"}
+    Stop{"Hit break?"}
+    Update["4. Update State<br/>total += val | count += 1"]
+    Done["5. Loop Finished<br/>Use final state"]
+
+    Init --> Next
+    Next -- "Yes" --> Body
+    Body --> Skip
+    Skip -- "Yes (skip rest)" --> Next
+    Skip -- "No" --> Stop
+    Stop -- "Yes (exit early)" --> Done
+    Stop -- "No" --> Update
+    Update --> Next
+    Next -- "No (exhausted)" --> Done
+```
+
+> **Golden Rule of Loop Initialization:** Always initialize accumulators (`total = 0`), counters (`count = 0`), and filter lists (`results = []`) **ONCE before the loop begins**. Putting `total = 0` *inside* the loop body wipes out your progress on every iteration; forgetting it entirely triggers a `NameError`!
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch05-walkthrough}
+
+Open `part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb` in Colab and execute each cell while reading the step-by-step **Loop Execution Trace Tables** below.
+
+### `for` Loops & `range()` (Half-Open Intervals) {#sec-ch05-range}
+
+Python's `range(start, stop, step)` follows the half-open mathematical interval $[start, stop)$—it **includes `start`** and **stops one step before `stop`**.
+
+```python
+# range(start, stop, step) stops BEFORE 'stop' (half-open interval)
+for day in range(1, 6):
+    print(f"Day {day}: Surveillance report submitted")
+
+print("Days counted:", list(range(1, 6)))
+print("Even clinic hours:", list(range(8, 17, 2)))
+```
+
+**Expected Output:**
+```text
+Day 1: Surveillance report submitted
+Day 2: Surveillance report submitted
+Day 3: Surveillance report submitted
+Day 4: Surveillance report submitted
+Day 5: Surveillance report submitted
+Days counted: [1, 2, 3, 4, 5]
+Even clinic hours: [8, 10, 12, 14, 16]
+```
+
+---
+
+### The 4 Universal Loop Patterns {#sec-ch05-patterns}
+
+Over 90% of real-world data processing loops are combinations of just **four universal patterns**:
+
+1. **Accumulator:** Running sum (`total_hb += hb`), initialized to `0` or `0.0`.
+2. **Counter:** Running tally of matching records (`anemic_count += 1`), initialized to `0`.
+3. **Filter:** Growing list of qualifying items (`anemic_cases.append(hb)`), initialized to `[]`.
+4. **Running Max / Min:** Tracking the extreme value seen so far (`max_hb = hb_readings[0]`).
+
+```python
+hb_readings = [10.4, 12.1, 9.6, 11.8, 10.9]
+
+total_hb = 0.0           # Pattern 1: Accumulator
+anemic_count = 0         # Pattern 2: Counter
+anemic_cases = []        # Pattern 3: Filter
+max_hb = hb_readings[0]  # Pattern 4: Running Max
+
+for hb in hb_readings:
+    total_hb += hb
+    if hb < 11.0:
+        anemic_count += 1
+        anemic_cases.append(hb)
+    if hb > max_hb:
+        max_hb = hb
+
+mean_hb = round(total_hb / len(hb_readings), 2)
+print("Mean Hb:", mean_hb, "| Anemic count:", anemic_count)
+print("Anemic list:", anemic_cases, "| Highest Hb:", max_hb)
+```
+
+**Expected Output:**
+```text
+Mean Hb: 10.96 | Anemic count: 3
+Anemic list: [10.4, 9.6, 10.9] | Highest Hb: 12.1
+```
+
+**Loop Execution Trace Table (Exact State After Each Iteration):**
+
+| Iter | `hb` | `total_hb` | `hb < 11.0`? | `anemic_count` | `anemic_cases` | `max_hb` |
+| :---: | :---: | :---: | :---: | :---: | :--- | :---: |
+| `Init` | — | `0.0` | — | `0` | `[]` | `10.4` |
+| `1` | `10.4` | `10.4` | `True` | `1` | `[10.4]` | `10.4` |
+| `2` | `12.1` | `22.5` | `False` | `1` | `[10.4]` | `12.1` |
+| `3` | `9.6` | `32.1` | `True` | `2` | `[10.4, 9.6]` | `12.1` |
+| `4` | `11.8` | `43.9` | `False` | `2` | `[10.4, 9.6]` | `12.1` |
+| `5` | `10.9` | `54.8` | `True` | `3` | `[10.4, 9.6, 10.9]` | `12.1` |
+
+---
+
+### `continue` & `break` (DHS Missing Codes & Early Outbreak Alert) {#sec-ch05-flow}
+
+Real epidemiology datasets are never pristine. Demographic and Health Surveys (DHS) routinely encode *"refused / not measured"* as `999` or `None`. Use **`continue`** to skip bad rows immediately, and **`break`** to stop an alert scan the instant a threshold is crossed:
+
+```python
+# Part A: continue skips DHS missing sentinels (999 or None)
+raw_sbp = [122, 999, 148, None, 134, 999]
+valid_total = 0
+valid_count = 0
+
+for sbp in raw_sbp:
+    if sbp is None or sbp == 999:
+        continue
+    valid_total += sbp
+    valid_count += 1
+
+print("Clean SBP mean:", round(valid_total / valid_count, 1))
+
+# Part B: break halts scan on FIRST outbreak threshold breach (>= 50)
+daily_cases = [14, 28, 53, 61, 40]
+first_alert_day = None
+
+for day_num, cases in enumerate(daily_cases, start=1):
+    if cases >= 50:
+        first_alert_day = day_num
+        break
+
+print("First outbreak alert on Day:", first_alert_day)
+```
+
+**Expected Output:**
+```text
+Clean SBP mean: 134.7
+First outbreak alert on Day: 3
+```
+
+**Loop Execution Trace Table — Part A (`continue` Skipping Missing Sentinels):**
+
+| Iter | `sbp` | Skipped (`continue`)? | `valid_total` | `valid_count` |
+| :---: | :---: | :---: | :---: | :---: |
+| `Init` | — | — | `0` | `0` |
+| `1` | `122` | No | `122` | `1` |
+| `2` | `999` | **Yes** | `122` | `1` |
+| `3` | `148` | No | `270` | `2` |
+| `4` | `None` | **Yes** | `270` | `2` |
+| `5` | `134` | No | `404` | `3` |
+| `6` | `999` | **Yes** | `404` | `3` |
+
+::: {.callout-tip title="Researcher's Note — Check `is None` Before Arithmetic"}
+Notice we wrote `if sbp is None or sbp == 999:`. Checking `is None` first is good defensive habit: because of Python's short-circuit `or`, if `sbp` is `None`, Python skips immediately without ever attempting numeric comparisons like `None < 11.0` (which would crash with `TypeError`)!
+:::
+
+---
+
+### `enumerate()` for Peak Dengue Week Identification {#sec-ch05-enumerate}
+
+Whenever you need **both** the position (e.g., Week 1, Week 2, ...) and the value, reach for **`enumerate(sequence, start=1)`**. Passing `start=1` aligns Python's 0-based indexing with human epidemiological week numbers:
+
+```python
+# Weekly dengue cases across 6 monsoon weeks
+weekly_cases = [32, 48, 79, 115, 94, 61]
+peak_week = 1
+peak_cases = weekly_cases[0]
+
+for week, cases in enumerate(weekly_cases, start=1):
+    if cases > peak_cases:
+        peak_cases = cases
+        peak_week = week
+
+print(f"Peak dengue week: Week {peak_week} ({peak_cases} cases)")
+```
+
+**Expected Output:**
+```text
+Peak dengue week: Week 4 (115 cases)
+```
+
+---
+
+### `while` Loops: Epidemic Doubling & Hospital Bed Capacity {#sec-ch05-while}
+
+When you want to simulate forward in time until a clinical threshold is breached—without knowing how many steps it will take—use a **`while`** loop:
+
+```python
+# Simulate cases doubling every 3 days until exceeding 200 beds
+active_cases = 25
+bed_capacity = 200
+days = 0
+
+while active_cases <= bed_capacity:
+    active_cases *= 2
+    days += 3
+
+print(f"Capacity exceeded on Day {days} with {active_cases} cases")
+```
+
+**Expected Output:**
+```text
+Capacity exceeded on Day 12 with 400 cases
+```
+
+**Loop Execution Trace Table (`while active_cases <= 200`):**
+
+| Iter | Check `active_cases <= 200` | `active_cases` After | `days` After |
+| :---: | :---: | :---: | :---: |
+| `Start` | `25 <= 200` (`True`) | `25` | `0` |
+| `1` | `50 <= 200` (`True`) | `50` | `3` |
+| `2` | `100 <= 200` (`True`) | `100` | `6` |
+| `3` | `200 <= 200` (`True`) | `200` | `9` |
+| `4` | `400 <= 200` (`False` $\rightarrow$ **EXIT**) | `400` | `12` |
+
+::: {.callout-warning title="Common Trap — Infinite Loops!"}
+If you forget to update the state variable inside a `while` loop (for instance, forgetting `active_cases *= 2`), the condition `25 <= 200` stays `True` forever! In Google Colab, click the **Stop (■)** button on the cell—and always verify on paper that every `while` body moves strictly closer to terminating.
+:::
+
+---
+
+### Nested Loops: Multi-Ward Surveillance Summary {#sec-ch05-nested}
+
+Real health data is hierarchical: clinics inside districts, days inside wards, visits inside patients. A **nested loop** places one loop inside another. Watch carefully where `ward_total = 0` is reset:
+
+```python
+# Each inner list holds 3 daily dengue admissions for one ward
+ward_admissions = [
+    [6, 9, 11],    # Ward 1 -> sum 26
+    [14, 18, 12],  # Ward 2 -> sum 44
+]
+grand_total = 0
+
+for ward_num, daily_counts in enumerate(ward_admissions, start=1):
+    ward_total = 0
+    for count in daily_counts:
+        ward_total += count
+    grand_total += ward_total
+    print(f"Ward {ward_num} 3-day total: {ward_total}")
+
+print("Hospital grand total:", grand_total)
+```
+
+**Expected Output:**
+```text
+Ward 1 3-day total: 26
+Ward 2 3-day total: 44
+Hospital grand total: 70
+```
+
+Notice the two accumulator scopes: `grand_total = 0` is initialized **outside both loops** (accumulates the entire hospital), while `ward_total = 0` is reset **inside the outer loop** so Ward 2 does not inherit Ward 1's 26 admissions!
+
+---
+
+### Break It On Purpose! (Loop Error Anatomy) {#sec-ch05-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — TypeError: 'int' object is not iterable"}
+```python
+for day in 5:
+    print("Day:", day)
+```
+**Python's Traceback:**
+```text
+TypeError: 'int' object is not iterable
+```
+**Diagnosis:** A single integer (`5`) is a scalar object, not a sequence of items. Python cannot loop over a single number directly.  
+**Fix:** Wrap the count in `range(5)` (or `range(1, 6)` for 1-based days): `for day in range(1, 6):`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — NameError on Uninitialized Accumulator"}
+```python
+for cases in [12, 18, 25]:
+    uninitialized_total += cases
+```
+**Python's Traceback:**
+```text
+NameError: name 'uninitialized_total' is not defined
+```
+**Diagnosis:** `uninitialized_total += cases` means `uninitialized_total = uninitialized_total + cases`. On the very first iteration, Python looks up `uninitialized_total` on the right-hand side and discovers it does not exist yet!  
+**Fix:** Initialize `uninitialized_total = 0` on the line **above** the `for` header.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ZeroDivisionError When All Readings Are Missing"}
+```python
+all_missing_hb = [999, 999, 999]
+hb_sum = 0.0
+valid_n = 0
+for val in all_missing_hb:
+    if val == 999:
+        continue
+    hb_sum += val
+    valid_n += 1
+mean_missing = hb_sum / valid_n
+```
+**Python's Traceback:**
+```text
+ZeroDivisionError: float division by zero
+```
+**Diagnosis:** Every reading hit `continue`, leaving `valid_n == 0`. Dividing `0.0 / 0` crashes your entire pipeline on the first empty clinic subgroup!  
+**Fix:** Always guard the division: `mean_missing = round(hb_sum / valid_n, 2) if valid_n > 0 else None`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch05-blueprint}
+
+**Scenario:** A rural maternal health camp collects 7 hemoglobin readings (in g/dL), but two assays failed and were coded as `999` and `None`: `raw_hb = [10.2, 999, 11.6, None, 9.4, 12.3, 10.8]`. In a single clean pass, skip missing codes, compute `valid_count`, `mean_hb` (rounded to 2 decimals, safely returning `None` if no valid readings exist), `anemic_count` ($< 11.0\text{ g/dL}$), and `min_hb` (the lowest valid hemoglobin reading to flag the most severe case).
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Units:** List `raw_hb` containing floats (g/dL), DHS missing code `999`, and Python `None`.
+2. **Edge Cases & Traps:**
+   - Initializing `min_hb = raw_hb[0]` is dangerous if the first record happens to be `999` or `None`! Initialize `min_hb = None` and update whenever `min_hb is None or hb < min_hb`.
+   - Dividing by `len(raw_hb)` (`7`) instead of `valid_count` (`5`) biases the mean downward.
+   - Guard `valid_count > 0` before dividing to prevent `ZeroDivisionError`.
+3. **Step-by-Step Algorithm:**
+   1. Initialize `valid_sum = 0.0`, `valid_count = 0`, `anemic_count = 0`, `min_hb = None`.
+   2. Loop `for hb in raw_hb:`; if `hb is None or hb == 999:`, `continue`.
+   3. Update `valid_sum += hb`, `valid_count += 1`, check `hb < 11.0`, and update `min_hb`.
+   4. After the loop, compute `mean_hb = round(valid_sum / valid_count, 2)` if `valid_count > 0` else `None`.
+4. **Verification Plan (Hand Check):**
+   - Valid readings: $10.2, 11.6, 9.4, 12.3, 10.8$ (`valid_count = 5`).
+   - Sum: $10.2 + 11.6 + 9.4 + 12.3 + 10.8 = 54.3$; Mean: $54.3 / 5 = 10.86$.
+   - Anemic ($< 11.0$): $10.2, 9.4, 10.8 \Rightarrow 3$; Minimum: $9.4$.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+# Step 1: Raw maternal hemoglobin readings with DHS missing codes
+raw_hb = [10.2, 999, 11.6, None, 9.4, 12.3, 10.8]
+
+# Step 2: Initialize accumulators, counters, and safe running min
+valid_sum = 0.0
+valid_count = 0
+anemic_count = 0
+min_hb = None
+
+# Step 3: Single-pass cleaning + summary loop
+for hb in raw_hb:
+    if hb is None or hb == 999:
+        continue
+    valid_sum += hb
+    valid_count += 1
+    if hb < 11.0:
+        anemic_count += 1
+    if min_hb is None or hb < min_hb:
+        min_hb = hb
+
+# Step 4: Guard against ZeroDivisionError before computing mean
+if valid_count > 0:
+    mean_hb = round(valid_sum / valid_count, 2)
+else:
+    mean_hb = None
+
+print(f"Valid: {valid_count} | Mean Hb: {mean_hb} g/dL")
+print(f"Anemic: {anemic_count} | Most severe (Min Hb): {min_hb} g/dL")
+```
+
+**Output:**
+```text
+Valid: 5 | Mean Hb: 10.86 g/dL
+Anemic: 3 | Most severe (Min Hb): 9.4 g/dL
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch05-todos}
+
+Open `part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and complete all six loop exercises below:
+
+- **To-Do 5.1 (Warm-Up — Accumulator & Counter):** Given `daily_doses = [45, 52, 48, 60, 55, 40, 50]`, use a `for` loop to compute `total_doses` (`int`) and `high_volume_days` (count of days with $\ge 50$ doses).
+- **To-Do 5.2 (Filter Pattern):** Given `temps_c = [36.8, 38.4, 37.5, 39.1, 38.0, 36.9]`, build a new list `febrile_temps` containing only temperatures $\ge 38.0^\circ\text{C}$.
+- **To-Do 5.3 (`continue` Pattern — DHS Missing Codes):** Given `raw_ages = [24, 999, 31, None, 28, 999, 37]`, skip `None` and `999` with `continue`, then compute `valid_count` (`int`) and `mean_age` rounded to 1 decimal place.
+- **To-Do 5.4 (`break` + `enumerate()` — First Outbreak Breach):** Given `daily_cases = [18, 29, 44, 52, 67, 58]` and `alert_threshold = 50`, loop with `enumerate(daily_cases, start=1)` and `break` on the first day $\ge 50$ to capture `breach_day` and `breach_cases`.
+- **To-Do 5.5 (`while` Loop — Epidemic Doubling):** Starting from `cases = 15`, `bed_limit = 200`, `days_elapsed = 0`, double `cases` and add `2` to `days_elapsed` while `cases <= bed_limit`.
+- **To-Do 5.6 (Nested Loops — Multi-District Clinic Totals):** Given `district_clinics = [[12, 18, 15], [22, 19, 25], [10, 14, 16]]`, compute `district_totals` (sum of each inner list) and `top_district` (1-based district number with the highest total).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch05-test}
+
+Trace every loop by hand on paper before checking Stage 8:
+
+1. **`range()` Half-Open Interval:** What exact list does `list(range(2, 10, 2))` produce? Why is `10` excluded?
+2. **Accumulator Trace Table:** Trace `total` after every iteration:
+   ```python
+   total = 0
+   for x in [4, 7, 3]:
+       total += x * 2
+   ```
+3. **`continue` vs. `break`:** What exact numbers are printed by:
+   ```python
+   for n in [10, 999, 20, -1, 30]:
+       if n == 999:
+           continue
+       if n < 0:
+           break
+       print(n)
+   ```
+4. **Reset-Inside-Loop Bug:** A student places `total = 0` *inside* a `for` loop right before `total += x` when iterating over `[10, 20, 30]`. What final value does `total` hold, and why?
+5. **`enumerate()` Start Parameter:** What tuple `(idx, val)` does `enumerate(["A", "B", "C"], start=1)` yield on its second iteration?
+6. **Boundary Condition (`<` vs. `<=`):** For `cases = 50; while cases < 200: cases *= 2`, what is the final value of `cases`? What changes if the condition is `cases <= 200`?
+7. **Spot the Exception #1:** Why does `for i in 10:` raise `TypeError: 'int' object is not iterable`, and how do you fix it?
+8. **Spot the Exception #2:** Why does computing `hb_sum / valid_count` after skipping `999` values risk `ZeroDivisionError`, and how should you guard it?
+9. **Nested Loop Iterations:** If an outer loop iterates over `4` districts and an inner loop iterates over `7` days, how many total times does the innermost statement execute?
+10. **Safe Running Minimum:** Why is initializing `min_hb = 0` a silent bug when searching for the lowest hemoglobin in `[10.2, 9.4, 11.8]`, and how should you initialize `min_hb` instead?
+
+---
+
+## Stage 7 — Chapter 5 Hands-On Coding Exam (100 Points) {#sec-ch05-exam}
+
+Open `part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb`, complete all three tasks, and run `tutor.check_exam("ch05", exam_submissions)` to grade your work out of 100 points.
+
+### Exam Task 5.1 (30 Points): Dirty Maternal Hemoglobin Cleaning & Summary
+
+Given raw maternal hemoglobin readings `raw_hb_readings = [10.5, 999, 11.8, None, 9.2, 12.4, 999, 10.1, None, 11.0]`, use a `for` loop with `continue` to skip `None` and `999`, and compute:
+
+- `valid_count` (`int`, number of valid readings)
+- `missing_count` (`int`, number of skipped `None` or `999` entries)
+- `mean_hb` (`float`, mean of valid readings rounded to 2 decimal places, guarded against `valid_count == 0`)
+- `anemic_count` (`int`, count of valid readings strictly `< 11.0` g/dL)
+
+### Exam Task 5.2 (35 Points): Monsoon Dengue Peak-Week & High-Alert Surveillance
+
+A district records 8 consecutive weeks of monsoon dengue cases: `weekly_dengue = [42, 65, 98, 134, 178, 162, 115, 74]` with `high_alert_threshold = 100`. Using `enumerate(weekly_dengue, start=1)`, compute:
+
+- `total_cases` (`int`, cumulative 8-week cases)
+- `peak_week` (`int`, 1-based week number with maximum cases)
+- `peak_cases` (`int`, maximum weekly case count)
+- `high_alert_weeks` (`int`, count of weeks with `cases >= 100`)
+- `first_alert_week` (`int`, 1-based week number of the first week with `cases >= 100`)
+
+### Exam Task 5.3 (35 Points): Hospital Surge-Capacity Day Simulation (`while` Loop)
+
+A district hospital starts on Day `0` with `occupied_beds = 40`, `bed_capacity = 250`, `daily_admissions = 20` (for Day 1), and `daily_discharges = 10` (constant daily recoveries). Simulate with `while occupied_beds <= bed_capacity:`, executing these exact steps each day:
+
+- Increment `surge_day += 1`
+- Update `occupied_beds += daily_admissions - daily_discharges`
+- Accumulate `total_admitted += daily_admissions`
+- Increase `daily_admissions += 5` for the following day
+
+After the loop exits, report `surge_day`, `final_occupied_beds` (`occupied_beds`), `overflow_beds` (`occupied_beds - bed_capacity`), and `total_admitted`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch05-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `[2, 4, 6, 8]`. `range(start, stop, step)` is half-open $[2, 10)$, so it stops strictly before `10`.
+2. `0` $\rightarrow$ `8` ($+4 \times 2$) $\rightarrow$ `22` ($+7 \times 2$) $\rightarrow$ `28` ($+3 \times 2$).
+3. Prints **`10`** and **`20`** only (`999` is skipped by `continue`; `-1` triggers `break`, so `30` is never reached).
+4. `total` ends at **`30`** (the last item only), because `total = 0` wipes out the accumulated sum at the start of each iteration.
+5. `(2, "B")` (iteration 1 yields `(1, "A")`, iteration 2 yields `(2, "B")`).
+6. With `< 200`: `50` $\rightarrow$ `100` $\rightarrow$ `200` (stops at **`200`**). With `<= 200`: `200 <= 200` is still `True`, so it doubles once more to **`400`**.
+7. `10` is a single `int`, not an iterable sequence. Fix: `for i in range(10):`.
+8. If every reading is `999`, `valid_count` stays `0`, so `hb_sum / 0` raises `ZeroDivisionError`. Guard with `if valid_count > 0: ... else: None`.
+9. $4 \times 7 = 28$ total executions.
+10. Because every valid hemoglobin reading ($> 0$) is larger than `0`, `hb < min_hb` is never `True` and `min_hb` stays stuck at `0`! Initialize `min_hb = None` (and check `if min_hb is None or hb < min_hb:`) or `min_hb = valid_list[0]`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 5.1
+daily_doses = [45, 52, 48, 60, 55, 40, 50]
+total_doses = 0
+high_volume_days = 0
+for doses in daily_doses:
+    total_doses += doses
+    if doses >= 50:
+        high_volume_days += 1                # 350, 4
+
+# To-Do 5.2
+temps_c = [36.8, 38.4, 37.5, 39.1, 38.0, 36.9]
+febrile_temps = []
+for temp in temps_c:
+    if temp >= 38.0:
+        febrile_temps.append(temp)           # [38.4, 39.1, 38.0]
+
+# To-Do 5.3
+raw_ages = [24, 999, 31, None, 28, 999, 37]
+age_sum = 0
+valid_count = 0
+for age in raw_ages:
+    if age is None or age == 999:
+        continue
+    age_sum += age
+    valid_count += 1
+mean_age = round(age_sum / valid_count, 1)   # 4, 30.0
+
+# To-Do 5.4
+daily_cases = [18, 29, 44, 52, 67, 58]
+breach_day, breach_cases = None, None
+for day, cases in enumerate(daily_cases, start=1):
+    if cases >= 50:
+        breach_day, breach_cases = day, cases
+        break                                # Day 4, 52
+
+# To-Do 5.5
+cases, bed_limit, days_elapsed = 15, 200, 0
+while cases <= bed_limit:
+    cases *= 2
+    days_elapsed += 2                        # Day 8, 240
+
+# To-Do 5.6
+district_clinics = [[12, 18, 15], [22, 19, 25], [10, 14, 16]]
+district_totals = []
+top_district, best_total = 1, -1
+for d_num, clinics in enumerate(district_clinics, start=1):
+    d_total = 0
+    for count in clinics:
+        d_total += count
+    district_totals.append(d_total)
+    if d_total > best_total:
+        best_total, top_district = d_total, d_num  # [45, 66, 40], 2
+```
+
+### C. Annotated Solutions — Chapter 5 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 5.1 (30 pts)
+raw_hb_readings = [
+    10.5, 999, 11.8, None, 9.2, 12.4, 999, 10.1, None, 11.0
+]
+valid_count = 0
+missing_count = 0
+hb_sum = 0.0
+anemic_count = 0
+
+for hb in raw_hb_readings:
+    if hb is None or hb == 999:
+        missing_count += 1
+        continue
+    hb_sum += hb
+    valid_count += 1
+    if hb < 11.0:
+        anemic_count += 1
+
+mean_hb = round(hb_sum / valid_count, 2) if valid_count > 0 else None
+# valid_count=6, missing_count=4, mean_hb=10.83, anemic_count=3
+
+# Exam Task 5.2 (35 pts)
+weekly_dengue = [42, 65, 98, 134, 178, 162, 115, 74]
+total_cases = 0
+peak_week = 1
+peak_cases = weekly_dengue[0]
+high_alert_weeks = 0
+first_alert_week = None
+
+for week, cases in enumerate(weekly_dengue, start=1):
+    total_cases += cases
+    if cases > peak_cases:
+        peak_cases = cases
+        peak_week = week
+    if cases >= 100:
+        high_alert_weeks += 1
+        if first_alert_week is None:
+            first_alert_week = week
+# total=868, peak_week=5, peak_cases=178, alerts=4, first_alert=4
+
+# Exam Task 5.3 (35 pts)
+occupied_beds = 40
+bed_capacity = 250
+daily_admissions = 20
+daily_discharges = 10
+surge_day = 0
+total_admitted = 0
+
+while occupied_beds <= bed_capacity:
+    surge_day += 1
+    occupied_beds += daily_admissions - daily_discharges
+    total_admitted += daily_admissions
+    daily_admissions += 5
+
+final_occupied_beds = occupied_beds       # 260
+overflow_beds = occupied_beds - bed_capacity  # 10
+# surge_day=8, final_occupied_beds=260, overflow_beds=10, total=300
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 5 Failure Modes
+
+1. **Dividing by `len(raw_list)` Instead of `valid_count`:** After skipping missing `999` and `None` records with `continue`, dividing `hb_sum` by `len(raw_hb_readings)` (`10`) instead of `valid_count` (`6`) silently fabricates a catastrophic mean hemoglobin of **6.50 g/dL** instead of **10.83 g/dL**—zero error message, completely corrupted research!
+2. **Overwriting First-Occurrence Alerts:** In Exam Task 5.2, setting `first_alert_week = week` unconditionally inside `if cases >= 100:` overwrites Week 4 with Week 5, Week 6, and finally Week 7. Guarding with `if first_alert_week is None:` latches onto the earliest breach while letting the loop complete the remaining totals.
+3. **Statement-Order Drift Inside `while` Loops:** In Exam Task 5.3, moving `daily_admissions += 5` *above* `total_admitted += daily_admissions` counts Day 2's admissions (`25`) on Day 1—inflating `total_admitted` from **300** to **340**. Always sketch a 2-row **Loop Execution Trace Table** whenever a `while` loop updates coupled state variables!

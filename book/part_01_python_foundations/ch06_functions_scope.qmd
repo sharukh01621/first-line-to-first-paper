@@ -1,0 +1,548 @@
+# Functions, Scope, Decomposition, and Modular Problem Solving {#sec-ch06}
+
+> **Chapter Mission:** Complete Part I by transforming one-off scripts into reusable, crash-proof, peer-reviewable research functions. Master `def`, parameters, default arguments, `return` versus `print()`, local/global scope isolation, guard clauses, and top-down decomposition—the engineering habits that power every data pipeline from Part II through Part V.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch06 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch06 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch06 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Define clean, self-documenting Python functions using `def`, meaningful parameters, docstrings, and explicit `return` statements.
+2. Explain—and permanently avoid—the #1 beginner trap of confusing `print()` (displaying text on screen) with `return` (handing back a usable object).
+3. Design flexible research functions using **default parameters** and **keyword arguments** (such as clinical subgroup cutoffs and rate denominators).
+4. Trace **local versus global scope** across temporary call frames using Python's LEGB lookup rule, and keep functions isolated from fragile global state.
+5. Protect analytical functions with **early-return guard clauses** so zero denominators, `None` entries, and empty lists never crash a batch analysis.
+6. Decompose complex public health workflows into small, single-responsibility helper functions that compose cleanly into a Part I Capstone Function Suite.
+
+---
+
+## Stage 1 — First-Principles Intuition: Functions as Certified Diagnostic Lab Machines {#sec-ch06-intuition}
+
+In Chapters 1 through 5, you wrote flat scripts that ran top-to-bottom on one patient or one list at a time. Imagine now that your Maternal & Child Health manuscript analyzes **4,200 mothers across 12 clinics**. If you copy-paste the BMI formula or the WHO anemia check fifteen times across your notebook—and later discover a typo in one copy—your paper silently publishes inconsistent results.
+
+Software engineers and computational scientists call the antidote **DRY: Don't Repeat Yourself**. In Python, the fundamental building block of DRY, reproducible research is the **function**.
+
+::: {.callout-note title="Mental Model — A Certified Diagnostic Lab Machine"}
+Picture a calibrated hematology analyzer sitting on a hospital bench. Every well-designed Python function works identically to that machine:
+
+1. **Sample Intake Slot (Parameters):** You slide sealed input values into the machine (`weight_kg`, `height_cm`, `hb_g_dl`). The machine never wanders down the hallway grabbing random tubes off someone else's desk!
+2. **Sealed Processing Chamber (Local Scope):** Inside the machine, intermediate variables (like `height_m` or `cutoff`) are created, used for the calculation, and **discarded cleanly** the moment the test finishes. Nothing leaks onto the outside workbench.
+3. **LCD Screen (`print()`) vs. Printed Lab Report (`return`):** The machine may flash a number on its front LCD screen (`print()`), which is helpful if a human is staring at it—*but you cannot staple an LCD screen to a medical chart or feed it into a downstream statistical model!* Only **`return`** hands back an actual Python value that your calling code can store, compare, or pass into the next function.
+4. **SOP Instruction Card (Docstring):** A clear one-line triple-quoted string (`"""..."""`) directly beneath `def` documents the machine's purpose, units, and edge-case contract for your future self and peer reviewers.
+:::
+
+### The Rule of Single Responsibility (Decomposition)
+
+Great researchers do **not** write one giant 150-line function that cleans text, checks missing sentinels, calculates incidence rates, classifies risk, and formats tables all at once. Instead, they practice **decomposition**:
+
+- Give each function **one clear job** (e.g., `clean_daily_cases`, `safe_incidence_rate`, `summarize_district`).
+- Keep every helper small enough to read at a glance and test independently on edge cases (`0`, `None`, `[]`, `999`).
+- Compose those verified building blocks together like Lego bricks into higher-level pipelines.
+
+---
+
+## Stage 2 — Visual Mental Model: Call Frames & Local/Global Scope Isolation {#sec-ch06-mental-model}
+
+Watch what happens inside Python's memory when global code calls a function that defines a local variable sharing the *same name* as an outer variable:
+
+```python
+FEVER_CUTOFF_C = 38.0
+patient_status = "Waiting"
+
+def screen_temperature(temp_c):
+    patient_status = "Febrile" if temp_c >= FEVER_CUTOFF_C else "Normal"
+    return patient_status
+
+lab_result = screen_temperature(38.6)
+```
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    subgraph Global["Global Frame (Outer Notebook)"]
+        G1["FEVER_CUTOFF_C = 38.0<br/>(read-only constant)"]
+        G2["patient_status = 'Waiting'<br/>(remains untouched!)"]
+        G3["lab_result = 'Febrile'<br/>(receives return value)"]
+    end
+    subgraph Local["Local Call Frame: screen_temperature(38.6)"]
+        L1["temp_c = 38.6<br/>(parameter binding)"]
+        L2["patient_status = 'Febrile'<br/>(private local tag)"]
+    end
+    G1 -. "reads global<br/>constant" .-> L2
+    L1 --> L2
+    L2 ==>|"return 'Febrile'<br/>(frame destroyed)"| G3
+```
+
+Every time you invoke a function, Python constructs a fresh, isolated **Local Call Frame** on the call stack. When Python needs to resolve a variable name inside a function, it searches four scopes in strict **LEGB** order:
+
+1. **L — Local:** Names assigned inside the current `def` body (including its parameters).
+2. **E — Enclosing:** Names inside any outer enclosing `def` (for nested functions).
+3. **G — Global:** Names defined at the top level of the notebook or `.py` module.
+4. **B — Built-in:** Python's preloaded names (`len`, `round`, `sum`, `print`, `None`).
+
+::: {.callout-tip title="Researcher's Golden Rule of Pure Functions"}
+A **pure function** receives all variable inputs through its parameters, reads at most `UPPER_CASE` global constants (never mutating globals!), and communicates its answer strictly via `return`. Pure functions are effortless to debug, test, and reuse across manuscripts.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch06-walkthrough}
+
+Open `part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Anatomy of `def`, Parameters, `return`, and Docstrings {#sec-ch06-def}
+
+```python
+def compute_bmi(weight_kg, height_cm):
+    """Return Body Mass Index (kg/m^2) rounded to 2 decimal places."""
+    height_m = height_cm / 100
+    bmi = weight_kg / (height_m ** 2)
+    return round(bmi, 2)
+
+# Reuse the same certified machine on multiple patients
+bmi_a = compute_bmi(64.5, 168)
+bmi_b = compute_bmi(54.6, 156)
+print("Patient A BMI:", bmi_a, "| Patient B BMI:", bmi_b)
+print("Docstring:", compute_bmi.__doc__)
+```
+
+**Expected Output:**
+```text
+Patient A BMI: 22.85 | Patient B BMI: 22.44
+Docstring: Return Body Mass Index (kg/m^2) rounded to 2 decimal places.
+```
+
+Notice the exact vocabulary distinction:
+
+- **Parameters** (`weight_kg`, `height_cm`) are the placeholder variable names written in the `def` header.
+- **Arguments** (`64.5`, `168`) are the concrete values passed in when you call the function.
+- Defining a function with `def` **does not execute its body**—it builds the machine and attaches the name `compute_bmi` to it. The body runs only when called with parentheses `compute_bmi(...)`.
+
+---
+
+### The #1 Beginner Trap: `return` vs. `print()` {#sec-ch06-return-vs-print}
+
+If a function reaches the end of its body without hitting a `return` statement, Python silently returns **`None`**. Compare these two functions side by side:
+
+```python
+def show_bmi_only(weight_kg, height_cm):
+    """Displays BMI on screen, but implicitly returns None!"""
+    height_m = height_cm / 100
+    print("Screen display:", round(weight_kg / (height_m ** 2), 2))
+
+returned_good = compute_bmi(64.5, 168)
+returned_bad = show_bmi_only(64.5, 168)
+
+print("compute_bmi returned:", returned_good, type(returned_good))
+print("show_bmi_only returned:", returned_bad, type(returned_bad))
+```
+
+**Expected Output:**
+```text
+Screen display: 22.85
+compute_bmi returned: 22.85 <class 'float'>
+show_bmi_only returned: None <class 'NoneType'>
+```
+
+Look closely at `returned_bad`: even though `22.85` appeared on screen, the variable `returned_bad` holds `None`! Any subsequent attempt to compare `returned_bad >= 25.0` or compute `returned_bad - 25.0` will crash immediately with a `TypeError`.
+
+---
+
+### Default Parameters & Keyword Arguments {#sec-ch06-defaults}
+
+In maternal health surveillance, most patients in an antenatal clinic are pregnant (WHO anemia threshold $< 11.0\text{ g/dL}$), whereas non-pregnant adult women use $< 12.0\text{ g/dL}$. Default parameters let you encode the common clinical case cleanly while keeping full flexibility:
+
+```python
+def classify_anemia(hb_g_dl, pregnant=True):
+    """Classify maternal or adult anemia using WHO hemoglobin cutoffs."""
+    cutoff = 11.0 if pregnant else 12.0
+    if hb_g_dl < cutoff:
+        return "Anemic"
+    return "Normal"
+
+print("Pregnant (default), 10.6 ->", classify_anemia(10.6))
+print("Pregnant (default), 11.4 ->", classify_anemia(11.4))
+print("Non-pregnant, 11.4       ->", classify_anemia(11.4, pregnant=False))
+```
+
+**Expected Output:**
+```text
+Pregnant (default), 10.6 -> Anemic
+Pregnant (default), 11.4 -> Normal
+Non-pregnant, 11.4       -> Anemic
+```
+
+::: {.callout-warning title="Syntax Rule — Required Parameters Must Come Before Defaults"}
+In any `def` header, all required parameters without defaults (`hb_g_dl`) must appear **to the left** of parameters with default values (`pregnant=True`). Writing `def classify_anemia(pregnant=True, hb_g_dl):` triggers an immediate `SyntaxError`.
+:::
+
+---
+
+### Local vs. Global Scope & Call-Frame Isolation {#sec-ch06-scope}
+
+Assigning a name inside a `def` creates a **new local variable** inside that call frame—it does **not** overwrite a global variable with the same name:
+
+```python
+FEVER_CUTOFF_C = 38.0   # Read-only global constant (UPPER_CASE)
+patient_status = "Waiting"
+
+def screen_temperature(temp_c):
+    """Return fever status using local scope without mutating globals."""
+    patient_status = "Febrile" if temp_c >= FEVER_CUTOFF_C else "Normal"
+    return patient_status
+
+lab_result = screen_temperature(38.6)
+print("Returned from function:", lab_result)
+print("Outer global unchanged:", patient_status)
+```
+
+**Expected Output:**
+```text
+Returned from function: Febrile
+Outer global unchanged: Waiting
+```
+
+Notice how cleanly Python protects the outer notebook: `screen_temperature` reads the constant `FEVER_CUTOFF_C`, computes its own local `patient_status`, returns `"Febrile"`, and leaves the outer `patient_status` untouched at `"Waiting"`.
+
+---
+
+### Decomposition: Composing Small Functions Together {#sec-ch06-decomposition}
+
+Once you have small, trustworthy helper functions, higher-level functions read almost like clinical English:
+
+```python
+def is_febrile(temp_c):
+    """Return True if temperature meets fever threshold (>= 38.0 C)."""
+    return temp_c >= 38.0
+
+def assess_mother(patient_id, temp_c, hb_g_dl):
+    """Compose smaller helpers into a single clear triage summary."""
+    fever_flag = is_febrile(temp_c)
+    anemia_label = classify_anemia(hb_g_dl, pregnant=True)
+    needs_review = fever_flag or (anemia_label == "Anemic")
+    return (patient_id, anemia_label, fever_flag, needs_review)
+
+print(assess_mother("UHC-0042", 38.4, 10.2))
+print(assess_mother("UHC-0043", 36.9, 12.1))
+```
+
+**Expected Output:**
+```text
+('UHC-0042', 'Anemic', True, True)
+('UHC-0043', 'Normal', False, False)
+```
+
+Returning a **tuple** `(patient_id, anemia_label, fever_flag, needs_review)` lets callers unpack all four results cleanly on one line: `pid, anemia, febrile, review = assess_mother(...)`.
+
+---
+
+### Break It On Purpose! (Function & Scope Error Anatomy) {#sec-ch06-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — TypeError on Missing Required Argument"}
+```python
+bmi_incomplete = compute_bmi(64.5)
+```
+**Python's Traceback:**
+```text
+TypeError: compute_bmi() missing 1 required positional argument: 'height_cm'
+```
+**Diagnosis:** `compute_bmi` declares two required parameters (`weight_kg`, `height_cm`) with no defaults, but we supplied only one argument.  
+**Fix:** Provide all required arguments—e.g., `compute_bmi(64.5, 168)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — NameError Accessing Local Variable Outside Scope"}
+```python
+def calc_daily_dose(weight_kg):
+    daily_mg = weight_kg * 15
+    return daily_mg
+
+dose = calc_daily_dose(20.0)
+print(daily_mg)
+```
+**Python's Traceback:**
+```text
+NameError: name 'daily_mg' is not defined
+```
+**Diagnosis:** `daily_mg` lived exclusively inside `calc_daily_dose`'s local call frame. The instant `return daily_mg` finished, that call frame was destroyed—only the returned value bound to `dose` survived in the global namespace.  
+**Fix:** Use the returned variable `print(dose)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — TypeError Doing Math on None (print-Only Function)"}
+```python
+def print_only_bmi(weight_kg, height_cm):
+    height_m = height_cm / 100
+    print(round(weight_kg / (height_m ** 2), 2))
+
+bad_bmi = print_only_bmi(64.5, 168)
+bmi_gap = bad_bmi - 25.0
+```
+**Python's Traceback:**
+```text
+22.85
+TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'
+```
+**Diagnosis:** Because `print_only_bmi` printed `22.85` instead of returning it, `bad_bmi` became `None`. Subtracting `25.0` from `None` triggers `TypeError`.  
+**Fix:** Replace `print(...)` with `return round(weight_kg / (height_m ** 2), 2)`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch06-blueprint}
+
+**Scenario:** A district health office sends daily dengue case counts containing missing reports (`None`) and data-entry error codes (`999`), along with a district population figure that is occasionally missing or `0`. Build a modular 3-function surveillance pipeline that cleans valid counts, computes a crash-proof incidence rate per $100{,}000$ residents, flags an outbreak alert ($\ge 35.0$ per $100{,}000$), and returns `(district, valid_days, total_cases, rate, alert)`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Decomposition (Single-Responsibility Functions):**
+   - `clean_daily_cases(raw_counts)` $\rightarrow$ returns a clean list with `None` and `999` removed.
+   - `safe_incidence_rate(total_cases, population, per=100000)` $\rightarrow$ guard-protected incidence rate (`None` if `population <= 0`).
+   - `summarize_district(district, raw_counts, population)` $\rightarrow$ composes both helpers and computes `alert = (rate is not None) and (rate >= 35.0)`.
+2. **Edge Cases & Traps:**
+   - If `population <= 0`, dividing crashes with `ZeroDivisionError` unless guarded first.
+   - If `rate` is `None`, evaluating `rate >= 35.0` directly raises `TypeError`! Short-circuit with `(rate is not None) and (rate >= 35.0)`.
+3. **Step-by-Step Algorithm:**
+   1. Filter `raw_counts` in `clean_daily_cases`.
+   2. Sum valid counts and pass `(total, population)` into `safe_incidence_rate`.
+   3. Compute short-circuited boolean `alert` and return the 5-tuple.
+4. **Verification Plan (Hand Check):**
+   - `"Dhaka"`, `[18, None, 27, 999, 34, 21]`, `250000`: valid = `[18, 27, 34, 21]` (4 days, sum = 100), rate = $(100 / 250000) \times 100000 = 40.0$, alert = `True`.
+   - `"Unknown"`, `[10, 12]`, `0`: valid = 2 days, sum = 22, rate = `None`, alert = `False`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def clean_daily_cases(raw_counts):
+    """Return list of valid case counts, skipping None and 999 sentinels."""
+    valid = []
+    for count in raw_counts:
+        if count is None or count == 999:
+            continue
+        valid.append(count)
+    return valid
+
+def safe_incidence_rate(total_cases, population, per=100000):
+    """Return incidence rate per N people, or None if population <= 0."""
+    if population <= 0:
+        return None
+    return round((total_cases / population) * per, 2)
+
+def summarize_district(district, raw_counts, population):
+    """Compose cleaning + rate helpers into a district summary tuple."""
+    valid = clean_daily_cases(raw_counts)
+    total = sum(valid)
+    rate = safe_incidence_rate(total, population)
+    alert = (rate is not None) and (rate >= 35.0)
+    return (district, len(valid), total, rate, alert)
+
+rep_dhaka = summarize_district("Dhaka", [18, None, 27, 999, 34, 21], 250000)
+rep_empty = summarize_district("Unknown", [10, 12], 0)
+print("Dhaka report:  ", rep_dhaka)
+print("Zero-pop guard:", rep_empty)
+```
+
+**Output:**
+```text
+Dhaka report:   ('Dhaka', 4, 100, 40.0, True)
+Zero-pop guard: ('Unknown', 2, 22, None, False)
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch06-todos}
+
+Open `part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six reusable functions below. Notice that in Chapter 6 you pass the **function name itself (without parentheses!)** to `tutor.check(...)` so the tutor can stress-test your function across multiple nominal and edge-case inputs:
+
+- **To-Do 6.1 (Warm-Up — `celsius_to_fahrenheit(temp_c)`):** Convert Celsius to Fahrenheit using $(C \times \frac{9}{5}) + 32$ and return the result rounded to 2 decimal places.
+- **To-Do 6.2 (Unit Conversion — `compute_bmi(weight_kg, height_cm)`):** Convert `height_cm` to meters, compute $\text{weight} / \text{height}_m^2$, and return BMI rounded to 2 decimal places.
+- **To-Do 6.3 (Default Parameter — `classify_anemia(hb_g_dl, pregnant=True)`):** Return `"Anemic"` if `hb_g_dl < 11.0` (when `pregnant=True`) or `< 12.0` (when `pregnant=False`), else `"Normal"`.
+- **To-Do 6.4 (Guard Clause + Default — `safe_incidence_rate(cases, population, per=100000)`):** Return `None` immediately when `population <= 0`; otherwise return `round((cases / population) * per, 2)`.
+- **To-Do 6.5 (Sentinel Cleaning — `clean_mean_readings(readings)`):** Skip `None` and `999` values, return `None` if no valid readings remain, otherwise return the mean rounded to 2 decimal places.
+- **To-Do 6.6 (Multi-Indicator Triage — `triage_priority(temp_c, sbp_mmhg, hb_g_dl)`):** Return `"Urgent"` (`temp_c >= 39.5` or `sbp_mmhg >= 160` or `hb_g_dl < 8.0`), `"Moderate"` (`temp_c >= 38.0` or `sbp_mmhg >= 140` or `hb_g_dl < 11.0`), or `"Routine"` otherwise.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch06-test}
+
+Test your understanding on paper before checking Stage 8:
+
+1. **`print()` vs. `return`:** Suppose `def double(x): print(x * 2)`. What exact value and type does `y = double(5)` store in `y`?
+2. **Function Reference vs. Call:** What is the difference between passing `compute_bmi` versus `compute_bmi(64.5, 168)` to `tutor.check(...)`?
+3. **Scope Trace:** What does this snippet print?
+   ```python
+   rate = 10.0
+   def adjust():
+       rate = 25.0
+       return rate
+   res = adjust()
+   print(res, rate)
+   ```
+4. **Local Lifetime:** After `res = adjust()` finishes above, why does a local variable created inside `adjust()` raise `NameError` if accessed outside?
+5. **Default Parameter Rule:** Why does `def calc_rate(per=100000, cases, pop):` trigger a `SyntaxError`?
+6. **Early Return Execution:** Once a `return` statement executes inside a function, do any remaining indented lines below it run?
+7. **Guard Clause Logic:** In `safe_incidence_rate(0, 50000)`, should the function return `0.0` or `None`? Why?
+8. **Branch Ordering Bug:** Suppose a triage function checks `if temp_c >= 38.0: return "Moderate"` *before* `if temp_c >= 39.5: return "Urgent"`. What does it return for `temp_c = 40.1`?
+9. **Tuple Unpacking:** If `summarize_clinic_batch([10.4, 11.6])` returns `(2, 1, 11.0)`, what values do `n, a, m` receive after `n, a, m = summarize_clinic_batch([10.4, 11.6])`?
+10. **Short-Circuit Protection:** Why is `(rate is not None) and (rate >= 35.0)` safe when `rate` is `None`, whereas `(rate >= 35.0) and (rate is not None)` crashes with `TypeError`?
+
+---
+
+## Stage 7 — Chapter 6 Hands-On Coding Exam: Part I Capstone (100 Points) {#sec-ch06-exam}
+
+Open `part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb`, implement all three reusable public health functions, and run `tutor.check_exam("ch06", exam_submissions)` to earn your Part I Capstone score out of 100 points.
+
+### Exam Task 6.1 (30 Points): District Name Normalizer
+
+Write `normalize_district_name(raw_name)` to clean raw district labels from field tablets:
+
+- Return `"Unknown"` if `raw_name` is `None` or contains only whitespace (`""`, `"   "`).
+- Strip leading/trailing whitespace and collapse all repeated internal spaces, tabs, or newlines into a single space.
+- Convert the cleaned district name to **Title Case** (e.g., `"  dhaka   north  "` $\rightarrow$ `"Dhaka North"`, `"SYLHET"` $\rightarrow$ `"Sylhet"`).
+
+### Exam Task 6.2 (35 Points): Safe $2 \times 2$ Odds Ratio Function
+
+Write `compute_odds_ratio(a, b, c, d)` for a $2 \times 2$ epidemiological contingency table:
+
+- Return `None` immediately if `b == 0` or `c == 0` (preventing `ZeroDivisionError`).
+- Otherwise compute the exact cross-product ratio $\frac{a \times d}{b \times c}$ and return it rounded to **2 decimal places**.
+- Ensure `a == 0` (with positive `b` and `c`) returns `0.0`, **not** `None`.
+
+### Exam Task 6.3 (35 Points): Clinic Batch Hemoglobin Summarizer
+
+Write `summarize_clinic_batch(hb_readings)` to summarize a list of maternal hemoglobin readings (g/dL):
+
+- Skip all `None` entries and all sentinel `999` values.
+- If no valid readings remain (empty list or all invalid), return the 3-tuple `(0, 0, None)`.
+- Otherwise return `(valid_count, anemic_count, mean_hb)` where `valid_count` (`int`) is the number of valid readings, `anemic_count` (`int`) is the count strictly `< 11.0`, and `mean_hb` (`float`) is the mean rounded to **2 decimal places**.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch06-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `y` stores **`None`** (`<class 'NoneType'>`), because `double()` printed `10` to the screen but lacked a `return` statement.
+2. `compute_bmi` passes the **function object itself** so `tutor.check` can call it on many hidden test cases; `compute_bmi(64.5, 168)` invokes it once and passes only the single float `22.85`.
+3. Prints **`25.0 10.0`**—assigning `rate = 25.0` inside `adjust()` creates a private local binding and leaves the outer global `rate` unchanged at `10.0`.
+4. Python destroys the function's local call frame as soon as `return` completes, releasing all local variable bindings.
+5. Python requires all non-default parameters to precede default parameters (`def calc_rate(cases, pop, per=100000):`).
+6. **No.** `return` exits the function immediately and hands control back to the caller.
+7. **`0.0`**, because zero cases in a valid population of $50{,}000$ is a meaningful incidence rate of $0.0$ per $100{,}000$—only `population <= 0` is undefined (`None`).
+8. It wrongly returns **`"Moderate"`**, because `40.1 >= 38.0` evaluates `True` first and short-circuits via `return` before `"Urgent"` is ever checked!
+9. `n = 2`, `a = 1`, `m = 11.0`.
+10. Python's `and` short-circuits left-to-right: when `rate is not None` is `False`, Python stops immediately and never executes `None >= 35.0`. Reversing the order evaluates `None >= 35.0` first and raises `TypeError`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 6.1
+def celsius_to_fahrenheit(temp_c):
+    """Convert Celsius temperature to Fahrenheit, rounded to 2 decimals."""
+    return round((temp_c * 9 / 5) + 32, 2)
+
+# To-Do 6.2
+def compute_bmi(weight_kg, height_cm):
+    """Return Body Mass Index (kg/m^2) rounded to 2 decimal places."""
+    height_m = height_cm / 100
+    return round(weight_kg / (height_m ** 2), 2)
+
+# To-Do 6.3
+def classify_anemia(hb_g_dl, pregnant=True):
+    """Classify anemia using WHO cutoffs (11.0 pregnant, 12.0 other)."""
+    cutoff = 11.0 if pregnant else 12.0
+    if hb_g_dl < cutoff:
+        return "Anemic"
+    return "Normal"
+
+# To-Do 6.4
+def safe_incidence_rate(cases, population, per=100000):
+    """Return incidence rate per N people, or None if population <= 0."""
+    if population <= 0:
+        return None
+    return round((cases / population) * per, 2)
+
+# To-Do 6.5
+def clean_mean_readings(readings):
+    """Return mean of valid readings (skipping None and 999), or None."""
+    total = 0.0
+    valid_count = 0
+    for val in readings:
+        if val is None or val == 999:
+            continue
+        total += val
+        valid_count += 1
+    if valid_count == 0:
+        return None
+    return round(total / valid_count, 2)
+
+# To-Do 6.6
+def triage_priority(temp_c, sbp_mmhg, hb_g_dl):
+    """Return 'Urgent', 'Moderate', or 'Routine' from clinical vitals."""
+    if temp_c >= 39.5 or sbp_mmhg >= 160 or hb_g_dl < 8.0:
+        return "Urgent"
+    if temp_c >= 38.0 or sbp_mmhg >= 140 or hb_g_dl < 11.0:
+        return "Moderate"
+    return "Routine"
+```
+
+### C. Annotated Solutions — Chapter 6 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 6.1 (30 pts)
+def normalize_district_name(raw_name):
+    """Normalize messy district strings to Title Case, or 'Unknown'."""
+    if raw_name is None:
+        return "Unknown"
+    cleaned = " ".join(raw_name.split())
+    if not cleaned:
+        return "Unknown"
+    return cleaned.title()
+
+# Exam Task 6.2 (35 pts)
+def compute_odds_ratio(a, b, c, d):
+    """Return 2x2 Odds Ratio (2 decimals), or None if b or c is 0."""
+    if b == 0 or c == 0:
+        return None
+    return round((a * d) / (b * c), 2)
+
+# Exam Task 6.3 (35 pts)
+def summarize_clinic_batch(hb_readings):
+    """Return (valid_count, anemic_count, mean_hb) skipping None and 999."""
+    valid_count = 0
+    anemic_count = 0
+    total_hb = 0.0
+    for val in hb_readings:
+        if val is None or val == 999:
+            continue
+        valid_count += 1
+        total_hb += val
+        if val < 11.0:
+            anemic_count += 1
+    if valid_count == 0:
+        return (0, 0, None)
+    mean_hb = round(total_hb / valid_count, 2)
+    return (valid_count, anemic_count, mean_hb)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 6 Failure Modes
+
+1. **Printing Instead of Returning (`NoneType` Cascade):** Beginners routinely end a function with `print(result)` because it *looks* right in a quick test cell. The moment another function or auto-grader stores `x = my_func(...)`, `x` is silently `None`, causing downstream `TypeError` failures. Always ask: *"Does this function hand a value back with `return`?"*
+2. **Calling `.strip()` Alone or Calling String Methods on `None`:** In Task 6.1, `raw_name.strip()` trims only the outer edges—leaving `"Dhaka   North"` with three internal spaces—while calling `.split()` on `None` crashes with `AttributeError`. Pairing `if raw_name is None:` with `" ".join(raw_name.split())` solves both traps cleanly.
+3. **Forgetting Empty-Batch and Zero-Denominator Guards:** Real public health registries routinely contain clinics with `population == 0`, rare-disease tables with `b == 0`, or batches where every hemoglobin entry is `None` or `999`. Placing early-return guard clauses (`if population <= 0: return None`, `if valid_count == 0: return (0, 0, None)`) at the top of your functions makes your entire Part II–V data pipeline bulletproof!
+
+---
+
+::: {.callout-note title="Part I Milestone Complete!"}
+Congratulations—you have completed **Part I: Python Foundations**! You can now model Python memory, normalize messy strings and numbers, write clinical branching logic, iterate safely over sentinel-laden batches, and encapsulate every workflow inside clean, tested functions. In **Part II**, we scale these exact skills to rich data structures (`list`, `dict`, `set`, `tuple`), file I/O, and reproducible scientific modules.
+:::

@@ -1,0 +1,602 @@
+# Boolean Logic, Conditionals, and Decision Trees in Code {#sec-ch04}
+
+> **Chapter Mission:** Turn clinical guidelines and epidemiological criteria into watertight Python decision trees using **chained comparisons**, **Boolean algebra** (`and`, `or`, `not`), mutually exclusive **`if` / `elif` / `else` ladders**, and **short-circuit guard clauses** that defend your research scripts against `ZeroDivisionError`, `None`, and DHS missing-value sentinels like `999`.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch04 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch04 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch04 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Express clinical reference intervals cleanly using Python's six comparison operators and **chained comparisons** (e.g., `90 <= sbp_mmhg < 120`).
+2. Combine multi-factor screening rules accurately using Boolean truth tables (`and`, `or`, `not`), operator precedence, and explicit parentheses.
+3. Translate clinical guidelines—such as **WHO BMI classification**, **WHO maternal anemia severity**, and **Upazila clinic triage**—into mutually exclusive `if` / `elif` / `else` decision trees without falling into the silent `if`-vs.-`elif` overwrite bug.
+4. Harness **short-circuit evaluation** (`population > 0 and ...`) to shield incidence calculations from `ZeroDivisionError`.
+5. Write defensive **missing-value guard clauses** that intercept `None` and survey sentinel codes (`999`) *before* any numeric comparison executes.
+6. Trace branching execution paths by hand and debug common conditional errors (`TypeError`, `ZeroDivisionError`, `NameError`, and precedence traps).
+
+---
+
+## Stage 1 — First-Principles Intuition: Clinical Triage Protocols as Boolean Gates {#sec-ch04-intuition}
+
+Up to Chapter 3, every Python script you wrote ran strictly top-to-bottom—like a single-lane corridor where every single line executes unconditionally. Real medicine and public health never work that way.
+
+When a mother walks into an Upazila Health Complex in Sylhet or Rangpur, a triage nurse does **not** give every patient the exact same treatment. Instead, the nurse walks down a rapid **yes/no decision checklist**:
+
+- *Is hemoglobin missing (`None` or `999`)?* $\rightarrow$ Flag for lab draw immediately.
+- *Is hemoglobin below $7.0\text{ g/dL}$?* $\rightarrow$ **Severe anemia** (urgent referral!).
+- *Otherwise, is it below $10.0\text{ g/dL}$?* $\rightarrow$ **Moderate anemia**.
+- *Otherwise, is it below $11.0\text{ g/dL}$?* $\rightarrow$ **Mild anemia**.
+- *Otherwise?* $\rightarrow$ **Normal**.
+
+::: {.callout-note title="Mental Model — Every Branch Asks a Yes/No (Boolean) Question"}
+In Python, a **conditional statement** (`if`, `elif`, `else`) is a railroad switch controlled by a Boolean expression (`True` or `False`).
+
+- **Boolean expressions** are the *questions* (`hb_g_dl < 7.0`, `sbp_mmhg >= 140 and has_headache`).
+- **Indented code blocks** (4 spaces after a colon `:`) are the *actions* taken only when that specific track is switched open.
+- In an **`if` / `elif` / `else`** chain, Python walks top-to-bottom and executes **at most one branch**—the *very first* condition that evaluates to `True`—then jumps straight to the end of the entire chain.
+:::
+
+### Boolean Truth Tables (`and`, `or`, `not`)
+
+Every compound clinical rule boils down to three logical operators named after 19th-century mathematician George Boole:
+
+| `A` | `B` | `A and B` (Both true) | `A or B` (At least one true) | `not A` (Flip) |
+| :---: | :---: | :---: | :---: | :---: |
+| `True` | `True` | `True` | `True` | `False` |
+| `True` | `False` | `False` | `True` | `False` |
+| `False` | `True` | `False` | `True` | `True` |
+| `False` | `False` | `False` | `False` | `True` |
+
+### Operator Precedence & Python's Indentation Law
+
+When mixing logical operators in one expression, Python always evaluates in strict priority order:
+
+$$\text{Comparisons } (<, \le, ==, \neq, \ge, >) \;\longrightarrow\; \texttt{not} \;\longrightarrow\; \texttt{and} \;\longrightarrow\; \texttt{or}$$
+
+Just like arithmetic PEMDAS, **never force a reader to memorize precedence during clinical triage**—wrap compound clauses in explicit parentheses so your scientific intent is unmistakable!
+
+---
+
+## Stage 2 — Visual Mental Model: Clinical Decision Tree Flowchart {#sec-ch04-mental-model}
+
+Watch how Python evaluates a guarded **WHO Maternal Anemia & Triage Decision Tree** from top to bottom. Notice how the missing-value guard sits at the **very top gate**, before any `<` comparison can touch `None` or misread `999`:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.8
+%%| fig-align: center
+flowchart TD
+    S["Start: Receive raw_hb"] --> G{"raw_hb is None<br/>or raw_hb == 999?"}
+    G -->|Yes| M["anemia = 'Missing'<br/>(Guard exits early)"]
+    G -->|No| A{"raw_hb < 7.0?"}
+    A -->|Yes| SEV["anemia = 'Severe'<br/>Triage: Urgent"]
+    A -->|No| B{"raw_hb < 10.0?"}
+    B -->|Yes| MOD["anemia = 'Moderate'<br/>Triage: Moderate"]
+    B -->|No| C{"raw_hb < 11.0?"}
+    C -->|Yes| MLD["anemia = 'Mild'<br/>Iron + Follow-up"]
+    C -->|No| NRM["anemia = 'Normal'<br/>Routine ANC"]
+```
+
+Notice the elegance of mutually exclusive `elif` arrows: the moment Python takes the `No` arrow out of `raw_hb < 7.0`, we **already know mathematically** that `raw_hb >= 7.0`. Therefore, the next gate only needs to ask `raw_hb < 10.0`—it automatically captures the exact half-open interval $7.0 \le \text{Hb} < 10.0$ with zero gaps and zero overlaps!
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch04-walkthrough}
+
+Open `part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb` in Colab and run every cell alongside the dissections below.
+
+### Comparison Operators & Chained Clinical Ranges {#sec-ch04-chained}
+
+Python supports all six relational operators (`==`, `!=`, `<`, `<=`, `>`, `>=`)—and unlike C or Java, Python lets you **chain comparisons** directly just as you write them in biostatistics papers:
+
+```python
+sbp_mmhg = 114
+hb_g_dl = 12.2
+temp_c = 38.4
+
+# Chained comparisons mirror clinical reference intervals directly
+is_normal_bp = 90 <= sbp_mmhg < 120
+is_normal_hb = 11.0 <= hb_g_dl <= 16.0
+has_fever = temp_c >= 38.0
+
+print("Normal BP:", is_normal_bp)
+print("Normal Hb:", is_normal_hb)
+print("Has Fever:", has_fever)
+```
+
+**Expected Output:**
+```text
+Normal BP: True
+Normal Hb: True
+Has Fever: True
+```
+
+Under the hood, Python translates `90 <= sbp_mmhg < 120` into `(90 <= sbp_mmhg) and (sbp_mmhg < 120)`—evaluating `sbp_mmhg` only once and keeping the clinical interval crystal clear.
+
+---
+
+### Boolean Algebra (`and`, `or`, `not`) & Operator Precedence {#sec-ch04-bools}
+
+In outbreak surveillance, case definitions almost always combine multiple symptoms and vaccination status:
+
+```python
+has_fever = True
+has_rash = True
+is_vaccinated = False
+
+# Precedence: not > and > or (parentheses make clinical intent explicit!)
+suspect_measles = has_fever and has_rash and (not is_vaccinated)
+needs_isolation = suspect_measles or (has_fever and not is_vaccinated)
+
+print("Suspect measles:", suspect_measles)
+print("Needs isolation:", needs_isolation)
+```
+
+**Expected Output:**
+```text
+Suspect measles: True
+Needs isolation: True
+```
+
+::: {.callout-tip title="Researcher's Note — Always Write == for Equality, Never ="}
+Remember Chapter 2: a single `=` **assigns** a value (`age = 30`), whereas a double `==` **tests equality** (`age == 30` $\rightarrow$ `True` or `False`). For checking `None`, Python best practice uses the identity operator **`is None`** or **`is not None`** rather than `== None`.
+:::
+
+---
+
+### `if` / `elif` / `else` Clinical Decision Trees & the `if` vs. `elif` Bug {#sec-ch04-branching}
+
+Compare these two side-by-side WHO maternal anemia classifiers on a critically ill mother whose hemoglobin is `hb_g_dl = 6.4` g/dL:
+
+```python
+# Correct WHO maternal anemia severity ladder (mutually exclusive elif)
+hb_g_dl = 6.4
+
+if hb_g_dl < 7.0:
+    severity = "Severe"
+elif hb_g_dl < 10.0:
+    severity = "Moderate"
+elif hb_g_dl < 11.0:
+    severity = "Mild"
+else:
+    severity = "Normal"
+
+print(f"Hb {hb_g_dl} g/dL -> Correct severity: {severity}")
+```
+
+**Expected Output:**
+```text
+Hb 6.4 g/dL -> Correct severity: Severe
+```
+
+Now watch what happens if a hasty programmer writes three separate `if` statements instead of `elif`:
+
+```python
+# Silent Logic Bug: independent 'if' statements overwrite earlier matches!
+hb_g_dl = 6.4
+buggy_severity = "Normal"
+
+if hb_g_dl < 7.0:
+    buggy_severity = "Severe"
+if hb_g_dl < 10.0:
+    buggy_severity = "Moderate"
+if hb_g_dl < 11.0:
+    buggy_severity = "Mild"   # DANGEROUS: overwrites 'Severe' with 'Mild'!
+
+print(f"Hb {hb_g_dl} g/dL -> Buggy severity:   {buggy_severity}")
+```
+
+**Expected Output:**
+```text
+Hb 6.4 g/dL -> Buggy severity:   Mild
+```
+
+::: {.callout-warning title="Silent Clinical Danger — No Error Message, Wrong Diagnosis!"}
+Notice that Python raised **zero exceptions** in the buggy cell! Because $6.4 < 7.0$ is `True`, **and** $6.4 < 10.0$ is `True`, **and** $6.4 < 11.0$ is `True`, every independent `if` block executed in sequence—silently downgrading a life-threatening **Severe** anemia case to **Mild**. Whenever categories are mutually exclusive, **always link them with `elif`**.
+:::
+
+---
+
+### Short-Circuit Evaluation & Defensive Guard Clauses {#sec-ch04-guards}
+
+Python evaluates `and` and `or` **lazily from left to right**:
+
+- In `A and B`, if `A` is `False`, the entire expression can *never* be `True`—so Python **stops immediately and never evaluates `B`**.
+- In `A or B`, if `A` is `True`, the entire expression is *already* `True`—so Python **stops immediately and never evaluates `B`**.
+
+This behavior—called **short-circuit evaluation**—lets you place a **guard condition** on the left to protect dangerous operations (like dividing by a possibly zero population or comparing a possibly `None` lab value) on the right:
+
+```python
+# Guard 1: Short-circuit prevents ZeroDivisionError when population == 0
+cases = 18
+population = 0
+
+high_outbreak = population > 0 and (cases / population) * 100000 >= 50.0
+print("High outbreak (safely guarded):", high_outbreak)
+
+# Guard 2: Missing-value guard intercepts BOTH None and DHS sentinel 999
+raw_hb = 999
+if raw_hb is None or raw_hb == 999:
+    hb_label = "Missing"
+elif raw_hb < 11.0:
+    hb_label = "Anemic"
+else:
+    hb_label = "Normal"
+
+print("Guarded Hb status:", hb_label)
+```
+
+**Expected Output:**
+```text
+High outbreak (safely guarded): False
+Guarded Hb status: Missing
+```
+
+Look closely at Guard 2: in real DHS, MICS, and hospital EHR exports, missing laboratory values are frequently coded as numeric sentinels like `999` or `-9`. If you forget to check `raw_hb == 999` **first**, Python happily evaluates `999 < 11.0` as `False` and misclassifies a patient who never got a blood test as `"Normal"`!
+
+---
+
+### Break It On Purpose! (Conditional & Guard Error Anatomy) {#sec-ch04-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — TypeError Comparing None to a Number"}
+```python
+hb_g_dl = None
+is_anemic = hb_g_dl < 11.0
+```
+**Python's Traceback:**
+```text
+TypeError: '<' not supported between instances of 'NoneType' and 'float'
+```
+**Diagnosis:** Unlike `==`, Python refuses to order `None` relative to a float—protecting you from silently treating missing measurements as zero.  
+**Fix:** Guard `None` first: `is_anemic = (hb_g_dl is not None) and (hb_g_dl < 11.0)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ZeroDivisionError from Reversed Guard Order"}
+```python
+cases = 12
+population = 0
+high_rate = (cases / population) > 0.05 and population > 0
+```
+**Python's Traceback:**
+```text
+ZeroDivisionError: division by zero
+```
+**Diagnosis:** The author wrote the right guard (`population > 0`), but placed it on the **right** side of `and`! Because Python evaluates left-to-right, `cases / population` crashed before Python ever reached the guard.  
+**Fix:** Always put the guard **first**: `high_rate = population > 0 and (cases / population) > 0.05`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — NameError on Lowercase Boolean"}
+```python
+is_eligible = true
+```
+**Python's Traceback:**
+```text
+NameError: name 'true' is not defined
+```
+**Diagnosis:** Unlike JavaScript, R (`TRUE`), or JSON (`true`), Python's Boolean literals are strictly capitalized **`True`** and **`False`**. Writing lowercase `true` makes Python search for a variable named `true`.  
+**Fix:** Capitalize the first letter: `is_eligible = True`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch04-blueprint}
+
+**Scenario:** Build an automated **Upazila Health Complex Maternal Triage Router**. Given a pregnant patient's hemoglobin (`hb_g_dl = 6.8`), systolic blood pressure (`sbp_mmhg = 152`), and severe headache symptom (`has_headache = True`), classify her WHO maternal anemia severity (with a missing-value guard for `None` or `999`), flag potential preeclampsia (`sbp_mmhg >= 140` AND `has_headache`), and route her clinic `triage_priority`:
+
+- **`"Urgent"`** if `anemia_grade == "Severe"` OR `sbp_mmhg >= 160` OR `preeclampsia_flag`
+- **`"Moderate"`** if `anemia_grade == "Moderate"` OR `sbp_mmhg >= 140`
+- **`"Routine"`** otherwise
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Units:** `hb_g_dl` (g/dL, possibly `None` or `999`), `sbp_mmhg` (mmHg), `has_headache` (`bool`).
+2. **Edge Cases & Traps:**
+   - Guard `hb_g_dl is None or hb_g_dl == 999` at the very top of the anemia ladder before `< 7.0`.
+   - Use mutually exclusive `elif` branches so `"Severe"` cannot be overwritten by `"Mild"`.
+   - Test `"Urgent"` *before* `"Moderate"` in the triage router so high-risk red flags always win.
+3. **Step-by-Step Algorithm:**
+   1. Classify `anemia_grade` via guarded `if / elif / else`.
+   2. Compute `preeclampsia_flag = (sbp_mmhg >= 140) and has_headache`.
+   3. Route `triage_priority` from most urgent (`"Urgent"`) to least urgent (`"Routine"`).
+   4. Print a clean structured triage summary.
+4. **Verification Plan (Hand Check):**
+   - `hb_g_dl = 6.8 < 7.0` $\Rightarrow$ `anemia_grade = "Severe"`.
+   - `sbp_mmhg = 152 >= 140` and `has_headache = True` $\Rightarrow$ `preeclampsia_flag = True`.
+   - Both red flags trigger the first branch $\Rightarrow$ `triage_priority = "Urgent"`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+# Step 1: Patient intake readings from Upazila Health Complex
+hb_g_dl = 6.8
+sbp_mmhg = 152
+has_headache = True
+
+# Step 2: Missing-value guard + WHO maternal anemia classification
+if hb_g_dl is None or hb_g_dl == 999:
+    anemia_grade = "Missing"
+elif hb_g_dl < 7.0:
+    anemia_grade = "Severe"
+elif hb_g_dl < 10.0:
+    anemia_grade = "Moderate"
+elif hb_g_dl < 11.0:
+    anemia_grade = "Mild"
+else:
+    anemia_grade = "Normal"
+
+# Step 3: Preeclampsia warning & clinic triage routing
+preeclampsia_flag = (sbp_mmhg >= 140) and has_headache
+
+if anemia_grade == "Severe" or sbp_mmhg >= 160 or preeclampsia_flag:
+    triage_priority = "Urgent"
+elif anemia_grade == "Moderate" or sbp_mmhg >= 140:
+    triage_priority = "Moderate"
+else:
+    triage_priority = "Routine"
+
+# Step 4: Structured clinical triage readout
+print(f"Anemia: {anemia_grade} | Preeclampsia Flag: {preeclampsia_flag}")
+print(f"Upazila Triage Priority: {triage_priority}")
+```
+
+**Output:**
+```text
+Anemia: Severe | Preeclampsia Flag: True
+Upazila Triage Priority: Urgent
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch04-todos}
+
+Open `part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and complete all six labs:
+
+- **To-Do 4.1 (Warm-Up — WHO Adult BMI Classification):** Classify `bmi = 27.4` into `"Underweight"` ($< 18.5$), `"Normal"` ($< 25.0$), `"Overweight"` ($< 30.0$), or `"Obese"` ($\ge 30.0$) using `if` / `elif` / `else`.
+- **To-Do 4.2 (Chained Comparisons — Normal Vitals):** Given `temp_c = 36.8`, `sbp_mmhg = 114`, `spo2_pct = 98`, compute `temp_normal` ($36.1 \le T \le 37.2$), `sbp_normal` ($90 \le \text{SBP} < 120$), `spo2_normal` ($95 \le \text{SpO}_2 \le 100$), and `all_vitals_normal`.
+- **To-Do 4.3 (Boolean Algebra — Vaccine Trial Screen):** Given `age_years = 24`, `is_pregnant = False`, `has_severe_allergy = False`, `consented = True`, compute `age_ok` ($18 \le \text{age} \le 65$), `medically_safe`, `can_enroll`, and `needs_review`.
+- **To-Do 4.4 (Clinical Decision Tree — Maternal Anemia Severity):** Classify `hb_g_dl = 8.9` into `"Severe"`, `"Moderate"`, `"Mild"`, or `"Normal"` without falling into the `if`-vs.-`elif` overwrite trap.
+- **To-Do 4.5 (Short-Circuit Guard — Zero Population):** Given `cases = 15` and `population = 0`, compute `has_valid_pop`, short-circuited `is_high_incidence`, and guarded `incidence_per_100k` (`None` when `population <= 0`) without crashing.
+- **To-Do 4.6 (Stretch Guard & Triage — Sentinel `999` / `None`):** Given `raw_hb = 999` and `sbp_mmhg = 148`, intercept missing hemoglobin (`hb_missing`, `anemia_status = "Missing"`) and route `triage_priority` (`"Urgent"`, `"Moderate"`, or `"Routine"`).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch04-test}
+
+Work every question on paper before checking Stage 8:
+
+1. **Chained Comparison Trace:** What does `90 <= 120 < 120` evaluate to (`True` or `False`), and why?
+2. **Precedence Trap:** Without parentheses, what does `True or False and False` evaluate to? Why?
+3. **Spot the Silent Bug:** If `bmi = 17.2`, what does `cat` hold after running these four lines?
+   ```python
+   if bmi < 18.5:
+       cat = "Underweight"
+   if bmi < 25.0:
+       cat = "Normal"
+   ```
+4. **Short-Circuit Order:** Does `population > 0 and (cases / population) > 0.1` crash when `population = 0`? What if you swap the two sides?
+5. **De Morgan's Law:** Rewrite `not (is_pregnant or has_allergy)` as an equivalent expression using `and`.
+6. **Sentinel Guard Trap:** Why is checking `if raw_hb < 11.0:` *before* `elif raw_hb == 999:` a dangerous bug in DHS data cleaning?
+7. **Identity vs. Equality:** What is the preferred Pythonic way to test whether `lab_result` is missing (`None`)?
+8. **Branch Ordering:** What is printed if `sbp = 175` enters this `if / elif` block?
+   ```python
+   if sbp >= 140:
+       priority = "Moderate"
+   elif sbp >= 160:
+       priority = "Urgent"
+   else:
+       priority = "Routine"
+   ```
+9. **Case Sensitivity:** What exact exception does `flag = false` raise in Python?
+10. **Boundary Audit:** In `if hb < 7.0: ... elif hb < 10.0: ...`, which exact category does a patient with `hb = 7.0` receive?
+
+---
+
+## Stage 7 — Chapter 4 Hands-On Coding Exam (100 Points) {#sec-ch04-exam}
+
+Open `part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb`, complete all three tasks, and run `tutor.check_exam("ch04", exam_submissions)` to grade your exam out of 100 points.
+
+### Exam Task 4.1 (30 Points): WHO BMI & Maternal Anemia Dual Classifier
+
+An antenatal clinic record contains `weight_kg = 46.0`, `height_m = 1.60`, and `hb_g_dl = 6.7`. Compute:
+
+- `bmi`: `round(weight_kg / (height_m ** 2), 2)`
+- `bmi_category`: WHO adult category (`"Underweight"` $< 18.5$, `"Normal"` $< 25.0$, `"Overweight"` $< 30.0$, else `"Obese"`)
+- `anemia_severity`: guard `hb_g_dl is None or hb_g_dl == 999` $\rightarrow$ `"Missing"`, else `"Severe"` ($< 7.0$), `"Moderate"` ($< 10.0$), `"Mild"` ($< 11.0$), or `"Normal"`
+- `high_risk_nutrition`: `bool` — `True` if `bmi_category == "Underweight"` **and** `anemia_severity` is `"Severe"` or `"Moderate"`
+
+### Exam Task 4.2 (35 Points): Upazila Clinic Emergency Dengue Triage
+
+A febrile pediatric patient arrives with `temp_c = 39.4`, `platelets_k = 42` (thousands/µL), `has_bleeding = False`, and `age_years = 9`. Compute:
+
+- `critical_thrombocytopenia`: `platelets_k < 50` (`bool`)
+- `pediatric_high_fever`: `age_years < 12 and temp_c >= 39.0` (`bool`)
+- `triage_priority`: `"Urgent"` if `has_bleeding or critical_thrombocytopenia or temp_c >= 40.0`; `"Moderate"` if `(50 <= platelets_k < 100) or (temp_c >= 38.5)`; `"Routine"` otherwise
+- `admit_inpatient`: `True` if `triage_priority == "Urgent"` **or** (`triage_priority == "Moderate"` and `age_years < 12`)
+
+### Exam Task 4.3 (35 Points): Safe Outbreak Surveillance Guard Pipeline
+
+Two rural health wards submit weekly cholera surveillance counts: Ward A (`cases_a = 28`, `pop_a = 40000`) and Ward B (`cases_b = 999`, `pop_b = 0`). For each ward, guard against invalid data (`pop <= 0`, `cases is None`, `cases == 999`, or `cases < 0`) **before** dividing, and compute:
+
+- `rate_a` and `rate_b`: `round((cases / pop) * 100000, 2)` when valid, or `None` when invalid
+- `alert_a` and `alert_b`: `"Red"` ($\ge 50.0$), `"Amber"` ($\ge 20.0$), `"Green"` ($< 20.0$) when valid, or `"Data Error"` when invalid
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch04-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **`False`**—because the right half `120 < 120` is strictly false (`120` is equal to `120`, not less than it).
+2. **`True`**—because `and` has higher precedence than `or`, so Python evaluates `True or (False and False)` $\rightarrow$ `True or False` $\rightarrow$ `True`.
+3. **`"Normal"`**—because the second `if` is independent (not `elif`), so `17.2 < 25.0` executes and overwrites `"Underweight"`.
+4. With `population > 0` on the left, it **does not crash** (`False` short-circuits immediately). Swapping them raises **`ZeroDivisionError`**.
+5. **`(not is_pregnant) and (not has_allergy)`**.
+6. `999 < 11.0` evaluates to `False`, and if you also have an `else: "Normal"` or forgot to check `999` before numeric ranges (e.g., `raw_hb >= 11.0`), the missing code `999` gets misclassified as a valid reading instead of `"Missing"`.
+7. **`lab_result is None`** (and `lab_result is not None`).
+8. **`"Moderate"`**! Because `175 >= 140` matches first, Python never reaches `elif sbp >= 160`—always put stricter thresholds first!
+9. **`NameError: name 'false' is not defined`** (Python requires capitalized `False`).
+10. **`"Moderate"`**—because `7.0 < 7.0` is `False`, so execution falls to `elif hb < 10.0`, which is `True`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 4.1
+bmi = 27.4
+if bmi < 18.5:
+    bmi_category = "Underweight"
+elif bmi < 25.0:
+    bmi_category = "Normal"
+elif bmi < 30.0:
+    bmi_category = "Overweight"
+else:
+    bmi_category = "Obese"
+
+# To-Do 4.2
+temp_c, sbp_mmhg, spo2_pct = 36.8, 114, 98
+temp_normal = 36.1 <= temp_c <= 37.2           # True
+sbp_normal = 90 <= sbp_mmhg < 120              # True
+spo2_normal = 95 <= spo2_pct <= 100            # True
+all_vitals_normal = temp_normal and sbp_normal and spo2_normal
+
+# To-Do 4.3
+age_years, is_pregnant = 24, False
+has_severe_allergy, consented = False, True
+age_ok = 18 <= age_years <= 65                 # True
+medically_safe = (not is_pregnant) and (not has_severe_allergy)
+can_enroll = age_ok and medically_safe and consented
+needs_review = is_pregnant or has_severe_allergy
+
+# To-Do 4.4
+hb_g_dl = 8.9
+if hb_g_dl < 7.0:
+    anemia_grade = "Severe"
+elif hb_g_dl < 10.0:
+    anemia_grade = "Moderate"
+elif hb_g_dl < 11.0:
+    anemia_grade = "Mild"
+else:
+    anemia_grade = "Normal"
+
+# To-Do 4.5
+cases, population = 15, 0
+has_valid_pop = population > 0                 # False
+is_high_incidence = (
+    population > 0 and (cases / population) * 100000 >= 50.0
+)
+if population > 0:
+    incidence_per_100k = round((cases / population) * 100000, 2)
+else:
+    incidence_per_100k = None
+
+# To-Do 4.6
+raw_hb, sbp_mmhg = 999, 148
+hb_missing = (raw_hb is None) or (raw_hb == 999)
+if hb_missing:
+    anemia_status = "Missing"
+elif raw_hb < 11.0:
+    anemia_status = "Anemic"
+else:
+    anemia_status = "Normal"
+
+if sbp_mmhg >= 160 or (not hb_missing and raw_hb < 7.0):
+    triage_priority = "Urgent"
+elif sbp_mmhg >= 140 or hb_missing:
+    triage_priority = "Moderate"
+else:
+    triage_priority = "Routine"
+```
+
+### C. Annotated Solutions — Chapter 4 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 4.1 (30 pts)
+weight_kg, height_m, hb_g_dl = 46.0, 1.60, 6.7
+bmi = round(weight_kg / (height_m ** 2), 2)    # 17.97
+
+if bmi < 18.5:
+    bmi_category = "Underweight"
+elif bmi < 25.0:
+    bmi_category = "Normal"
+elif bmi < 30.0:
+    bmi_category = "Overweight"
+else:
+    bmi_category = "Obese"
+
+if hb_g_dl is None or hb_g_dl == 999:
+    anemia_severity = "Missing"
+elif hb_g_dl < 7.0:
+    anemia_severity = "Severe"
+elif hb_g_dl < 10.0:
+    anemia_severity = "Moderate"
+elif hb_g_dl < 11.0:
+    anemia_severity = "Mild"
+else:
+    anemia_severity = "Normal"
+
+high_risk_nutrition = (
+    bmi_category == "Underweight"
+    and (anemia_severity == "Severe" or anemia_severity == "Moderate")
+)
+
+# Exam Task 4.2 (35 pts)
+temp_c, platelets_k = 39.4, 42
+has_bleeding, age_years = False, 9
+critical_thrombocytopenia = platelets_k < 50
+pediatric_high_fever = (age_years < 12) and (temp_c >= 39.0)
+
+if has_bleeding or critical_thrombocytopenia or temp_c >= 40.0:
+    triage_priority = "Urgent"
+elif (50 <= platelets_k < 100) or (temp_c >= 38.5):
+    triage_priority = "Moderate"
+else:
+    triage_priority = "Routine"
+
+admit_inpatient = (
+    triage_priority == "Urgent"
+    or (triage_priority == "Moderate" and age_years < 12)
+)
+
+# Exam Task 4.3 (35 pts)
+cases_a, pop_a = 28, 40000
+cases_b, pop_b = 999, 0
+
+if pop_a > 0 and cases_a is not None and cases_a != 999 and cases_a >= 0:
+    rate_a = round((cases_a / pop_a) * 100000, 2)   # 70.0
+    if rate_a >= 50.0:
+        alert_a = "Red"
+    elif rate_a >= 20.0:
+        alert_a = "Amber"
+    else:
+        alert_a = "Green"
+else:
+    rate_a = None
+    alert_a = "Data Error"
+
+if pop_b > 0 and cases_b is not None and cases_b != 999 and cases_b >= 0:
+    rate_b = round((cases_b / pop_b) * 100000, 2)
+    if rate_b >= 50.0:
+        alert_b = "Red"
+    elif rate_b >= 20.0:
+        alert_b = "Amber"
+    else:
+        alert_b = "Green"
+else:
+    rate_b = None                                   # None
+    alert_b = "Data Error"
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 4 Failure Modes
+
+1. **Missing Parentheses Around Mixed `and` / `or` Clauses (Task 4.1):** Writing `bmi_category == "Underweight" and anemia_severity == "Severe" or anemia_severity == "Moderate"` evaluates as `(Underweight and Severe) or Moderate` because `and` binds tighter than `or`—misclassifying a normal-weight mother with moderate anemia as high-risk malnutrition! Always wrap `or` clauses in explicit parentheses.
+2. **Unreachable Shadowed Branches (Question 8 & Task 4.2):** Checking a broad rule (`sbp >= 140` or `temp_c >= 38.5`) *above* a stricter critical rule (`sbp >= 160` or `platelets_k < 50`) permanently shadows the emergency branch. Always order triage ladders from **highest urgency / strictest threshold** down to routine.
+3. **Late Missing-Value & Zero-Denominator Guards (Task 4.3):** Checking `cases / pop` *before* `pop > 0` triggers `ZeroDivisionError`, and checking `hb < 11.0` *before* `hb is None or hb == 999` either crashes with `TypeError` or silently turns a missing survey code (`999`) into a `"Normal"` lab result. Notice also how repetitive writing Ward A and Ward B twice felt in Task 4.3—in **Chapter 5 (Loops)** and **Chapter 6 (Functions)**, we will eliminate that repetition forever!

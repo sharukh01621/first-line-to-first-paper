@@ -1,0 +1,527 @@
+# Strings, Text Processing, Formatting, and User Input {#sec-ch03}
+
+> **Chapter Mission:** Master Python's `str` type from first principles—zero-based and negative indexing, half-open slicing, string immutability, method chaining, splitting delimited clinical records, publication-grade f-string formatting, and safe handling of interactive `input()`—so messy real-world health records never break your analysis pipeline.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch03 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch03 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch03 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Extract structured fields from clinical IDs and barcodes using **0-based indexing**, **negative indexing**, and **half-open slicing** (`s[start:stop]`).
+2. Explain **string immutability** and avoid the two classic beginner traps: trying to mutate a string in place (`TypeError`) and calling `.strip()` without reassigning the result.
+3. Clean, normalize, search, split, and reassemble messy health-survey text using chained string methods (`.strip()`, `.replace()`, `.title()`, `.upper()`, `.split()`, `.join()`).
+4. Format numbers, percentages, thousands separators, zero-padded IDs, and aligned console tables cleanly using **publication-grade f-strings**.
+5. Sanitize and type-cast raw text coming from interactive `input()` prompts (and explain why automated notebooks simulate `input()` for reproducibility).
+6. Build end-to-end text-cleaning mini-pipelines that turn dirty field-survey payloads into clean biostatistics summaries.
+
+---
+
+## Stage 1 — First-Principles Intuition: Laminated Hospital Wristbands {#sec-ch03-intuition}
+
+In public health and clinical research, **over 70% of your real-world cleaning time happens on text**: misspelled district names (`"  sylhet_sadar  "`), pipe-delimited hospital lab feeds (`"PAT_109 | 38.4 C | pos"`), structured specimen barcodes (`"BD-CTG-2026-0094-MAL"`), and blood pressure readings stuck together with a slash (`"148/92 mmHg"`).
+
+Before writing a single string method, anchor two permanent mental rules:
+
+::: {.callout-note title="Mental Model — The Laminated Clinical Wristband"}
+Picture a **sealed, laminated patient wristband** printed with a 16-character barcode (`BD-DHK-2026-0042`). Two physical laws govern every Python `str` object:
+
+1. **Every Character Has Two Addresses:** Counting from the left starts at **`0`** (not `1`!), so the last character sits at `len(s) - 1`. Counting backwards from the right starts at **`-1`** (`-1` is the final character, `-2` is second-to-last, and so on).
+2. **The Band Is Permanently Laminated (Immutable):** Once a `str` object is created in memory, **you can never scratch out or overwrite a single character inside it**. If you want to fix a typo or strip spaces, Python prints a **brand-new laminated wristband** in a new memory slot—and unless you attach a variable name tag (`clean = ...`) to that new band, it falls straight into the trash!
+:::
+
+### Why Half-Open Slicing (`[start:stop]`) Is Brilliant
+
+When slicing `s[start:stop]`, Python **includes** the character at `start` and **stops right before** `stop` (excluding `stop`). Mathematicians write this as the half-open interval $[ \text{start}, \text{stop} )$. That single design choice gives you two superpowers:
+
+- **Instant Length Formula:** The length of `s[start:stop]` is always `stop - start` (e.g., `patient_id[3:6]` has exact length $6 - 3 = 3$ characters: `"DHK"`).
+- **Seamless Adjacent Splits:** `s[:k] + s[k:]` always reconstructs the exact original string `s` with zero overlap and zero missing characters!
+
+---
+
+## Stage 2 — Visual Mental Model: Immutable String Transformation Pipeline {#sec-ch03-mental-model}
+
+Watch what happens in memory when you chain `.strip().replace("_", " ").title()` onto a messy clinic string:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.0
+%%| fig-align: center
+flowchart LR
+    R["raw_clinic<br/>'  dhaka_med  '<br/>(Immutable Original)"]
+    S1[".strip()<br/>New str:<br/>'dhaka_med'"]
+    S2[".replace('_', ' ')<br/>New str:<br/>'dhaka med'"]
+    S3[".title()<br/>New str:<br/>'Dhaka Med'"]
+    C["clean_clinic<br/>(Bound Name Tag)"]
+
+    R --> S1 --> S2 --> S3 ==> C
+```
+
+Notice the crucial insight: **`raw_clinic` itself never changes!** Each method in the chain returns a **brand-new `str` object**, passes it straight to the next method on the right, and `clean_clinic = ...` binds our new name tag to the final cleaned object.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch03-walkthrough}
+
+Open `part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Indexing, Negative Indexing & Half-Open Slicing {#sec-ch03-slicing}
+
+Look closely at the exact character coordinates of `"BD-DHK-2026-0042"` (length 16):
+
+| Char | `B` | `D` | `-` | `D` | `H` | `K` | `-` | `2` | `0` | `2` | `6` | `-` | `0` | `0` | `4` | `2` |
+| :--- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| **Idx** | `0` | `1` | `2` | `3` | `4` | `5` | `6` | `7` | `8` | `9` | `10` | `11` | `12` | `13` | `14` | `15` |
+| **Neg** | `-16` | `-15` | `-14` | `-13` | `-12` | `-11` | `-10` | `-9` | `-8` | `-7` | `-6` | `-5` | `-4` | `-3` | `-2` | `-1` |
+
+```python
+patient_id = "BD-DHK-2026-0042"
+print("Length:", len(patient_id))
+print("First char [0]:", patient_id[0], "| Last char [-1]:", patient_id[-1])
+print("Country [:2]:", patient_id[:2])
+print("District [3:6]:", patient_id[3:6])
+print("Year [7:11]:", patient_id[7:11])
+print("Serial [-4:]:", patient_id[-4:])
+```
+
+**Expected Output:**
+```text
+Length: 16
+First char [0]: B | Last char [-1]: 2
+Country [:2]: BD
+District [3:6]: DHK
+Year [7:11]: 2026
+Serial [-4:]: 0042
+```
+
+Notice the two convenient slice shortcuts: omitting `start` (`[:2]`) starts from index `0`, and omitting `stop` (`[-4:]`) slices all the way through the final character!
+
+---
+
+### String Immutability & Method Chaining {#sec-ch03-methods}
+
+```python
+raw_clinic = "   dhaka_medical_college   "
+
+# Calling a method WITHOUT reassignment discards the cleaned copy!
+raw_clinic.strip()
+print("Unchanged raw_clinic:", repr(raw_clinic))
+
+# Capture the new string object with assignment + method chaining
+clean_clinic = raw_clinic.strip().replace("_", " ").title()
+print("Cleaned clinic:", repr(clean_clinic))
+print("Starts with 'Dhaka'?:", clean_clinic.startswith("Dhaka"))
+print("Count of 'a':", clean_clinic.lower().count("a"))
+```
+
+**Expected Output:**
+```text
+Unchanged raw_clinic: '   dhaka_medical_college   '
+Cleaned clinic: 'Dhaka Medical College'
+Starts with 'Dhaka'?: True
+Count of 'a': 3
+```
+
+::: {.callout-tip title="Researcher's Tool — Using repr() to Catch Invisible Whitespace"}
+When debugging messy survey text, `print("  Dhaka  ")` hides trailing spaces visually. Wrapping any string in **`repr(s)`** displays explicit quotes and escape characters (`'  Dhaka  '`, `'line1\n'`), exposing invisible whitespace bugs in one second!
+:::
+
+Here is your everyday Public Health string-method reference card:
+
+| Method / Operator | Purpose | Example |
+| :--- | :--- | :--- |
+| `.strip()` | Remove leading & trailing whitespace | `"  42 \n".strip()` $\rightarrow$ `"42"` |
+| `.upper()` / `.lower()` | Standardize letter casing | `"dhk".upper()` $\rightarrow$ `"DHK"` |
+| `.title()` | Capitalize first letter of each word | `"sylhet sadar".title()` $\rightarrow$ `"Sylhet Sadar"` |
+| `.replace(a, b)` | Replace all occurrences of `a` with `b` | `"38.4 C".replace("C", "")` $\rightarrow$ `"38.4 "` |
+| `.startswith(p)` / `.endswith(s)` | Check prefix or suffix (`bool`) | `"BD-MAL".endswith("MAL")` $\rightarrow$ `True` |
+| `sub in text` | Membership test (`bool`) | `"pos" in "ns1_pos"` $\rightarrow$ `True` |
+| `.split(sep)` | Split text into a list of tokens | `"148/92".split("/")` $\rightarrow$ `["148", "92"]` |
+| `sep.join(items)` | Join strings with delimiter `sep` | `",".join(["A", "B"])` $\rightarrow$ `"A,B"` |
+
+---
+
+### Splitting Delimited Records & Joining Fields {#sec-ch03-split-join}
+
+Hospital lab systems (such as HL7 feeds) frequently separate columns with pipe symbols (`|`) or semicolons (`;`) instead of commas. Calling `.split("|")` breaks one raw row into indexable pieces (`parts[0]`, `parts[1]`, ...), and `",".join([...])` reassembles clean string tokens into a standard CSV line:
+
+```python
+raw_row = "  PAT-019 | 31 | 10.4 g/dL | positive  "
+parts = raw_row.split("|")
+
+pat_id = parts[0].strip()
+age = int(parts[1].strip())
+hb = float(parts[2].replace("g/dL", "").strip())
+status = parts[3].strip().upper()
+
+# Reassemble a clean CSV row with .join()
+clean_csv = ",".join([pat_id, str(age), str(hb), status])
+print("Clean CSV row:", clean_csv)
+```
+
+**Expected Output:**
+```text
+Clean CSV row: PAT-019,31,10.4,POSITIVE
+```
+
+Notice that `",".join(...)` requires every item in the list to be a `str`—that is why we wrap `str(age)` and `str(hb)` before joining!
+
+---
+
+### Publication-Grade f-String Formatting {#sec-ch03-fstrings}
+
+When reporting epidemiological tables or manuscript statistics, raw floating-point prints like `0.02233062330623306` look amateurish. Python **f-strings** accept a mini-language after a colon `:` inside `{...}` to format numbers with journal-grade precision:
+
+| Format Specifier | Meaning | Input $\rightarrow$ Output |
+| :---: | :--- | :--- |
+| `:.1f` / `:.2f` | Fixed decimal places | `128.467` $\rightarrow$ `128.5` |
+| `:,` | Thousands comma separator | `18450` $\rightarrow$ `18,450` |
+| `:.2%` | Multiply by $100$ & append `%` | `0.02233` $\rightarrow$ `2.23%` |
+| `:04d` | Zero-padded integer (width 4) | `42` $\rightarrow$ `0042` |
+| `:<14` / `:>10` | Left- or right-align in fixed width | `"Site"` $\rightarrow$ `"Site          "` |
+
+```python
+site = "Chattogram"
+seq_num = 42
+screened = 18450
+cases = 412
+positivity = cases / screened
+mean_sbp = 128.467
+
+print(f"Facility ID : CTG-{seq_num:04d}")
+print(f"Screened    : {screened:,} adults")
+print(f"Positivity  : {positivity:.2%} ({cases} / {screened:,})")
+print(f"Mean SBP    : {mean_sbp:.1f} mmHg")
+print(f"{'Site':<14} | {'Screened':>10} | {'Positivity':>10}")
+print(f"{site:<14} | {screened:>10,} | {positivity:>10.2%}")
+```
+
+**Expected Output:**
+```text
+Facility ID : CTG-0042
+Screened    : 18,450 adults
+Positivity  : 2.23% (412 / 18,450)
+Mean SBP    : 128.5 mmHg
+Site           |   Screened | Positivity
+Chattogram     |     18,450 |      2.23%
+```
+
+::: {.callout-warning title="Common Trap — Never Multiply by 100 When Using :.2%"}
+Python's `%` format specifier **already multiplies by 100**! If `positivity = 0.02233`, writing `{positivity:.2%}` gives `2.23%`. Writing `{positivity * 100:.2%}` accidentally multiplies by $100$ *twice* and prints `223.31%`!
+:::
+
+---
+
+### Interactive User Input (`input()`) & Validation Hygiene {#sec-ch03-input}
+
+In an interactive Python script or Colab cell, `input("Prompt: ")` pauses execution, waits for the user to type text and press `Enter`, and **always returns a `str`**—even when the user types `38.4` or `28`.
+
+Because interactive `input()` pauses execution forever in automated research pipelines and cloud notebook runners, disciplined researchers isolate raw input at the top of a cell (or simulate it cleanly during automated testing):
+
+```python
+# In an interactive Colab session, you can uncomment the line below:
+# raw_temp = input("Enter patient temperature (e.g., 38.4 C): ")
+
+# For reproducible, non-blocking execution, we simulate the user's text:
+raw_temp = "  38.4 C  "
+print("Raw input type:", type(raw_temp), "| Value:", repr(raw_temp))
+
+temp_c = float(raw_temp.replace("C", "").strip())
+has_fever = temp_c >= 38.0
+print(f"Parsed Temp: {temp_c:.1f} C | Fever Flag: {has_fever}")
+```
+
+**Expected Output:**
+```text
+Raw input type: <class 'str'> | Value: '  38.4 C  '
+Parsed Temp: 38.4 C | Fever Flag: True
+```
+
+**Golden Rule of User Input:** Treat *every* string returned by `input()` as untrusted messy text—always `.strip()` whitespace, strip expected units, and explicitly cast to `int` or `float` before arithmetic!
+
+---
+
+### Break It On Purpose! (String Error Anatomy) {#sec-ch03-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — IndexError (Off-by-One Indexing)"}
+```python
+code = "DHK-042"
+last_char = code[7]
+```
+**Python's Traceback:**
+```text
+IndexError: string index out of range
+```
+**Diagnosis:** `len("DHK-042")` is `7`, which means valid positive indices run from `0` through `6` (`len(code) - 1`). Index `7` steps one slot past the end of the string!  
+**Fix:** Use negative indexing `code[-1]` (always the last character, regardless of length) or `code[len(code) - 1]`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — TypeError (String Immutability)"}
+```python
+patient_id = "uhc-0042"
+patient_id[0] = "U"
+```
+**Python's Traceback:**
+```text
+TypeError: 'str' object does not support item assignment
+```
+**Diagnosis:** Python strings are **immutable**—you cannot modify individual characters in place.  
+**Fix:** Construct a brand-new string via slicing/concatenation (`patient_id = "U" + patient_id[1:]`) or `.upper()` (`patient_id = patient_id.upper()`).
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError on Dirty Unit String"}
+```python
+raw_temp = "38.6 C"
+temp_c = float(raw_temp)
+```
+**Python's Traceback:**
+```text
+ValueError: could not convert string to float: '38.6 C'
+```
+**Diagnosis:** `float()` tolerates outer spaces (`float(" 38.6 ")` succeeds), but crashes on non-numeric unit suffixes like `"C"`, `"kg"`, or `"mmHg"`.  
+**Fix:** Strip the unit first: `temp_c = float(raw_temp.replace("C", "").strip())`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch03-blueprint}
+
+**Scenario:** A rural community health worker texts a rapid dengue triage SMS to the district surveillance desk: `raw_sms = "  barishal_sadar | 007 | 39.1 C | 112000 /uL  "`. The four pipe-delimited fields represent upazila name, patient serial number, body temperature ($^\circ\text{C}$), and platelet count (normal $\ge 150{,}000\text{ /}\mu\text{L}$). Parse all fields cleanly, generate a zero-padded case ID (`"BRS-0007"`), evaluate `urgent_referral` (`True` if febrile $\ge 38.0^\circ\text{C}$ **and** platelets $< 150{,}000$), and print a clean two-line clinical alert.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Units:** One raw `str` containing 4 `|`-separated fields: messy text (`upazila`), zero-padded integer (`serial`), float with `"C"` unit (`temp_c`), and integer with `"/uL"` unit (`platelets`).
+2. **Edge Cases & Traps:**
+   - Leading/trailing spaces inside every token after `.split("|")`.
+   - Unit suffixes (`"C"`, `"/uL"`) will trigger `ValueError` if not removed before `float()`/`int()`.
+   - Calling `int("007")` turns `"007"` into `7`; we must re-pad with `:04d` to format `"BRS-0007"`.
+3. **Step-by-Step Algorithm:**
+   1. Split `raw_sms` on `"|"` into `parts`.
+   2. Clean `parts[0]` with `.strip().replace("_", " ").title()`.
+   3. Parse `serial`, `temp_c`, and `platelets` after removing units and whitespace.
+   4. Build `case_id = f"BRS-{serial:04d}"`, compute boolean flags, and print formatted alert lines.
+4. **Verification Plan (Hand Check):**
+   - `upazila` $\rightarrow$ `"Barishal Sadar"`; `case_id` $\rightarrow$ `"BRS-0007"`.
+   - `39.1 >= 38.0` (`True`) and `112000 < 150000` (`True`) $\Rightarrow$ `urgent_referral = True`.
+   - `112000` with `:,` prints `"112,000"`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+# Step 1: Raw incoming clinic SMS text
+raw_sms = "  barishal_sadar | 007 | 39.1 C | 112000 /uL  "
+
+# Step 2: Split on '|' and sanitize each text field
+parts = raw_sms.split("|")
+upazila = parts[0].strip().replace("_", " ").title()
+serial = int(parts[1].strip())
+temp_c = float(parts[2].replace("C", "").strip())
+platelets = int(parts[3].replace("/uL", "").strip())
+
+# Step 3: Derive clinical triage flags & standardized ID
+case_id = f"BRS-{serial:04d}"
+is_febrile = temp_c >= 38.0
+low_platelets = platelets < 150000
+urgent_referral = is_febrile and low_platelets
+
+# Step 4: Format publication-clean clinical alert
+print(f"[{case_id}] {upazila} | Temp: {temp_c:.1f} C")
+print(f"Platelets: {platelets:,} /uL | Urgent Referral: {urgent_referral}")
+```
+
+**Output:**
+```text
+[BRS-0007] Barishal Sadar | Temp: 39.1 C
+Platelets: 112,000 /uL | Urgent Referral: True
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch03-todos}
+
+Open `part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and complete all six exercises below:
+
+- **To-Do 3.1 (Warm-Up — Cleaning Messy Clinic District Names):** Turn `raw_district = "   sylhet_sadar   "` into `clean_district` (`"Sylhet Sadar"`) and compute `char_count = len(clean_district)` (`12`).
+- **To-Do 3.2 (Indexing & Slicing — Structured Patient IDs):** From `patient_id = "BD-DHK-2026-0482"`, slice `country_code` (`"BD"`), `district_code` (`"DHK"`), `cohort_year` (`2026`, `int`), and `serial_str` (`"0482"`, `str`).
+- **To-Do 3.3 (Splitting Delimited Text — Pipe-Delimited Lab Record):** Split `raw_record = "  PAT_109 | 38.4 C | dengue_ns1_pos  "` on `"|"` to extract `lab_id` (`"PAT_109"`), `temp_c` (`38.4`), and `is_dengue_pos` (`True`).
+- **To-Do 3.4 (Immutability & Rebuild — Standardizing Facility Codes):** From `raw_code = "uhc_0042"`, build `fixed_code` (`"UHC-0042"`) and `replaced_facility` (`"DHK-0042"`) without mutating in place.
+- **To-Do 3.5 (Publication Formatting — Epidemiology f-String):** Format `district = "Rajshahi"`, `screened = 12450`, `positive = 386`, `prevalence = positive / screened`, `mean_hb = 11.246` into `"Rajshahi: n=12,450 | Pos=386 (3.10%) | Mean Hb=11.2 g/dL"`.
+- **To-Do 3.6 (Simulated `input()` Hygiene — Clinic Intake & Zero-Padded Tag):** Clean `raw_name = "  fatema akter  "`, `raw_age = " 28 "`, `raw_seq = " 7 "`, `raw_temp = " 38.6 C "` into `clean_name`, `age_int`, `temp_c`, and `case_tag` (`"CASE-0007"`).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch03-test}
+
+Predict every output on paper before peeking at Stage 8:
+
+1. **Zero-Based Bounds:** If `code = "SYL-019"`, what does `len(code)` return, and what exact exception does `code[7]` raise?
+2. **Half-Open Slicing:** Given `s = "EPIDEMIOLOGY"`, what exact substring does `s[0:3]` return? What about `s[-4:]`?
+3. **Silent Immutability Bug:** After running:
+   ```python
+   city = "  dhaka  "
+   city.strip().upper()
+   print(repr(city))
+   ```
+   What exact string prints, and why?
+4. **In-Place Edit Trap:** Why does `tag = "uhc-01"; tag[0] = "U"` fail, and what exact exception name does Python raise?
+5. **Leading Zero Preservation:** What is the difference between `serial_str = "0042"` and `serial_int = int("0042")`?
+6. **Split Return Type:** What exact list does `"148/92".split("/")` produce—are the elements integers or strings?
+7. **Percentage Formatter Trap:** If `rate = 0.045`, what does `f"{rate:.1%}"` produce? What mistake happens if you write `f"{rate * 100:.1%}"`?
+8. **Zero-Padding Format Specifier:** What exact string does `f"PAT-{19:05d}"` evaluate to?
+9. **Interactive `input()` Return Type:** If a clinician types `37.8` at an `input("Temp: ")` prompt, what does `type(val)` return?
+10. **Execution Trace:** Trace `result` after these three lines:
+    ```python
+    raw = "  malaria_pos  "
+    clean = raw.strip().upper()
+    result = clean.replace("_", "-")
+    ```
+
+---
+
+## Stage 7 — Chapter 3 Hands-On Coding Exam (100 Points) {#sec-ch03-exam}
+
+Open `part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb`, solve all three tasks, and run `tutor.check_exam("ch03", exam_submissions)` to score your work out of 100 points.
+
+### Exam Task 3.1 (30 Points): Clinical Specimen Barcode Parser
+
+A surveillance laboratory scans a messy barcode string: `raw_barcode = "  bd-ctg-2026-0094-mal  "`. Standardize and extract with exact required types:
+
+- `clean_barcode`: stripped and uppercased (`"BD-CTG-2026-0094-MAL"`, `str`)
+- `division_code`: 3-letter division code (`"CTG"`, `str`)
+- `sample_year`: 4-digit collection year (`2026`, `int`)
+- `sample_number`: integer specimen sequence number (`94`, `int`)
+- `is_malaria_panel`: `True` if `clean_barcode` ends with `"MAL"` (`bool`)
+
+### Exam Task 3.2 (35 Points): Dirty Field-Survey Intake Cleaner
+
+A mobile data-collection form sends a single semicolon-delimited text payload: `raw_payload = "  rahim_uddin ; 45 yrs ; 72.4 kg ; 168.0 cm ; 148/92 mmHg  "`. Parse and compute:
+
+- `patient_name`: stripped, underscores replaced with spaces, Title Case (`"Rahim Uddin"`, `str`)
+- `age_years`: integer age (`45`, `int`)
+- `bmi`: float BMI ($\text{weight\_kg} / \text{height\_m}^2$) rounded to 2 decimal places (`25.65`, `float`)
+- `sbp_mmhg`: systolic blood pressure (number before `"/"`) as `int` (`148`)
+- `dbp_mmhg`: diastolic blood pressure (number after `"/"`) as `int` (`92`)
+
+### Exam Task 3.3 (35 Points): Publication-Ready Surveillance Bulletin Generator
+
+Given district outbreak summary variables `facility_code = "uhc-syl-03"`, `report_seq = 14`, `population = 340500`, `confirmed_cases = 512`, and `deaths = 9`, compute and format:
+
+- `report_id`: uppercase facility code + `"-R"` + zero-padded 4-digit `report_seq` (`"UHC-SYL-03-R0014"`)
+- `incidence_per_100k`: `(confirmed_cases / population) * 100000` rounded to 2 decimals (`150.37`)
+- `cfr_pct_str`: Case Fatality Rate (`deaths / confirmed_cases`) formatted as a 2-decimal percentage string (`"1.76%"`)
+- `bulletin_line`: exact formatted summary string: `"[UHC-SYL-03-R0014] Pop=340,500 | Cases=512 (150.4/100k) | CFR=1.76%"`
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch03-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `len(code)` is `7`; `code[7]` raises **`IndexError`** because valid positive indices are `0` through `6`.
+2. `s[0:3]` returns **`"EPI"`** (length $3 - 0 = 3$); `s[-4:]` returns **`"LOGY"`**.
+3. Prints **`'  dhaka  '`**! Because strings are immutable, `city.strip().upper()` created a new string and immediately discarded it since it was never reassigned (`city = ...`).
+4. Fails because `str` objects are immutable; Python raises **`TypeError`** (`'str' object does not support item assignment`).
+5. `serial_str` preserves leading zeros (`"0042"`, `str`); `int("0042")` drops leading zeros and evaluates to integer `42` (`int`).
+6. Produces **`["148", "92"]`**—a list of **strings** (`str`), not integers! Always cast with `int(...)` before comparing blood pressures numerically.
+7. `f"{rate:.1%}"` produces **`"4.5%"`**. Writing `f"{rate * 100:.1%}"` multiplies by $100$ twice and wrongly prints **`"450.0%"`**!
+8. Evaluates to **`"PAT-00019"`** (`:05d` pads `19` with three leading zeros to reach an exact total width of 5 digits).
+9. Always returns **`<class 'str'>`**—`input()` never automatically converts text to `float` or `int`.
+10. `raw` = `"  malaria_pos  "` $\rightarrow$ `clean` = `"MALARIA_POS"` $\rightarrow$ `result` = **`"MALARIA-POS"`**.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 3.1
+raw_district = "   sylhet_sadar   "
+clean_district = raw_district.strip().replace("_", " ").title()
+char_count = len(clean_district)                       # 12
+
+# To-Do 3.2
+patient_id = "BD-DHK-2026-0482"
+country_code = patient_id[:2]                          # "BD"
+district_code = patient_id[3:6]                        # "DHK"
+cohort_year = int(patient_id[7:11])                    # 2026
+serial_str = patient_id[-4:]                           # "0482"
+
+# To-Do 3.3
+raw_record = "  PAT_109 | 38.4 C | dengue_ns1_pos  "
+parts = raw_record.split("|")
+lab_id = parts[0].strip()                              # "PAT_109"
+temp_c = float(parts[1].replace("C", "").strip())      # 38.4
+is_dengue_pos = "pos" in parts[2].strip().lower()      # True
+
+# To-Do 3.4
+raw_code = "uhc_0042"
+fixed_code = raw_code.upper().replace("_", "-")        # "UHC-0042"
+replaced_facility = "DHK" + fixed_code[3:]             # "DHK-0042"
+
+# To-Do 3.5
+district, screened, positive = "Rajshahi", 12450, 386
+prevalence = positive / screened
+mean_hb = 11.246
+report_line = (
+    f"{district}: n={screened:,} | Pos={positive} "
+    f"({prevalence:.2%}) | Mean Hb={mean_hb:.1f} g/dL"
+)
+
+# To-Do 3.6
+raw_name, raw_age = "  fatema akter  ", " 28 "
+raw_seq, raw_temp = " 7 ", " 38.6 C "
+clean_name = raw_name.strip().title()                  # "Fatema Akter"
+age_int = int(raw_age.strip())                         # 28
+temp_c = float(raw_temp.replace("C", "").strip())      # 38.6
+case_tag = f"CASE-{int(raw_seq.strip()):04d}"          # "CASE-0007"
+```
+
+### C. Annotated Solutions — Chapter 3 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 3.1 (30 pts)
+raw_barcode = "  bd-ctg-2026-0094-mal  "
+clean_barcode = raw_barcode.strip().upper()  # "BD-CTG-2026-0094-MAL"
+tokens = clean_barcode.split("-")
+division_code = tokens[1]                              # "CTG"
+sample_year = int(tokens[2])                           # 2026
+sample_number = int(tokens[3])                         # 94
+is_malaria_panel = clean_barcode.endswith("MAL")       # True
+
+# Exam Task 3.2 (35 pts)
+raw_payload = (
+    "  rahim_uddin ; 45 yrs ; 72.4 kg ; 168.0 cm ; 148/92 mmHg  "
+)
+fields = raw_payload.split(";")
+patient_name = fields[0].strip().replace("_", " ").title()
+age_years = int(fields[1].replace("yrs", "").strip())  # 45
+weight_kg = float(fields[2].replace("kg", "").strip()) # 72.4
+height_m = float(fields[3].replace("cm", "").strip()) / 100
+bmi = round(weight_kg / (height_m ** 2), 2)            # 25.65
+bp_parts = fields[4].replace("mmHg", "").strip().split("/")
+sbp_mmhg, dbp_mmhg = int(bp_parts[0]), int(bp_parts[1])
+
+# Exam Task 3.3 (35 pts)
+facility_code, report_seq = "uhc-syl-03", 14
+population, confirmed_cases, deaths = 340500, 512, 9
+report_id = f"{facility_code.upper()}-R{report_seq:04d}"
+incidence_per_100k = round((confirmed_cases / population) * 100000, 2)
+cfr_pct_str = f"{deaths / confirmed_cases:.2%}"        # "1.76%"
+bulletin_line = (
+    f"[{report_id}] Pop={population:,} | "
+    f"Cases={confirmed_cases:,} ({incidence_per_100k:.1f}/100k) | "
+    f"CFR={cfr_pct_str}"
+)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 3 Failure Modes
+
+1. **The Silent Immutability Trap (`raw.strip()` Without Assignment):** Calling `raw_district.strip()` looks like it should clean `raw_district`, and Python produces *zero* error message—yet `raw_district` stays completely unchanged! Always bind the returned copy (`clean_district = raw_district.strip()`).
+2. **Double-Multiplying Percentages (`{rate * 100:.2%}`):** Because the `%` format specifier automatically multiplies proportions by $100$, multiplying by `100` beforehand turns a `1.76%` Case Fatality Rate into an impossible `175.78%`! Always pass the raw decimal proportion (`deaths / confirmed_cases`) directly into `:.2%`.
+3. **Hidden Spaces Breaking `.endswith()` and Exact Matching:** Checking `raw_barcode.upper().endswith("MAL")` *before* calling `.strip()` silently returns `False` because the last two characters are spaces (`"  "`), not `"MAL"`! Make `.strip()` the very first link in every text-cleaning chain.

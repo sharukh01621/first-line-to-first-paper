@@ -14,7 +14,11 @@ book:
       chapters:
         - part_01_python_foundations/ch01_first_program.qmd
         - part_01_python_foundations/ch02_variables_types.qmd
-    # Subsequent chapters (Ch 3–36) and Appendices (A–D) plug in seamlessly here
+        - part_01_python_foundations/ch03_strings_input.qmd
+        - part_01_python_foundations/ch04_conditionals_logic.qmd
+        - part_01_python_foundations/ch05_loops_tracing.qmd
+        - part_01_python_foundations/ch06_functions_scope.qmd
+    # Subsequent Parts (Part II Ch 7–11 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:
