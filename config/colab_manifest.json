@@ -102,6 +102,81 @@
       "qr_path": "assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png",
       "is_solution": false
     },
+    "part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -160,6 +235,56 @@
     "solutions/part_01_python_foundations/ch06_functions_scope/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch06_functions_scope/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch06_functions_scope__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch08_tuples_sets_dicts__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch08_tuples_sets_dicts__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch10_exceptions_testing__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch10_exceptions_testing__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch11_algorithms_complexity__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_02_data_structures_algorithms__ch11_algorithms_complexity__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }

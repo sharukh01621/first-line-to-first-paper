@@ -1,0 +1,532 @@
+# Lists, Indexing, Slicing, Mutation, and Aliasing Traps {#sec-ch07}
+
+> **Chapter Mission:** Launch **Part II (Data Structures & Algorithms)** by mastering Python's workhorse ordered container: the `list`. Learn zero-based and negative indexing, slicing windows, in-place mutation methods versus non-mutating functions, list comprehensions, and—above all—the **aliasing, shallow-copy, and deep-copy memory traps** that silently corrupt real scientific datasets when programmers overlook object references.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch07 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch07 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch07 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Access, slice, reverse, and window ordered biomedical time series using zero-based indices, negative indices, and `start:stop:step` slicing—while avoiding the `[-0:]` trap.
+2. Distinguish **in-place mutation methods** (`.append()`, `.extend()`, `.insert()`, `.pop()`, `.remove()`, `.sort()`, which modify memory directly and often return `None`) from **non-mutating operations** (`sorted()`, slicing, comprehensions).
+3. Diagnose and eliminate **aliasing bugs** (`b = a`), **shallow-copy traps** (`a.copy()` on nested 2D lists), and **deep-copy isolation** (`copy.deepcopy(a)`).
+4. Write clean, non-mutating **list comprehensions** to filter missing sentinels (`None`, `999`) and transform clinical units in a single readable expression.
+5. Design pure list-processing functions that leave the caller's raw dataset completely untouched for downstream audit trails and reproducible research.
+
+---
+
+## Stage 1 — First-Principles Intuition: Lists as Numbered Laboratory Specimen Racks {#sec-ch07-intuition}
+
+In **Part I**, you built individual scalar calculations and clean, modular functions. Real clinical studies and outbreak surveillance pipelines, however, rarely process one number at a time: they process **ordered sequences**—52 weekly dengue counts, 1,200 systolic blood pressure readings, or a 2D grid of daily occupancy counts across hospital wards.
+
+Python's `list` is an **ordered, mutable sequence of object references**. Think of it as a numbered specimen rack sitting on a laboratory bench:
+
+::: {.callout-note title="Mental Model — The Numbered Specimen Rack & Sticky-Note Labels"}
+Picture a physical laboratory rack holding numbered slots `0, 1, 2, ...`:
+
+1. **Order Matters (Indexing & Slicing):** Slot `0` holds Week 1's count; slot `-1` holds the most recent week. Pulling a slice `rack[-3:]` photographs the last three tubes and places those values into a **brand-new tray**.
+2. **Mutable In Place (Editing the Same Rack):** Calling `rack.append(x)` or `rack.sort()` physically rearranges the **exact same rack** on the bench—and hands back `None`, because the work happened inside the rack itself.
+3. **The Aliasing Trap (Two Sticky Notes on One Rack):** Remember from Chapter 2 that Python variables are *name tags*, not boxes! Writing `backup = rack` does **not** clone the rack; it merely sticks a second label (`backup`) onto the **exact same physical rack**. If you alter `backup[0] = 999`, you just corrupted `rack[0]` too!
+4. **Shallow Copy vs. Deep Copy (Racks Inside a Cabinet):** Calling `cabinet.copy()` builds a new outer cabinet frame, but if the cabinet holds *inner ward trays* (a list of lists like `[[12, 14], [18, 20]]`), both cabinets still point to the **same shared inner trays**! Only `copy.deepcopy(cabinet)` clones the outer cabinet *and* every inner tray recursively.
+:::
+
+### Why Non-Mutating Functions Matter in Science
+
+Imagine passing `raw_sbp_readings` into a helper function `clean_and_sort_sbp(raw_sbp_readings)` to compute percentiles for Table 1, and then later plotting `raw_sbp_readings` in chronological visit order for Figure 2. If your helper silently called `raw_sbp_readings.sort()` in place, **Figure 2's time axis is now destroyed**—with zero error messages raised! Throughout Part II, our discipline is simple: **unless a function explicitly documents in-place mutation, never mutate a caller's list.**
+
+---
+
+## Stage 2 — Visual Mental Model: Aliasing vs. Shallow Copy vs. Deep Copy {#sec-ch07-mental-model}
+
+Trace the three memory topologies side by side for a nested 2D hospital ward matrix `wards = [[12, 14], [18, 20]]`:
+
+```python
+import copy
+
+wards = [[12, 14], [18, 20]]
+alias_w = wards                 # Same outer list, same inner rows
+shallow_w = wards.copy()        # New outer list, SAME inner rows!
+deep_w = copy.deepcopy(wards)   # New outer list, NEW inner rows!
+```
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    subgraph Names["Variable Name Tags"]
+        N1["wards"]
+        N2["alias_w = wards"]
+        N3["shallow_w = wards.copy()"]
+        N4["deep_w = copy.deepcopy(wards)"]
+    end
+    subgraph Outer["Outer List Objects"]
+        O1["Outer List #1"]
+        O2["Outer List #2<br/>(new container)"]
+        O3["Outer List #3<br/>(new container)"]
+    end
+    subgraph Inner["Inner Ward Row Lists"]
+        R1["Row 0: [12, 14]<br/>(SHARED by alias & shallow!)"]
+        R2["Row 1: [18, 20]<br/>(SHARED by alias & shallow!)"]
+        R3["Cloned Row 0: [12, 14]<br/>(100% isolated)"]
+        R4["Cloned Row 1: [18, 20]<br/>(100% isolated)"]
+    end
+    N1 --> O1
+    N2 --> O1
+    N3 --> O2
+    N4 --> O3
+    O1 --> R1
+    O1 --> R2
+    O2 -. "shared ref!" .-> R1
+    O2 -. "shared ref!" .-> R2
+    O3 ==> R3
+    O3 ==> R4
+```
+
+Verify memory identity at any time using Python's `is` operator:
+
+- `alias_w is wards` evaluates to **`True`** (same object in memory).
+- `shallow_w is wards` evaluates to **`False`**, **but** `shallow_w[0] is wards[0]` is **`True`** (the hidden shallow-copy trap!).
+- `deep_w is wards` is **`False`** **and** `deep_w[0] is wards[0]` is **`False`** (total isolation).
+
+::: {.callout-tip title="Quick Rule of Thumb for Copying Lists"}
+- **Flat 1D list of numbers/strings** (e.g., `[10.4, 11.8, 12.1]`): `data.copy()`, `list(data)`, or `data[:]` gives full isolation because numbers and strings are immutable.
+- **Nested list of lists or dicts** (e.g., `[[12, 14], [18, 20]]`): always use **`copy.deepcopy(data)`**!
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch07-walkthrough}
+
+Open `part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Zero-Based Indexing, Negative Indexing, and Slicing {#sec-ch07-indexing}
+
+```python
+weekly_cases = [12, 18, 25, 31, 40, 28]
+
+print("First week (index 0):", weekly_cases[0])
+print("Last week (index -1):", weekly_cases[-1])
+print("Weeks 2 to 4 [1:4]:  ", weekly_cases[1:4])
+print("Last 3 weeks [-3:]:  ", weekly_cases[-3:])
+print("Every 2nd week [::2]:", weekly_cases[::2])
+print("Reversed copy [::-1]:", weekly_cases[::-1])
+```
+
+**Expected Output:**
+```text
+First week (index 0): 12
+Last week (index -1): 28
+Weeks 2 to 4 [1:4]:   [18, 25, 31]
+Last 3 weeks [-3:]:   [31, 40, 28]
+Every 2nd week [::2]: [12, 25, 40]
+Reversed copy [::-1]: [28, 40, 31, 25, 18, 12]
+```
+
+Notice Python's **half-open interval** rule `[start:stop:step]`: `start` is **included**, `stop` is **excluded**, so `weekly_cases[1:4]` returns exactly $4 - 1 = 3$ elements (indices `1`, `2`, `3`). Even better: slicing **never raises `IndexError`** when `stop` or `-k` exceeds the list length, and it always produces a **new list**.
+
+::: {.callout-warning title="Watch Out for the Sneaky [-0:] Slicing Trap!"}
+Suppose you write a helper to return the last `k` weeks using `weekly_cases[-k:]`. When `k = 3`, `weekly_cases[-3:]` returns `[31, 40, 28]`. What happens when `k = 0`? In Python, `-0` equals `0`, so `weekly_cases[-0:]` evaluates as `weekly_cases[0:]` and silently returns the **entire list** instead of `[]`! Always add an explicit guard `if k <= 0: return []` before negative slicing.
+:::
+
+---
+
+### In-Place Mutation Methods vs. Non-Mutating `sorted()` {#sec-ch07-mutation}
+
+```python
+sbp_log = [124, 138, 119]
+
+# In-place mutation methods modify sbp_log directly and return None
+ret_val = sbp_log.append(145)
+print("After append(145):", sbp_log, "| return value:", ret_val)
+
+sbp_log.extend([131, 128])
+sbp_log.insert(0, 120)
+popped = sbp_log.pop()
+print("After extend/insert/pop:", sbp_log, "| popped:", popped)
+
+# sorted() returns a NEW sorted list; original chronological order stays!
+ranked = sorted(sbp_log, reverse=True)
+print("Ranked copy:     ", ranked)
+print("Original intact: ", sbp_log)
+```
+
+**Expected Output:**
+```text
+After append(145): [124, 138, 119, 145] | return value: None
+After extend/insert/pop: [120, 124, 138, 119, 145, 131] | popped: 128
+Ranked copy:      [145, 138, 131, 124, 120, 119]
+Original intact:  [120, 124, 138, 119, 145, 131]
+```
+
+Memorize the critical distinction between Python's two sorting tools:
+
+| Operation | Mutates Original List? | Return Value | Best Used When |
+| :--- | :---: | :--- | :--- |
+| `data.sort()` | **Yes (in place!)** | `None` | You explicitly own a private list and want to sort it in place |
+| `sorted(data)` | **No (safe copy!)** | New sorted `list` | You want to preserve the caller's original chronological order |
+
+Also notice `.append(x)` versus `.extend(iterable)`: `.append([131, 128])` adds a single nested list element (`[124, ..., [131, 128]]`), whereas `.extend([131, 128])` unpacks and appends each item individually.
+
+---
+
+### The Aliasing Trap: `b = a` vs. `.copy()` vs. `copy.deepcopy()` {#sec-ch07-aliasing}
+
+```python
+import copy
+
+# 1. Direct assignment creates an ALIAS (same list in memory!)
+raw_hb = [10.4, 11.8, 12.1]
+alias_hb = raw_hb
+alias_hb[0] = 999
+print("Alias -> raw_hb changed:", raw_hb, "same?", alias_hb is raw_hb)
+
+# 2. Shallow .copy() isolates flat 1D lists
+clean_hb = [10.4, 11.8, 12.1]
+safe_1d = clean_hb.copy()
+safe_1d[0] = 9.9
+print("Flat .copy() -> intact:", clean_hb, "| copy:", safe_1d)
+
+# 3. Nested 2D ward matrix: shallow copy SHARES inner rows!
+wards = [[12, 14], [18, 20]]
+shallow_wards = wards.copy()
+deep_wards = copy.deepcopy(wards)
+
+shallow_wards[0][0] = 999
+print("After shallow edit -> wards corrupted:", wards)
+print("Deep copy unaffected:                 ", deep_wards)
+```
+
+**Expected Output:**
+```text
+Alias -> raw_hb changed: [999, 11.8, 12.1] same? True
+Flat .copy() -> intact: [10.4, 11.8, 12.1] | copy: [9.9, 11.8, 12.1]
+After shallow edit -> wards corrupted: [[999, 14], [18, 20]]
+Deep copy unaffected:                  [[12, 14], [18, 20]]
+```
+
+Stare closely at the final two output lines: editing `shallow_wards[0][0] = 999` **silently corrupted `wards[0][0]`**, because `.copy()` duplicated only the outer list frame while keeping references to the original inner rows. `copy.deepcopy(wards)` remained completely intact at `[[12, 14], [18, 20]]`.
+
+---
+
+### List Comprehensions: Clean Filtering & Transformation {#sec-ch07-comprehensions}
+
+A **list comprehension** builds a brand-new list by applying an expression (and optional `if` filter) across every element of an existing sequence—without ever touching the input list:
+
+```python
+raw_readings = [10.4, None, 11.8, 999, 9.6, 12.3]
+heights_cm = [168, 156, 172.4, 160]
+
+# Filter sentinels into a brand-new list (raw_readings untouched)
+valid_hb = [v for v in raw_readings if v is not None and v != 999]
+
+# Transform units cleanly into a new list
+heights_m = [round(h / 100, 2) for h in heights_cm]
+
+# Filter + transform in one readable expression
+anemic_gaps = [round(11.0 - v, 2) for v in valid_hb if v < 11.0]
+
+print("Valid Hb:     ", valid_hb)
+print("Heights (m):  ", heights_m)
+print("Anemic gaps:  ", anemic_gaps)
+print("Raw unchanged:", raw_readings)
+```
+
+**Expected Output:**
+```text
+Valid Hb:      [10.4, 11.8, 9.6, 12.3]
+Heights (m):   [1.68, 1.56, 1.72, 1.6]
+Anemic gaps:   [0.6, 1.4]
+Raw unchanged: [10.4, None, 11.8, 999, 9.6, 12.3]
+```
+
+Read a comprehension like set-builder notation in mathematics: `[expression for item in iterable if condition]`. Always place `v is not None` **before** numeric comparisons (`v < 11.0`, `v > 0`) so short-circuit `and` prevents `TypeError` on missing entries.
+
+---
+
+### Break It On Purpose! (List & Sorting Error Anatomy) {#sec-ch07-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — IndexError (Off-by-One Past Last Valid Index)"}
+```python
+weekly_cases = [12, 18, 25, 31, 40, 28]
+print(weekly_cases[6])
+```
+**Python's Traceback:**
+```text
+IndexError: list index out of range
+```
+**Diagnosis:** A list of length $N = 6$ has valid non-negative indices `0, 1, 2, 3, 4, 5` (up to `len(lst) - 1`). Index `6` points past the end of the rack!  
+**Fix:** Use `weekly_cases[5]` or `weekly_cases[-1]` for the final element.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError on .remove() Missing Item"}
+```python
+ward_ids = ["W-01", "W-02", "W-03"]
+ward_ids.remove("W-99")
+```
+**Python's Traceback:**
+```text
+ValueError: list.remove(x): x not in list
+```
+**Diagnosis:** `.remove(x)` searches for the first occurrence of `x` and raises `ValueError` if `x` is absent. (Additionally, mutating a list with `.remove()` inside a `for` loop over that same list causes skipped elements!)  
+**Fix:** Check `if "W-99" in ward_ids:` first, or better yet build a new filtered list with a comprehension `[w for w in ward_ids if w != "W-99"]`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — TypeError Sorting Mixed None and float"}
+```python
+mixed_hb = [10.4, None, 11.8]
+sorted_hb = sorted(mixed_hb)
+```
+**Python's Traceback:**
+```text
+TypeError: '<' not supported between instances of 'NoneType' and 'float'
+```
+**Diagnosis:** Sorting compares pairs of elements with `<`. Python refuses to guess whether `None` is smaller or larger than `10.4`.  
+**Fix:** Always filter out `None` *before* calling `sorted()`: `sorted([v for v in mixed_hb if v is not None])`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch07-blueprint}
+
+**Scenario:** A regional epidemiology team sends raw weekly dengue counts containing missing reports (`None`), sentinel codes (`999`), and occasional negative transcription errors (`-3`). Build a pure, non-mutating function `analyze_surveillance_series(raw_weekly_cases, window=3, top_k=2)` that returns the 3-tuple `(cleaned, recent, peaks)` while keeping `raw_weekly_cases` completely intact for audit logging.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs & Purity Contract:**
+   - Inputs: `raw_weekly_cases` (`list`), `window=3` (`int`), `top_k=2` (`int`).
+   - Output: `(cleaned, recent, peaks)` where all three elements are brand-new lists; `raw_weekly_cases` must **never** be mutated.
+2. **Edge Cases & Traps:**
+   - Must check `c is not None` *before* `c >= 0` to avoid `TypeError`.
+   - Must guard `window <= 0` (preventing `cleaned[-0:]` trap) and `top_k <= 0`.
+   - Must use `sorted(cleaned, reverse=True)` rather than `cleaned.sort()` so `cleaned` retains its chronological week order!
+3. **Step-by-Step Algorithm:**
+   1. Build `cleaned` via a filtering list comprehension keeping `c is not None and c != 999 and c >= 0`.
+   2. Slice `recent = [] if window <= 0 else cleaned[-window:]`.
+   3. Compute `peaks = [] if top_k <= 0 else sorted(cleaned, reverse=True)[:top_k]`.
+   4. Return `(cleaned, recent, peaks)`.
+4. **Verification Plan (Hand Check):**
+   - `[14, None, 42, 999, 19, 68, -3, 35, 51]` $\rightarrow$ `cleaned = [14, 42, 19, 68, 35, 51]`, `recent = [68, 35, 51]`, `peaks = [68, 51]`, and `dhaka_raw` stays untouched.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def analyze_surveillance_series(raw_weekly_cases, window=3, top_k=2):
+    """Clean sentinels, slice recent window, and find top-k peaks safely."""
+    cleaned = [
+        c for c in raw_weekly_cases
+        if c is not None and c != 999 and c >= 0
+    ]
+    recent = [] if window <= 0 else cleaned[-window:]
+    peaks = [] if top_k <= 0 else sorted(cleaned, reverse=True)[:top_k]
+    return (cleaned, recent, peaks)
+
+dhaka_raw = [14, None, 42, 999, 19, 68, -3, 35, 51]
+cleaned, recent_3, top_2 = analyze_surveillance_series(dhaka_raw)
+
+print("Cleaned series:", cleaned)
+print("Last 3 weeks:  ", recent_3)
+print("Top 2 peaks:   ", top_2)
+print("Raw untouched: ", dhaka_raw)
+```
+
+**Output:**
+```text
+Cleaned series: [14, 42, 19, 68, 35, 51]
+Last 3 weeks:   [68, 35, 51]
+Top 2 peaks:    [68, 51]
+Raw untouched:  [14, None, 42, 999, 19, 68, -3, 35, 51]
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch07-todos}
+
+Open `part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six non-mutating list functions below. Remember: `sharukh-tutor` now checks **both** your returned answer *and* verifies that you did not silently mutate the caller's input list!
+
+- **To-Do 7.1 (Negative Slicing & Guard — `extract_recent_window(weekly_cases, k)`):** Return a new list containing the last `k` weekly case counts (returning `[]` whenever `k <= 0`, and never mutating or aliasing `weekly_cases`).
+- **To-Do 7.2 (Aliasing Prevention — `append_reading_safely(readings, new_val)`):** Return a new list containing all items of `readings` plus `new_val` at the end, leaving the caller's `readings` list intact.
+- **To-Do 7.3 (Filtering Comprehension — `filter_valid_hb(raw_hb_list)`):** Return a new list containing only valid hemoglobin readings, skipping every `None` and every sentinel `999`.
+- **To-Do 7.4 (Transformation Comprehension — `convert_heights_cm_to_m(heights_cm)`):** Return a new list converting centimeter heights to meters (`h / 100`) rounded to 2 decimal places.
+- **To-Do 7.5 (Non-Mutating Sort — `top_k_outbreak_weeks(weekly_cases, k)`):** Return the `k` highest weekly case counts in descending order (`[]` if `k <= 0`) without mutating `weekly_cases`.
+- **To-Do 7.6 (Nested Copy Isolation — `clone_ward_matrix(wards)`):** Return a deep copy of a 2D nested list of ward counts so mutating any inner ward row in the clone never affects `wards`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch07-test}
+
+Trace every snippet carefully on paper before checking Stage 8:
+
+1. **Half-Open Slice Length:** Given `x = [10, 20, 30, 40, 50, 60]`, what exact list does `x[1:4]` return? How many elements are in it?
+2. **The `[-0:]` Trap:** For `cases = [12, 18, 25]`, what does `cases[-0:]` evaluate to, and why?
+3. **In-Place Return Value:** What value is stored in `y` after running:
+   ```python
+   vals = [30, 10, 20]
+   y = vals.sort()
+   ```
+4. **Aliasing Trace:** What does this snippet print?
+   ```python
+   a = [100, 200, 300]
+   b = a
+   b.append(400)
+   print(len(a), a is b)
+   ```
+5. **Shallow Copy Trap on 2D Lists:** What does `grid` contain after this code runs?
+   ```python
+   grid = [[1, 2], [3, 4]]
+   clone = grid.copy()
+   clone[0][1] = 99
+   ```
+6. **Deep Copy Isolation:** In Question 5, if `clone = copy.deepcopy(grid)` had been used instead, what would `grid` contain and what would `clone[0] is grid[0]` evaluate to?
+7. **`.append()` vs. `.extend()`:** Starting from `ids = ["A", "B"]`, contrast the resulting list after `ids.append(["C", "D"])` versus `ids.extend(["C", "D"])`.
+8. **Comprehension Short-Circuit Order:** Why does `[v for v in [10, None, 20] if v > 5 and v is not None]` crash with `TypeError`, whereas putting `v is not None` first succeeds?
+9. **Sliding Window Count:** If a daily outbreak list has length $N = 7$, how many complete 3-day windows (`daily[i : i + 3]`) exist, and what is the exact `range(...)` stop argument?
+10. **`.remove()` vs. Filtering:** Why is calling `vals.remove(x)` inside `for x in vals:` dangerous, and what is the clean, non-mutating Pythonic replacement?
+
+---
+
+## Stage 7 — Chapter 7 Hands-On Coding Exam (100 Points) {#sec-ch07-exam}
+
+Open `part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb`, implement all three pure list-processing functions, and run `tutor.check_exam("ch07", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 7.1 (30 Points): Clean & Sort Systolic Blood Pressure
+
+Write `clean_and_sort_sbp(readings)` to sanitize raw systolic blood pressure (mmHg) logs from district clinics:
+
+- Skip every `None` entry, sentinel `999` value, and non-positive value (`<= 0`).
+- Return a **new list** of the valid readings sorted in **ascending** order.
+- Do **not** mutate the caller's original `readings` list.
+
+### Exam Task 7.2 (35 Points): Rolling 3-Day Outbreak Totals
+
+Write `rolling_3day_totals(daily_cases)` to smooth daily outbreak counts into 3-day cumulative windows:
+
+- For each consecutive 3-day slice `daily_cases[i : i + 3]`, compute its sum and include it in the returned list.
+- If `len(daily_cases) < 3`, return an empty list `[]`.
+- Example: `[10, 15, 20, 25, 30]` $\rightarrow$ `[45, 60, 75]`.
+- Do **not** mutate `daily_cases`.
+
+### Exam Task 7.3 (35 Points): Flag & Adjust Medication Doses
+
+Write `flag_and_adjust_doses(doses_mg, cap_mg)` to apply a maximum safe dosing cap without altering the original prescription audit log:
+
+- Build a **new list** `adjusted_list` where every dose strictly greater than `cap_mg` (`dose > cap_mg`) is replaced with `cap_mg`, while doses `<= cap_mg` remain unchanged.
+- Count `capped_count` (`int`): how many doses strictly exceeded `cap_mg`.
+- Return the 2-tuple `(adjusted_list, capped_count)` without mutating `doses_mg`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch07-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **`[20, 30, 40]`** — exactly $4 - 1 = 3$ elements (index `1` included, index `4` excluded).
+2. **`[12, 18, 25]`** (the entire list!), because in Python `-0 == 0`, so `cases[-0:]` is identical to `cases[0:]`.
+3. **`None`** — `vals.sort()` sorts `vals` in place to `[10, 20, 30]` and returns `None`.
+4. Prints **`4 True`** — `b = a` creates an alias pointing to the exact same list object, so appending to `b` mutates `a` as well.
+5. **`[[1, 99], [3, 4]]`** — `.copy()` makes a shallow copy, so `clone[0]` and `grid[0]` still reference the exact same inner list!
+6. `grid` stays **`[[1, 2], [3, 4]]`**, and `clone[0] is grid[0]` evaluates to **`False`**.
+7. `.append(["C", "D"])` produces `["A", "B", ["C", "D"]]` (length 3, nested list); `.extend(["C", "D"])` produces `["A", "B", "C", "D"]` (length 4, flat list).
+8. Python evaluates `and` left-to-right: testing `None > 5` first immediately raises `TypeError`. Putting `v is not None` first short-circuits to `False` and skips `None > 5`.
+9. Exactly $7 - 3 + 1 = 5$ windows (start indices `0, 1, 2, 3, 4`), so the stop argument is `range(len(daily) - 2)` (i.e., `range(5)`).
+10. Mutating a list while iterating over it shifts element indices mid-loop, causing Python to skip adjacent elements (and `.remove()` raises `ValueError` if an item is absent). Always build a new list with a comprehension: `[v for v in vals if v != target]`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import copy
+
+# To-Do 7.1
+def extract_recent_window(weekly_cases, k):
+    """Return the last k weekly case counts as a new list."""
+    if k <= 0:
+        return []
+    return weekly_cases[-k:]
+
+# To-Do 7.2
+def append_reading_safely(readings, new_val):
+    """Return a new list with new_val appended, leaving readings intact."""
+    updated = readings.copy()
+    updated.append(new_val)
+    return updated
+
+# To-Do 7.3
+def filter_valid_hb(raw_hb_list):
+    """Return a new list of valid Hb readings, skipping None and 999."""
+    return [val for val in raw_hb_list if val is not None and val != 999]
+
+# To-Do 7.4
+def convert_heights_cm_to_m(heights_cm):
+    """Convert a list of heights from cm to meters (2 decimals)."""
+    return [round(h / 100, 2) for h in heights_cm]
+
+# To-Do 7.5
+def top_k_outbreak_weeks(weekly_cases, k):
+    """Return the k highest weekly counts (descending), non-mutating."""
+    if k <= 0:
+        return []
+    return sorted(weekly_cases, reverse=True)[:k]
+
+# To-Do 7.6
+def clone_ward_matrix(wards):
+    """Return a deep copy of a nested ward matrix for full isolation."""
+    return copy.deepcopy(wards)
+```
+
+### C. Annotated Solutions — Chapter 7 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 7.1 (30 pts)
+def clean_and_sort_sbp(readings):
+    """Return sorted ascending valid SBP list (skip None, 999, <= 0)."""
+    valid = [
+        val for val in readings
+        if val is not None and val != 999 and val > 0
+    ]
+    return sorted(valid)
+
+# Exam Task 7.2 (35 pts)
+def rolling_3day_totals(daily_cases):
+    """Return sliding 3-day window sums, or [] if fewer than 3 days."""
+    if len(daily_cases) < 3:
+        return []
+    return [
+        sum(daily_cases[i : i + 3])
+        for i in range(len(daily_cases) - 2)
+    ]
+
+# Exam Task 7.3 (35 pts)
+def flag_and_adjust_doses(doses_mg, cap_mg):
+    """Cap doses > cap_mg without mutating input; return (list, count)."""
+    adjusted = []
+    capped_count = 0
+    for dose in doses_mg:
+        if dose > cap_mg:
+            adjusted.append(cap_mg)
+            capped_count += 1
+        else:
+            adjusted.append(dose)
+    return (adjusted, capped_count)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 7 Failure Modes
+
+1. **Silent Caller Mutation (`list.sort()` / `list.append()` Inside Functions):** Writing `readings.sort()` or `doses_mg[i] = cap_mg` inside a function silently alters the caller's list—and writing `return readings.sort()` returns `None`! Default to non-mutating tools (`sorted(...)`, `.copy()`, list comprehensions) whenever you build analytical helpers.
+2. **The Shallow-Copy Illusion on Nested 2D Lists:** Calling `wards.copy()` or `wards[:]` looks safe until you edit `cloned[0][0] = 999` and watch the original `wards[0][0]` mutate simultaneously. Whenever a list holds nested mutable containers, reach directly for `copy.deepcopy()`.
+3. **Off-by-One Slicing & `[-0:]` Traps:** Forgetting that `daily_cases[-0:]` returns the entire list, or looping `range(len(daily_cases) - 3)` (missing the final 3-day window) versus `range(len(daily_cases))` (summing partial 1-day/2-day tails), accounts for the majority of time-series window bugs. Always hand-check your window formula on a 3-element and 5-element list!
+
+---
+
+::: {.callout-note title="Up Next — Dictionaries, Tuples, and Sets"}
+Lists shine when order and position are primary, but looking up a patient record by `patient_id` across 50,000 list entries is slow and clumsy. In **Chapter 8**, you will unlock Python's hash-table superpowers—**dictionaries (`dict`)**, **immutable tuples (`tuple`)**, and **sets (`set`)**—for instant $O(1)$ clinical record lookup, cohort deduplication, and frequency counting.
+:::

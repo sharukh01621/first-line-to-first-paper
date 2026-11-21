@@ -1,0 +1,567 @@
+# File I/O, CSV/JSON Parsing, and Persistent Data {#sec-ch09}
+
+> **Chapter Mission:** Bridge ephemeral Python memory and durable scientific storage. Master cross-platform `pathlib.Path` objects, leak-proof `with open(..., encoding="utf-8")` context managers, structured tabular parsing with `csv.DictReader` / `csv.DictWriter`, nested metadata persistence with `json.dump` / `json.load`, and clean `tempfile.TemporaryDirectory()` test sandboxes—turning in-memory scripts into reproducible file pipelines.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch09 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch09 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch09 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Construct operating-system-independent file paths with `pathlib.Path` and isolate scratch file experiments cleanly inside `tempfile.TemporaryDirectory()`.
+2. Read and write plain-text research logs safely using `with open(..., encoding="utf-8")` context managers and distinguish `"r"`, `"w"`, and `"a"` file modes.
+3. Parse and export structured clinical tables with `csv.DictReader` and `csv.DictWriter` using `newline=""`, converting string cells explicitly to numbers after skipping missing sentinels.
+4. Serialize and reload nested study metadata, protocol cutoffs, and aggregated summaries with `json.dump(..., indent=2)` and `json.load(...)`.
+5. Diagnose and prevent the three classic file-pipeline exceptions: `FileNotFoundError`, `json.JSONDecodeError`, and `io.UnsupportedOperation`.
+6. Compose multi-file CSV-to-CSV, CSV-to-JSON, and multi-JSON aggregation pipelines that never mutate raw source registries.
+
+---
+
+## Stage 1 — First-Principles Intuition: Volatile RAM vs. the Locked Archive Cabinet {#sec-ch09-intuition}
+
+Every variable you built in Chapters 1 through 8—lists of hemoglobin readings, dictionaries of outbreak counts, sets of unique districts—lived in **RAM (Random Access Memory)**. RAM is blazingly fast, yet completely volatile: the moment your Google Colab runtime disconnects or your laptop reboots, every in-memory object vanishes without a trace.
+
+Reproducible science requires **persistence**: saving cleaned cohorts, summary statistics, and study metadata onto disk so collaborators, statistical packages, and peer reviewers can inspect and verify every step.
+
+::: {.callout-note title="Mental Model — The Locked Hospital Medical Archive"}
+Working with files in Python works just like borrowing records from a locked hospital archive room:
+
+1. **Archive Street Address (`pathlib.Path`):** Rather than gluing folder names with brittle backslashes (`"data\\raw.csv"`) that fail across Windows, macOS, and Linux, `Path(folder) / "raw.csv"` builds clean, portable file paths automatically.
+2. **Self-Locking Checkout Gate (`with open(...)`):** Opening a file checks out an operating-system handle. Wrapping it inside a **`with` context manager** guarantees Python flushes every buffered byte to disk and locks the cabinet again—*even if an exception crashes halfway through your loop*.
+3. **Universal Ink Standard (`encoding="utf-8"`):** Always declare `encoding="utf-8"` explicitly so clinical symbols (`°C`, `μg/L`) and international place names survive identically on every researcher's computer.
+4. **Right Cabinet for the Right Data (Text vs. CSV vs. JSON):** Use **plain text (`.txt`)** for chronological shift logs, **CSV (`.csv`)** for flat row-by-column patient registries, and **JSON (`.json`)** for nested hierarchies (study metadata, cutoffs, grouped summaries).
+:::
+
+### Golden Rule of Non-Destructive Research Pipelines
+
+Never overwrite your raw field survey file! Treat raw files as **read-only evidence** (`"r"`), transform them in Python memory, and write cleaned cohorts or aggregated summaries to **new derived files** (`"w"`). That way, if you discover a new sentinel code next month, you can re-run the pipeline from scratch with zero data loss.
+
+---
+
+## Stage 2 — Visual Mental Model: Context-Manager & File-Pipeline Lifecycle {#sec-ch09-mental-model}
+
+Follow the exact lifecycle of a clean CSV-to-JSON surveillance pipeline from raw disk file through Python's context managers to persistent summary output:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    subgraph DiskIn["Persistent Disk (Read-Only Raw Data)"]
+        D1["raw_hb.csv<br/>(UTF-8 bytes on disk)"]
+    end
+    subgraph CtxIn["with open(in_csv, 'r', encoding='utf-8', newline='')"]
+        R1["csv.DictReader(in_f)<br/>yields dict[str, str] rows"]
+        R2["Clean & Aggregate in RAM<br/>skip '', 'N/A', '999'<br/>normalize .strip().title()"]
+    end
+    subgraph CtxOut["with open(out_json, 'w', encoding='utf-8')"]
+        W1["json.dump(summary, out_f, indent=2)<br/>flushes & auto-closes handle"]
+    end
+    subgraph DiskOut["Persistent Disk (Derived Artifact)"]
+        D2["district_hb.json<br/>(indented UTF-8 JSON)"]
+    end
+    D1 --> R1
+    R1 --> R2
+    R2 -->|"exit block:<br/>in_f auto-closed"| W1
+    W1 -->|"exit block:<br/>out_f flushed & closed"| D2
+```
+
+Notice the two most important architectural safeguards in this diagram:
+
+- **Automatic Resource Cleanup:** Each `with` block guarantees its file handle closes immediately upon block exit—whether the block finishes normally or raises an error.
+- **Explicit Type Boundary:** Files on disk store only text characters (bytes). `csv.DictReader` always delivers **strings** (`"10.4"`), which your code converts explicitly with `float()` or `int()`. By contrast, `json.load()` automatically restores JSON numbers (`11.0`), booleans (`true` $\rightarrow$ `True`), lists, and nested dicts.
+
+::: {.callout-tip title="Why We Use `tempfile.TemporaryDirectory()` in Demos & Tests"}
+Every walkthrough example and `sharukh-tutor` verifier in this chapter runs inside `with tempfile.TemporaryDirectory() as tmp:`. Python creates a private scratch folder for the duration of the block and deletes it automatically on exit—keeping your project repository and Google Colab workspace completely spotless.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch09-walkthrough}
+
+Open `part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Modern Paths (`pathlib.Path`) & Safe Text I/O (`with open`) {#sec-ch09-text-io}
+
+```python
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    log_path = Path(tmp) / "clinic_shift.txt"
+    entries = [
+        "08:15 | Dhaka-North | Temp 38.4°C",
+        "09:00 | Sylhet-East | Hb 10.6 g/dL",
+        "10:30 | Khulna-West | Routine ANC",
+    ]
+    with open(log_path, "w", encoding="utf-8") as out_f:
+        for entry in entries:
+            out_f.write(f"{entry}\n")
+
+    print("File name:", log_path.name, "| Exists:", log_path.exists())
+    with open(log_path, "r", encoding="utf-8") as in_f:
+        for line_no, line in enumerate(in_f, start=1):
+            print(f"Line {line_no}: {line.strip()}")
+```
+
+**Expected Output:**
+```text
+File name: clinic_shift.txt | Exists: True
+Line 1: 08:15 | Dhaka-North | Temp 38.4°C
+Line 2: 09:00 | Sylhet-East | Hb 10.6 g/dL
+Line 3: 10:30 | Khulna-West | Routine ANC
+```
+
+Key mechanics to inspect closely:
+
+- **`Path(tmp) / "clinic_shift.txt"`:** `pathlib.Path` overloads the `/` operator to join directories and filenames cleanly on every operating system.
+- **Explicit `\n` on writes:** Unlike `print()`, `out_f.write(...)` does **not** append a newline automatically; omitting `\n` would glue all three entries onto one line.
+- **Streaming line reads:** Iterating `for line in in_f:` reads one line at a time using constant memory, and `line.strip()` removes the trailing `\n`.
+
+---
+
+### Structured Tables with `csv.DictWriter` & `csv.DictReader` {#sec-ch09-csv}
+
+Splitting CSV rows manually with `line.split(",")` breaks the moment a clinic address or diagnosis note contains a comma inside quotes (`"Dhaka, North"`). Always use Python's standard-library `csv` module instead:
+
+```python
+import csv
+from pathlib import Path
+import tempfile
+
+records = [
+    {"patient_id": "P001", "district": "Dhaka", "hb_g_dl": "10.4"},
+    {"patient_id": "P002", "district": "Sylhet", "hb_g_dl": "12.1"},
+    {"patient_id": "P003", "district": "Khulna", "hb_g_dl": "9.8"},
+]
+
+with tempfile.TemporaryDirectory() as tmp:
+    csv_path = Path(tmp) / "mch_cohort.csv"
+    fields = ["patient_id", "district", "hb_g_dl"]
+
+    with open(csv_path, "w", encoding="utf-8", newline="") as out_f:
+        writer = csv.DictWriter(out_f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(records)
+
+    with open(csv_path, "r", encoding="utf-8", newline="") as in_f:
+        loaded = list(csv.DictReader(in_f))
+
+    hb_vals = [float(row["hb_g_dl"]) for row in loaded]
+    print("Rows loaded:", len(loaded))
+    print("First row:", loaded[0])
+    print("Mean Hb (g/dL):", round(sum(hb_vals) / len(hb_vals), 2))
+```
+
+**Expected Output:**
+```text
+Rows loaded: 3
+First row: {'patient_id': 'P001', 'district': 'Dhaka', 'hb_g_dl': '10.4'}
+Mean Hb (g/dL): 10.77
+```
+
+::: {.callout-warning title="Two Mandatory `csv` Habits"}
+1. **Always pass `newline=""` to `open()`:** Both `csv.DictReader` and `csv.DictWriter` manage line endings internally. Omitting `newline=""` inserts extra blank lines between every row on Windows!
+2. **Materialize before closing:** `csv.DictReader(in_f)` is a streaming iterator. If you need rows *after* the `with` block ends, wrap it in `list(csv.DictReader(in_f))` while the file is still open.
+:::
+
+---
+
+### Persisting Nested Metadata with `json.dump` & `json.load` {#sec-ch09-json}
+
+Flat CSV tables cannot naturally represent nested dictionaries, lists of study sites, or mixed booleans and floats. **JSON (JavaScript Object Notation)** preserves that full nested hierarchy cleanly across Python, R, JavaScript, and web APIs:
+
+```python
+import json
+from pathlib import Path
+import tempfile
+
+study_meta = {
+    "study_id": "MCH-BD-2026",
+    "sites": ["Dhaka", "Sylhet", "Khulna"],
+    "cutoffs": {"anemia_g_dl": 11.0, "fever_c": 38.0},
+    "active": True,
+}
+
+with tempfile.TemporaryDirectory() as tmp:
+    json_path = Path(tmp) / "study_meta.json"
+    with open(json_path, "w", encoding="utf-8") as out_f:
+        json.dump(study_meta, out_f, indent=2)
+
+    with open(json_path, "r", encoding="utf-8") as in_f:
+        restored = json.load(in_f)
+
+    print("Study ID:", restored["study_id"])
+    print("Anemia cutoff:", restored["cutoffs"]["anemia_g_dl"])
+    print("Protocol version:", restored.get("version", "v1.0"))
+```
+
+**Expected Output:**
+```text
+Study ID: MCH-BD-2026
+Anemia cutoff: 11.0
+Protocol version: v1.0
+```
+
+Notice the crucial naming pair in Python's `json` module:
+
+- **`json.dump(obj, file_handle)` / `json.load(file_handle)`** (no trailing `s`): read/write directly with an open **file handle**.
+- **`json.dumps(obj)` / `json.loads(text_str)`** (with trailing `s` for **string**): convert between Python objects and in-memory JSON strings.
+
+---
+
+### Break It On Purpose! (File I/O & JSON Error Anatomy) {#sec-ch09-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — FileNotFoundError on Missing CSV"}
+```python
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    missing_path = Path(tmp) / "nonexistent_cohort.csv"
+    with open(missing_path, "r", encoding="utf-8") as f:
+        data = f.read()
+```
+**Python's Traceback:**
+```text
+FileNotFoundError: [Errno 2] No such file or directory:
+'.../nonexistent_cohort.csv'
+```
+**Diagnosis:** Opening a file in read mode (`"r"`) requires the file to already exist on disk. A single misspelled filename or wrong working folder triggers `FileNotFoundError`.  
+**Fix:** Verify `missing_path.exists()` or inspect `missing_path.resolve()` to confirm the exact path before opening.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — json.JSONDecodeError on Malformed JSON"}
+```python
+import json
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    broken_path = Path(tmp) / "broken_report.json"
+    broken_path.write_text('{"Dengue": 14, "Cholera": }', encoding="utf-8")
+    with open(broken_path, "r", encoding="utf-8") as f:
+        report = json.load(f)
+```
+**Python's Traceback:**
+```text
+json.decoder.JSONDecodeError: Expecting value: line 1 column 27 (char 26)
+```
+**Diagnosis:** JSON syntax is strict: missing values, trailing commas (`{"a": 1,}`), or Python single quotes (`{'a': 1}`) make `json.load()` reject the file at the exact line and column of the syntax error.  
+**Fix:** Always produce JSON files with `json.dump(...)` rather than hand-building strings or calling `str(my_dict)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — io.UnsupportedOperation Writing to a Read-Only Handle"}
+```python
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    ro_path = Path(tmp) / "readonly_log.txt"
+    ro_path.write_text("Existing shift entry\n", encoding="utf-8")
+    with open(ro_path, "r", encoding="utf-8") as f:
+        f.write("New urgent entry\n")
+```
+**Python's Traceback:**
+```text
+io.UnsupportedOperation: not writable
+```
+**Diagnosis:** The file was opened in read-only mode (`"r"`), so calling `f.write(...)` violates the handle's permissions and raises `io.UnsupportedOperation`.  
+**Fix:** Open with `"w"` (create/overwrite) or `"a"` (append to end) whenever you intend to write bytes to disk.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch09-blueprint}
+
+**Scenario:** An Upazila Health Complex exports a messy daily antenatal CSV containing inconsistent district labels (`"  dhaka "`, `"DHAKA"`, `"sylhet"`) and missing hemoglobin sentinels (`""`, `"N/A"`, `"999"`). Build a reusable function `csv_to_district_hb_json(in_csv, out_json)` that reads the raw CSV, normalizes districts, computes each district's valid mean hemoglobin rounded to 2 decimal places, writes an indented JSON summary to `out_json`, and returns that summary dictionary.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Input & Output Contract:**
+   - Input: `in_csv` (`Path` or `str`) with columns `id,district,hb_g_dl`.
+   - Output: Indented UTF-8 JSON file at `out_json` + returned `dict[str, float]`.
+2. **Edge Cases & Traps:**
+   - Every `csv.DictReader` value is a `str`—skip `""`, `"N/A"`, and `"999"` *before* calling `float(...)`.
+   - Normalize `row["district"].strip().title()` so `"  dhaka "` and `"Dhaka"` merge into one `"Dhaka"` key instead of splitting into duplicate entries.
+   - Skip invalid rows *before* inserting a district key into `grouped` so an all-invalid district never triggers `ZeroDivisionError`.
+3. **Step-by-Step Algorithm:**
+   1. Initialize `grouped = {}`.
+   2. Stream `in_csv` with `csv.DictReader`; strip `hb_g_dl` and skip sentinel values.
+   3. Normalize district name and append `float(raw_hb)` via `grouped.setdefault(district, []).append(...)`.
+   4. Compute rounded per-district means with a dict comprehension.
+   5. Save with `json.dump(summary, out_f, indent=2)` and return `summary`.
+4. **Verification Plan (Hand Check):**
+   - Dhaka valid values: `10.4`, `11.6` (skipping `999`) $\rightarrow$ $(10.4 + 11.6) / 2 = 11.0$.
+   - Sylhet valid values: `12.2`, `11.4` (skipping `N/A`) $\rightarrow$ $(12.2 + 11.4) / 2 = 11.8$.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+import csv
+import json
+from pathlib import Path
+import tempfile
+
+def csv_to_district_hb_json(in_csv, out_json):
+    """Aggregate valid Hb by normalized district and save JSON."""
+    grouped = {}
+    with open(in_csv, "r", encoding="utf-8", newline="") as in_f:
+        for row in csv.DictReader(in_f):
+            raw_hb = row["hb_g_dl"].strip()
+            if raw_hb in ("", "N/A", "999"):
+                continue
+            district = row["district"].strip().title()
+            grouped.setdefault(district, []).append(float(raw_hb))
+
+    summary = {
+        dist: round(sum(vals) / len(vals), 2)
+        for dist, vals in grouped.items()
+    }
+    with open(out_json, "w", encoding="utf-8") as out_f:
+        json.dump(summary, out_f, indent=2)
+    return summary
+
+with tempfile.TemporaryDirectory() as tmp:
+    raw_csv = Path(tmp) / "raw_hb.csv"
+    out_json = Path(tmp) / "district_hb.json"
+    raw_csv.write_text(
+        "id,district,hb_g_dl\n"
+        "M1,  dhaka ,10.4\n"
+        "M2,DHAKA,999\n"
+        "M3,Dhaka,11.6\n"
+        "M4,sylhet,12.2\n"
+        "M5,Sylhet,N/A\n"
+        "M6,SYLHET,11.4\n",
+        encoding="utf-8",
+    )
+    report = csv_to_district_hb_json(raw_csv, out_json)
+    print("Returned summary:", report)
+    print("Saved JSON:\n" + out_json.read_text(encoding="utf-8"))
+```
+
+**Output:**
+```text
+Returned summary: {'Dhaka': 11.0, 'Sylhet': 11.8}
+Saved JSON:
+{
+  "Dhaka": 11.0,
+  "Sylhet": 11.8
+}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch09-todos}
+
+Open `part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six file-handling functions below. Each `tutor.check(...)` test creates clean temporary files inside `tempfile.TemporaryDirectory()` and passes `Path` objects directly to your function:
+
+- **To-Do 9.1 (Warm-Up — `count_nonempty_lines(filepath)`):** Read a UTF-8 text file via `with open(...)` and return the `int` count of lines where `line.strip()` is non-empty.
+- **To-Do 9.2 (UTF-8 Text Writer — `write_clinic_log(filepath, entries)`):** Write each entry in `entries` on its own line in UTF-8 (`mode="w"`) and return the integer count written.
+- **To-Do 9.3 (CSV Reader — `read_csv_as_dicts(csv_path)`):** Read a CSV file via `csv.DictReader` (`encoding="utf-8"`, `newline=""`) and return a materialized `list[dict]`.
+- **To-Do 9.4 (Sentinel-Safe CSV Mean — `mean_csv_column(csv_path, col_name)`):** Read column `col_name` via `csv.DictReader`, skip `""`, `"N/A"`, and `"999"`, and return the mean rounded to 2 decimal places (or `None` if no valid values exist).
+- **To-Do 9.5 (JSON Writer — `save_study_metadata(json_path, metadata_dict)`):** Persist `metadata_dict` to `json_path` as valid, indented UTF-8 JSON (`indent=2`).
+- **To-Do 9.6 (Safe JSON Loader — `load_json_key(json_path, key, default=None)`):** Load a JSON dictionary from `json_path` and return `data.get(key, default)` without crashing on missing keys or clobbering falsy values (`0`, `False`).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch09-test}
+
+Test your understanding on paper before checking Stage 8:
+
+1. **Context Manager Safety:** Why is `with open(path, "w", encoding="utf-8") as f:` strictly safer than calling `f = open(path, "w")` followed by `f.close()` at the bottom of a function?
+2. **Mode Difference (`"w"` vs. `"a"`):** A clinic script opens `daily_log.txt` that already has 10 lines using mode `"w"` and writes 2 lines. How many lines are in `daily_log.txt` afterward? What if it used mode `"a"` instead?
+3. **Path Joining:** Why should you write `Path("data") / "raw" / "mch.csv"` instead of `"data\\raw\\mch.csv"`?
+4. **CSV Cell Types:** In a CSV with row `P001,Dhaka,10.8`, what Python data type is `row["hb_g_dl"]` right after `csv.DictReader` yields `row`? What happens if you run `row["hb_g_dl"] < 11.0` without converting first?
+5. **Closed-File Iterator Bug:** What error happens if you run this snippet?
+   ```python
+   with open(csv_path, "r", encoding="utf-8", newline="") as f:
+       reader = csv.DictReader(f)
+   rows = list(reader)
+   ```
+6. **`newline=""` Purpose:** Why does Python's official `csv` documentation require `newline=""` inside `open(...)` for both `DictReader` and `DictWriter`?
+7. **`json.dump` vs. `json.dumps`:** Which function writes directly to an open file handle, and which returns an in-memory JSON string?
+8. **Invalid JSON Serialization Trap:** Why does `f.write(str({"active": True, "site": "Dhaka"}))` produce a file that crashes `json.load()`?
+9. **Falsy Value Trap:** Suppose `config.json` contains `{"missing_count": 0}`. What does `data.get("missing_count") or 99` return versus `data.get("missing_count", 99)`?
+10. **Temporary Sandbox Cleanup:** If code inside `with tempfile.TemporaryDirectory() as tmp:` raises a `ValueError`, does the temporary directory get left behind on disk or cleaned up automatically?
+
+---
+
+## Stage 7 — Chapter 9 Hands-On Coding Exam (100 Points) {#sec-ch09-exam}
+
+Open `part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb`, implement all three persistent file-pipeline functions, and run `tutor.check_exam("ch09", exam_submissions)` to earn your Chapter 9 score out of 100 points.
+
+### Exam Task 9.1 (30 Points): Filter Urgent Triage Rows to CSV
+
+Write `filter_urgent_to_csv(in_csv, out_csv)` to export priority clinical referrals:
+
+- Read `in_csv` with `csv.DictReader` (`encoding="utf-8"`, `newline=""`).
+- Write to `out_csv` using `csv.DictWriter(out_f, fieldnames=reader.fieldnames)` and always call `writer.writeheader()` so even 0-match exports preserve valid CSV headers.
+- Write only rows where `row["triage_priority"] == "Urgent"`.
+- Return the `int` count of Urgent rows written.
+
+### Exam Task 9.2 (35 Points): Messy MCH CSV to Per-Residence JSON Summary
+
+Write `summarize_mch_csv_to_json(in_csv, out_json)` to aggregate antenatal care visits from a messy field export:
+
+- Read `in_csv` containing `residence` (e.g., `"rural"`, `"  Rural "`, `"URBAN"`) and `anc_visits` (with missing sentinels `"999"` and `""`).
+- Skip rows where `anc_visits.strip()` is `""`, `"999"`, or `"N/A"`.
+- Normalize `residence` via `.strip().title()` and compute each group's valid mean `anc_visits` rounded to **2 decimal places**.
+- Write the summary dictionary to `out_json` as indented UTF-8 JSON (`indent=2`) and return that dictionary.
+
+### Exam Task 9.3 (35 Points): Merge Daily JSON Disease Reports
+
+Write `merge_daily_json_reports(json_paths)` to combine multi-day outbreak counts across separate files:
+
+- Accept a list of `Path` (or `str`) objects, each pointing to a UTF-8 JSON file mapping `disease -> count`.
+- Load every JSON file and sum counts for each disease across all files into a single combined dictionary.
+- Return the combined dictionary (returning `{}` when `json_paths` is empty).
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch09-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `with open(...)` guarantees the file handle is flushed and closed automatically when leaving the block, even if an exception interrupts execution before the end of the function.
+2. Mode `"w"` truncates and overwrites the file, leaving **2 lines**. Mode `"a"` appends to the end, leaving **12 lines**.
+3. `pathlib.Path` with `/` produces portable paths across Windows, macOS, and Linux, whereas hardcoded backslashes fail on Unix/Colab systems and risk escape-sequence bugs (`\t`, `\n`).
+4. `row["hb_g_dl"]` is a **`str`** (`"10.8"`). Comparing `"10.8" < 11.0` directly raises `TypeError: '<' not supported between instances of 'str' and 'float'`.
+5. Raises **`ValueError: I/O operation on closed file`**, because `list(reader)` tried to read from `f` *after* exiting the `with` block closed `f`.
+6. The `csv` module handles universal newline translation and embedded newlines inside quoted fields itself; passing `newline=""` prevents Python from double-translating `\r\n` into extra blank rows on Windows.
+7. **`json.dump(obj, f)`** writes to an open file handle; **`json.dumps(obj)`** returns a JSON-formatted `str` in memory.
+8. `str(...)` outputs Python literal syntax—single quotes (`'active'`) and capitalized `True`—whereas the JSON standard strictly requires double quotes (`"active"`) and lowercase `true`.
+9. `data.get("missing_count") or 99` treats `0` as falsy and wrongly returns **`99`**; `data.get("missing_count", 99)` checks key membership and accurately returns **`0`**.
+10. It is **cleaned up automatically**—`TemporaryDirectory` is a context manager whose `__exit__` method deletes the scratch folder even when an exception occurs.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import csv
+import json
+
+# To-Do 9.1
+def count_nonempty_lines(filepath):
+    """Return int count of lines whose stripped text is non-empty."""
+    count = 0
+    with open(filepath, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                count += 1
+    return count
+
+# To-Do 9.2
+def write_clinic_log(filepath, entries):
+    """Write each entry on its own UTF-8 line and return count."""
+    with open(filepath, "w", encoding="utf-8") as f:
+        for entry in entries:
+            f.write(f"{entry}\n")
+    return len(entries)
+
+# To-Do 9.3
+def read_csv_as_dicts(csv_path):
+    """Load a CSV file via csv.DictReader and return list[dict]."""
+    with open(csv_path, "r", encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+# To-Do 9.4
+def mean_csv_column(csv_path, col_name):
+    """Return mean of col_name skipping '', 'N/A', '999', or None."""
+    values = []
+    with open(csv_path, "r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            raw = row[col_name].strip()
+            if raw in ("", "N/A", "999"):
+                continue
+            values.append(float(raw))
+    if not values:
+        return None
+    return round(sum(values) / len(values), 2)
+
+# To-Do 9.5
+def save_study_metadata(json_path, metadata_dict):
+    """Serialize metadata_dict to indented UTF-8 JSON at json_path."""
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(metadata_dict, f, indent=2)
+
+# To-Do 9.6
+def load_json_key(json_path, key, default=None):
+    """Load JSON dict from json_path and return data.get(key, default)."""
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get(key, default)
+```
+
+### C. Annotated Solutions — Chapter 9 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import csv
+import json
+
+# Exam Task 9.1 (30 pts)
+def filter_urgent_to_csv(in_csv, out_csv):
+    """Write Urgent rows to out_csv with header and return count."""
+    count = 0
+    with open(in_csv, "r", encoding="utf-8", newline="") as in_f, \
+         open(out_csv, "w", encoding="utf-8", newline="") as out_f:
+        reader = csv.DictReader(in_f)
+        writer = csv.DictWriter(out_f, fieldnames=reader.fieldnames)
+        writer.writeheader()
+        for row in reader:
+            if row["triage_priority"] == "Urgent":
+                writer.writerow(row)
+                count += 1
+    return count
+
+# Exam Task 9.2 (35 pts)
+def summarize_mch_csv_to_json(in_csv, out_json):
+    """Compute per-residence mean ANC visits, save JSON, return dict."""
+    grouped = {}
+    with open(in_csv, "r", encoding="utf-8", newline="") as in_f:
+        for row in csv.DictReader(in_f):
+            raw_anc = row["anc_visits"].strip()
+            if raw_anc in ("", "999", "N/A"):
+                continue
+            residence = row["residence"].strip().title()
+            grouped.setdefault(residence, []).append(float(raw_anc))
+
+    summary = {
+        res: round(sum(vals) / len(vals), 2)
+        for res, vals in grouped.items()
+    }
+    with open(out_json, "w", encoding="utf-8") as out_f:
+        json.dump(summary, out_f, indent=2)
+    return summary
+
+# Exam Task 9.3 (35 pts)
+def merge_daily_json_reports(json_paths):
+    """Load daily disease->count JSON files and return summed totals."""
+    totals = {}
+    for path in json_paths:
+        with open(path, "r", encoding="utf-8") as f:
+            report = json.load(f)
+        for disease, count in report.items():
+            totals[disease] = totals.get(disease, 0) + count
+    return totals
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 9 Failure Modes
+
+1. **Treating CSV Numbers as Floats Before Cleaning:** Because `csv.DictReader` returns every cell as a string, calling `float(row["anc_visits"])` immediately crashes with `ValueError` on `""` or `"N/A"`, or silently includes `999.0` in your published mean. Always strip, filter sentinels (`""`, `"N/A"`, `"999"`), and *then* cast with `float()`.
+2. **Reading After the `with` Block Closes or Skipping `writeheader()`:** Returning `csv.DictReader(f)` directly instead of `list(csv.DictReader(f))` fails the moment the `with` block exits; likewise, omitting `writer.writeheader()` leaves your exported CSV without column headers so downstream tools misread row 1 as column names.
+3. **Writing Python `str(dict)` Instead of `json.dump()`:** Printing or writing `str(my_dict)` produces single quotes and `True`/`False`, which breaks every JSON parser with `json.JSONDecodeError`. Always serialize with `json.dump(obj, f, indent=2)` and retrieve optional keys with `data.get(key, default)`.
+
+---
+
+::: {.callout-note title="Persistent Pipelines Unlocked!"}
+You can now move seamlessly between raw disk files, structured CSV registries, and nested JSON summaries without leaving stray temporary files behind. In the next chapter, we combine these persistent file workflows with defensive exception handling, assertions, and reusable scientific modules.
+:::

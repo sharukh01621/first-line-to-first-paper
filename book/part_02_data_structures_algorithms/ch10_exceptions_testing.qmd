@@ -1,0 +1,599 @@
+# Exceptions, Defensive Programming, Testing, and Systematic Debugging {#sec-ch10}
+
+> **Chapter Mission:** Transform fragile scripts that crash—or worse, publish silent nonsense—into peer-reviewable, fault-tolerant research software. Master Python's full `try` / `except` / `else` / `finally` lifecycle, specific exception handling, explicit `raise ValueError` contracts, custom clinical exceptions, automated `assert` / `pytest`-style unit tests, and systematic debugging workflows.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch10 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch10 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch10 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Trace and apply every clause of Python's `try` / `except` / `else` / `finally` exception-handling lifecycle.
+2. Catch **specific exception classes** (`ValueError`, `TypeError`, `KeyError`) using EAFP style while avoiding the silent-bug trap of bare `except:`.
+3. Enforce defensive clinical and statistical input contracts by choosing deliberately between **returning `None`** (valid but undefined) and **raising `ValueError`** (impossible or corrupt input).
+4. Define domain-specific custom exceptions (such as `InvalidVitalSignError(ValueError)`) to make research error logs immediately readable to collaborators and reviewers.
+5. Write automated `assert` and `pytest`-style unit tests—including boundary checks, floating-point tolerances, and expected-exception checks—to catch broken formulas before submission.
+6. Apply a repeatable four-step **Systematic Debugging Protocol** (Reproduce $\rightarrow$ Isolate $\rightarrow$ Inspect $\rightarrow$ Lock In with a Regression Test) to eliminate bugs permanently.
+
+---
+
+## Stage 1 — First-Principles Intuition: Loud Failures Beat Silent Retractions {#sec-ch10-intuition}
+
+When a novice's script crashes with a red traceback, their first instinct is frustration. Yet in scientific computing, **a loud crash is a gift**. The true nightmare of computational research is a program that *never crashes*, silently converts a stray `"999"` sentinel or missing hemoglobin value into a distorted cohort mean, and prints a clean-looking Table 1 that triggers a journal retraction two years later.
+
+**Defensive programming** and **automated testing** invert that risk: you teach your code to inspect every incoming value at the gate, reject impossible inputs loudly, quarantine corrupt rows cleanly during batch runs, and verify every mathematical formula automatically before a single number enters your manuscript.
+
+::: {.callout-note title="Mental Model — The Biosafety Specimen Intake Airlock"}
+Think of every research function as a biosafety laboratory with a double-door intake airlock:
+
+1. **Gate Inspection (`raise ValueError`):** Before running any assay, the intake technician checks the specimen label, sample type, and physical plausibility (e.g., human body temperature between $30.0$ and $45.0$ degrees Celsius). Impossible samples are **rejected loudly** so they can never contaminate the downstream database.
+2. **Quarantine Tray (`try` / `except`):** When processing a crate of $5{,}000$ field tubes, one cracked vial should **not** shut down the entire hospital lab. A batch controller wraps each tube inside `try / except ValueError`, routing clean samples to the analysis rack and logging rejected tubes into a written quarantine ledger.
+3. **Guaranteed Sterilization (`finally`):** Whether a test succeeds or fails, the technician always logs the timestamp and closes the file handle or freezer door.
+4. **Daily Calibration Controls (`assert` / Unit Tests):** Every morning, the lab runs known control standards (e.g., $70\text{ kg}$ at $1.75\text{ m}$ must yield BMI $\approx 22.86$) before trusting real patient results. If a calibration test fails, an `AssertionError` halts the bench immediately.
+:::
+
+### Two Idioms: LBYL vs. EAFP
+
+Python programmers recognize two complementary styles of defensive coding:
+
+- **LBYL (Look Before You Leap):** Explicitly check preconditions (`if key in d:`, `if cases == 0:`) before acting. Ideal for validating clinical bounds and `None` guards.
+- **EAFP (Easier to Ask for Forgiveness than Permission):** Attempt the operation directly inside `try:` and handle the exact failure (`except (KeyError, TypeError):`). Ideal for parsing dirty strings (`float(raw_val)`) and reading deeply nested JSON/dictionary payloads.
+
+---
+
+## Stage 2 — Visual Mental Model: Exception Control-Flow & Systematic Debugging {#sec-ch10-mental-model}
+
+Every `try` statement follows one exact deterministic path through its four clauses (`try`, `except`, `else`, `finally`). Study the routing diagram carefully:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    A["Enter try: block<br/>(run risky code)"] --> B{"Exception<br/>raised?"}
+    B -- "No" --> C["Run else: block<br/>(only on clean success)"]
+    B -- "Yes" --> D{"Matches an<br/>except: type?"}
+    D -- "Yes" --> E["Run matching<br/>except: handler"]
+    D -- "No" --> F["Uncaught exception<br/>queued to propagate"]
+    C --> G["Run finally: block<br/>(ALWAYS executes)"]
+    E --> G
+    F --> G
+    G --> H["Continue normally<br/>(or re-raise uncaught)"]
+```
+
+Notice two subtleties that even experienced researchers sometimes miss:
+
+- **`else:` runs *only* when `try:` raises zero exceptions.** Keeping post-parse logic inside `else:` keeps the `try:` block tiny so you never accidentally swallow a bug from later lines!
+- **`finally:` *always* runs**—even if `try:` succeeded, even if `except:` caught an error, even if an uncaught exception is about to crash the script, and even if `try:` executes a `return` statement.
+
+::: {.callout-tip title="The 4-Step Systematic Debugging Protocol"}
+Never "guess and randomly edit lines" when a script misbehaves. Follow the same scientific method you use at the lab bench:
+
+1. **Reproduce:** Shrink the failure to the smallest input that triggers the bug reliably (e.g., a single patient dictionary instead of a CSV of $10{,}000$ rows).
+2. **Isolate:** Read the traceback **bottom-up**—last line gives the exception class and message; the line immediately above shows the exact failing expression. Narrow down which function first produces a wrong value.
+3. **Inspect:** Print intermediate values and types (`print(repr(x), type(x))`) or trace one call frame by hand. Verify assumptions (e.g., is `"38.5"` a `str`, or is `True` sneaking past `isinstance(x, int)`?).
+4. **Verify & Lock In:** Once fixed, add an `assert` test for that exact failing input so the bug can **never** return silently in a future revision.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch10-walkthrough}
+
+Open `part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Full Exception Lifecycle: `try` / `except` / `else` / `finally` {#sec-ch10-lifecycle}
+
+```python
+def parse_reading_with_audit(raw_text):
+    """Demonstrate full try / except / else / finally lifecycle."""
+    try:
+        value = float(raw_text)
+    except (ValueError, TypeError) as exc:
+        print(f"  [EXCEPT] Rejected {raw_text!r}: {exc}")
+        result = None
+    else:
+        print(f"  [ELSE]   Parsed clean float: {value}")
+        result = value
+    finally:
+        print("  [FINALLY] Audit entry closed.")
+    return result
+
+r1 = parse_reading_with_audit("38.4")
+r2 = parse_reading_with_audit("N/A")
+print("Returned:", r1, r2)
+```
+
+**Expected Output:**
+```text
+  [ELSE]   Parsed clean float: 38.4
+  [FINALLY] Audit entry closed.
+  [EXCEPT] Rejected 'N/A': could not convert string to float: 'N/A'
+  [FINALLY] Audit entry closed.
+Returned: 38.4 None
+```
+
+Look closely at the execution order:
+
+- For `"38.4"`, `float("38.4")` succeeds, so Python skips `except`, enters `else`, and closes with `finally`.
+- For `"N/A"`, `float("N/A")` raises `ValueError`, so Python jumps directly into `except (ValueError, TypeError) as exc:`, skips `else`, and still runs `finally`.
+- Binding the exception object with `as exc` gives you the exact diagnostic message for your audit log.
+
+---
+
+### Specific Exceptions & EAFP Nested Dictionary Lookups {#sec-ch10-eafp}
+
+Surveillance APIs and clinic JSON exports frequently omit districts, drop optional metrics, or store `None` for an entire division that failed to report. With EAFP, a single compact `try / except (KeyError, TypeError)` safely guards every failure mode at once:
+
+```python
+surveillance = {
+    "Dhaka": {"cases": 140, "deaths": 3},
+    "Sylhet": {"cases": 25, "deaths": 0},
+    "Barishal": None,
+}
+
+def get_metric(report, district, metric):
+    """Fetch nested metric safely via EAFP."""
+    try:
+        return report[district][metric]
+    except (KeyError, TypeError):
+        return None
+
+print("Dhaka cases:   ", get_metric(surveillance, "Dhaka", "cases"))
+print("Sylhet deaths: ", get_metric(surveillance, "Sylhet", "deaths"))
+print("Barishal cases:", get_metric(surveillance, "Barishal", "cases"))
+print("Missing dist:  ", get_metric(surveillance, "Khulna", "cases"))
+```
+
+**Expected Output:**
+```text
+Dhaka cases:    140
+Sylhet deaths:  0
+Barishal cases: None
+Missing dist:   None
+```
+
+::: {.callout-warning title="Never Write a Bare `except:` in Research Code!"}
+Writing a naked `except:` (without naming specific exception classes) catches *everything*—including `NameError` from a misspelled variable, `ZeroDivisionError` from a math bug, and even `KeyboardInterrupt` when you try to stop a runaway loop! Always name the narrowest tuple of expected exceptions, such as `except (ValueError, TypeError):` or `except (KeyError, TypeError):`.
+:::
+
+---
+
+### Defensive Programming: `raise ValueError` vs. Returning `None` {#sec-ch10-raise}
+
+A common design question in biostatistics is: *"When an input looks wrong, should my function return `None` or `raise ValueError`?"* Follow this crisp scientific rule:
+
+- **Return `None`** when the input is **factually valid**, but the statistic is mathematically undefined (for example, `cases == 0` in a quiet week where Case Fatality Rate $0 / 0$ is undefined).
+- **`raise ValueError`** when the input is **physically or logically impossible** (for example, negative deaths or negative cases—a sure sign of corrupted data).
+
+```python
+def compute_cfr(deaths, cases):
+    """Compute Case Fatality Rate (%), raising on impossible counts."""
+    if deaths < 0 or cases < 0:
+        raise ValueError("deaths and cases must be non-negative")
+    if cases == 0:
+        return None
+    return round((deaths / cases) * 100, 2)
+
+print("Valid CFR (12/400):", compute_cfr(12, 400))
+print("Zero cases (0/0):  ", compute_cfr(0, 0))
+```
+
+**Expected Output:**
+```text
+Valid CFR (12/400): 3.0
+Zero cases (0/0):   None
+```
+
+---
+
+### Custom Domain Exception (`InvalidVitalSignError`) {#sec-ch10-custom}
+
+When your research package grows past a handful of functions, subclassing `ValueError` lets you create a self-documenting clinical exception in just two lines:
+
+```python
+class InvalidVitalSignError(ValueError):
+    """Raised when a clinical vital sign is outside human bounds."""
+
+def check_temp(temp_c):
+    """Validate human body temperature in [30.0, 45.0] C."""
+    if isinstance(temp_c, bool) or not isinstance(temp_c, (int, float)):
+        raise InvalidVitalSignError(f"Non-numeric temp: {temp_c!r}")
+    if not (30.0 <= temp_c <= 45.0):
+        raise InvalidVitalSignError(f"Implausible temp: {temp_c} C")
+    return float(temp_c)
+
+for sample in [37.4, 41.2, 999.0]:
+    try:
+        clean = check_temp(sample)
+        print("Accepted:", clean)
+    except InvalidVitalSignError as exc:
+        print("Flagged vital sign:", exc)
+```
+
+**Expected Output:**
+```text
+Accepted: 37.4
+Accepted: 41.2
+Flagged vital sign: Implausible temp: 999.0 C
+```
+
+Because `InvalidVitalSignError` inherits from `ValueError`, callers can catch it specifically with `except InvalidVitalSignError:` *or* generically with `except ValueError:`. Also notice the `isinstance(temp_c, bool)` guard—in Python, `bool` is a subclass of `int` (`isinstance(True, int)` is `True`!), so checking `bool` explicitly is an essential defensive habit.
+
+---
+
+### Automated Unit Testing: `assert` & `pytest`-Style Test Functions {#sec-ch10-testing}
+
+Python's built-in `assert condition, "optional message"` statement does nothing when `condition` is `True` and raises `AssertionError` immediately when `condition` is `False`. Grouping assertions into small `test_*()` functions follows the exact convention used by `pytest`—Python's industry-standard testing framework:
+
+```python
+def test_compute_cfr_nominal():
+    assert compute_cfr(12, 400) == 3.0
+    assert compute_cfr(0, 250) == 0.0
+
+def test_compute_cfr_zero_cases():
+    assert compute_cfr(0, 0) is None
+
+def test_compute_cfr_rejects_negatives():
+    try:
+        compute_cfr(-3, 100)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Expected ValueError for negative deaths")
+
+for test_fn in (
+    test_compute_cfr_nominal,
+    test_compute_cfr_zero_cases,
+    test_compute_cfr_rejects_negatives,
+):
+    test_fn()
+    print(f"PASS: {test_fn.__name__}")
+```
+
+**Expected Output:**
+```text
+PASS: test_compute_cfr_nominal
+PASS: test_compute_cfr_zero_cases
+PASS: test_compute_cfr_rejects_negatives
+```
+
+Look closely at `test_compute_cfr_rejects_negatives`: a good test suite verifies **not only** that valid inputs return the right numbers, **but also** that invalid inputs actually raise the promised exception! In a standalone `.py` project tested with `pytest`, you can write that same check concisely using `with pytest.raises(ValueError): compute_cfr(-3, 100)`.
+
+---
+
+### Break It On Purpose! (Exception & Testing Error Anatomy) {#sec-ch10-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError From Explicit Defensive Raise"}
+```python
+bad_cfr = compute_cfr(-5, 100)
+```
+**Python's Traceback:**
+```text
+ValueError: deaths and cases must be non-negative
+```
+**Diagnosis:** Our explicit guard clause inside `compute_cfr` intercepted a physically impossible negative death count (`-5`) and stopped execution immediately with a human-readable message rather than returning a nonsensical `-5.0%` fatality rate.  
+**Fix:** Catch `ValueError` in the calling batch pipeline (quarantining the row) or correct the upstream data entry before calling `compute_cfr`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — AssertionError Catching a Broken Epidemiological Formula"}
+```python
+def buggy_cfr(deaths, cases):
+    return round(deaths / cases, 2)   # Forgot * 100!
+
+assert buggy_cfr(12, 400) == 3.0, "Expected 3.0%, got wrong scale!"
+```
+**Python's Traceback:**
+```text
+AssertionError: Expected 3.0%, got wrong scale!
+```
+**Diagnosis:** `buggy_cfr(12, 400)` returned `0.03` (a proportion) instead of `3.0` (a percentage). Without an automated `assert`, this $100\times$ scale error could silently flow straight into a manuscript table!  
+**Fix:** Multiply by `100` (`round((deaths / cases) * 100, 2)`) and re-run the test suite to confirm `PASS`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — Uncaught KeyError on Missing Nested Dictionary Key"}
+```python
+report = {"Dhaka": {"cases": 140}}
+dhaka_icu = report["Dhaka"]["icu_beds"]
+```
+**Python's Traceback:**
+```text
+KeyError: 'icu_beds'
+```
+**Diagnosis:** `"Dhaka"` existed in `report`, so the first lookup succeeded, but the inner dictionary did not contain `"icu_beds"`. Direct bracket indexing without exception handling crashed the entire script.  
+**Fix:** Wrap nested lookups in an EAFP helper (`get_metric(report, "Dhaka", "icu_beds")`) catching `(KeyError, TypeError)` and returning `None`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch10-blueprint}
+
+**Scenario:** A maternal health mobile survey uploads daily batches of raw intake dictionaries (`patient_id`, `temp_c`, `sbp_mmhg`). Some rows arrive as numeric strings (`"37.8"`), some contain impossible sentinel temperatures (`"999"`), and some drop required keys entirely. Build a two-layer defensive pipeline—a strict single-row validator raising `InvalidVitalSignError` and a resilient batch processor that quarantines corrupt rows without crashing—and verify it with `assert`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Layered Architecture (Single Responsibility):**
+   - `validate_intake_row(row)` $\rightarrow$ enforces required keys (`patient_id`, `temp_c`, `sbp_mmhg`), numeric casting, and physiological bounds ($30.0 \le \text{temp\_c} \le 45.0$, $50.0 \le \text{sbp\_mmhg} \le 260.0$); raises `InvalidVitalSignError` on any violation.
+   - `process_intake_batch(raw_rows)` $\rightarrow$ loops with `enumerate(raw_rows)`, catches `InvalidVitalSignError` per row into `quarantine`, appends clean dicts in `else:` to `accepted`, and returns `(accepted, quarantine)`.
+2. **Edge Cases & Traps:**
+   - Calling `float(row["temp_c"])` before verifying `"temp_c" in row` leaks `KeyError` instead of `InvalidVitalSignError`.
+   - Catching `InvalidVitalSignError` *inside* the loop (not outside!) ensures row 1's failure never aborts rows 2 and 3.
+3. **Verification Plan (Hand Check):**
+   - Input batch has 4 rows: `M-01` (valid string numbers), `M-02` (`temp_c="999"` $\rightarrow$ quarantined), `M-03` (missing `sbp_mmhg` $\rightarrow$ quarantined), `M-04` (valid numeric values).
+   - Expected result: `len(good) == 2` and `len(bad) == 2`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def validate_intake_row(row):
+    """Validate one clinic intake dict or raise InvalidVitalSignError."""
+    for key in ("patient_id", "temp_c", "sbp_mmhg"):
+        if key not in row:
+            raise InvalidVitalSignError(f"Missing field: {key}")
+    try:
+        temp_c = float(row["temp_c"])
+        sbp = float(row["sbp_mmhg"])
+    except (ValueError, TypeError) as exc:
+        raise InvalidVitalSignError(f"Non-numeric vital: {exc}")
+    if not (30.0 <= temp_c <= 45.0):
+        raise InvalidVitalSignError(f"Bad temp_c: {temp_c}")
+    if not (50.0 <= sbp <= 260.0):
+        raise InvalidVitalSignError(f"Bad sbp_mmhg: {sbp}")
+    return {"patient_id": row["patient_id"], "temp_c": temp_c, "sbp": sbp}
+
+def process_intake_batch(raw_rows):
+    """Return (accepted_rows, quarantine_log) without crashing."""
+    accepted = []
+    quarantine = []
+    for idx, row in enumerate(raw_rows):
+        try:
+            clean = validate_intake_row(row)
+        except InvalidVitalSignError as exc:
+            quarantine.append(f"Row {idx}: {exc}")
+        else:
+            accepted.append(clean)
+    return (accepted, quarantine)
+
+sample_rows = [
+    {"patient_id": "M-01", "temp_c": "37.8", "sbp_mmhg": "118"},
+    {"patient_id": "M-02", "temp_c": "999", "sbp_mmhg": "120"},
+    {"patient_id": "M-03", "temp_c": "38.6"},
+    {"patient_id": "M-04", "temp_c": 36.7, "sbp_mmhg": 142},
+]
+good, bad = process_intake_batch(sample_rows)
+assert len(good) == 2 and len(bad) == 2
+print("Accepted:", good)
+print("Quarantined:", bad)
+```
+
+**Output:**
+```text
+Accepted: [{'patient_id': 'M-01', 'temp_c': 37.8, 'sbp': 118.0},
+           {'patient_id': 'M-04', 'temp_c': 36.7, 'sbp': 142.0}]
+Quarantined: ['Row 1: Bad temp_c: 999.0', 'Row 2: Missing field: sbp_mmhg']
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch10-todos}
+
+Open `part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and complete all six defensive programming and testing functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`:
+
+- **To-Do 10.1 (Warm-Up — `parse_float_safely(raw_val, default=None)`):** Convert `raw_val` via `float(raw_val)` inside `try / except (ValueError, TypeError)`, returning `default` for dirty inputs such as `"N/A"`, `None`, or `""`.
+- **To-Do 10.2 (Raising vs. Returning `None` — `safe_cfr_percent(deaths, cases)`):** Raise `ValueError` if `deaths < 0` or `cases < 0`; return `None` if `cases == 0`; otherwise return `round((deaths / cases) * 100, 2)`.
+- **To-Do 10.3 (Input Contract — `validate_body_temp(temp_c)`):** Raise `ValueError` if `temp_c` is not numeric (or is a `bool`) or lies outside the inclusive bounds $[30.0, 45.0]$; otherwise return `float(temp_c)`.
+- **To-Do 10.4 (EAFP Lookup — `extract_nested_metric(report_dict, district, metric)`):** Safely look up `report_dict[district][metric]`, catching `(KeyError, TypeError)` and returning `None` while preserving legitimate `0` values.
+- **To-Do 10.5 (`try` / `except` / `else` Loop — `clean_numeric_series(raw_values)`):** Convert valid items to `float`, skip and count unparseable values/`None`, and return the 2-tuple `(clean_floats, error_count)`.
+- **To-Do 10.6 (Automated Testing — `verify_bmi_function(bmi_fn)`):** Run `assert` checks with a floating-point tolerance (`< 0.05`) on a supplied `bmi_fn(weight_kg, height_m)` across multiple distinct test pairs, returning `True` when valid and letting `AssertionError` fire on buggy functions.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch10-test}
+
+Test your exception-flow and debugging reasoning on paper before checking Stage 8:
+
+1. **Full Lifecycle Trace:** What exact lines does this snippet print?
+   ```python
+   try:
+       x = int("42")
+   except ValueError:
+       print("A")
+   else:
+       print("B")
+   finally:
+       print("C")
+   ```
+2. **Exception Path Trace:** If `"42"` above is replaced with `"N/A"`, which letters are printed?
+3. **The Bare `except:` Hazard:** Why is `except:` without a specific exception type dangerous in a data-cleaning loop?
+4. **Design Choice (`raise` vs. `None`):** In `safe_cfr_percent(deaths, cases)`, why should `safe_cfr_percent(0, 0)` return `None`, whereas `safe_cfr_percent(-2, 50)` raises `ValueError`?
+5. **The Python `bool` Subclass Trap:** What does `isinstance(True, int)` evaluate to in Python, and why does that matter for validating $2 \times 2$ contingency table counts?
+6. **Exception Order in `validate_body_temp("37.5")`:** If a function checks `if temp_c < 30.0:` *before* checking `isinstance(temp_c, (int, float))`, what exception fires instead of `ValueError`?
+7. **Custom Exception Inheritance:** Given `class InvalidVitalSignError(ValueError): pass`, will `except ValueError:` catch a raised `InvalidVitalSignError`? What about the reverse (`except InvalidVitalSignError:` catching a plain `ValueError`)?
+8. **Loop Isolation:** Why must `try / except ValueError` sit *inside* the `for` loop of `batch_validate_records` rather than wrapping the entire `for` loop from the outside?
+9. **Testing with Multiple Inputs:** Why is a single assertion `assert bmi_fn(80, 2.0) == 20.0` insufficient to catch a fake function `def fake(w, h): return 20.0`?
+10. **Reading a Traceback:** When Python prints a 20-line traceback across four functions, which end of the traceback (top or bottom) should you read first, and why?
+
+---
+
+## Stage 7 — Chapter 10 Hands-On Coding Exam (100 Points) {#sec-ch10-exam}
+
+Open `part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb`, implement all three defensive functions, and run `tutor.check_exam("ch10", exam_submissions)` to earn your Chapter 10 score out of $100$ points.
+
+### Exam Task 10.1 (30 Points): Defensive Patient Record Parser
+
+Write `parse_patient_record(raw_dict)` to validate and clean a single patient record dictionary:
+
+- Verify `raw_dict` is a `dict` containing all three required keys: `"patient_id"`, `"temp_c"`, and `"hb_g_dl"` (raise `ValueError`—not `KeyError`—if any key is missing).
+- Verify `"patient_id"` is a non-empty string after `.strip()` (raise `ValueError` otherwise).
+- Cast `"temp_c"` and `"hb_g_dl"` to `float`, rejecting booleans and non-numeric values with `ValueError`.
+- Enforce inclusive clinical bounds: `temp_c` in $[30.0, 45.0]$ and `hb_g_dl` in $[2.0, 25.0]$ (raise `ValueError` if outside either range).
+- Return the clean typed dictionary `{"patient_id": pid, "temp_c": temp_c, "hb_g_dl": hb_g_dl}`.
+
+### Exam Task 10.2 (35 Points): Resilient Batch Record Validator
+
+Write `batch_validate_records(raw_records)` to validate an entire list of raw patient records without crashing:
+
+- Call `parse_patient_record(record)` inside `try / except ValueError as exc:` for every record in `raw_records`.
+- Append each valid cleaned dictionary to `valid_list`.
+- Append each rejected record's error message string (`str(exc)`) to `rejected_errors`.
+- Return the 2-tuple `(valid_list, rejected_errors)` cleanly for mixed, all-valid, all-invalid, and empty batches.
+
+### Exam Task 10.3 (35 Points): Strictly Validated $2 \times 2$ Odds Ratio
+
+Write `compute_safe_odds_ratio(a, b, c, d)` for a $2 \times 2$ contingency table:
+
+- Validate that all four cell counts (`a`, `b`, `c`, `d`) are non-negative `int` values and **not** `bool`—raise `ValueError` if any input is negative, a `float`, a `bool`, a `str`, or `None`.
+- Return `None` immediately if `b == 0` or `c == 0`.
+- Otherwise compute the cross-product ratio $\frac{a \times d}{b \times c}$ and return it rounded to **2 decimal places**.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch10-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Prints **`B`** then **`C`** (`try` succeeded, so `except` is skipped, `else` runs, and `finally` always runs).
+2. Prints **`A`** then **`C`** (`ValueError` jumps to `except`, `else` is skipped, and `finally` always runs).
+3. A bare `except:` silently swallows real programming bugs (`NameError`, `Syntax`-like runtime typos, `ZeroDivisionError`) and even `KeyboardInterrupt`, masking root causes during debugging.
+4. Zero cases (`0, 0`) is a legitimate surveillance week with an undefined ratio (`None`), whereas negative deaths (`-2`) is physically impossible corrupt data that must fail loudly with `ValueError`.
+5. `isinstance(True, int)` evaluates to **`True`** because `bool` subclasses `int` (`True == 1`, `False == 0`). Without `isinstance(val, bool)`, boolean flags could silently masquerade as patient counts!
+6. **`TypeError`** (`'<' not supported between instances of 'str' and 'float'`). Always validate types *before* numeric range comparisons.
+7. **`except ValueError:` catches `InvalidVitalSignError`** (Yes—subclasses match parent handlers). The reverse is **No**: `except InvalidVitalSignError:` will *not* catch a plain `ValueError`.
+8. If `try / except` wraps the outside of the loop, the very first bad row exits the entire loop immediately, abandoning every valid record that follows it!
+9. A constant dummy function `lambda w, h: 20.0` passes any single test expecting `20.0`. Testing at least two inputs with *different* expected BMIs (e.g., `20.0` and `25.0`) exposes hardcoded shortcuts immediately.
+10. Read from the **bottom up**: the final line names the exact exception type and message, and the innermost frame immediately above points to the exact expression that triggered the failure.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 10.1
+def parse_float_safely(raw_val, default=None):
+    """Convert raw_val to float, or return default on parse error."""
+    try:
+        return float(raw_val)
+    except (ValueError, TypeError):
+        return default
+
+# To-Do 10.2
+def safe_cfr_percent(deaths, cases):
+    """Return CFR (%) rounded to 2 decimals, or None if cases == 0."""
+    if deaths < 0 or cases < 0:
+        raise ValueError("deaths and cases must be non-negative")
+    if cases == 0:
+        return None
+    return round((deaths / cases) * 100, 2)
+
+# To-Do 10.3
+def validate_body_temp(temp_c):
+    """Return float(temp_c) if numeric and in [30.0, 45.0], else raise."""
+    if isinstance(temp_c, bool) or not isinstance(temp_c, (int, float)):
+        raise ValueError(f"Temperature must be numeric, got {temp_c!r}")
+    if not (30.0 <= temp_c <= 45.0):
+        raise ValueError(f"Temperature {temp_c} outside [30.0, 45.0]")
+    return float(temp_c)
+
+# To-Do 10.4
+def extract_nested_metric(report_dict, district, metric):
+    """Safely return report_dict[district][metric], or None on error."""
+    try:
+        return report_dict[district][metric]
+    except (KeyError, TypeError):
+        return None
+
+# To-Do 10.5
+def clean_numeric_series(raw_values):
+    """Return (clean_floats, error_count) skipping bad values/None."""
+    clean_floats = []
+    error_count = 0
+    for val in raw_values:
+        try:
+            num = float(val)
+        except (ValueError, TypeError):
+            error_count += 1
+        else:
+            clean_floats.append(num)
+    return (clean_floats, error_count)
+
+# To-Do 10.6
+def verify_bmi_function(bmi_fn):
+    """Assert bmi_fn(weight_kg, height_m) matches BMI; return True."""
+    assert abs(bmi_fn(80, 2.0) - 20.0) < 0.05, "Failed (80, 2.0)"
+    assert abs(bmi_fn(64, 1.6) - 25.0) < 0.05, "Failed (64, 1.6)"
+    assert abs(bmi_fn(70, 1.75) - 22.86) < 0.05, "Failed (70, 1.75)"
+    return True
+```
+
+### C. Annotated Solutions — Chapter 10 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 10.1 (30 pts)
+def parse_patient_record(raw_dict):
+    """Validate patient record dict and return clean typed dict."""
+    if not isinstance(raw_dict, dict):
+        raise ValueError("Record must be a dictionary")
+    for key in ("patient_id", "temp_c", "hb_g_dl"):
+        if key not in raw_dict:
+            raise ValueError(f"Missing required key: {key}")
+    raw_pid = raw_dict["patient_id"]
+    if not isinstance(raw_pid, str) or not raw_pid.strip():
+        raise ValueError("patient_id must be a non-empty string")
+    pid = raw_pid.strip()
+    raw_temp = raw_dict["temp_c"]
+    raw_hb = raw_dict["hb_g_dl"]
+    if isinstance(raw_temp, bool) or isinstance(raw_hb, bool):
+        raise ValueError("Clinical vitals cannot be boolean")
+    try:
+        temp_c = float(raw_temp)
+        hb_g_dl = float(raw_hb)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Non-numeric vital sign: {exc}")
+    if not (30.0 <= temp_c <= 45.0):
+        raise ValueError(f"temp_c out of range [30.0, 45.0]: {temp_c}")
+    if not (2.0 <= hb_g_dl <= 25.0):
+        raise ValueError(f"hb_g_dl out of range [2.0, 25.0]: {hb_g_dl}")
+    return {"patient_id": pid, "temp_c": temp_c, "hb_g_dl": hb_g_dl}
+
+# Exam Task 10.2 (35 pts)
+def batch_validate_records(raw_records):
+    """Validate records via parse_patient_record without crashing."""
+    valid_list = []
+    rejected_errors = []
+    for record in raw_records:
+        try:
+            cleaned = parse_patient_record(record)
+        except ValueError as exc:
+            rejected_errors.append(str(exc))
+        else:
+            valid_list.append(cleaned)
+    return (valid_list, rejected_errors)
+
+# Exam Task 10.3 (35 pts)
+def compute_safe_odds_ratio(a, b, c, d):
+    """Validate non-negative ints (not bool); return OR or None."""
+    for val in (a, b, c, d):
+        if isinstance(val, bool) or not isinstance(val, int) or val < 0:
+            raise ValueError(f"Invalid 2x2 cell count: {val!r}")
+    if b == 0 or c == 0:
+        return None
+    return round((a * d) / (b * c), 2)
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 10 Failure Modes
+
+1. **Leaking `KeyError` or `TypeError` When `ValueError` Was Promised:** In Tasks 10.1 and 10.3, comparing `"37.5" < 30.0` or indexing `raw_dict["hb_g_dl"]` before checking types and keys raises `TypeError` or `KeyError`, slipping past a batch handler that listens only for `except ValueError:`. Always validate structure and types first so every contract violation surfaces consistently as `ValueError`.
+2. **Forgetting That `bool` Is a Subclass of `int`:** Calling `isinstance(True, int)` returns `True` in Python. In clinical counts (`compute_safe_odds_ratio`) and vital-sign validators (`validate_body_temp`), always reject `isinstance(val, bool)` explicitly before checking `isinstance(val, int)`.
+3. **Wrapping the Outer Loop Instead of Each Record:** Placing `try / except ValueError:` outside `for record in raw_records:` aborts the entire cohort the instant one bad tablet entry appears. Always keep `try / except` tightly scoped to the single operation that can fail, and verify your recovery logic with automated `assert` tests!
+
+---
+
+::: {.callout-note title="Defensive Engineering Unlocked!"}
+You now possess the safety net behind every trustworthy computational publication: narrow exception handling, crisp `raise ValueError` versus `None` contracts, quarantine-capable batch pipelines, and automated `assert` verification suites. Every Part III–V dataset you analyze from here onward will rest on code that fails loudly when data breaks and proves its math automatically before submission.
+:::

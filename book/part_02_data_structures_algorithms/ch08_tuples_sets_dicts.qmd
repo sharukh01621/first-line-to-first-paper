@@ -1,0 +1,573 @@
+# Tuples, Sets, and Dictionaries — Structured & Hash-Based Thinking {#sec-ch08}
+
+> **Chapter Mission:** Upgrade from sequential list scanning to constant-time, hash-based thinking. Master immutable **tuples** for fixed records and safe unpacking, **sets** for $O(1)$ deduplication and longitudinal cohort algebra, and **dictionaries** for safe `.get()` lookups, frequency tallying, `GROUP BY`-style bucketing, and non-mutating data merges.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch08 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch08 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch08 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Store immutable fixed-schema coordinates and clinical records in **tuples** and unpack them cleanly without fragile positional indices.
+2. Perform instant $O(1)$ membership checks, duplicate removal, and longitudinal cohort reconciliation (`&`, `-`, `|`) using **sets**.
+3. Perform crash-proof, read-only **dictionary** lookups with `.get(key, default)` instead of brittle `d[key]` indexing.
+4. Implement the two foundational hash-map idioms of data science: **frequency counting** (`counts.get(k, 0) + 1`) and **record grouping** (`grouped.setdefault(k, []).append(v)`).
+5. Build guarded **dictionary comprehensions** that filter invalid denominators (`pop <= 0`) before computing epidemiological rates.
+6. Explain Python's **hashability contract** and copy dictionaries cleanly (`dict(d)`) so helper functions never mutate caller data.
+
+---
+
+## Stage 1 — First-Principles Intuition: From Linear Scanning to Hash-Based Thinking {#sec-ch08-intuition}
+
+In Chapter 7, you mastered Python **lists**—ordered, mutable sequences ideal for time-series measurements and row-by-row processing. Yet lists have a hidden algorithmic bottleneck: asking `"P-4821" in enrolled_list` forces Python to inspect entries **one by one from index 0** ( $O(n)$ linear search ). On a 50,000-participant national cohort survey, checking 50,000 follow-up IDs against a list requires up to $2.5 \times 10^9$ comparisons!
+
+Python solves this with **hash-based containers** (`set` and `dict`) paired with **immutable fixed records** (`tuple`).
+
+::: {.callout-note title="Mental Model — The Hospital Medical Records Room"}
+Think of Python's four core containers as four specialized tools inside a busy hospital records room:
+
+1. **Clipboard Stack (`list`):** Ordered sheets you can append to, sort, or edit in place—great when sequence position matters, slow when hunting for one patient ID by scanning every page.
+2. **Sealed Patient Wristband (`tuple`):** Fixed fields printed once at intake—`(patient_id, temp_c, hb_g_dl)` or `(lat, lon)`. Nobody can accidentally overwrite one field mid-shift, and clinicians read all three fields in a single glance (unpacking).
+3. **Unique Badge Scanner (`set`):** Instantly deduplicates patient IDs and computes Venn diagrams between baseline and follow-up cohorts in $O(1)$ average lookup time.
+4. **Barcoded Cabinet Index (`dict`):** Given a key (`"Dhaka"` or `"BCG"`), a mathematical **hash function** computes the exact drawer address in a single step—turning a 50,000-row scan into an instant $O(1)$ jump.
+:::
+
+### Choosing the Right Core Container
+
+| Container | Syntax | Ordered? | Mutable? | Lookup Speed | Best Public Health Use |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **`list`** | `[a, b]` | Yes | Yes | $O(n)$ | Ordered time series, raw batch rows |
+| **`tuple`** | `(a, b)` | Yes | **No** | $O(n)$ | Fixed records, GPS coords, dict keys |
+| **`set`** | `{a, b}` | No | Yes | $O(1)$ | Unique IDs, cohort `&` / `-` audits |
+| **`dict`** | `{k: v}` | Yes (3.7+) | Yes | $O(1)$ | Key-value lookup, counting, grouping |
+
+---
+
+## Stage 2 — Visual Mental Model: Hash Lookup & Data-Structure Selector {#sec-ch08-mental-model}
+
+Before writing a single line of Part II code, ask two architectural questions: *"Do I need key $\rightarrow$ value lookups or cohort deduplication?"* and *"Should this record be lockable against accidental edits?"*
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    Q1{"Need fast O(1)<br/>lookup by key/ID?"}
+    Q2{"Map key -> value<br/>or unique IDs only?"}
+    Q3{"Fixed record that<br/>must stay immutable?"}
+    DICT["dict {k: v}<br/>hash(key) -> slot<br/>Lookups, counts, groups"]
+    SET["set {a, b}<br/>hash(item) -> slot<br/>Dedup, &, -, | cohorts"]
+    TUP["tuple (a, b)<br/>Locked sequence<br/>Unpacking & dict keys"]
+    LST["list [a, b]<br/>Editable sequence<br/>Ordered batch rows"]
+
+    Q1 -->|Yes| Q2
+    Q1 -->|No| Q3
+    Q2 -->|Key -> Value| DICT
+    Q2 -->|Unique IDs| SET
+    Q3 -->|Yes, locked| TUP
+    Q3 -->|No, editable| LST
+```
+
+### The Hashability Contract (Why `list` Cannot Be a Key!)
+
+When Python inserts a key into a `dict` or an element into a `set`, it calls `hash(key)` to pick a memory bucket. If that object were allowed to change later, its hash would change and Python could never find it again!
+
+::: {.callout-warning title="Hashability Rule — Immutable Keys Only"}
+- **Hashable (Allowed as `dict` keys and `set` members):** `str`, `int`, `float`, `bool`, `None`, and any `tuple` containing only hashable items (e.g., `(23.81, 90.41)`).
+- **Unhashable (Raises `TypeError`):** `list`, `dict`, and `set`—because they are mutable.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch08-walkthrough}
+
+Open `part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Tuples, Immutability, and Clean Unpacking {#sec-ch08-tuples}
+
+```python
+clinic_gps = (23.8103, 90.4125)
+patient_vitals = ("UHC-0042", 38.4, 10.2)
+
+pid, temp_c, hb_g_dl = patient_vitals
+print(f"Patient {pid}: Temp={temp_c} C, Hb={hb_g_dl} g/dL")
+print("Clinic GPS:", clinic_gps, "| Type:", type(clinic_gps))
+```
+
+**Expected Output:**
+```text
+Patient UHC-0042: Temp=38.4 C, Hb=10.2 g/dL
+Clinic GPS: (23.8103, 90.4125) | Type: <class 'tuple'>
+```
+
+Notice two critical tuple idioms:
+
+- **Unpacking** (`pid, temp_c, hb_g_dl = patient_vitals`) assigns every positional field to a readable variable name in one step, eliminating mysterious indices like `patient_vitals[2]`.
+- **Single-element tuple trap:** `(42)` is just the integer `42`; to create a 1-element tuple, you must include a trailing comma: `(42,)`.
+
+---
+
+### Sets & Cohort Operations (`&`, `-`, `|`, $O(1)$ Membership) {#sec-ch08-sets}
+
+In longitudinal clinical trials, duplicate enrollment logs happen constantly. Converting raw ID lists to `set` objects deduplicates them instantly and unlocks clean set algebra:
+
+```python
+baseline_raw = ["P01", "P02", "P03", "P04", "P02"]
+followup_raw = ["P02", "P04", "P05"]
+
+base_set = set(baseline_raw)
+foll_set = set(followup_raw)
+
+retained = base_set & foll_set
+lost_to_followup = base_set - foll_set
+new_enrollees = foll_set - base_set
+
+print("Unique baseline:", sorted(base_set))
+print("Retained:       ", sorted(retained))
+print("Lost:           ", sorted(lost_to_followup))
+print("New enrollees:  ", sorted(new_enrollees))
+print("Is P02 retained?", "P02" in retained)
+```
+
+**Expected Output:**
+```text
+Unique baseline: ['P01', 'P02', 'P03', 'P04']
+Retained:        ['P02', 'P04']
+Lost:            ['P01', 'P03']
+New enrollees:   ['P05']
+Is P02 retained? True
+```
+
+::: {.callout-tip title="Empty Set Trap — Always Write `set()`, Never `{}`"}
+In Python, `{}` creates an **empty dictionary** (`dict`), **not** an empty set! Always create an empty set explicitly with `empty_ids = set()`.
+:::
+
+---
+
+### Dictionaries & Safe Lookups with `.get()` {#sec-ch08-dict-get}
+
+Direct bracket indexing (`vaccine_stock["Rota"]`) crashes the entire script with a `KeyError` if a rural clinic has never stocked Rotavirus vaccine. Using `.get(key, default)` returns a safe fallback without modifying the dictionary:
+
+```python
+vaccine_stock = {"BCG": 140, "OPV": 85, "Measles": 0}
+
+# Safe read-only lookup with fallback default 0
+bcg_doses = vaccine_stock.get("BCG", 0)
+rota_doses = vaccine_stock.get("Rota", 0)
+
+print("BCG doses: ", bcg_doses)
+print("Rota doses:", rota_doses)
+print("Keys unchanged:", list(vaccine_stock.keys()))
+```
+
+**Expected Output:**
+```text
+BCG doses:  140
+Rota doses: 0
+Keys unchanged: ['BCG', 'OPV', 'Measles']
+```
+
+---
+
+### Core Hash-Map Idioms: Frequency Counting & Grouping {#sec-ch08-idioms}
+
+Two hash-map patterns power nearly every data-cleaning script before you ever touch `pandas`:
+
+1. **Frequency Counter:** `counts[k] = counts.get(k, 0) + 1` tallies category counts in a single $O(n)$ pass.
+2. **Grouping (Dict-of-Lists):** `by_district.setdefault(dist, []).append(pid)` builds an empty bucket on the first sighting of `dist` and appends every subsequent patient ID into that bucket.
+
+```python
+triage_log = ["Routine", "Urgent", "Routine", "Moderate", "Routine"]
+triage_counts = {}
+for level in triage_log:
+    triage_counts[level] = triage_counts.get(level, 0) + 1
+
+intake_batch = [
+    {"patient_id": "UHC-01", "district": "Dhaka"},
+    {"patient_id": "UHC-02", "district": "Sylhet"},
+    {"patient_id": "UHC-03", "district": "Dhaka"},
+]
+by_district = {}
+for rec in intake_batch:
+    dist = rec["district"]
+    by_district.setdefault(dist, []).append(rec["patient_id"])
+
+print("Triage counts:", triage_counts)
+print("Grouped IDs:  ", by_district)
+```
+
+**Expected Output:**
+```text
+Triage counts: {'Routine': 3, 'Urgent': 1, 'Moderate': 1}
+Grouped IDs:   {'Dhaka': ['UHC-01', 'UHC-03'], 'Sylhet': ['UHC-02']}
+```
+
+---
+
+### Dictionary Comprehensions & Guarded Rate Mapping {#sec-ch08-dict-comp}
+
+Just like list comprehensions, **dictionary comprehensions** combine iteration, guard filtering, and value transformation into a single readable expression:
+
+```python
+cases = {"Dhaka": 120, "Sylhet": 45, "Unknown": 10}
+pop = {"Dhaka": 300000, "Sylhet": 150000, "Unknown": 0}
+
+rates = {
+    dist: round((cnt / pop[dist]) * 100000, 2)
+    for dist, cnt in cases.items()
+    if pop.get(dist, 0) > 0
+}
+print("Incidence per 100k:", rates)
+```
+
+**Expected Output:**
+```text
+Incidence per 100k: {'Dhaka': 40.0, 'Sylhet': 30.0}
+```
+
+Notice how `if pop.get(dist, 0) > 0` simultaneously protects against **both** missing district keys in `pop` (preventing `KeyError`) and zero/negative populations (preventing `ZeroDivisionError`).
+
+---
+
+### Live Dataset Preview: Grouping `clinic_triage` (120 Patients) {#sec-ch08-live-preview}
+
+Let's apply both hash-map idioms immediately to the real 120-patient `clinic_triage` spine dataset bundled inside `sharukh_tutor`:
+
+```python
+import sharukh_tutor as tutor
+
+clinic_rows = tutor.load_data("clinic_triage")
+district_groups = {}
+triage_freq = {}
+for row in clinic_rows:
+    dist = row["district"]
+    lvl = row["triage_priority"]
+    district_groups.setdefault(dist, []).append(row["patient_id"])
+    triage_freq[lvl] = triage_freq.get(lvl, 0) + 1
+
+print("Patients per district:")
+for dist in sorted(district_groups):
+    print(f"  {dist:11s}: {len(district_groups[dist]):2d} patients")
+print("Triage breakdown:", triage_freq)
+```
+
+**Expected Output:**
+```text
+Patients per district:
+  Chattogram : 18 patients
+  Dhaka      : 16 patients
+  Khulna     : 19 patients
+  Rajshahi   : 24 patients
+  Rangpur    : 29 patients
+  Sylhet     : 14 patients
+Triage breakdown: {'Routine': 64, 'Moderate': 56}
+```
+
+---
+
+### Break It On Purpose! (Tuple, Dict & Hashability Error Anatomy) {#sec-ch08-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — TypeError Mutating an Immutable Tuple"}
+```python
+clinic_gps = (23.8103, 90.4125)
+clinic_gps[0] = 24.0
+```
+**Python's Traceback:**
+```text
+TypeError: 'tuple' object does not support item assignment
+```
+**Diagnosis:** Tuples are intentionally immutable—once created, you cannot overwrite an individual slot in place.  
+**Fix:** Create a new tuple (`clinic_gps = (24.0, clinic_gps[1])`) or use a `list` if coordinates must be edited in place.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — KeyError Accessing a Missing Dictionary Key Directly"}
+```python
+vaccine_stock = {"BCG": 140, "OPV": 85}
+print(vaccine_stock["Rota"])
+```
+**Python's Traceback:**
+```text
+KeyError: 'Rota'
+```
+**Diagnosis:** Square-bracket lookup `d[k]` assumes the key is guaranteed to exist and aborts immediately when `"Rota"` is absent.  
+**Fix:** Use safe read-only lookup: `vaccine_stock.get("Rota", 0)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — TypeError Using an Unhashable List as a Key"}
+```python
+bad_coords = {[23.81, 90.41]: "Dhaka Clinic"}
+```
+**Python's Traceback:**
+```text
+TypeError: unhashable type: 'list'
+```
+**Diagnosis:** Lists are mutable, so Python refuses to compute a hash bucket for `[23.81, 90.41]` as a dictionary key or set element.  
+**Fix:** Convert the coordinates to an immutable tuple: `good_coords = {(23.81, 90.41): "Dhaka Clinic"}`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch08-blueprint}
+
+**Scenario:** A regional maternal health program collects two lists of participant IDs (`baseline_ids`, `followup_ids`—both containing occasional duplicates) plus a list of hemoglobin intake records (`{"district": ..., "hb_g_dl": ...}`) that include missing `None` values and sentinel `999` codes. Write `reconcile_and_audit(baseline_ids, followup_ids, hb_records)` to return a 3-tuple `(n_retained, n_lost, prevalence_by_district)` where `prevalence_by_district` maps each valid district to its maternal anemia percentage (below $11.0\text{ g/dL}$ ) rounded to 1 decimal place.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Container Selection:**
+   - Use **sets** (`set(baseline_ids)`, `set(followup_ids)`) to deduplicate IDs and compute `retained = base_set & foll_set` and `lost = base_set - foll_set`.
+   - Use two **dictionaries** (`valid_by_dist`, `anemic_by_dist`) to count valid and anemic mothers per district in a single $O(n)$ pass.
+   - Return a **tuple** `(len(retained), len(lost), prevalence)` for crisp caller unpacking.
+2. **Edge Cases & Traps:**
+   - Check `if hb is None or hb == 999: continue` **before** testing `hb < 11.0` to avoid `TypeError`.
+   - Only districts with at least 1 valid reading appear in `valid_by_dist`, preventing `ZeroDivisionError`.
+   - A reading of exactly `11.0` is **Normal** (strictly `< 11.0` is Anemic).
+3. **Verification Plan (Hand Check):**
+   - Baseline `["M01", "M02", "M03", "M02"]` $\rightarrow$ `{"M01", "M02", "M03"}`; Follow-up `["M02", "M03", "M04"]` $\rightarrow$ retained = `2` (`M02`, `M03`), lost = `1` (`M01`).
+   - Dhaka: `10.4` (anemic), `11.6` (normal), `None` (skipped) $\rightarrow$ $1/2 = 50.0\%$.
+   - Sylhet: `9.8` (anemic), `999` (skipped) $\rightarrow$ $1/1 = 100.0\%$.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def reconcile_and_audit(baseline_ids, followup_ids, hb_records):
+    """Audit cohort retention via sets and district anemia via dicts."""
+    base_set = set(baseline_ids)
+    foll_set = set(followup_ids)
+    retained = base_set & foll_set
+    lost = base_set - foll_set
+
+    valid_by_dist = {}
+    anemic_by_dist = {}
+    for rec in hb_records:
+        hb = rec["hb_g_dl"]
+        if hb is None or hb == 999:
+            continue
+        dist = rec["district"]
+        valid_by_dist[dist] = valid_by_dist.get(dist, 0) + 1
+        if hb < 11.0:
+            anemic_by_dist[dist] = anemic_by_dist.get(dist, 0) + 1
+
+    prevalence = {
+        dist: round((anemic_by_dist.get(dist, 0) / n) * 100, 1)
+        for dist, n in valid_by_dist.items()
+    }
+    return (len(retained), len(lost), prevalence)
+
+sample_records = [
+    {"district": "Dhaka", "hb_g_dl": 10.4},
+    {"district": "Dhaka", "hb_g_dl": 11.6},
+    {"district": "Dhaka", "hb_g_dl": None},
+    {"district": "Sylhet", "hb_g_dl": 9.8},
+    {"district": "Sylhet", "hb_g_dl": 999},
+]
+n_ret, n_lost, prev_map = reconcile_and_audit(
+    ["M01", "M02", "M03", "M02"],
+    ["M02", "M03", "M04"],
+    sample_records,
+)
+print(f"Retained: {n_ret} | Lost: {n_lost}")
+print("District anemia (%):", prev_map)
+```
+
+**Output:**
+```text
+Retained: 2 | Lost: 1
+District anemia (%): {'Dhaka': 50.0, 'Sylhet': 100.0}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch08-todos}
+
+Open `part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six hash-based and structured functions below (passing each function name without parentheses to `tutor.check(...)`):
+
+- **To-Do 8.1 (Tuple Unpacking — `unpack_patient_vitals(record_tuple)`):** Unpack `(pid, temp_c, hb)` and return `{"patient_id": pid, "temp_c": temp_c, "hb_g_dl": hb}`.
+- **To-Do 8.2 (Set Algebra — `cohort_retention_metrics(baseline_ids, followup_ids)`):** Return the 3-tuple of sets `(retained_set, lost_set, new_set)` from the two cohort ID lists.
+- **To-Do 8.3 (Safe Lookup — `safe_lookup_vaccine_stock(stock_dict, vaccine_name)`):** Return the integer stock count or `0` if missing via `.get()`, without mutating `stock_dict`.
+- **To-Do 8.4 (Frequency Counter — `count_triage_levels(priority_list)`):** Return a frequency dictionary mapping each triage label in `priority_list` to its count.
+- **To-Do 8.5 (Grouping — `group_patients_by_district(records)`):** Given a list of dicts with `"patient_id"` and `"district"`, return `{district: [patient_id, ...]}` preserving encounter order.
+- **To-Do 8.6 (Dict Comprehension — `district_incidence_map(cases_by_district, pop_by_district)`):** Return `{district: rate_per_100k}` rounded to 2 decimals, skipping any district where population is missing or `<= 0`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch08-test}
+
+Test your understanding on paper before checking Stage 8:
+
+1. **Single-Element Tuple Trap:** What are the types of `x = ("Dhaka")` versus `y = ("Dhaka",)`?
+2. **Empty Set vs. Empty Dict:** What does `type({})` return, and how do you create a genuinely empty set?
+3. **Set Algebra Trace:** Given `a = {"P1", "P2", "P3"}` and `b = {"P2", "P4"}`, what exact sets do `a & b`, `a - b`, and `b - a` produce?
+4. **Algorithmic Complexity:** Why is `"P9999" in id_set` dramatically faster than `"P9999" in id_list` when there are $100{,}000$ IDs?
+5. **`.get()` vs. `.setdefault()`:** Suppose `stock = {"BCG": 50}`. After calling `stock.get("Rota", 0)` versus `stock.setdefault("Rota", 0)`, what keys exist in `stock` in each case?
+6. **First-Seen `KeyError`:** Why does `counts[lvl] += 1` fail on the first occurrence of `"Urgent"` in `counts = {}`, whereas `counts[lvl] = counts.get(lvl, 0) + 1` succeeds?
+7. **Hashability Contract:** Why does `{(23.81, 90.41): "Dhaka"}` work while `{[23.81, 90.41]: "Dhaka"}` raises `TypeError`?
+8. **Aliasing Mutation Trap:** What does this snippet print?
+   ```python
+   wh_a = {"ORS": 100}
+   combined = wh_a
+   combined["ORS"] += 50
+   print(wh_a["ORS"])
+   ```
+9. **Overwrite vs. Sum Merge:** Given `a = {"Zinc": 150}` and `b = {"Zinc": 50}`, what value does `{"Zinc": ...}` hold in `{**a, **b}` (or `a | b`), and why is that wrong for merging warehouse inventories?
+10. **Guarded Comprehension Order:** In `{d: cases[d] / pop[d] for d in cases if pop.get(d, 0) > 0}`, does Python evaluate the `if` filter **before** or **after** dividing `cases[d] / pop[d]`?
+
+---
+
+## Stage 7 — Chapter 8 Hands-On Coding Exam (100 Points) {#sec-ch08-exam}
+
+Open `part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch08", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 8.1 (30 Points): Survey ID Completion Auditor
+
+Write `audit_survey_ids(enrolled_ids, completed_ids)` to audit longitudinal survey completion:
+
+- Deduplicate `enrolled_ids` into a set and compute `enrolled_unique` (`int`).
+- Compute valid completions via set intersection (`enrolled_set & set(completed_ids)`), ignoring duplicate entries and stray unregistered IDs, and store its count as `completed_valid` (`int`).
+- Compute `missing_ids` as the `set` of enrolled IDs who have not completed the survey.
+- Compute `completion_pct` as `(completed_valid / enrolled_unique) * 100` rounded to **1 decimal place** (returning `0.0` if `enrolled_unique == 0`).
+- Return a dictionary with exact keys `"enrolled_unique"`, `"completed_valid"`, `"missing_ids"`, and `"completion_pct"`.
+
+### Exam Task 8.2 (35 Points): District-Level Maternal Anemia Summarizer
+
+Write `summarize_district_anemia(records)` for a list of patient dictionaries containing `"district"` and `"hb_g_dl"`:
+
+- Skip any record where `hb_g_dl` is `None` or sentinel `999`.
+- Treat a valid reading as anemic strictly when `hb_g_dl < 11.0` (`11.0` is Normal).
+- Return a dictionary mapping each district (with at least 1 valid reading) to its anemia prevalence percentage `(anemic / valid) * 100` rounded to **1 decimal place**.
+- Omit any district that has zero valid readings after filtering.
+
+### Exam Task 8.3 (35 Points): Non-Mutating Clinic Inventory Merger
+
+Write `merge_clinic_inventories(warehouse_a, warehouse_b)` for two supply dictionaries (`{item: quantity}`):
+
+- Return a **brand-new** combined dictionary containing all supplies from both warehouses, **summing** quantities for any shared keys.
+- Do **not** mutate either `warehouse_a` or `warehouse_b`, and do **not** return an alias referencing either input dictionary.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch08-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `x` is `<class 'str'>` (parentheses alone only group expressions); `y` is `<class 'tuple'>` because of the trailing comma.
+2. `type({})` returns **`<class 'dict'>`**. Create an empty set with **`set()`**.
+3. `a & b` $\rightarrow$ `{"P2"}`; `a - b` $\rightarrow$ `{"P1", "P3"}`; `b - a` $\rightarrow$ `{"P4"}`.
+4. `set` computes `hash("P9999")` to jump directly to its bucket in $O(1)$ **average time**, whereas `list` scans entries sequentially in $O(n)$ **time**.
+5. After `stock.get("Rota", 0)`, keys remain `["BCG"]` (unchanged); after `stock.setdefault("Rota", 0)`, `"Rota": 0` is **inserted**, leaving `["BCG", "Rota"]`.
+6. `counts[lvl] += 1` tries to read `counts[lvl]` before adding `1`, raising `KeyError` when `lvl` is absent; `.get(lvl, 0)` safely supplies `0` on the first sighting.
+7. Tuples of immutable values are **hashable** (their hash never changes), whereas mutable lists are **unhashable** because modifying an element would invalidate their hash bucket.
+8. Prints **`150`**! `combined = wh_a` binds two names to the **same** dictionary in memory—mutating `combined` silently mutates `wh_a`.
+9. `{**a, **b}` produces **`{"Zinc": 50}`**—dictionary unpacking **overwrites** duplicate keys with the right-hand value instead of adding $150 + 50 = 200$.
+10. **Before.** Python evaluates the `if` guard first and only computes `cases[d] / pop[d]` for keys that pass `pop.get(d, 0) > 0`, preventing `ZeroDivisionError` and `KeyError`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 8.1
+def unpack_patient_vitals(record_tuple):
+    """Unpack (pid, temp_c, hb) into a structured vitals dictionary."""
+    pid, temp_c, hb = record_tuple
+    return {"patient_id": pid, "temp_c": temp_c, "hb_g_dl": hb}
+
+# To-Do 8.2
+def cohort_retention_metrics(baseline_ids, followup_ids):
+    """Return (retained_set, lost_set, new_set) from two cohort ID lists."""
+    base = set(baseline_ids)
+    foll = set(followup_ids)
+    return (base & foll, base - foll, foll - base)
+
+# To-Do 8.3
+def safe_lookup_vaccine_stock(stock_dict, vaccine_name):
+    """Return vaccine stock integer or 0 if missing, without mutation."""
+    return stock_dict.get(vaccine_name, 0)
+
+# To-Do 8.4
+def count_triage_levels(priority_list):
+    """Return a frequency dictionary counting each triage priority label."""
+    counts = {}
+    for level in priority_list:
+        counts[level] = counts.get(level, 0) + 1
+    return counts
+
+# To-Do 8.5
+def group_patients_by_district(records):
+    """Map each district name to a list of its patient_id strings."""
+    grouped = {}
+    for rec in records:
+        dist = rec["district"]
+        grouped.setdefault(dist, []).append(rec["patient_id"])
+    return grouped
+
+# To-Do 8.6
+def district_incidence_map(cases_by_district, pop_by_district):
+    """Return {district: rate_per_100k} rounded to 2 decimals, skip <= 0."""
+    return {
+        dist: round((cases / pop_by_district[dist]) * 100000, 2)
+        for dist, cases in cases_by_district.items()
+        if pop_by_district.get(dist, 0) > 0
+    }
+```
+
+### C. Annotated Solutions — Chapter 8 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 8.1 (30 pts)
+def audit_survey_ids(enrolled_ids, completed_ids):
+    """Audit unique enrollment, valid completion, missing IDs, and pct."""
+    enrolled_set = set(enrolled_ids)
+    valid_completed = enrolled_set & set(completed_ids)
+    missing_ids = enrolled_set - valid_completed
+    enrolled_unique = len(enrolled_set)
+    completed_valid = len(valid_completed)
+    if enrolled_unique == 0:
+        completion_pct = 0.0
+    else:
+        completion_pct = round((completed_valid / enrolled_unique) * 100, 1)
+    return {
+        "enrolled_unique": enrolled_unique,
+        "completed_valid": completed_valid,
+        "missing_ids": missing_ids,
+        "completion_pct": completion_pct,
+    }
+
+# Exam Task 8.2 (35 pts)
+def summarize_district_anemia(records):
+    """Return {district: anemia_prevalence_pct} skipping None and 999."""
+    valid_counts = {}
+    anemic_counts = {}
+    for rec in records:
+        hb = rec["hb_g_dl"]
+        if hb is None or hb == 999:
+            continue
+        dist = rec["district"]
+        valid_counts[dist] = valid_counts.get(dist, 0) + 1
+        if hb < 11.0:
+            anemic_counts[dist] = anemic_counts.get(dist, 0) + 1
+    return {
+        dist: round((anemic_counts.get(dist, 0) / n) * 100, 1)
+        for dist, n in valid_counts.items()
+    }
+
+# Exam Task 8.3 (35 pts)
+def merge_clinic_inventories(warehouse_a, warehouse_b):
+    """Return a new dict summing shared supply keys without mutation."""
+    combined = dict(warehouse_a)
+    for item, qty in warehouse_b.items():
+        combined[item] = combined.get(item, 0) + qty
+    return combined
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 8 Failure Modes
+
+1. **Silent Dictionary Aliasing (`combined = warehouse_a`):** Assigning a dictionary to a new variable name does **not** copy it—both names point to the exact same hash table in memory. Whenever a function merges or modifies a dictionary, always start with `combined = dict(warehouse_a)` (or `warehouse_a.copy()`) so caller data stays intact.
+2. **Counting Stray IDs Without Set Intersection:** In Task 8.1, computing `len(set(completed_ids))` blindly trusts every ID uploaded from field tablets, even mistyped or unenrolled IDs like `"P99"`. Taking `enrolled_set & set(completed_ids)` guarantees your denominator and numerator refer to the exact same cohort.
+3. **Confusing Overwrite Merge (`|`, `{**a, **b}`) With Accumulation Merge:** Python's merge operators replace overlapping keys with the right-hand dictionary's value—ideal for overriding config defaults, but catastrophic for summing clinic inventories or regional case counts! Always accumulate shared keys explicitly via `combined[k] = combined.get(k, 0) + v`.

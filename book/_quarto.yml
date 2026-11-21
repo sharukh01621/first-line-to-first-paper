@@ -18,7 +18,14 @@ book:
         - part_01_python_foundations/ch04_conditionals_logic.qmd
         - part_01_python_foundations/ch05_loops_tracing.qmd
         - part_01_python_foundations/ch06_functions_scope.qmd
-    # Subsequent Parts (Part II Ch 7–11 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
+    - part: "Core Data Structures, Algorithmic Thinking & Defensive Programming"
+      chapters:
+        - part_02_data_structures_algorithms/ch07_lists_aliasing.qmd
+        - part_02_data_structures_algorithms/ch08_tuples_sets_dicts.qmd
+        - part_02_data_structures_algorithms/ch09_files_csv_json.qmd
+        - part_02_data_structures_algorithms/ch10_exceptions_testing.qmd
+        - part_02_data_structures_algorithms/ch11_algorithms_complexity.qmd
+    # Subsequent Parts (Part III Ch 12–15 through Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:

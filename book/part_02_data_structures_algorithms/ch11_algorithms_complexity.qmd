@@ -1,0 +1,550 @@
+# Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion {#sec-ch11}
+
+> **Chapter Mission:** Complete Part II by learning to think like an algorithmic scientist. Build sharp intuition for Big-O scaling ( $O(1)$ , $O(\log n)$ , $O(n)$ , $O(n \log n)$ , $O(n^2)$ ), master linear search, iterative binary search, multi-key custom sorting, hash-table joins, and recursive problem solving on epidemiological trees—turning fragile notebook loops into fast, scalable research engines ready for Part III's data-science stack.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch11 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch11 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch11 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Estimate and benchmark algorithmic scaling using **Big-O notation** ( $O(1)$ , $O(\log n)$ , $O(n)$ , $O(n \log n)$ , and $O(n^2)$ ) and measure real runtimes with `time.perf_counter()`.
+2. Spot and eliminate hidden quadratic $O(n^2)$ traps (such as nested cross-table loops or repeated `in list` scans) by replacing them with $O(1)$ `set` / `dict` hash lookups and $O(n + m)$ hash joins.
+3. Implement both **linear search** ( $O(n)$ on unsorted lists) and **iterative binary search** ( $O(\log n)$ on sorted registries) without off-by-one pointer bugs.
+4. Sort lists of clinical dictionaries and summary tuples cleanly in $O(n \log n)$ time using non-mutating `sorted(..., key=...)` with custom priority maps and mixed ascending/descending tie-breakers.
+5. Design and trace **recursive functions** with explicit base cases and shrinking subproblems—preventing `RecursionError` and `KeyError` when modeling generational outbreaks and contact-tracing trees.
+6. Integrate hash-indexing, multi-key sorting, and tree recursion in the **Part II Capstone Coding Exam**.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Algorithmic Choice Beats Faster Hardware {#sec-ch11-intuition}
+
+When your pilot clinic dataset has **50 patients**, almost any correct Python loop finishes in a blink. Six months later, your ministry collaborator sends a national maternal-health registry with **500,000 patients** and **500,000 lab records**. Suddenly, a nested loop that finished in 0.01 seconds on 50 rows will execute $250{,}000{,}000{,}000$ checks and freeze your laptop for hours—while a dictionary hash join finishes in **under one second**.
+
+Computer scientists describe how an algorithm's workload grows with input size $n$ using **Big-O notation**. You do not need heavy mathematical proofs to think algorithmically; you only need to recognize five everyday hospital-workflow patterns:
+
+| Big-O Class | Hospital Analogy | Operations ( $n = 1{,}000$ ) | Operations ( $n = 1{,}000{,}000$ ) | Python Pattern |
+| :--- | :--- | :---: | :---: | :--- |
+| $O(1)$ Constant | Reaching straight into an indexed patient chart slot | $1$ | $1$ | `d[key]`, `x in my_set` |
+| $O(\log n)$ Logarithmic | Splitting a sorted alphabetical binder in half each check | $\approx 10$ | $\approx 20$ | Binary search on sorted list |
+| $O(n)$ Linear | Walking ward bed-by-bed from bed 1 to bed $n$ | $1{,}000$ | $1{,}000{,}000$ | Single `for` loop, `x in my_list` |
+| $O(n \log n)$ Linearithmic | Sorting all charts cleanly into clinical order | $\approx 10{,}000$ | $\approx 20{,}000{,}000$ | `sorted(items, key=...)` |
+| $O(n^2)$ Quadratic | Comparing every patient against every other patient | $1{,}000{,}000$ | $10^{12}$ (Freeze!) | Nested `for` loops, `list.count()` in loop |
+
+::: {.callout-note title="Mental Model — Two Rules of Thumb That Save Hours"}
+1. **Hash Before You Loop:** Whenever you find yourself writing an inner loop—or `if pid in other_list`—to look up records by ID, stop and pre-build a `set` or `dict` in one $O(m)$ pass. Every lookup drops from $O(m)$ to $O(1)$ !
+2. **Every Recursion Needs Two Pillars:** Picture nested Russian dolls—or an epidemiological contact-tracing tree. A recursive function solves a big problem by solving a strictly smaller piece of the exact same problem, relying on:
+   - **A Base Case:** The smallest, directly answerable input (e.g., `generations == 0` or a patient with `[]` onward contacts) that stops the chain cleanly.
+   - **A Shrinking Recursive Step:** Every self-call moves strictly closer to the base case (`generations - 1` or stepping down to a child contact).
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Binary Search Halving & the Recursion Call Stack {#sec-ch11-mental-model}
+
+Two ideas unlock all of Chapter 11: **halving a sorted search space** ( $O(\log n)$ ) and **stacking/unwinding recursive call frames**. Watch how both reduce complex problems into crisp, deterministic steps:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 4.2
+%%| fig-height: 3.4
+%%| fig-align: center
+flowchart TD
+    subgraph BS["Binary Search Halving: O(log n)"]
+        B1["8 sorted IDs: low=0, high=7<br/>mid=3 ('P-040' &lt; 'P-070')"]
+        B2["4 IDs left: low=4, high=7<br/>mid=5 ('P-060' &lt; 'P-070')"]
+        B3["2 IDs left: low=6, high=7<br/>mid=6 ('P-070' == target!)"]
+        B1 -->|"discard left half"| B2
+        B2 -->|"discard left half"| B3
+    end
+    subgraph REC["Recursion Call Stack: outbreak(10, 1.5, 2)"]
+        R2["Frame gen=2<br/>waits for gen=1"]
+        R1["Frame gen=1<br/>waits for gen=0"]
+        R0["Base Case gen=0<br/>returns 10.0"]
+        R2 -->|"call(gen=1)"| R1
+        R1 -->|"call(gen=0)"| R0
+        R0 -. "10.0 * 1.5 = 15.0" .-> R1
+        R1 -. "15.0 * 1.5 = 22.5" .-> R2
+    end
+```
+
+Notice the striking contrast between how your brain tracks the two mechanisms:
+
+- In **iterative binary search**, only three integers (`low`, `mid`, `high`) exist in memory, and half the remaining search window disappears on every loop step—so $1{,}000{,}000$ sorted patient IDs take at most $\lceil \log_2(1{,}000{,}000) \rceil = 20$ checks!
+- In **recursion**, Python pushes each paused call frame onto the **call stack** until the **base case** fires; then the stack unwinds in reverse order, multiplying or combining return values back up to the original caller.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch11-walkthrough}
+
+Open `part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb` in Colab and execute every cell alongside the dissections below.
+
+### Complexity Intuition: Empirical $O(n)$ List Scan vs. $O(1)$ Set Lookup {#sec-ch11-bigo}
+
+Never guess about performance when Python's `time.perf_counter()` lets you measure it directly. Here we look up $1{,}000$ patient IDs near the end of a $40{,}000$-patient registry:
+
+```python
+import time
+
+registry_list = [f"P-{i:06d}" for i in range(40000)]
+registry_set = set(registry_list)
+probes = [f"P-{i:06d}" for i in range(39000, 40000)]
+
+t0 = time.perf_counter()
+hits_list = sum(1 for pid in probes if pid in registry_list)
+list_ms = (time.perf_counter() - t0) * 1000
+
+t0 = time.perf_counter()
+hits_set = sum(1 for pid in probes if pid in registry_set)
+set_ms = (time.perf_counter() - t0) * 1000
+
+print(f"List scan O(n):  {hits_list} hits in {list_ms:6.2f} ms")
+print(f"Set lookup O(1): {hits_set} hits in {set_ms:6.2f} ms")
+print(f"Speedup factor:  {list_ms / max(set_ms, 1e-6):.0f}x faster")
+```
+
+**Expected Output (timings vary slightly by machine):**
+```text
+List scan O(n):  1000 hits in 312.40 ms
+Set lookup O(1): 1000 hits in   0.09 ms
+Speedup factor:  3471x faster
+```
+
+Why is the `set` over **3,000 times faster** for the exact same answer? Because `pid in registry_list` scans from index `0` up to `39,000+` for *each* probe ( $O(n)$ per probe, $O(n \times m)$ total), whereas `pid in registry_set` computes a hash address and jumps straight to the bucket in $O(1)$ time!
+
+---
+
+### Binary Search Step-by-Step Halving Trace ( $O(\log n)$ ) {#sec-ch11-binary-search}
+
+When a list is already sorted in ascending order, **binary search** finds any target index—or proves it is absent (`-1`)—by repeatedly checking the midpoint and discarding half of the remaining range:
+
+```python
+def trace_binary_search(sorted_ids, target_id):
+    """Iterative O(log n) binary search with step-by-step trace."""
+    low = 0
+    high = len(sorted_ids) - 1
+    step = 0
+    while low <= high:
+        step += 1
+        mid = (low + high) // 2
+        val = sorted_ids[mid]
+        print(f"Step {step}: low={low}, mid={mid}, high={high} -> {val}")
+        if val == target_id:
+            return mid
+        elif val < target_id:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return -1
+
+ward_ids = [
+    "P-010", "P-020", "P-030", "P-040",
+    "P-050", "P-060", "P-070", "P-080",
+]
+pos = trace_binary_search(ward_ids, "P-070")
+print("Found P-070 at index:", pos)
+```
+
+**Expected Output:**
+```text
+Step 1: low=0, mid=3, high=7 -> P-040
+Step 2: low=4, mid=5, high=7 -> P-060
+Step 3: low=6, mid=6, high=7 -> P-070
+Found P-070 at index: 6
+```
+
+Pay close attention to three critical binary-search details:
+
+- **`while low <= high:` (inclusive!):** Using `<` instead of `<=` skips the final 1-element window when `low == high`, causing false `-1` misses at index `0` or `len - 1`.
+- **`mid = (low + high) // 2`:** Integer floor division guarantees a valid integer index.
+- **`low = mid + 1` and `high = mid - 1`:** Because we already checked `sorted_ids[mid]`, excluding `mid` guarantees the search window strictly shrinks every iteration (preventing infinite loops!).
+
+---
+
+### Multi-Key Custom Sorting with `sorted(..., key=...)` {#sec-ch11-sorting}
+
+Python's built-in Timsort (`sorted()`) runs in guaranteed $O(n \log n)$ worst-case time, is **stable**, and returns a brand-new list without mutating your raw clinical data. When sorting records on multiple criteria—especially mixing custom clinical rankings with descending numbers—pass a `key=` function returning a **tuple**:
+
+```python
+URGENCY_RANK = {"Urgent": 0, "Moderate": 1, "Routine": 2}
+
+triage_raw = [
+    {"id": "P-01", "urgency": "Routine", "temp_c": 37.2},
+    {"id": "P-02", "urgency": "Urgent", "temp_c": 39.1},
+    {"id": "P-03", "urgency": "Moderate", "temp_c": 38.6},
+    {"id": "P-04", "urgency": "Urgent", "temp_c": 40.2},
+]
+
+ordered = sorted(
+    triage_raw,
+    key=lambda p: (URGENCY_RANK[p["urgency"]], -p["temp_c"]),
+)
+
+print("Sorted triage order:", [p["id"] for p in ordered])
+print("Original untouched: ", [p["id"] for p in triage_raw])
+```
+
+**Expected Output:**
+```text
+Sorted triage order: ['P-04', 'P-02', 'P-03', 'P-01']
+Original untouched:  ['P-01', 'P-02', 'P-03', 'P-04']
+```
+
+::: {.callout-tip title="Why Tuple Keys Beat `reverse=True` for Tie-Breaking"}
+Negating a numeric field (`-p["temp_c"]` or `-incidence_rate`) sorts that component **descending** while keeping other tuple components (like `URGENCY_RANK` or alphabetical district names) **ascending**. By contrast, passing `reverse=True` flips *every* component of the tuple—accidentally reversing your alphabetical tie-breaker!
+:::
+
+---
+
+### Recursion & Call-Stack Execution Trace {#sec-ch11-recursion}
+
+In infectious disease epidemiology, each outbreak generation multiplies the previous generation by the effective reproduction factor $R$. Printing indented entry (`->`) and exit (`<-`) lines makes Python's invisible call stack completely visible:
+
+```python
+def trace_outbreak(initial_cases, r_factor, generations, depth=0):
+    """Recursively project outbreak cases while printing call frames."""
+    indent = "  " * depth
+    print(f"{indent}-> call(gen={generations})")
+    if generations == 0:
+        base = round(initial_cases, 2)
+        print(f"{indent}<- base return {base}")
+        return base
+    prev = trace_outbreak(initial_cases, r_factor, generations - 1,
+                          depth + 1)
+    result = round(prev * r_factor, 2)
+    print(f"{indent}<- return {prev} * {r_factor} = {result}")
+    return result
+
+projected = trace_outbreak(10, 1.5, 3)
+print("Projected Gen-3 cases:", projected)
+```
+
+**Expected Output:**
+```text
+-> call(gen=3)
+  -> call(gen=2)
+    -> call(gen=1)
+      -> call(gen=0)
+      <- base return 10
+    <- return 10 * 1.5 = 15.0
+  <- return 15.0 * 1.5 = 22.5
+<- return 22.5 * 1.5 = 33.75
+Projected Gen-3 cases: 33.75
+```
+
+Look at the V-shaped mirror symmetry: Python dives down from `gen=3` to the base case `gen=0`, then unwinds upward—each waiting frame multiplying the child's returned value by `1.5` before returning its own result.
+
+---
+
+### Break It On Purpose! (Algorithm & Recursion Error Anatomy) {#sec-ch11-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — RecursionError From a Missing Base Case"}
+```python
+def runaway_outbreak(cases, r_factor, generations):
+    return r_factor * runaway_outbreak(cases, r_factor, generations - 1)
+
+runaway_outbreak(10, 1.5, 3)
+```
+**Python's Traceback:**
+```text
+RecursionError: maximum recursion depth exceeded
+```
+**Diagnosis:** Without `if generations == 0: return round(cases, 2)`, `generations` counts down past `0` into `-1, -2, -3, ...` until Python's safety guard halts execution at ~1,000 stack frames.  
+**Fix:** Always write—and visually verify—your base case at the very top of every recursive function.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — TypeError Sorting Dicts Without a Key Function"}
+```python
+sorted(triage_raw)
+```
+**Python's Traceback:**
+```text
+TypeError: '<' not supported between instances of 'dict' and 'dict'
+```
+**Diagnosis:** Python refuses to guess which dictionary field (`"id"`, `"urgency"`, or `"temp_c"`) defines ordering between two patient records.  
+**Fix:** Always supply an explicit `key=lambda p: (...)` function telling `sorted()` exactly what tuple to compare.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — KeyError From Unguarded Contact-Tree Lookup"}
+```python
+contact_tree = {"P-01": ["P-02", "P-03"], "P-02": ["P-04"]}
+
+def unsafe_count(tree, node):
+    return 1 + sum(unsafe_count(tree, c) for c in tree[node])
+
+unsafe_count(contact_tree, "P-01")
+```
+**Python's Traceback:**
+```text
+KeyError: 'P-04'
+```
+**Diagnosis:** Terminal contacts (`"P-04"`, `"P-03"`) infected nobody else and therefore do not appear as keys in `contact_tree`. Indexing `tree[node]` directly crashes the recursion the moment it reaches a leaf!  
+**Fix:** Replace `tree[node]` with `tree.get(node, [])` so missing leaf nodes cleanly yield an empty list and terminate the branch.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch11-blueprint}
+
+**Scenario:** An outbreak response team maintains three structures: a list of `index_patients`, a `ward_table` list of dicts (`{"patient_id": ..., "ward": ...}`), and an acyclic `contact_tree` dict mapping each infected person to their direct contacts. Build a pipeline that joins ward assignments in $O(n + m)$ time, recursively computes each cluster's total case count, and ranks all clusters by **largest cluster size descending**, breaking ties by **`patient_id` ascending**.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Algorithmic Decomposition:**
+   - `count_cluster(contact_tree, root_id)`: recursive tree traversal returning `1 + sum(count_cluster(child))` using `.get(root_id, [])`.
+   - `prioritize_clusters(index_patients, ward_table, contact_tree)`:
+     1. Pre-index `ward_map = {row["patient_id"]: row["ward"] for row in ward_table}` in $O(m)$ .
+     2. For each `pid` in `index_patients`, compute `size` and look up `ward = ward_map.get(pid, "Unknown")` in $O(1)$ .
+     3. Sort `(pid, ward, size)` tuples in $O(k \log k)$ with `key=lambda item: (-item[2], item[0])`.
+2. **Edge Cases & Traps:**
+   - Leaf contacts missing from `contact_tree` $\rightarrow$ guarded by `.get(root_id, [])`.
+   - Index patient missing from `ward_table` $\rightarrow$ guarded by `.get(pid, "Unknown")`.
+   - Equal cluster sizes $\rightarrow$ `-item[2]` descending, `item[0]` ascending guarantees `"P-01"` precedes `"P-10"`.
+3. **Verification Plan (Hand Check):**
+   - `P-01` $\rightarrow$ `[P-02, P-03]`, `P-02` $\rightarrow$ `[P-04]`: total = **4** cases (`Ward A`).
+   - `P-10` $\rightarrow$ `[P-11, P-12, P-13]`: total = **4** cases (`Ward B`, ties with `P-01`, so `P-01` ranks first).
+   - `P-20` $\rightarrow$ `[P-21]`: total = **2** cases (`Unknown` ward).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def count_cluster(contact_tree, root_id):
+    """Recursively count total cases in a cluster including root_id."""
+    total = 1
+    for contact in contact_tree.get(root_id, []):
+        total += count_cluster(contact_tree, contact)
+    return total
+
+def prioritize_clusters(index_patients, ward_table, contact_tree):
+    """Join wards O(n+m), count clusters recursively, rank O(k log k)."""
+    ward_map = {row["patient_id"]: row["ward"] for row in ward_table}
+    summaries = []
+    for pid in index_patients:
+        size = count_cluster(contact_tree, pid)
+        ward = ward_map.get(pid, "Unknown")
+        summaries.append((pid, ward, size))
+    return sorted(summaries, key=lambda item: (-item[2], item[0]))
+
+indexes = ["P-01", "P-10", "P-20"]
+wards = [
+    {"patient_id": "P-10", "ward": "Ward B"},
+    {"patient_id": "P-01", "ward": "Ward A"},
+]
+contacts = {
+    "P-01": ["P-02", "P-03"],
+    "P-02": ["P-04"],
+    "P-10": ["P-11", "P-12", "P-13"],
+    "P-20": ["P-21"],
+}
+ranked_clusters = prioritize_clusters(indexes, wards, contacts)
+for pid, ward, size in ranked_clusters:
+    print(f"{pid} ({ward}): {size} cases in transmission cluster")
+```
+
+**Output:**
+```text
+P-01 (Ward A): 4 cases in transmission cluster
+P-10 (Ward B): 4 cases in transmission cluster
+P-20 (Unknown): 2 cases in transmission cluster
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch11-todos}
+
+Open `part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and build all six algorithmic functions below. Pass each **function name without parentheses** to `tutor.check(...)`—several verifiers also test **comparison counts**, **non-mutation**, and **runtime scaling**!
+
+- **To-Do 11.1 (Linear Search — `linear_search_patient(patient_ids, target_id)`):** Scan `patient_ids` left-to-right and return the 0-based `int` index of the first occurrence of `target_id`, or `-1` if absent.
+- **To-Do 11.2 (Binary Search — `binary_search_sorted(sorted_ids, target_id)`):** Implement iterative $O(\log n)$ binary search on an ascending sorted list, returning the 0-based index or `-1`.
+- **To-Do 11.3 (Hash-Set Speedup — `find_duplicate_ids_fast(patient_ids)`):** Find all duplicate IDs in $O(n)$ time using sets (`seen`, `duplicates`) and return a **sorted list** of unique duplicate IDs without mutating the input.
+- **To-Do 11.4 (Multi-Key Sort — `sort_triage_queue(patients)`):** Return a **new** sorted list of patient dicts ordered by urgency (`"Urgent"` $\rightarrow$ `"Moderate"` $\rightarrow$ `"Routine"`), then **descending** `temp_c`, without mutating `patients`.
+- **To-Do 11.5 (Linear Recursion — `recursive_outbreak_cases(initial_cases, r_factor, generations)`):** Recursively project outbreak cases with base case `generations == 0`, returning `round(..., 2)`.
+- **To-Do 11.6 (Tree Recursion — `count_contact_chain(contact_tree, root_id)`):** Recursively count total reachable individuals **including `root_id`** in an acyclic contact-tracing dict using `.get(root_id, [])`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch11-test}
+
+Test your algorithmic reasoning on paper before checking Stage 8:
+
+1. **Big-O Scaling:** A nested-loop script takes **0.2 seconds** on $1{,}000$ patients ( $O(n^2)$ ). Roughly how long will the same script take on $10{,}000$ patients ( $10\times$ more rows)?
+2. **Binary Search Worst Case:** At most how many midpoint checks does iterative binary search need to search a sorted registry of $1{,}024$ patient IDs?
+3. **Pointer Off-By-One Bug:** Why does writing `while low < high:` instead of `while low <= high:` fail when searching `["P-010"]` for `"P-010"`?
+4. **Hidden Quadratic Trap:** What is the true Big-O time complexity of `[x for x in ids if ids.count(x) > 1]` on a list of length $n$ , and why?
+5. **Hash-Join Complexity:** If `patients` has $n$ rows and `lab_results` has $m$ rows, what is the Big-O time complexity of building `lab_map` once and then mapping every patient?
+6. **Alphabetical Clinical Trap:** What order does `sorted(["Urgent", "Routine", "Moderate"])` produce, and why is that dangerous in a hospital triage queue?
+7. **Tie-Breaker Bug:** Suppose `rows = [("Khulna", 40.0), ("Barishal", 40.0)]`. What order does `sorted(rows, key=lambda x: (x[1], x[0]), reverse=True)` return—and how do you fix it?
+8. **`sorted()` vs. `.sort()`:** What value does `res = patients.sort(key=...)` store in `res`, and what happens to `patients`?
+9. **Recursion Trace:** Trace `trace_outbreak(20, 0.5, 3)` by hand. What exact value is returned, and how many total function calls execute (including the initial call)?
+10. **Leaf Guard:** In `trace_exposure_depth(contact_tree, person_id)`, why must you check `if not contacts: return 0` *before* calling `max(...)`?
+
+---
+
+## Stage 7 — Chapter 11 Hands-On Coding Exam: Part II Capstone (100 Points) {#sec-ch11-exam}
+
+Open `part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb`, implement all three capstone functions, and run `tutor.check_exam("ch11", exam_submissions)` to earn your **Part II Capstone** score out of 100 points.
+
+### Exam Task 11.1 (30 Points): Fast $O(n + m)$ Hash-Join Lab Matcher
+
+Write `match_lab_results_fast(patients, lab_results)` to merge patient demographics with hemoglobin lab records in linear time:
+
+- Each item in `patients` is a dict containing `"patient_id"` (plus arbitrary metadata such as `"district"` or `"ward"`).
+- Each item in `lab_results` is a dict containing `"patient_id"` and `"hb_g_dl"`.
+- Build a dictionary lookup from `lab_results` in $O(m)$ time, then return a **new list of new dicts** where every patient record includes `"hb_g_dl"` (or `None` if no matching lab result exists).
+- Do **not** mutate any input list or input dictionary. The auto-grader benchmarks **3,000 rows** so $O(n^2)$ nested loops are flagged!
+
+### Exam Task 11.2 (35 Points): District Disease-Burden Ranker
+
+Write `rank_districts_by_burden(district_records)` where each element is a dict with keys `"district"`, `"cases"`, and `"population"`:
+
+- Skip any district whose `population <= 0` (preventing `ZeroDivisionError`).
+- Compute `incidence_per_100k = round((cases / population) * 100000, 2)` for each valid district.
+- Return a list of `(district, incidence_per_100k)` tuples sorted by `incidence_per_100k` **descending**, breaking exact ties by `district` name **ascending** (A $\rightarrow$ Z).
+- Do **not** mutate the caller's `district_records` list.
+
+### Exam Task 11.3 (35 Points): Recursive Exposure-Chain Depth Tracer
+
+Write `trace_exposure_depth(contact_tree, person_id)` to find the longest transmission chain starting from `person_id` in an acyclic contact-tracing dict:
+
+- Safely fetch `contacts = contact_tree.get(person_id, [])` so leaf contacts omitted from the dictionary never raise `KeyError`.
+- **Base case:** If `contacts` is empty, return `0` (zero onward transmission hops).
+- **Recursive case:** Return `1 + max(trace_exposure_depth(contact_tree, c) for c in contacts)`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch11-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Roughly **20 seconds** ( $10^2 = 100\times$ slower), because quadratic $O(n^2)$ work multiplies by $k^2$ whenever input size multiplies by $k$ .
+2. At most **$10$ or $11$ checks** ( $\log_2(1024) = 10$ halvings plus the final equality check).
+3. For a 1-element list, `low = 0` and `high = 0`. `while low < high:` evaluates `0 < 0` (`False`), skips the loop completely, and wrongly returns `-1`!
+4. **$O(n^2)$**, because `ids.count(x)` scans the entire list of length $n$ on *every single* iteration of the outer loop.
+5. **$O(n + m)$**: one pass of length $m$ to build `lab_map`, plus one pass of length $n$ doing $O(1)$ dict lookups.
+6. `["Moderate", "Routine", "Urgent"]`—alphabetical order puts the **most critical (`"Urgent"`) patients dead last**!
+7. `reverse=True` flips both keys, returning `[("Khulna", 40.0), ("Barishal", 40.0)]` (wrong!). Fix with `sorted(rows, key=lambda x: (-x[1], x[0]))`.
+8. `res` stores **`None`**, and `patients` is **mutated in place**. Always prefer `sorted(patients, key=...)` inside pure functions.
+9. Returns **`2.5`** ( $20 \rightarrow 10.0 \rightarrow 5.0 \rightarrow 2.5$ ), executing **4 calls** (`gen=3`, `gen=2`, `gen=1`, `gen=0`).
+10. Calling `max()` on an empty generator/list raises **`ValueError: max() iterable argument is empty`**; checking `if not contacts: return 0` handles leaves cleanly as the base case.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+# To-Do 11.1
+def linear_search_patient(patient_ids, target_id):
+    """Return 0-based index of target_id in patient_ids, or -1."""
+    for idx, pid in enumerate(patient_ids):
+        if pid == target_id:
+            return idx
+    return -1
+
+# To-Do 11.2
+def binary_search_sorted(sorted_ids, target_id):
+    """Iterative O(log n) binary search returning index or -1."""
+    low = 0
+    high = len(sorted_ids) - 1
+    while low <= high:
+        mid = (low + high) // 2
+        if sorted_ids[mid] == target_id:
+            return mid
+        elif sorted_ids[mid] < target_id:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return -1
+
+# To-Do 11.3
+def find_duplicate_ids_fast(patient_ids):
+    """Return sorted list of duplicate patient IDs in O(n) time."""
+    seen = set()
+    duplicates = set()
+    for pid in patient_ids:
+        if pid in seen:
+            duplicates.add(pid)
+        else:
+            seen.add(pid)
+    return sorted(duplicates)
+
+# To-Do 11.4
+def sort_triage_queue(patients):
+    """Return new list sorted by urgency rank then descending temp_c."""
+    urgency_rank = {"Urgent": 0, "Moderate": 1, "Routine": 2}
+    return sorted(
+        patients,
+        key=lambda p: (urgency_rank[p["urgency"]], -p["temp_c"]),
+    )
+
+# To-Do 11.5
+def recursive_outbreak_cases(initial_cases, r_factor, generations):
+    """Recursively project outbreak cases after N generations."""
+    if generations == 0:
+        return round(initial_cases, 2)
+    prev = recursive_outbreak_cases(
+        initial_cases, r_factor, generations - 1
+    )
+    return round(prev * r_factor, 2)
+
+# To-Do 11.6
+def count_contact_chain(contact_tree, root_id):
+    """Recursively count reachable people in contact_tree incl. root."""
+    total = 1
+    for contact in contact_tree.get(root_id, []):
+        total += count_contact_chain(contact_tree, contact)
+    return total
+```
+
+### C. Annotated Solutions — Chapter 11 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+# Exam Task 11.1 (30 pts)
+def match_lab_results_fast(patients, lab_results):
+    """Hash-join patients with lab hb_g_dl in O(n + m) without mutating."""
+    lab_map = {row["patient_id"]: row["hb_g_dl"] for row in lab_results}
+    merged = []
+    for patient in patients:
+        record = dict(patient)
+        record["hb_g_dl"] = lab_map.get(patient["patient_id"], None)
+        merged.append(record)
+    return merged
+
+# Exam Task 11.2 (35 pts)
+def rank_districts_by_burden(district_records):
+    """Return (district, incidence_per_100k) sorted desc rate, asc name."""
+    ranked = []
+    for row in district_records:
+        if row["population"] <= 0:
+            continue
+        rate = round((row["cases"] / row["population"]) * 100000, 2)
+        ranked.append((row["district"], rate))
+    return sorted(ranked, key=lambda item: (-item[1], item[0]))
+
+# Exam Task 11.3 (35 pts)
+def trace_exposure_depth(contact_tree, person_id):
+    """Recursively return max transmission hops starting from person_id."""
+    contacts = contact_tree.get(person_id, [])
+    if not contacts:
+        return 0
+    return 1 + max(
+        trace_exposure_depth(contact_tree, c) for c in contacts
+    )
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 11 Failure Modes
+
+1. **Silent $O(n^2)$ Bottlenecks Hidden Inside Clean One-Liners:** Writing `if pid in seen_list`, `patient_ids.count(pid)`, or nested `for` loops across `patients` and `lab_results` passes tiny 5-row tests effortlessly—then stalls on 3,000+ rows. Pre-indexing with a `set` or `dict` reduces runtime by orders of magnitude while keeping your code even cleaner.
+2. **In-Place Mutation & `reverse=True` Tie-Breaker Bugs:** Calling `patients.sort(...)` mutates the caller's list and returns `None`, while writing `patient["hb_g_dl"] = ...` silently corrupts input dictionaries. Likewise, `sorted(..., reverse=True)` reverses string tie-breakers. Always return fresh copies (`sorted(...)`, `dict(patient)`) and negate numeric sort keys (`-rate`, `-temp_c`).
+3. **Missing Leaf Guards in Tree Recursion (`KeyError` / `ValueError`):** In real contact-tracing dictionaries, terminal cases often have no key at all. Pairing `contacts = contact_tree.get(person_id, [])` with an explicit `if not contacts: return 0` prevents both `KeyError` and `ValueError: max() iterable argument is empty`.
+
+---
+
+::: {.callout-note title="Part II Milestone Complete!"}
+Congratulations—you have completed **Part II: Data Structures & Algorithms**! You now command Python's core collections (`list`, `tuple`, `dict`, `set`), file I/O and defensive parsing, and the algorithmic pillars of Big-O complexity, hash joins, binary search, custom sorting, and recursion. In **Part III**, you will put these exact instincts to work inside NumPy, pandas, and publication-grade scientific visualization!
+:::
