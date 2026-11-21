@@ -15,7 +15,7 @@ distribution:
   github_repo: "first-line-to-first-paper"
   github_branch: "main"
   colab_drive_subdir: "colab_drive"
-  google_drive_folder_url: "https://drive.google.com/drive/folders/REPLACE_WITH_SHARED_FOLDER_ID"
+  google_drive_folder_url: "https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link"
   rclone_remote: "gdrive:From_First_Line_To_First_Paper"
   pypi_package: "sharukh-tutor"
 

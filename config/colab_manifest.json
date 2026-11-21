@@ -1,6 +1,6 @@
 {
   "distribution_mode": "option_b_github_and_gdrive",
-  "google_drive_folder_url": "https://drive.google.com/drive/folders/REPLACE_WITH_SHARED_FOLDER_ID",
+  "google_drive_folder_url": "https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link",
   "notebooks": {
     "00_START_HERE.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb",

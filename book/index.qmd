@@ -12,7 +12,10 @@ By the end of Part VII, you will not merely "know Python syntax"—you will thin
 
 ## How the Dual-Synced Book + Google Colab Ecosystem Works
 
-Every single chapter in this textbook is paired **1-to-1** with interactive Google Colab notebooks stored in our dual-mirrored **GitHub + Google Drive** companion repository:
+Every single chapter in this textbook is paired **1-to-1** with interactive Google Colab notebooks stored in our dual-mirrored companion ecosystem:
+
+- **GitHub Repository (Live Colab Links):** [github.com/sharukh01621/first-line-to-first-paper](https://github.com/sharukh01621/first-line-to-first-paper)
+- **Google Drive Mirror Folder (Full Curriculum & Datasets):** [Open Shared Google Drive Folder](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
 
 1. **Walkthrough Notebook (`01_walkthrough.ipynb`):** Contains every code snippet and "Break It On Purpose" error lab printed in the chapter verbatim.
 2. **Guided To-Do Notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and friendly diagnostic checks (`tutor.check(...)`) powered by our PyPI package `sharukh-tutor`.
