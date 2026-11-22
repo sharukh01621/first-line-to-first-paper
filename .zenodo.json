@@ -1,0 +1,35 @@
+{
+  "title": "From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning (First Edition)",
+  "upload_type": "publication",
+  "publication_type": "book",
+  "description": "An 860-page, 36-chapter open-access textbook paired 1-to-1 with 182 QA-verified interactive Google Colab notebooks, 324 automated diagnostic checks, 972 three-tier progressive hints (sharukh-tutor), and realistic public health & epidemiological spine datasets. Covers Python from zero, data structures & algorithms, reproducible software engineering, NumPy/Pandas/Biostatistics, classical machine learning, PyTorch deep learning (MLPs, CNNs, GRUs/LSTMs, Transformers & LoRA), multi-seed ablation studies, subgroup fairness audits, Decision Curve Analysis, and TRIPOD+AI reproducible research releases.",
+  "creators": [
+    {
+      "name": "Sharukh, Mezanur Rahman",
+      "affiliation": "M.Sc. Statistician | Public Health & Machine Learning Researcher",
+      "orcid": "0009-0006-8348-6123"
+    }
+  ],
+  "keywords": [
+    "Python",
+    "Data Science",
+    "Biostatistics",
+    "Epidemiology",
+    "Machine Learning",
+    "Deep Learning",
+    "PyTorch",
+    "Reproducible Research",
+    "Google Colab",
+    "Open Educational Resource"
+  ],
+  "license": "cc-by-nc-sa-4.0",
+  "access_right": "open",
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://sharukh01621.github.io/first-line-to-first-paper/",
+      "relation": "isSupplementedBy",
+      "resource_type": "publication-book"
+    }
+  ]
+}

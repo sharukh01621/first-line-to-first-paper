@@ -56,7 +56,7 @@ from .checks import ch34 as _ch34  # noqa: F401
 from .checks import ch35 as _ch35  # noqa: F401
 from .checks import ch36 as _ch36  # noqa: F401
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = [
     "CheckResult",

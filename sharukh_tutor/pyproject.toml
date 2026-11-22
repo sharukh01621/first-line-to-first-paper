@@ -1,26 +1,45 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "sharukh-tutor"
-version = "1.0.0"
-description = "Interactive hints, diagnostic self-checks, and Public Health datasets for 'From First Line to First Paper' by Mezanur Rahman Sharukh."
+version = "1.0.1"
+description = "Interactive hints, 324 diagnostic self-checks, and Public Health datasets for 'From First Line to First Paper' by Mezanur Rahman Sharukh."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-  {name = "Mezanur Rahman Sharukh"}
+  {name = "Mezanur Rahman Sharukh", email = "shahrukh01621@gmail.com"}
 ]
 requires-python = ">=3.10"
-keywords = ["education", "python", "data-science", "machine-learning", "public-health", "colab"]
+keywords = [
+  "education",
+  "python",
+  "data-science",
+  "biostatistics",
+  "machine-learning",
+  "deep-learning",
+  "public-health",
+  "colab",
+]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Education",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
+[project.urls]
+Homepage = "https://sharukh01621.github.io/first-line-to-first-paper/"
+Repository = "https://github.com/sharukh01621/first-line-to-first-paper"
+Documentation = "https://sharukh01621.github.io/first-line-to-first-paper/"
+"Bug Tracker" = "https://github.com/sharukh01621/first-line-to-first-paper/issues"
 
 [project.optional-dependencies]
 data = ["pandas>=2.0", "numpy>=1.24"]
