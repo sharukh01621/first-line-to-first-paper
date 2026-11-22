@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this textbook, interactive notebooks, or sharukh-tutor in your coursework or research, please cite it as below."
+type: book
+title: "From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning"
+version: "1.0.1"
+date-released: 2026-11-22
+authors:
+  - family-names: "Sharukh"
+    given-names: "Mezanur Rahman"
+    orcid: "https://orcid.org/0009-0006-8348-6123"
+    email: "shahrukh01621@gmail.com"
+repository-code: "https://github.com/sharukh01621/first-line-to-first-paper"
+url: "https://sharukh01621.github.io/first-line-to-first-paper/"
+license: MIT
+keywords:
+  - python
+  - data-science
+  - biostatistics
+  - epidemiology
+  - machine-learning
+  - deep-learning
+  - pytorch
+  - reproducible-research
+  - google-colab
+  - open-textbook

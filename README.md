@@ -1,8 +1,64 @@
-# From First Line to First Paper
-### *Mastering Python, Statistical Data Science, and Applied Deep Learning*
-**Author:** Mezanur Rahman Sharukh — *M.Sc. Statistician | Public Health & Machine Learning Researcher*
+<div align="center">
 
-A flagship, 1,000+ page zero-to-researcher textbook paired **1-to-1** with interactive **Google Colab** notebooks, automated progressive hints, diagnostic self-checks (`sharukh-tutor`), and realistic Public Health, Epidemiology, and Biostatistics datasets.
+<img src="book/assets/cover.png" alt="From First Line to First Paper — Book Cover" width="280" />
+
+# From First Line to First Paper
+
+### *Mastering Python, Statistical Data Science, and Applied Deep Learning*
+
+**Mezanur Rahman Sharukh**  
+*M.Sc. Statistician | Public Health & Machine Learning Researcher*  
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0006--8348--6123-A6CE39?style=flat&logo=orcid&logoColor=white)](https://orcid.org/0009-0006-8348-6123)
+[![Release](https://img.shields.io/badge/Edition-1st%20(v1.0.1)-1B3B6F?style=flat)](https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.1)
+[![Notebooks](https://img.shields.io/badge/Colab%20Notebooks-182%2F182%20PASS-0F5C6E?style=flat&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb)
+[![Text License](https://img.shields.io/badge/Text-CC%20BY--NC--SA%204.0-B45309?style=flat)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Code License](https://img.shields.io/badge/Code-MIT-334155?style=flat)](https://opensource.org/licenses/MIT)
+
+<br />
+
+[**Read Web Book Online**](https://sharukh01621.github.io/first-line-to-first-paper/) &nbsp;|&nbsp;
+[**Download PDF (860 pp)**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.pdf) &nbsp;|&nbsp;
+[**Download EPUB 3**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.epub) &nbsp;|&nbsp;
+[**Launch in Google Colab**](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb) &nbsp;|&nbsp;
+[**Google Drive Mirror**](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
+
+</div>
+
+---
+
+## About the Book
+
+***From First Line to First Paper*** is an **860-page, 36-chapter** zero-to-researcher textbook paired **1-to-1** with **182 interactive Google Colab notebooks**, **324 automated diagnostic checks**, and **972 three-tier progressive hints** powered by [`sharukh-tutor`](sharukh_tutor/).
+
+Designed with **zero prior coding prerequisites**, the book guides quantitative students, biostatisticians, public health researchers, and aspiring ML/DL scientists from their very first `print()` statement all the way to leakage-free Scikit-Learn pipelines, PyTorch neural architectures (MLPs, CNNs, GRUs/LSTMs, Multi-Head Self-Attention & LoRA), multi-seed ablation studies, subgroup fairness & calibration audits, Decision Curve Analysis, and cryptographically verified (`SHA-256`) research release artifacts.
+
+### What Makes This Curriculum Different
+- **Every Chapter Follows an 8-Stage Mastery Arc:** First-Principles Intuition $\rightarrow$ Visual Mental Model $\rightarrow$ Line-by-Line Walkthrough & "Break It On Purpose" Error Labs $\rightarrow$ 4-Step Problem-Structuring Blueprint $\rightarrow$ Guided To-Dos $\rightarrow$ Paper Trace Test $\rightarrow$ 100-Point Coding Exam $\rightarrow$ Annotated Solutions & Debugging Post-Mortem.
+- **Real-World Public Health Spine Datasets:** Every concept is anchored in realistic, programmatically generated public health & epidemiology datasets (`clinic_triage.csv`, `mch_survey_sample.csv`, `epi_surveillance.csv`) with real survey quirks (sentinel `999` values, mixed casing, DHS cluster IDs, and seasonal outbreak dynamics).
+- **100% Zero-Drift Verified:** Every walkthrough, guided to-do, coding exam, and annotated solution notebook is executed and verified end-to-end against Python 3.12, NumPy 2.5, Pandas 3.1, SciPy 1.18, Statsmodels 0.15, Scikit-Learn 1.9, and PyTorch 2.15.
+
+---
+
+## Quick Start for Learners (Takes 2 Minutes)
+
+1. **Read Online or Download:** Open the [Interactive Web Companion](https://sharukh01621.github.io/first-line-to-first-paper/), download the [860-Page Print PDF](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.pdf), or load the [EPUB 3 E-Book](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.epub) on your tablet/e-reader.
+2. **Open the Orientation Lab:** Launch [`00_colab_orientation.ipynb`](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb) in Google Colab, click **File $\rightarrow$ Save a copy in Drive**, and run its welcome cells.
+3. **Learn Interactively with `sharukh-tutor`:** Every chapter has three student notebooks (`01_walkthrough.ipynb`, `02_guided_todos.ipynb`, `03_coding_exam.ipynb`) plus complete annotated solutions under `colab_drive/solutions/`. Stuck on an exercise? Call `tutor.hint("ch01_todo_01", level=1)` (up to level 3) and verify your work with `tutor.check(...)` or `tutor.check_exam(...)`.
+
+---
+
+## Complete 7-Part Curriculum Roadmap (36 Chapters + 5 Appendices)
+
+| Part | Chapters | Core Mastery Milestone | Interactive Labs |
+| :--- | :---: | :--- | :---: |
+| **Part I** | Ch 1–6 | Computational Thinking & Python from Absolute Zero | 18 student + 12 solution |
+| **Part II** | Ch 7–11 | Core Data Structures, File I/O, Testing & Algorithms | 15 student + 10 solution |
+| **Part III** | Ch 12–15 | OOP for ML, Jupyter/Colab Engineering, VS Code & Git | 12 student + 8 solution |
+| **Part IV** | Ch 16–20 | NumPy, Pandas 3.x, Survey Cleaning, Visualization & Biostatistics | 15 student + 10 solution |
+| **Part V** | Ch 21–26 | Classical ML — Leakage, Regularization, Calibration, Trees, PCA & Nested CV | 18 student + 12 solution |
+| **Part VI** | Ch 27–32 | Deep Learning — NumPy Backprop, PyTorch, Training Dynamics, CNNs, RNNs & Transformers/LoRA | 18 student + 12 solution |
+| **Part VII** | Ch 33–36 | Reproducible Experiments, Ablations, Fairness Audits, Model Cards, TRIPOD+AI & Flagship Paper Capstone | 12 student + 8 solution |
+| **Appendices** | A–E | Master Cheat Sheets, Math Refresher, Top-50 Error Decoder, Master Colab Index, Bibliography, 40-Term Glossary & Author Bio | Master Index + Onboarding Hub |
 
 ---
 
@@ -10,69 +66,48 @@ A flagship, 1,000+ page zero-to-researcher textbook paired **1-to-1** with inter
 
 ```text
 first-line-to-first-paper/
-├── book/                    # Quarto Book manuscript (PDF + EPUB + Web HTML)
-├── master_notebooks/        # AUTHORING SOURCE (solutions + cell markers)
-├── colab_drive/             # GENERATED STUDENT + SOLUTION NOTEBOOKS -> GitHub & Google Drive
-│   ├── 00_START_HERE.ipynb
-│   ├── datasets/
-│   ├── part_01_python_foundations/
-│   └── solutions/
-├── sharukh_tutor/           # Publishable PyPI package powering hints, checks & dataset loading
-├── scripts/                 # Zero-drift build, verification, QR generation & sync automation
-└── config/                  # Master metadata & Colab URL manifest
+├── book/                    # Quarto Book manuscript (42 .qmd files, cover, XeLaTeX & EPUB themes)
+├── master_notebooks/        # Authoring source notebooks (solutions + cell markers)
+├── colab_drive/             # Generated student + solution .ipynb notebooks (182 verified) & datasets
+├── sharukh_tutor/           # Companion Python tutor package (324 checks, 972 hints, dataset loader)
+├── scripts/                 # Zero-drift build, QA verification, QR generator & Google Drive sync
+├── config/                  # Book metadata & Colab URL manifest
+└── CITATION.cff             # Native GitHub citation metadata
 ```
 
 ---
 
-## Core Developer Workflow (Zero-Drift Pipeline)
-
-Every time you author or edit a chapter/notebook, run the automated pipeline from the repository root:
+## Local Build & Verification Pipeline
 
 ```bash
-# 1. Generate realistic Public Health / Epidemiology spine datasets
-python3 scripts/generate_spine_datasets.py
+# 1. Run full zero-drift notebook build, QR generation & 182-notebook QA verification
+python3 scripts/run_pipeline.py
 
-# 2. Compile master_notebooks/ -> Student + Solution .ipynb in colab_drive/
-python3 scripts/build_notebooks.py
-
-# 3. Generate/update Colab links, colab_manifest.json, and Print PDF QR codes
-python3 scripts/inject_colab_links.py
-
-# 4. Run full QA verification (tests all solutions PASS and all student stubs FAIL gracefully)
-python3 scripts/verify_all.py
-
-# 5. (When Quarto + LaTeX are installed) Build Print PDF, EPUB, and Web Companion
+# 2. Render Print PDF (XeLaTeX), EPUB 3, and HTML Web Companion via Quarto
 quarto render book/
+
+# 3. Mirror colab_drive/ + compiled PDF & EPUB to Google Drive (rclone)
+python3 scripts/sync_drive.py
 ```
 
 ---
 
-## Connecting GitHub, PyPI, and Google Drive (Option B Dual Mirror)
+## Cite This Book
 
-### 1. Connect to GitHub (Powers Deterministic Colab Links)
-1. Update `github_owner` in `config/book_metadata.yml` with your GitHub username.
-2. Re-run `python3 scripts/build_notebooks.py && python3 scripts/inject_colab_links.py`.
-3. Push this repository to GitHub:
-   ```bash
-   git remote add origin https://github.com/<YOUR_USERNAME>/first-line-to-first-paper.git
-   git push -u origin main
-   ```
-Every notebook inside `colab_drive/` will immediately open in Google Colab via:
-`https://colab.research.google.com/github/<YOUR_USERNAME>/first-line-to-first-paper/blob/main/colab_drive/...`
-
-### 2. Mirror `colab_drive/` to Google Drive
-1. Configure `rclone` once: `rclone config` (create a Google Drive remote named `gdrive`).
-2. Preview and run the mirror sync:
-   ```bash
-   python3 scripts/sync_drive.py --dry-run
-   python3 scripts/sync_drive.py
-   ```
-3. Share the `From_First_Line_To_First_Paper` folder in Google Drive as *"Anyone with the link can view"* and paste its folder URL into `config/book_metadata.yml`.
-
-### 3. Publish `sharukh-tutor` to PyPI
-```bash
-cd sharukh_tutor
-python3 -m build
-python3 -m twine upload dist/*
+```bibtex
+@book{sharukh2026firstline,
+  author    = {Sharukh, Mezanur Rahman},
+  title     = {From First Line to First Paper: Mastering Python,
+               Statistical Data Science, and Applied Deep Learning},
+  edition   = {1st},
+  year      = {2026},
+  publisher = {Open Scientific Edition},
+  url       = {https://github.com/sharukh01621/first-line-to-first-paper}
+}
 ```
-Once published, Cell 0 in every Google Colab notebook (`!pip install -q sharukh-tutor`) installs in ~2 seconds with zero Google Drive authentication prompts.
+
+## License & Contact
+
+- **Narrative Text & Original Figures:** [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+- **Code, Jupyter Notebooks & `sharukh-tutor`:** [MIT License](https://opensource.org/licenses/MIT)
+- **Author:** Mezanur Rahman Sharukh — [ORCID](https://orcid.org/0009-0006-8348-6123) | `shahrukh01621@gmail.com`
