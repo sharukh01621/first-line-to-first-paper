@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>6&nbsp; Functions, Scope, Decomposition, and Modular Problem Solving – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" rel="next">
+<link href="../part_01_python_foundations/ch05_loops_tracing.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch06_functions_scope.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch06-intuition" id="toc-sec-ch06-intuition" class="nav-link" data-scroll-target="#sec-ch06-intuition"><span class="header-section-number">6.1</span> Stage 1 — First-Principles Intuition: Functions as Certified Diagnostic Lab Machines</a>
+  <ul class="collapse">
+  <li><a href="#the-rule-of-single-responsibility-decomposition" id="toc-the-rule-of-single-responsibility-decomposition" class="nav-link" data-scroll-target="#the-rule-of-single-responsibility-decomposition"><span class="header-section-number">6.1.1</span> The Rule of Single Responsibility (Decomposition)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch06-mental-model" id="toc-sec-ch06-mental-model" class="nav-link" data-scroll-target="#sec-ch06-mental-model"><span class="header-section-number">6.2</span> Stage 2 — Visual Mental Model: Call Frames &amp; Local/Global Scope Isolation</a></li>
+  <li><a href="#sec-ch06-walkthrough" id="toc-sec-ch06-walkthrough" class="nav-link" data-scroll-target="#sec-ch06-walkthrough"><span class="header-section-number">6.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch06-def" id="toc-sec-ch06-def" class="nav-link" data-scroll-target="#sec-ch06-def"><span class="header-section-number">6.3.1</span> Anatomy of <code>def</code>, Parameters, <code>return</code>, and Docstrings</a></li>
+  <li><a href="#sec-ch06-return-vs-print" id="toc-sec-ch06-return-vs-print" class="nav-link" data-scroll-target="#sec-ch06-return-vs-print"><span class="header-section-number">6.3.2</span> The #1 Beginner Trap: <code>return</code> vs.&nbsp;<code>print()</code></a></li>
+  <li><a href="#sec-ch06-defaults" id="toc-sec-ch06-defaults" class="nav-link" data-scroll-target="#sec-ch06-defaults"><span class="header-section-number">6.3.3</span> Default Parameters &amp; Keyword Arguments</a></li>
+  <li><a href="#sec-ch06-scope" id="toc-sec-ch06-scope" class="nav-link" data-scroll-target="#sec-ch06-scope"><span class="header-section-number">6.3.4</span> Local vs.&nbsp;Global Scope &amp; Call-Frame Isolation</a></li>
+  <li><a href="#sec-ch06-decomposition" id="toc-sec-ch06-decomposition" class="nav-link" data-scroll-target="#sec-ch06-decomposition"><span class="header-section-number">6.3.5</span> Decomposition: Composing Small Functions Together</a></li>
+  <li><a href="#sec-ch06-errors" id="toc-sec-ch06-errors" class="nav-link" data-scroll-target="#sec-ch06-errors"><span class="header-section-number">6.3.6</span> Break It On Purpose! (Function &amp; Scope Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch06-blueprint" id="toc-sec-ch06-blueprint" class="nav-link" data-scroll-target="#sec-ch06-blueprint"><span class="header-section-number">6.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">6.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">6.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch06-todos" id="toc-sec-ch06-todos" class="nav-link" data-scroll-target="#sec-ch06-todos"><span class="header-section-number">6.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch06-test" id="toc-sec-ch06-test" class="nav-link" data-scroll-target="#sec-ch06-test"><span class="header-section-number">6.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch06-exam" id="toc-sec-ch06-exam" class="nav-link" data-scroll-target="#sec-ch06-exam"><span class="header-section-number">6.7</span> Stage 7 — Chapter 6 Hands-On Coding Exam: Part I Capstone (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-6.1-30-points-district-name-normalizer" id="toc-exam-task-6.1-30-points-district-name-normalizer" class="nav-link" data-scroll-target="#exam-task-6.1-30-points-district-name-normalizer"><span class="header-section-number">6.7.1</span> Exam Task 6.1 (30 Points): District Name Normalizer</a></li>
+  <li><a href="#exam-task-6.2-35-points-safe-2-times-2-odds-ratio-function" id="toc-exam-task-6.2-35-points-safe-2-times-2-odds-ratio-function" class="nav-link" data-scroll-target="#exam-task-6.2-35-points-safe-2-times-2-odds-ratio-function"><span class="header-section-number">6.7.2</span> Exam Task 6.2 (35 Points): Safe <span class="math inline">\(2 \times 2\)</span> Odds Ratio Function</a></li>
+  <li><a href="#exam-task-6.3-35-points-clinic-batch-hemoglobin-summarizer" id="toc-exam-task-6.3-35-points-clinic-batch-hemoglobin-summarizer" class="nav-link" data-scroll-target="#exam-task-6.3-35-points-clinic-batch-hemoglobin-summarizer"><span class="header-section-number">6.7.3</span> Exam Task 6.3 (35 Points): Clinic Batch Hemoglobin Summarizer</a></li>
+  </ul></li>
+  <li><a href="#sec-ch06-solutions" id="toc-sec-ch06-solutions" class="nav-link" data-scroll-target="#sec-ch06-solutions"><span class="header-section-number">6.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">6.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">6.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-6-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-6-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-6-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">6.8.3</span> C. Annotated Solutions — Chapter 6 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-6-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-6-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-6-failure-modes"><span class="header-section-number">6.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 6 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch06_functions_scope.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch06" class="quarto-section-identifier"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Complete Part I by transforming one-off scripts into reusable, crash-proof, peer-reviewable research functions. Master <code>def</code>, parameters, default arguments, <code>return</code> versus <code>print()</code>, local/global scope isolation, guard clauses, and top-down decomposition—the engineering habits that power every data pipeline from Part II through Part V.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb">ch06 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch06_functions_scope__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 6 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb">ch06 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch06_functions_scope__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 6 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb">ch06 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 6 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Define clean, self-documenting Python functions using <code>def</code>, meaningful parameters, docstrings, and explicit <code>return</code> statements.</li>
+<li>Explain—and permanently avoid—the #1 beginner trap of confusing <code>print()</code> (displaying text on screen) with <code>return</code> (handing back a usable object).</li>
+<li>Design flexible research functions using <strong>default parameters</strong> and <strong>keyword arguments</strong> (such as clinical subgroup cutoffs and rate denominators).</li>
+<li>Trace <strong>local versus global scope</strong> across temporary call frames using Python’s LEGB lookup rule, and keep functions isolated from fragile global state.</li>
+<li>Protect analytical functions with <strong>early-return guard clauses</strong> so zero denominators, <code>None</code> entries, and empty lists never crash a batch analysis.</li>
+<li>Decompose complex public health workflows into small, single-responsibility helper functions that compose cleanly into a Part I Capstone Function Suite.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch06-intuition" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="sec-ch06-intuition"><span class="header-section-number">6.1</span> Stage 1 — First-Principles Intuition: Functions as Certified Diagnostic Lab Machines</h2>
+<p>In Chapters 1 through 5, you wrote flat scripts that ran top-to-bottom on one patient or one list at a time. Imagine now that your Maternal &amp; Child Health manuscript analyzes <strong>4,200 mothers across 12 clinics</strong>. If you copy-paste the BMI formula or the WHO anemia check fifteen times across your notebook—and later discover a typo in one copy—your paper silently publishes inconsistent results.</p>
+<p>Software engineers and computational scientists call the antidote <strong>DRY: Don’t Repeat Yourself</strong>. In Python, the fundamental building block of DRY, reproducible research is the <strong>function</strong>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — A Certified Diagnostic Lab Machine
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Picture a calibrated hematology analyzer sitting on a hospital bench. Every well-designed Python function works identically to that machine:</p>
+<ol type="1">
+<li><strong>Sample Intake Slot (Parameters):</strong> You slide sealed input values into the machine (<code>weight_kg</code>, <code>height_cm</code>, <code>hb_g_dl</code>). The machine never wanders down the hallway grabbing random tubes off someone else’s desk!</li>
+<li><strong>Sealed Processing Chamber (Local Scope):</strong> Inside the machine, intermediate variables (like <code>height_m</code> or <code>cutoff</code>) are created, used for the calculation, and <strong>discarded cleanly</strong> the moment the test finishes. Nothing leaks onto the outside workbench.</li>
+<li><strong>LCD Screen (<code>print()</code>) vs.&nbsp;Printed Lab Report (<code>return</code>):</strong> The machine may flash a number on its front LCD screen (<code>print()</code>), which is helpful if a human is staring at it—<em>but you cannot staple an LCD screen to a medical chart or feed it into a downstream statistical model!</em> Only <strong><code>return</code></strong> hands back an actual Python value that your calling code can store, compare, or pass into the next function.</li>
+<li><strong>SOP Instruction Card (Docstring):</strong> A clear one-line triple-quoted string (<code>"""..."""</code>) directly beneath <code>def</code> documents the machine’s purpose, units, and edge-case contract for your future self and peer reviewers.</li>
+</ol>
+</div>
+</div>
+<section id="the-rule-of-single-responsibility-decomposition" class="level3" data-number="6.1.1">
+<h3 data-number="6.1.1" class="anchored" data-anchor-id="the-rule-of-single-responsibility-decomposition"><span class="header-section-number">6.1.1</span> The Rule of Single Responsibility (Decomposition)</h3>
+<p>Great researchers do <strong>not</strong> write one giant 150-line function that cleans text, checks missing sentinels, calculates incidence rates, classifies risk, and formats tables all at once. Instead, they practice <strong>decomposition</strong>:</p>
+<ul>
+<li>Give each function <strong>one clear job</strong> (e.g., <code>clean_daily_cases</code>, <code>safe_incidence_rate</code>, <code>summarize_district</code>).</li>
+<li>Keep every helper small enough to read at a glance and test independently on edge cases (<code>0</code>, <code>None</code>, <code>[]</code>, <code>999</code>).</li>
+<li>Compose those verified building blocks together like Lego bricks into higher-level pipelines.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch06-mental-model" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="sec-ch06-mental-model"><span class="header-section-number">6.2</span> Stage 2 — Visual Mental Model: Call Frames &amp; Local/Global Scope Isolation</h2>
+<p>Watch what happens inside Python’s memory when global code calls a function that defines a local variable sharing the <em>same name</em> as an outer variable:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a>FEVER_CUTOFF_C <span class="op">=</span> <span class="fl">38.0</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a>patient_status <span class="op">=</span> <span class="st">"Waiting"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="kw">def</span> screen_temperature(temp_c):</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>    patient_status <span class="op">=</span> <span class="st">"Febrile"</span> <span class="cf">if</span> temp_c <span class="op">&gt;=</span> FEVER_CUTOFF_C <span class="cf">else</span> <span class="st">"Normal"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>    <span class="cf">return</span> patient_status</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>lab_result <span class="op">=</span> screen_temperature(<span class="fl">38.6</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell" data-fig-width="5.8" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 6 (Call Frames &amp; Local/Global Scope Isolation) illustrating Global Frame; FEVER_CUTOFF_C = 38.0 (read-only constant); patient_status = 'Waiting' (remains untouched!); lab_result = 'Febrile' (receiv...">flowchart TD
+    subgraph Global["Global Frame"]
+        G1["FEVER_CUTOFF_C = 38.0&lt;br/&gt;(read-only constant)"]
+        G2["patient_status = 'Waiting'&lt;br/&gt;(remains untouched!)"]
+        G3["lab_result = 'Febrile'&lt;br/&gt;(receives return value)"]
+    end
+    subgraph Local["Local Frame"]
+        L1["temp_c = 38.6&lt;br/&gt;(parameter binding)"]
+        L2["patient_status = 'Febrile'&lt;br/&gt;(private local tag)"]
+    end
+    G1 -. "reads global&lt;br/&gt;constant" .-&gt; L2
+    L1 --&gt; L2
+    L2 ==&gt;|"return 'Febrile'&lt;br/&gt;(frame destroyed)"| G3
+</pre>
+</div>
+<p></p><figcaption> Chapter 6 visual mental model: Call Frames &amp; Local/Global Scope Isolation</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Every time you invoke a function, Python constructs a fresh, isolated <strong>Local Call Frame</strong> on the call stack. When Python needs to resolve a variable name inside a function, it searches four scopes in strict <strong>LEGB</strong> order:</p>
+<ol type="1">
+<li><strong>L — Local:</strong> Names assigned inside the current <code>def</code> body (including its parameters).</li>
+<li><strong>E — Enclosing:</strong> Names inside any outer enclosing <code>def</code> (for nested functions).</li>
+<li><strong>G — Global:</strong> Names defined at the top level of the notebook or <code>.py</code> module.</li>
+<li><strong>B — Built-in:</strong> Python’s preloaded names (<code>len</code>, <code>round</code>, <code>sum</code>, <code>print</code>, <code>None</code>).</li>
+</ol>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Researcher’s Golden Rule of Pure Functions
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A <strong>pure function</strong> receives all variable inputs through its parameters, reads at most <code>UPPER_CASE</code> global constants (never mutating globals!), and communicates its answer strictly via <code>return</code>. Pure functions are effortless to debug, test, and reuse across manuscripts.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch06-walkthrough" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="sec-ch06-walkthrough"><span class="header-section-number">6.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch06-def" class="level3" data-number="6.3.1">
+<h3 data-number="6.3.1" class="anchored" data-anchor-id="sec-ch06-def"><span class="header-section-number">6.3.1</span> Anatomy of <code>def</code>, Parameters, <code>return</code>, and Docstrings</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a><span class="kw">def</span> compute_bmi(weight_kg, height_cm):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>    <span class="co">"""Return Body Mass Index (kg/m^2) rounded to 2 decimal places."""</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>    height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>    bmi <span class="op">=</span> weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>    <span class="cf">return</span> <span class="bu">round</span>(bmi, <span class="dv">2</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a><span class="co"># Reuse the same certified machine on multiple patients</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-label="8"></a>bmi_a <span class="op">=</span> compute_bmi(<span class="fl">64.5</span>, <span class="dv">168</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-label="9"></a>bmi_b <span class="op">=</span> compute_bmi(<span class="fl">54.6</span>, <span class="dv">156</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Patient A BMI:"</span>, bmi_a, <span class="st">"| Patient B BMI:"</span>, bmi_b)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-label="11"></a><span class="bu">print</span>(<span class="st">"Docstring:"</span>, compute_bmi.__doc__)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>Patient A BMI: 22.85 | Patient B BMI: 22.44</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>Docstring: Return Body Mass Index (kg/m^2) rounded to 2 decimal places.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the exact vocabulary distinction:</p>
+<ul>
+<li><strong>Parameters</strong> (<code>weight_kg</code>, <code>height_cm</code>) are the placeholder variable names written in the <code>def</code> header.</li>
+<li><strong>Arguments</strong> (<code>64.5</code>, <code>168</code>) are the concrete values passed in when you call the function.</li>
+<li>Defining a function with <code>def</code> <strong>does not execute its body</strong>—it builds the machine and attaches the name <code>compute_bmi</code> to it. The body runs only when called with parentheses <code>compute_bmi(...)</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch06-return-vs-print" class="level3" data-number="6.3.2">
+<h3 data-number="6.3.2" class="anchored" data-anchor-id="sec-ch06-return-vs-print"><span class="header-section-number">6.3.2</span> The #1 Beginner Trap: <code>return</code> vs.&nbsp;<code>print()</code></h3>
+<p>If a function reaches the end of its body without hitting a <code>return</code> statement, Python silently returns <strong><code>None</code></strong>. Compare these two functions side by side:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a><span class="kw">def</span> show_bmi_only(weight_kg, height_cm):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>    <span class="co">"""Displays BMI on screen, but implicitly returns None!"""</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>    height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>    <span class="bu">print</span>(<span class="st">"Screen display:"</span>, <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a>returned_good <span class="op">=</span> compute_bmi(<span class="fl">64.5</span>, <span class="dv">168</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a>returned_bad <span class="op">=</span> show_bmi_only(<span class="fl">64.5</span>, <span class="dv">168</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-label="8"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-label="9"></a><span class="bu">print</span>(<span class="st">"compute_bmi returned:"</span>, returned_good, <span class="bu">type</span>(returned_good))</span>
+<span id="cb4-10"><a href="#cb4-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"show_bmi_only returned:"</span>, returned_bad, <span class="bu">type</span>(returned_bad))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>Screen display: 22.85</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>compute_bmi returned: 22.85 &lt;class 'float'&gt;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>show_bmi_only returned: None &lt;class 'NoneType'&gt;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at <code>returned_bad</code>: even though <code>22.85</code> appeared on screen, the variable <code>returned_bad</code> holds <code>None</code>! Any subsequent attempt to compare <code>returned_bad &gt;= 25.0</code> or compute <code>returned_bad - 25.0</code> will crash immediately with a <code>TypeError</code>.</p>
+<hr>
+</section>
+<section id="sec-ch06-defaults" class="level3" data-number="6.3.3">
+<h3 data-number="6.3.3" class="anchored" data-anchor-id="sec-ch06-defaults"><span class="header-section-number">6.3.3</span> Default Parameters &amp; Keyword Arguments</h3>
+<p>In maternal health surveillance, most patients in an antenatal clinic are pregnant (WHO anemia threshold <span class="math inline">\(&lt; 11.0\text{ g/dL}\)</span>), whereas non-pregnant adult women use <span class="math inline">\(&lt; 12.0\text{ g/dL}\)</span>. Default parameters let you encode the common clinical case cleanly while keeping full flexibility:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a><span class="kw">def</span> classify_anemia(hb_g_dl, pregnant<span class="op">=</span><span class="va">True</span>):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>    <span class="co">"""Classify maternal or adult anemia using WHO hemoglobin cutoffs."""</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>    cutoff <span class="op">=</span> <span class="fl">11.0</span> <span class="cf">if</span> pregnant <span class="cf">else</span> <span class="fl">12.0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>    <span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> cutoff:</span>
+<span id="cb6-5"><a href="#cb6-5" aria-label="5"></a>        <span class="cf">return</span> <span class="st">"Anemic"</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-label="6"></a>    <span class="cf">return</span> <span class="st">"Normal"</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-label="7"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-label="8"></a><span class="bu">print</span>(<span class="st">"Pregnant (default), 10.6 -&gt;"</span>, classify_anemia(<span class="fl">10.6</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-label="9"></a><span class="bu">print</span>(<span class="st">"Pregnant (default), 11.4 -&gt;"</span>, classify_anemia(<span class="fl">11.4</span>))</span>
+<span id="cb6-10"><a href="#cb6-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Non-pregnant, 11.4       -&gt;"</span>, classify_anemia(<span class="fl">11.4</span>, pregnant<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>Pregnant (default), 10.6 -&gt; Anemic</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>Pregnant (default), 11.4 -&gt; Normal</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>Non-pregnant, 11.4       -&gt; Anemic</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Syntax Rule — Required Parameters Must Come Before Defaults
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In any <code>def</code> header, all required parameters without defaults (<code>hb_g_dl</code>) must appear <strong>to the left</strong> of parameters with default values (<code>pregnant=True</code>). Writing <code>def classify_anemia(pregnant=True, hb_g_dl):</code> triggers an immediate <code>SyntaxError</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch06-scope" class="level3" data-number="6.3.4">
+<h3 data-number="6.3.4" class="anchored" data-anchor-id="sec-ch06-scope"><span class="header-section-number">6.3.4</span> Local vs.&nbsp;Global Scope &amp; Call-Frame Isolation</h3>
+<p>Assigning a name inside a <code>def</code> creates a <strong>new local variable</strong> inside that call frame—it does <strong>not</strong> overwrite a global variable with the same name:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>FEVER_CUTOFF_C <span class="op">=</span> <span class="fl">38.0</span>   <span class="co"># Read-only global constant (UPPER_CASE)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>patient_status <span class="op">=</span> <span class="st">"Waiting"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a><span class="kw">def</span> screen_temperature(temp_c):</span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>    <span class="co">"""Return fever status using local scope without mutating globals."""</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-label="6"></a>    patient_status <span class="op">=</span> <span class="st">"Febrile"</span> <span class="cf">if</span> temp_c <span class="op">&gt;=</span> FEVER_CUTOFF_C <span class="cf">else</span> <span class="st">"Normal"</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-label="7"></a>    <span class="cf">return</span> patient_status</span>
+<span id="cb8-8"><a href="#cb8-8" aria-label="8"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-label="9"></a>lab_result <span class="op">=</span> screen_temperature(<span class="fl">38.6</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Returned from function:"</span>, lab_result)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-label="11"></a><span class="bu">print</span>(<span class="st">"Outer global unchanged:"</span>, patient_status)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>Returned from function: Febrile</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>Outer global unchanged: Waiting</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice how cleanly Python protects the outer notebook: <code>screen_temperature</code> reads the constant <code>FEVER_CUTOFF_C</code>, computes its own local <code>patient_status</code>, returns <code>"Febrile"</code>, and leaves the outer <code>patient_status</code> untouched at <code>"Waiting"</code>.</p>
+<hr>
+</section>
+<section id="sec-ch06-decomposition" class="level3" data-number="6.3.5">
+<h3 data-number="6.3.5" class="anchored" data-anchor-id="sec-ch06-decomposition"><span class="header-section-number">6.3.5</span> Decomposition: Composing Small Functions Together</h3>
+<p>Once you have small, trustworthy helper functions, higher-level functions read almost like clinical English:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a><span class="kw">def</span> is_febrile(temp_c):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>    <span class="co">"""Return True if temperature meets fever threshold (&gt;= 38.0 C)."""</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>    <span class="cf">return</span> temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-label="4"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-label="5"></a><span class="kw">def</span> assess_mother(patient_id, temp_c, hb_g_dl):</span>
+<span id="cb10-6"><a href="#cb10-6" aria-label="6"></a>    <span class="co">"""Compose smaller helpers into a single clear triage summary."""</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-label="7"></a>    fever_flag <span class="op">=</span> is_febrile(temp_c)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-label="8"></a>    anemia_label <span class="op">=</span> classify_anemia(hb_g_dl, pregnant<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-label="9"></a>    needs_review <span class="op">=</span> fever_flag <span class="kw">or</span> (anemia_label <span class="op">==</span> <span class="st">"Anemic"</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-label="10"></a>    <span class="cf">return</span> (patient_id, anemia_label, fever_flag, needs_review)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-label="11"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-label="12"></a><span class="bu">print</span>(assess_mother(<span class="st">"UHC-0042"</span>, <span class="fl">38.4</span>, <span class="fl">10.2</span>))</span>
+<span id="cb10-13"><a href="#cb10-13" aria-label="13"></a><span class="bu">print</span>(assess_mother(<span class="st">"UHC-0043"</span>, <span class="fl">36.9</span>, <span class="fl">12.1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>('UHC-0042', 'Anemic', True, True)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>('UHC-0043', 'Normal', False, False)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Returning a <strong>tuple</strong> <code>(patient_id, anemia_label, fever_flag, needs_review)</code> lets callers unpack all four results cleanly on one line: <code>pid, anemia, febrile, review = assess_mother(...)</code>.</p>
+<hr>
+</section>
+<section id="sec-ch06-errors" class="level3" data-number="6.3.6">
+<h3 data-number="6.3.6" class="anchored" data-anchor-id="sec-ch06-errors"><span class="header-section-number">6.3.6</span> Break It On Purpose! (Function &amp; Scope Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — TypeError on Missing Required Argument
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>bmi_incomplete <span class="op">=</span> compute_bmi(<span class="fl">64.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>TypeError: compute_bmi() missing 1 required positional argument: 'height_cm'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>compute_bmi</code> declares two required parameters (<code>weight_kg</code>, <code>height_cm</code>) with no defaults, but we supplied only one argument.<br>
+<strong>Fix:</strong> Provide all required arguments—e.g., <code>compute_bmi(64.5, 168)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — NameError Accessing Local Variable Outside Scope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a><span class="kw">def</span> calc_daily_dose(weight_kg):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>    daily_mg <span class="op">=</span> weight_kg <span class="op">*</span> <span class="dv">15</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>    <span class="cf">return</span> daily_mg</span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-label="5"></a>dose <span class="op">=</span> calc_daily_dose(<span class="fl">20.0</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-label="6"></a><span class="bu">print</span>(daily_mg)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>NameError: name 'daily_mg' is not defined</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>daily_mg</code> lived exclusively inside <code>calc_daily_dose</code>’s local call frame. The instant <code>return daily_mg</code> finished, that call frame was destroyed—only the returned value bound to <code>dose</code> survived in the global namespace.<br>
+<strong>Fix:</strong> Use the returned variable <code>print(dose)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — TypeError Doing Math on None (print-Only Function)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a><span class="kw">def</span> print_only_bmi(weight_kg, height_cm):</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>    height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>    <span class="bu">print</span>(<span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-label="5"></a>bad_bmi <span class="op">=</span> print_only_bmi(<span class="fl">64.5</span>, <span class="dv">168</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-label="6"></a>bmi_gap <span class="op">=</span> bad_bmi <span class="op">-</span> <span class="fl">25.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>22.85</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>TypeError: unsupported operand type(s) for -: 'NoneType' and 'float'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Because <code>print_only_bmi</code> printed <code>22.85</code> instead of returning it, <code>bad_bmi</code> became <code>None</code>. Subtracting <code>25.0</code> from <code>None</code> triggers <code>TypeError</code>.<br>
+<strong>Fix:</strong> Replace <code>print(...)</code> with <code>return round(weight_kg / (height_m ** 2), 2)</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch06-blueprint" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="sec-ch06-blueprint"><span class="header-section-number">6.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A district health office sends daily dengue case counts containing missing reports (<code>None</code>) and data-entry error codes (<code>999</code>), along with a district population figure that is occasionally missing or <code>0</code>. Build a modular 3-function surveillance pipeline that cleans valid counts, computes a crash-proof incidence rate per <span class="math inline">\(100{,}000\)</span> residents, flags an outbreak alert (<span class="math inline">\(\ge 35.0\)</span> per <span class="math inline">\(100{,}000\)</span>), and returns <code>(district, valid_days, total_cases, rate, alert)</code>.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="6.4.1">
+<h3 data-number="6.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">6.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Decomposition (Single-Responsibility Functions):</strong>
+<ul>
+<li><code>clean_daily_cases(raw_counts)</code> <span class="math inline">\(\rightarrow\)</span> returns a clean list with <code>None</code> and <code>999</code> removed.</li>
+<li><code>safe_incidence_rate(total_cases, population, per=100000)</code> <span class="math inline">\(\rightarrow\)</span> guard-protected incidence rate (<code>None</code> if <code>population &lt;= 0</code>).</li>
+<li><code>summarize_district(district, raw_counts, population)</code> <span class="math inline">\(\rightarrow\)</span> composes both helpers and computes <code>alert = (rate is not None) and (rate &gt;= 35.0)</code>.</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>If <code>population &lt;= 0</code>, dividing crashes with <code>ZeroDivisionError</code> unless guarded first.</li>
+<li>If <code>rate</code> is <code>None</code>, evaluating <code>rate &gt;= 35.0</code> directly raises <code>TypeError</code>! Short-circuit with <code>(rate is not None) and (rate &gt;= 35.0)</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Filter <code>raw_counts</code> in <code>clean_daily_cases</code>.</li>
+<li>Sum valid counts and pass <code>(total, population)</code> into <code>safe_incidence_rate</code>.</li>
+<li>Compute short-circuited boolean <code>alert</code> and return the 5-tuple.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li><code>"Dhaka"</code>, <code>[18, None, 27, 999, 34, 21]</code>, <code>250000</code>: valid = <code>[18, 27, 34, 21]</code> (4 days, sum = 100), rate = <span class="math inline">\((100 / 250000) \times 100000 = 40.0\)</span>, alert = <code>True</code>.</li>
+<li><code>"Unknown"</code>, <code>[10, 12]</code>, <code>0</code>: valid = 2 days, sum = 22, rate = <code>None</code>, alert = <code>False</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="6.4.2">
+<h3 data-number="6.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">6.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a><span class="kw">def</span> clean_daily_cases(raw_counts):</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>    <span class="co">"""Return list of valid case counts, skipping None and 999 sentinels."""</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a>    valid <span class="op">=</span> []</span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a>    <span class="cf">for</span> count <span class="kw">in</span> raw_counts:</span>
+<span id="cb18-5"><a href="#cb18-5" aria-label="5"></a>        <span class="cf">if</span> count <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> count <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb18-6"><a href="#cb18-6" aria-label="6"></a>            <span class="cf">continue</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-label="7"></a>        valid.append(count)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-label="8"></a>    <span class="cf">return</span> valid</span>
+<span id="cb18-9"><a href="#cb18-9" aria-label="9"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-label="10"></a><span class="kw">def</span> safe_incidence_rate(total_cases, population, per<span class="op">=</span><span class="dv">100000</span>):</span>
+<span id="cb18-11"><a href="#cb18-11" aria-label="11"></a>    <span class="co">"""Return incidence rate per N people, or None if population &lt;= 0."""</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-label="12"></a>    <span class="cf">if</span> population <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb18-13"><a href="#cb18-13" aria-label="13"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-label="14"></a>    <span class="cf">return</span> <span class="bu">round</span>((total_cases <span class="op">/</span> population) <span class="op">*</span> per, <span class="dv">2</span>)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-label="15"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-label="16"></a><span class="kw">def</span> summarize_district(district, raw_counts, population):</span>
+<span id="cb18-17"><a href="#cb18-17" aria-label="17"></a>    <span class="co">"""Compose cleaning + rate helpers into a district summary tuple."""</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-label="18"></a>    valid <span class="op">=</span> clean_daily_cases(raw_counts)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-label="19"></a>    total <span class="op">=</span> <span class="bu">sum</span>(valid)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-label="20"></a>    rate <span class="op">=</span> safe_incidence_rate(total, population)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-label="21"></a>    alert <span class="op">=</span> (rate <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>) <span class="kw">and</span> (rate <span class="op">&gt;=</span> <span class="fl">35.0</span>)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-label="22"></a>    <span class="cf">return</span> (district, <span class="bu">len</span>(valid), total, rate, alert)</span>
+<span id="cb18-23"><a href="#cb18-23" aria-label="23"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-label="24"></a>rep_dhaka <span class="op">=</span> summarize_district(<span class="st">"Dhaka"</span>, [<span class="dv">18</span>, <span class="va">None</span>, <span class="dv">27</span>, <span class="dv">999</span>, <span class="dv">34</span>, <span class="dv">21</span>], <span class="dv">250000</span>)</span>
+<span id="cb18-25"><a href="#cb18-25" aria-label="25"></a>rep_empty <span class="op">=</span> summarize_district(<span class="st">"Unknown"</span>, [<span class="dv">10</span>, <span class="dv">12</span>], <span class="dv">0</span>)</span>
+<span id="cb18-26"><a href="#cb18-26" aria-label="26"></a><span class="bu">print</span>(<span class="st">"Dhaka report:  "</span>, rep_dhaka)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-label="27"></a><span class="bu">print</span>(<span class="st">"Zero-pop guard:"</span>, rep_empty)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>Dhaka report:   ('Dhaka', 4, 100, 40.0, True)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>Zero-pop guard: ('Unknown', 2, 22, None, False)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch06-todos" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="sec-ch06-todos"><span class="header-section-number">6.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six reusable functions below. Notice that in Chapter 6 you pass the <strong>function name itself (without parentheses!)</strong> to <code>tutor.check(...)</code> so the tutor can stress-test your function across multiple nominal and edge-case inputs:</p>
+<ul>
+<li><strong>To-Do 6.1 (Warm-Up — <code>celsius_to_fahrenheit(temp_c)</code>):</strong> Convert Celsius to Fahrenheit using <span class="math inline">\((C \times \frac{9}{5}) + 32\)</span> and return the result rounded to 2 decimal places.</li>
+<li><strong>To-Do 6.2 (Unit Conversion — <code>compute_bmi(weight_kg, height_cm)</code>):</strong> Convert <code>height_cm</code> to meters, compute <span class="math inline">\(\text{weight} / \text{height}_m^2\)</span>, and return BMI rounded to 2 decimal places.</li>
+<li><strong>To-Do 6.3 (Default Parameter — <code>classify_anemia(hb_g_dl, pregnant=True)</code>):</strong> Return <code>"Anemic"</code> if <code>hb_g_dl &lt; 11.0</code> (when <code>pregnant=True</code>) or <code>&lt; 12.0</code> (when <code>pregnant=False</code>), else <code>"Normal"</code>.</li>
+<li><strong>To-Do 6.4 (Guard Clause + Default — <code>safe_incidence_rate(cases, population, per=100000)</code>):</strong> Return <code>None</code> immediately when <code>population &lt;= 0</code>; otherwise return <code>round((cases / population) * per, 2)</code>.</li>
+<li><strong>To-Do 6.5 (Sentinel Cleaning — <code>clean_mean_readings(readings)</code>):</strong> Skip <code>None</code> and <code>999</code> values, return <code>None</code> if no valid readings remain, otherwise return the mean rounded to 2 decimal places.</li>
+<li><strong>To-Do 6.6 (Multi-Indicator Triage — <code>triage_priority(temp_c, sbp_mmhg, hb_g_dl)</code>):</strong> Return <code>"Urgent"</code> (<code>temp_c &gt;= 39.5</code> or <code>sbp_mmhg &gt;= 160</code> or <code>hb_g_dl &lt; 8.0</code>), <code>"Moderate"</code> (<code>temp_c &gt;= 38.0</code> or <code>sbp_mmhg &gt;= 140</code> or <code>hb_g_dl &lt; 11.0</code>), or <code>"Routine"</code> otherwise.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch06-test" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="sec-ch06-test"><span class="header-section-number">6.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Test your understanding on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong><code>print()</code> vs.&nbsp;<code>return</code>:</strong> Suppose <code>def double(x): print(x * 2)</code>. What exact value and type does <code>y = double(5)</code> store in <code>y</code>?</p></li>
+<li><p><strong>Function Reference vs.&nbsp;Call:</strong> What is the difference between passing <code>compute_bmi</code> versus <code>compute_bmi(64.5, 168)</code> to <code>tutor.check(...)</code>?</p></li>
+<li><p><strong>Scope Trace:</strong> What does this snippet print?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>rate <span class="op">=</span> <span class="fl">10.0</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a><span class="kw">def</span> adjust():</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>    rate <span class="op">=</span> <span class="fl">25.0</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a>    <span class="cf">return</span> rate</span>
+<span id="cb20-5"><a href="#cb20-5" aria-label="5"></a>res <span class="op">=</span> adjust()</span>
+<span id="cb20-6"><a href="#cb20-6" aria-label="6"></a><span class="bu">print</span>(res, rate)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Local Lifetime:</strong> After <code>res = adjust()</code> finishes above, why does a local variable created inside <code>adjust()</code> raise <code>NameError</code> if accessed outside?</p></li>
+<li><p><strong>Default Parameter Rule:</strong> Why does <code>def calc_rate(per=100000, cases, pop):</code> trigger a <code>SyntaxError</code>?</p></li>
+<li><p><strong>Early Return Execution:</strong> Once a <code>return</code> statement executes inside a function, do any remaining indented lines below it run?</p></li>
+<li><p><strong>Guard Clause Logic:</strong> In <code>safe_incidence_rate(0, 50000)</code>, should the function return <code>0.0</code> or <code>None</code>? Why?</p></li>
+<li><p><strong>Branch Ordering Bug:</strong> Suppose a triage function checks <code>if temp_c &gt;= 38.0: return "Moderate"</code> <em>before</em> <code>if temp_c &gt;= 39.5: return "Urgent"</code>. What does it return for <code>temp_c = 40.1</code>?</p></li>
+<li><p><strong>Tuple Unpacking:</strong> If <code>summarize_clinic_batch([10.4, 11.6])</code> returns <code>(2, 1, 11.0)</code>, what values do <code>n, a, m</code> receive after <code>n, a, m = summarize_clinic_batch([10.4, 11.6])</code>?</p></li>
+<li><p><strong>Short-Circuit Protection:</strong> Why is <code>(rate is not None) and (rate &gt;= 35.0)</code> safe when <code>rate</code> is <code>None</code>, whereas <code>(rate &gt;= 35.0) and (rate is not None)</code> crashes with <code>TypeError</code>?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch06-exam" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="sec-ch06-exam"><span class="header-section-number">6.7</span> Stage 7 — Chapter 6 Hands-On Coding Exam: Part I Capstone (100 Points)</h2>
+<p>Open <code>part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb</code>, implement all three reusable public health functions, and run <code>tutor.check_exam("ch06", exam_submissions)</code> to earn your Part I Capstone score out of 100 points.</p>
+<section id="exam-task-6.1-30-points-district-name-normalizer" class="level3" data-number="6.7.1">
+<h3 data-number="6.7.1" class="anchored" data-anchor-id="exam-task-6.1-30-points-district-name-normalizer"><span class="header-section-number">6.7.1</span> Exam Task 6.1 (30 Points): District Name Normalizer</h3>
+<p>Write <code>normalize_district_name(raw_name)</code> to clean raw district labels from field tablets:</p>
+<ul>
+<li>Return <code>"Unknown"</code> if <code>raw_name</code> is <code>None</code> or contains only whitespace (<code>""</code>, <code>"   "</code>).</li>
+<li>Strip leading/trailing whitespace and collapse all repeated internal spaces, tabs, or newlines into a single space.</li>
+<li>Convert the cleaned district name to <strong>Title Case</strong> (e.g., <code>"  dhaka   north  "</code> <span class="math inline">\(\rightarrow\)</span> <code>"Dhaka North"</code>, <code>"SYLHET"</code> <span class="math inline">\(\rightarrow\)</span> <code>"Sylhet"</code>).</li>
+</ul>
+</section>
+<section id="exam-task-6.2-35-points-safe-2-times-2-odds-ratio-function" class="level3" data-number="6.7.2">
+<h3 data-number="6.7.2" class="anchored" data-anchor-id="exam-task-6.2-35-points-safe-2-times-2-odds-ratio-function"><span class="header-section-number">6.7.2</span> Exam Task 6.2 (35 Points): Safe <span class="math inline">\(2 \times 2\)</span> Odds Ratio Function</h3>
+<p>Write <code>compute_odds_ratio(a, b, c, d)</code> for a <span class="math inline">\(2 \times 2\)</span> epidemiological contingency table:</p>
+<ul>
+<li>Return <code>None</code> immediately if <code>b == 0</code> or <code>c == 0</code> (preventing <code>ZeroDivisionError</code>).</li>
+<li>Otherwise compute the exact cross-product ratio <span class="math inline">\(\frac{a \times d}{b \times c}\)</span> and return it rounded to <strong>2 decimal places</strong>.</li>
+<li>Ensure <code>a == 0</code> (with positive <code>b</code> and <code>c</code>) returns <code>0.0</code>, <strong>not</strong> <code>None</code>.</li>
+</ul>
+</section>
+<section id="exam-task-6.3-35-points-clinic-batch-hemoglobin-summarizer" class="level3" data-number="6.7.3">
+<h3 data-number="6.7.3" class="anchored" data-anchor-id="exam-task-6.3-35-points-clinic-batch-hemoglobin-summarizer"><span class="header-section-number">6.7.3</span> Exam Task 6.3 (35 Points): Clinic Batch Hemoglobin Summarizer</h3>
+<p>Write <code>summarize_clinic_batch(hb_readings)</code> to summarize a list of maternal hemoglobin readings (g/dL):</p>
+<ul>
+<li>Skip all <code>None</code> entries and all sentinel <code>999</code> values.</li>
+<li>If no valid readings remain (empty list or all invalid), return the 3-tuple <code>(0, 0, None)</code>.</li>
+<li>Otherwise return <code>(valid_count, anemic_count, mean_hb)</code> where <code>valid_count</code> (<code>int</code>) is the number of valid readings, <code>anemic_count</code> (<code>int</code>) is the count strictly <code>&lt; 11.0</code>, and <code>mean_hb</code> (<code>float</code>) is the mean rounded to <strong>2 decimal places</strong>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch06-solutions" class="level2" data-number="6.8">
+<h2 data-number="6.8" class="anchored" data-anchor-id="sec-ch06-solutions"><span class="header-section-number">6.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="6.8.1">
+<h3 data-number="6.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">6.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>y</code> stores <strong><code>None</code></strong> (<code>&lt;class 'NoneType'&gt;</code>), because <code>double()</code> printed <code>10</code> to the screen but lacked a <code>return</code> statement.</li>
+<li><code>compute_bmi</code> passes the <strong>function object itself</strong> so <code>tutor.check</code> can call it on many hidden test cases; <code>compute_bmi(64.5, 168)</code> invokes it once and passes only the single float <code>22.85</code>.</li>
+<li>Prints <strong><code>25.0 10.0</code></strong>—assigning <code>rate = 25.0</code> inside <code>adjust()</code> creates a private local binding and leaves the outer global <code>rate</code> unchanged at <code>10.0</code>.</li>
+<li>Python destroys the function’s local call frame as soon as <code>return</code> completes, releasing all local variable bindings.</li>
+<li>Python requires all non-default parameters to precede default parameters (<code>def calc_rate(cases, pop, per=100000):</code>).</li>
+<li><strong>No.</strong> <code>return</code> exits the function immediately and hands control back to the caller.</li>
+<li><strong><code>0.0</code></strong>, because zero cases in a valid population of <span class="math inline">\(50{,}000\)</span> is a meaningful incidence rate of <span class="math inline">\(0.0\)</span> per <span class="math inline">\(100{,}000\)</span>—only <code>population &lt;= 0</code> is undefined (<code>None</code>).</li>
+<li>It wrongly returns <strong><code>"Moderate"</code></strong>, because <code>40.1 &gt;= 38.0</code> evaluates <code>True</code> first and short-circuits via <code>return</code> before <code>"Urgent"</code> is ever checked!</li>
+<li><code>n = 2</code>, <code>a = 1</code>, <code>m = 11.0</code>.</li>
+<li>Python’s <code>and</code> short-circuits left-to-right: when <code>rate is not None</code> is <code>False</code>, Python stops immediately and never executes <code>None &gt;= 35.0</code>. Reversing the order evaluates <code>None &gt;= 35.0</code> first and raises <code>TypeError</code>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="6.8.2">
+<h3 data-number="6.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">6.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="co"># To-Do 6.1</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="kw">def</span> celsius_to_fahrenheit(temp_c):</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>    <span class="co">"""Convert Celsius temperature to Fahrenheit, rounded to 2 decimals."""</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    <span class="cf">return</span> <span class="bu">round</span>((temp_c <span class="op">*</span> <span class="dv">9</span> <span class="op">/</span> <span class="dv">5</span>) <span class="op">+</span> <span class="dv">32</span>, <span class="dv">2</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a><span class="co"># To-Do 6.2</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a><span class="kw">def</span> compute_bmi(weight_kg, height_cm):</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    <span class="co">"""Return Body Mass Index (kg/m^2) rounded to 2 decimal places."""</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    <span class="cf">return</span> <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a></span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a><span class="co"># To-Do 6.3</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a><span class="kw">def</span> classify_anemia(hb_g_dl, pregnant<span class="op">=</span><span class="va">True</span>):</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>    <span class="co">"""Classify anemia using WHO cutoffs (11.0 pregnant, 12.0 other)."""</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>    cutoff <span class="op">=</span> <span class="fl">11.0</span> <span class="cf">if</span> pregnant <span class="cf">else</span> <span class="fl">12.0</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>    <span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> cutoff:</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>        <span class="cf">return</span> <span class="st">"Anemic"</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>    <span class="cf">return</span> <span class="st">"Normal"</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a></span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a><span class="co"># To-Do 6.4</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a><span class="kw">def</span> safe_incidence_rate(cases, population, per<span class="op">=</span><span class="dv">100000</span>):</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    <span class="co">"""Return incidence rate per N people, or None if population &lt;= 0."""</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    <span class="cf">if</span> population <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>    <span class="cf">return</span> <span class="bu">round</span>((cases <span class="op">/</span> population) <span class="op">*</span> per, <span class="dv">2</span>)</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a><span class="co"># To-Do 6.5</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a><span class="kw">def</span> clean_mean_readings(readings):</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>    <span class="co">"""Return mean of valid readings (skipping None and 999), or None."""</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    total <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    <span class="cf">for</span> val <span class="kw">in</span> readings:</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>        <span class="cf">if</span> val <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> val <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>            <span class="cf">continue</span></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>        total <span class="op">+=</span> val</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>        valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    <span class="cf">if</span> valid_count <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>    <span class="cf">return</span> <span class="bu">round</span>(total <span class="op">/</span> valid_count, <span class="dv">2</span>)</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a></span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a><span class="co"># To-Do 6.6</span></span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a><span class="kw">def</span> triage_priority(temp_c, sbp_mmhg, hb_g_dl):</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>    <span class="co">"""Return 'Urgent', 'Moderate', or 'Routine' from clinical vitals."""</span></span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>    <span class="cf">if</span> temp_c <span class="op">&gt;=</span> <span class="fl">39.5</span> <span class="kw">or</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">160</span> <span class="kw">or</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">8.0</span>:</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>        <span class="cf">return</span> <span class="st">"Urgent"</span></span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>    <span class="cf">if</span> temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span> <span class="kw">or</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">140</span> <span class="kw">or</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        <span class="cf">return</span> <span class="st">"Moderate"</span></span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>    <span class="cf">return</span> <span class="st">"Routine"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-6-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="6.8.3">
+<h3 data-number="6.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-6-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">6.8.3</span> C. Annotated Solutions — Chapter 6 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 6.1 (30 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a><span class="kw">def</span> normalize_district_name(raw_name):</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>    <span class="co">"""Normalize messy district strings to Title Case, or 'Unknown'."""</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>    <span class="cf">if</span> raw_name <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>        <span class="cf">return</span> <span class="st">"Unknown"</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    cleaned <span class="op">=</span> <span class="st">" "</span>.join(raw_name.split())</span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>    <span class="cf">if</span> <span class="kw">not</span> cleaned:</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>        <span class="cf">return</span> <span class="st">"Unknown"</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a>    <span class="cf">return</span> cleaned.title()</span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a><span class="co"># Exam Task 6.2 (35 pts)</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a><span class="kw">def</span> compute_odds_ratio(a, b, c, d):</span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>    <span class="co">"""Return 2x2 Odds Ratio (2 decimals), or None if b or c is 0."""</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>    <span class="cf">if</span> b <span class="op">==</span> <span class="dv">0</span> <span class="kw">or</span> c <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>    <span class="cf">return</span> <span class="bu">round</span>((a <span class="op">*</span> d) <span class="op">/</span> (b <span class="op">*</span> c), <span class="dv">2</span>)</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a></span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a><span class="co"># Exam Task 6.3 (35 pts)</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a><span class="kw">def</span> summarize_clinic_batch(hb_readings):</span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a>    <span class="co">"""Return (valid_count, anemic_count, mean_hb) skipping None and 999."""</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>    valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a>    anemic_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>    total_hb <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>    <span class="cf">for</span> val <span class="kw">in</span> hb_readings:</span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>        <span class="cf">if</span> val <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> val <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>            <span class="cf">continue</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>        valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>        total_hb <span class="op">+=</span> val</span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>        <span class="cf">if</span> val <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>            anemic_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>    <span class="cf">if</span> valid_count <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>        <span class="cf">return</span> (<span class="dv">0</span>, <span class="dv">0</span>, <span class="va">None</span>)</span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>    mean_hb <span class="op">=</span> <span class="bu">round</span>(total_hb <span class="op">/</span> valid_count, <span class="dv">2</span>)</span>
+<span id="cb22-34"><a href="#cb22-34" aria-label="34"></a>    <span class="cf">return</span> (valid_count, anemic_count, mean_hb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-6-failure-modes" class="level3" data-number="6.8.4">
+<h3 data-number="6.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-6-failure-modes"><span class="header-section-number">6.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 6 Failure Modes</h3>
+<ol type="1">
+<li><strong>Printing Instead of Returning (<code>NoneType</code> Cascade):</strong> Beginners routinely end a function with <code>print(result)</code> because it <em>looks</em> right in a quick test cell. The moment another function or auto-grader stores <code>x = my_func(...)</code>, <code>x</code> is silently <code>None</code>, causing downstream <code>TypeError</code> failures. Always ask: <em>“Does this function hand a value back with <code>return</code>?”</em></li>
+<li><strong>Calling <code>.strip()</code> Alone or Calling String Methods on <code>None</code>:</strong> In Task 6.1, <code>raw_name.strip()</code> trims only the outer edges—leaving <code>"Dhaka   North"</code> with three internal spaces—while calling <code>.split()</code> on <code>None</code> crashes with <code>AttributeError</code>. Pairing <code>if raw_name is None:</code> with <code>" ".join(raw_name.split())</code> solves both traps cleanly.</li>
+<li><strong>Forgetting Empty-Batch and Zero-Denominator Guards:</strong> Real public health registries routinely contain clinics with <code>population == 0</code>, rare-disease tables with <code>b == 0</code>, or batches where every hemoglobin entry is <code>None</code> or <code>999</code>. Placing early-return guard clauses (<code>if population &lt;= 0: return None</code>, <code>if valid_count == 0: return (0, 0, None)</code>) at the top of your functions makes your entire Part II–V data pipeline bulletproof!</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Part I Milestone Complete!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Congratulations—you have completed <strong>Part I: Python Foundations</strong>! You can now model Python memory, normalize messy strings and numbers, write clinical branching logic, iterate safely over sentinel-laden batches, and encapsulate every workflow inside clean, tested functions. In <strong>Part II</strong>, we scale these exact skills to rich data structures (<code>list</code>, <code>dict</code>, <code>set</code>, <code>tuple</code>), file I/O, and reproducible scientific modules.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="pagination-link" aria-label="Loops, Iteration Patterns, Accumulators, and Execution Tracing">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="pagination-link" aria-label="Lists, Indexing, Slicing, Mutation, and Aliasing Traps">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

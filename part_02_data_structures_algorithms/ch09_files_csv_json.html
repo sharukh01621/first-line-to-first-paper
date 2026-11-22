@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>9&nbsp; File I/O, CSV/JSON Parsing, and Persistent Data – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" rel="next">
+<link href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</a></li><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch09-intuition" id="toc-sec-ch09-intuition" class="nav-link" data-scroll-target="#sec-ch09-intuition"><span class="header-section-number">9.1</span> Stage 1 — First-Principles Intuition: Volatile RAM vs.&nbsp;the Locked Archive Cabinet</a>
+  <ul class="collapse">
+  <li><a href="#golden-rule-of-non-destructive-research-pipelines" id="toc-golden-rule-of-non-destructive-research-pipelines" class="nav-link" data-scroll-target="#golden-rule-of-non-destructive-research-pipelines"><span class="header-section-number">9.1.1</span> Golden Rule of Non-Destructive Research Pipelines</a></li>
+  </ul></li>
+  <li><a href="#sec-ch09-mental-model" id="toc-sec-ch09-mental-model" class="nav-link" data-scroll-target="#sec-ch09-mental-model"><span class="header-section-number">9.2</span> Stage 2 — Visual Mental Model: Context-Manager &amp; File-Pipeline Lifecycle</a></li>
+  <li><a href="#sec-ch09-walkthrough" id="toc-sec-ch09-walkthrough" class="nav-link" data-scroll-target="#sec-ch09-walkthrough"><span class="header-section-number">9.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch09-text-io" id="toc-sec-ch09-text-io" class="nav-link" data-scroll-target="#sec-ch09-text-io"><span class="header-section-number">9.3.1</span> Modern Paths (<code>pathlib.Path</code>) &amp; Safe Text I/O (<code>with open</code>)</a></li>
+  <li><a href="#sec-ch09-csv" id="toc-sec-ch09-csv" class="nav-link" data-scroll-target="#sec-ch09-csv"><span class="header-section-number">9.3.2</span> Structured Tables with <code>csv.DictWriter</code> &amp; <code>csv.DictReader</code></a></li>
+  <li><a href="#sec-ch09-json" id="toc-sec-ch09-json" class="nav-link" data-scroll-target="#sec-ch09-json"><span class="header-section-number">9.3.3</span> Persisting Nested Metadata with <code>json.dump</code> &amp; <code>json.load</code></a></li>
+  <li><a href="#sec-ch09-errors" id="toc-sec-ch09-errors" class="nav-link" data-scroll-target="#sec-ch09-errors"><span class="header-section-number">9.3.4</span> Break It On Purpose! (File I/O &amp; JSON Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch09-blueprint" id="toc-sec-ch09-blueprint" class="nav-link" data-scroll-target="#sec-ch09-blueprint"><span class="header-section-number">9.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">9.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">9.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch09-todos" id="toc-sec-ch09-todos" class="nav-link" data-scroll-target="#sec-ch09-todos"><span class="header-section-number">9.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch09-test" id="toc-sec-ch09-test" class="nav-link" data-scroll-target="#sec-ch09-test"><span class="header-section-number">9.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch09-exam" id="toc-sec-ch09-exam" class="nav-link" data-scroll-target="#sec-ch09-exam"><span class="header-section-number">9.7</span> Stage 7 — Chapter 9 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-9.1-30-points-filter-urgent-triage-rows-to-csv" id="toc-exam-task-9.1-30-points-filter-urgent-triage-rows-to-csv" class="nav-link" data-scroll-target="#exam-task-9.1-30-points-filter-urgent-triage-rows-to-csv"><span class="header-section-number">9.7.1</span> Exam Task 9.1 (30 Points): Filter Urgent Triage Rows to CSV</a></li>
+  <li><a href="#exam-task-9.2-35-points-messy-mch-csv-to-per-residence-json-summary" id="toc-exam-task-9.2-35-points-messy-mch-csv-to-per-residence-json-summary" class="nav-link" data-scroll-target="#exam-task-9.2-35-points-messy-mch-csv-to-per-residence-json-summary"><span class="header-section-number">9.7.2</span> Exam Task 9.2 (35 Points): Messy MCH CSV to Per-Residence JSON Summary</a></li>
+  <li><a href="#exam-task-9.3-35-points-merge-daily-json-disease-reports" id="toc-exam-task-9.3-35-points-merge-daily-json-disease-reports" class="nav-link" data-scroll-target="#exam-task-9.3-35-points-merge-daily-json-disease-reports"><span class="header-section-number">9.7.3</span> Exam Task 9.3 (35 Points): Merge Daily JSON Disease Reports</a></li>
+  </ul></li>
+  <li><a href="#sec-ch09-solutions" id="toc-sec-ch09-solutions" class="nav-link" data-scroll-target="#sec-ch09-solutions"><span class="header-section-number">9.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">9.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">9.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-9-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-9-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-9-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">9.8.3</span> C. Annotated Solutions — Chapter 9 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-9-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-9-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-9-failure-modes"><span class="header-section-number">9.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 9 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</a></li><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch09" class="quarto-section-identifier"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Bridge ephemeral Python memory and durable scientific storage. Master cross-platform <code>pathlib.Path</code> objects, leak-proof <code>with open(..., encoding="utf-8")</code> context managers, structured tabular parsing with <code>csv.DictReader</code> / <code>csv.DictWriter</code>, nested metadata persistence with <code>json.dump</code> / <code>json.load</code>, and clean <code>tempfile.TemporaryDirectory()</code> test sandboxes—turning in-memory scripts into reproducible file pipelines.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb">ch09 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 9 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb">ch09 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 9 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb">ch09 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 9 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Construct operating-system-independent file paths with <code>pathlib.Path</code> and isolate scratch file experiments cleanly inside <code>tempfile.TemporaryDirectory()</code>.</li>
+<li>Read and write plain-text research logs safely using <code>with open(..., encoding="utf-8")</code> context managers and distinguish <code>"r"</code>, <code>"w"</code>, and <code>"a"</code> file modes.</li>
+<li>Parse and export structured clinical tables with <code>csv.DictReader</code> and <code>csv.DictWriter</code> using <code>newline=""</code>, converting string cells explicitly to numbers after skipping missing sentinels.</li>
+<li>Serialize and reload nested study metadata, protocol cutoffs, and aggregated summaries with <code>json.dump(..., indent=2)</code> and <code>json.load(...)</code>.</li>
+<li>Diagnose and prevent the three classic file-pipeline exceptions: <code>FileNotFoundError</code>, <code>json.JSONDecodeError</code>, and <code>io.UnsupportedOperation</code>.</li>
+<li>Compose multi-file CSV-to-CSV, CSV-to-JSON, and multi-JSON aggregation pipelines that never mutate raw source registries.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch09-intuition" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="sec-ch09-intuition"><span class="header-section-number">9.1</span> Stage 1 — First-Principles Intuition: Volatile RAM vs.&nbsp;the Locked Archive Cabinet</h2>
+<p>Every variable you built in Chapters 1 through 8—lists of hemoglobin readings, dictionaries of outbreak counts, sets of unique districts—lived in <strong>RAM (Random Access Memory)</strong>. RAM is blazingly fast, yet completely volatile: the moment your Google Colab runtime disconnects or your laptop reboots, every in-memory object vanishes without a trace.</p>
+<p>Reproducible science requires <strong>persistence</strong>: saving cleaned cohorts, summary statistics, and study metadata onto disk so collaborators, statistical packages, and peer reviewers can inspect and verify every step.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Locked Hospital Medical Archive
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Working with files in Python works just like borrowing records from a locked hospital archive room:</p>
+<ol type="1">
+<li><strong>Archive Street Address (<code>pathlib.Path</code>):</strong> Rather than gluing folder names with brittle backslashes (<code>"data\\raw.csv"</code>) that fail across Windows, macOS, and Linux, <code>Path(folder) / "raw.csv"</code> builds clean, portable file paths automatically.</li>
+<li><strong>Self-Locking Checkout Gate (<code>with open(...)</code>):</strong> Opening a file checks out an operating-system handle. Wrapping it inside a <strong><code>with</code> context manager</strong> guarantees Python flushes every buffered byte to disk and locks the cabinet again—<em>even if an exception crashes halfway through your loop</em>.</li>
+<li><strong>Universal Ink Standard (<code>encoding="utf-8"</code>):</strong> Always declare <code>encoding="utf-8"</code> explicitly so clinical symbols (<code>°C</code>, <code>μg/L</code>) and international place names survive identically on every researcher’s computer.</li>
+<li><strong>Right Cabinet for the Right Data (Text vs.&nbsp;CSV vs.&nbsp;JSON):</strong> Use <strong>plain text (<code>.txt</code>)</strong> for chronological shift logs, <strong>CSV (<code>.csv</code>)</strong> for flat row-by-column patient registries, and <strong>JSON (<code>.json</code>)</strong> for nested hierarchies (study metadata, cutoffs, grouped summaries).</li>
+</ol>
+</div>
+</div>
+<section id="golden-rule-of-non-destructive-research-pipelines" class="level3" data-number="9.1.1">
+<h3 data-number="9.1.1" class="anchored" data-anchor-id="golden-rule-of-non-destructive-research-pipelines"><span class="header-section-number">9.1.1</span> Golden Rule of Non-Destructive Research Pipelines</h3>
+<p>Never overwrite your raw field survey file! Treat raw files as <strong>read-only evidence</strong> (<code>"r"</code>), transform them in Python memory, and write cleaned cohorts or aggregated summaries to <strong>new derived files</strong> (<code>"w"</code>). That way, if you discover a new sentinel code next month, you can re-run the pipeline from scratch with zero data loss.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch09-mental-model" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="sec-ch09-mental-model"><span class="header-section-number">9.2</span> Stage 2 — Visual Mental Model: Context-Manager &amp; File-Pipeline Lifecycle</h2>
+<p>Follow the exact lifecycle of a clean CSV-to-JSON surveillance pipeline from raw disk file through Python’s context managers to persistent summary output:</p>
+<div class="cell" data-fig-width="2.3" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 9 (Context-Manager &amp; File-Pipeline Lifecycle) illustrating 1. Raw CSV on Disk raw_hb.csv (UTF-8); 2. with open(in_csv, 'r') csv.DictReader -> rows; 3. Clean &amp; Aggregate skip '', 'N/A', '999'; 4. wi...">flowchart TD
+    D1["1. Raw CSV on Disk&lt;br/&gt;raw_hb.csv (UTF-8)"]
+    R1["2. with open(in_csv, 'r')&lt;br/&gt;csv.DictReader -&gt; rows"]
+    R2["3. Clean &amp; Aggregate&lt;br/&gt;skip '', 'N/A', '999'"]
+    W1["4. with open(out_json, 'w')&lt;br/&gt;json.dump(summary, out_f)"]
+    D2["5. Saved JSON Artifact&lt;br/&gt;flushed &amp; auto-closed"]
+
+    D1 --&gt; R1 --&gt; R2 --&gt;|"in_f closed"| W1 --&gt;|"out_f closed"| D2
+</pre>
+</div>
+<p></p><figcaption> Chapter 9 visual mental model: Context-Manager &amp; File-Pipeline Lifecycle</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the two most important architectural safeguards in this diagram:</p>
+<ul>
+<li><strong>Automatic Resource Cleanup:</strong> Each <code>with</code> block guarantees its file handle closes immediately upon block exit—whether the block finishes normally or raises an error.</li>
+<li><strong>Explicit Type Boundary:</strong> Files on disk store only text characters (bytes). <code>csv.DictReader</code> always delivers <strong>strings</strong> (<code>"10.4"</code>), which your code converts explicitly with <code>float()</code> or <code>int()</code>. By contrast, <code>json.load()</code> automatically restores JSON numbers (<code>11.0</code>), booleans (<code>true</code> <span class="math inline">\(\rightarrow\)</span> <code>True</code>), lists, and nested dicts.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Why We Use <code>tempfile.TemporaryDirectory()</code> in Demos &amp; Tests
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Every walkthrough example and <code>sharukh-tutor</code> verifier in this chapter runs inside <code>with tempfile.TemporaryDirectory() as tmp:</code>. Python creates a private scratch folder for the duration of the block and deletes it automatically on exit—keeping your project repository and Google Colab workspace completely spotless.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch09-walkthrough" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="sec-ch09-walkthrough"><span class="header-section-number">9.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch09-text-io" class="level3" data-number="9.3.1">
+<h3 data-number="9.3.1" class="anchored" data-anchor-id="sec-ch09-text-io"><span class="header-section-number">9.3.1</span> Modern Paths (<code>pathlib.Path</code>) &amp; Safe Text I/O (<code>with open</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>    log_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"clinic_shift.txt"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>    entries <span class="op">=</span> [</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a>        <span class="st">"08:15 | Dhaka-North | Temp 38.4°C"</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>        <span class="st">"09:00 | Sylhet-East | Hb 10.6 g/dL"</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a>        <span class="st">"10:30 | Khulna-West | Routine ANC"</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>    ]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>    <span class="cf">with</span> <span class="bu">open</span>(log_path, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a>        <span class="cf">for</span> entry <span class="kw">in</span> entries:</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a>            out_f.write(<span class="ss">f"</span><span class="sc">{</span>entry<span class="sc">}</span><span class="ch">\n</span><span class="ss">"</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>    <span class="bu">print</span>(<span class="st">"File name:"</span>, log_path.name, <span class="st">"| Exists:"</span>, log_path.exists())</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>    <span class="cf">with</span> <span class="bu">open</span>(log_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> in_f:</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>        <span class="cf">for</span> line_no, line <span class="kw">in</span> <span class="bu">enumerate</span>(in_f, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a>            <span class="bu">print</span>(<span class="ss">f"Line </span><span class="sc">{</span>line_no<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>line<span class="sc">.</span>strip()<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>File name: clinic_shift.txt | Exists: True</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Line 1: 08:15 | Dhaka-North | Temp 38.4°C</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Line 2: 09:00 | Sylhet-East | Hb 10.6 g/dL</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>Line 3: 10:30 | Khulna-West | Routine ANC</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Key mechanics to inspect closely:</p>
+<ul>
+<li><strong><code>Path(tmp) / "clinic_shift.txt"</code>:</strong> <code>pathlib.Path</code> overloads the <code>/</code> operator to join directories and filenames cleanly on every operating system.</li>
+<li><strong>Explicit <code>\n</code> on writes:</strong> Unlike <code>print()</code>, <code>out_f.write(...)</code> does <strong>not</strong> append a newline automatically; omitting <code>\n</code> would glue all three entries onto one line.</li>
+<li><strong>Streaming line reads:</strong> Iterating <code>for line in in_f:</code> reads one line at a time using constant memory, and <code>line.strip()</code> removes the trailing <code>\n</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch09-csv" class="level3" data-number="9.3.2">
+<h3 data-number="9.3.2" class="anchored" data-anchor-id="sec-ch09-csv"><span class="header-section-number">9.3.2</span> Structured Tables with <code>csv.DictWriter</code> &amp; <code>csv.DictReader</code></h3>
+<p>Splitting CSV rows manually with <code>line.split(",")</code> breaks the moment a clinic address or diagnosis note contains a comma inside quotes (<code>"Dhaka, North"</code>). Always use Python’s standard-library <code>csv</code> module instead:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>records <span class="op">=</span> [</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>    {<span class="st">"patient_id"</span>: <span class="st">"P001"</span>, <span class="st">"district"</span>: <span class="st">"Dhaka"</span>, <span class="st">"hb_g_dl"</span>: <span class="st">"10.4"</span>},</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>    {<span class="st">"patient_id"</span>: <span class="st">"P002"</span>, <span class="st">"district"</span>: <span class="st">"Sylhet"</span>, <span class="st">"hb_g_dl"</span>: <span class="st">"12.1"</span>},</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>    {<span class="st">"patient_id"</span>: <span class="st">"P003"</span>, <span class="st">"district"</span>: <span class="st">"Khulna"</span>, <span class="st">"hb_g_dl"</span>: <span class="st">"9.8"</span>},</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a>]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>    csv_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"mch_cohort.csv"</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>    fields <span class="op">=</span> [<span class="st">"patient_id"</span>, <span class="st">"district"</span>, <span class="st">"hb_g_dl"</span>]</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>    <span class="cf">with</span> <span class="bu">open</span>(csv_path, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> out_f:</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>        writer <span class="op">=</span> csv.DictWriter(out_f, fieldnames<span class="op">=</span>fields)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>        writer.writeheader()</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>        writer.writerows(records)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a>    <span class="cf">with</span> <span class="bu">open</span>(csv_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> in_f:</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a>        loaded <span class="op">=</span> <span class="bu">list</span>(csv.DictReader(in_f))</span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a>    hb_vals <span class="op">=</span> [<span class="bu">float</span>(row[<span class="st">"hb_g_dl"</span>]) <span class="cf">for</span> row <span class="kw">in</span> loaded]</span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a>    <span class="bu">print</span>(<span class="st">"Rows loaded:"</span>, <span class="bu">len</span>(loaded))</span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a>    <span class="bu">print</span>(<span class="st">"First row:"</span>, loaded[<span class="dv">0</span>])</span>
+<span id="cb3-26"><a href="#cb3-26" aria-label="26"></a>    <span class="bu">print</span>(<span class="st">"Mean Hb (g/dL):"</span>, <span class="bu">round</span>(<span class="bu">sum</span>(hb_vals) <span class="op">/</span> <span class="bu">len</span>(hb_vals), <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Rows loaded: 3</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>First row: {'patient_id': 'P001', 'district': 'Dhaka', 'hb_g_dl': '10.4'}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>Mean Hb (g/dL): 10.77</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Two Mandatory <code>csv</code> Habits
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><strong>Always pass <code>newline=""</code> to <code>open()</code>:</strong> Both <code>csv.DictReader</code> and <code>csv.DictWriter</code> manage line endings internally. Omitting <code>newline=""</code> inserts extra blank lines between every row on Windows!</li>
+<li><strong>Materialize before closing:</strong> <code>csv.DictReader(in_f)</code> is a streaming iterator. If you need rows <em>after</em> the <code>with</code> block ends, wrap it in <code>list(csv.DictReader(in_f))</code> while the file is still open.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch09-json" class="level3" data-number="9.3.3">
+<h3 data-number="9.3.3" class="anchored" data-anchor-id="sec-ch09-json"><span class="header-section-number">9.3.3</span> Persisting Nested Metadata with <code>json.dump</code> &amp; <code>json.load</code></h3>
+<p>Flat CSV tables cannot naturally represent nested dictionaries, lists of study sites, or mixed booleans and floats. <strong>JSON (JavaScript Object Notation)</strong> preserves that full nested hierarchy cleanly across Python, R, JavaScript, and web APIs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="im">import</span> json</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>study_meta <span class="op">=</span> {</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>    <span class="st">"study_id"</span>: <span class="st">"MCH-BD-2026"</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>    <span class="st">"sites"</span>: [<span class="st">"Dhaka"</span>, <span class="st">"Sylhet"</span>, <span class="st">"Khulna"</span>],</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>    <span class="st">"cutoffs"</span>: {<span class="st">"anemia_g_dl"</span>: <span class="fl">11.0</span>, <span class="st">"fever_c"</span>: <span class="fl">38.0</span>},</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>    <span class="st">"active"</span>: <span class="va">True</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>}</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>    json_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"study_meta.json"</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>    <span class="cf">with</span> <span class="bu">open</span>(json_path, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>        json.dump(study_meta, out_f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>    <span class="cf">with</span> <span class="bu">open</span>(json_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> in_f:</span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>        restored <span class="op">=</span> json.load(in_f)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>    <span class="bu">print</span>(<span class="st">"Study ID:"</span>, restored[<span class="st">"study_id"</span>])</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>    <span class="bu">print</span>(<span class="st">"Anemia cutoff:"</span>, restored[<span class="st">"cutoffs"</span>][<span class="st">"anemia_g_dl"</span>])</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a>    <span class="bu">print</span>(<span class="st">"Protocol version:"</span>, restored.get(<span class="st">"version"</span>, <span class="st">"v1.0"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Study ID: MCH-BD-2026</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Anemia cutoff: 11.0</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>Protocol version: v1.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the crucial naming pair in Python’s <code>json</code> module:</p>
+<ul>
+<li><strong><code>json.dump(obj, file_handle)</code> / <code>json.load(file_handle)</code></strong> (no trailing <code>s</code>): read/write directly with an open <strong>file handle</strong>.</li>
+<li><strong><code>json.dumps(obj)</code> / <code>json.loads(text_str)</code></strong> (with trailing <code>s</code> for <strong>string</strong>): convert between Python objects and in-memory JSON strings.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch09-errors" class="level3" data-number="9.3.4">
+<h3 data-number="9.3.4" class="anchored" data-anchor-id="sec-ch09-errors"><span class="header-section-number">9.3.4</span> Break It On Purpose! (File I/O &amp; JSON Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — FileNotFoundError on Missing CSV
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>    missing_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"nonexistent_cohort.csv"</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>    <span class="cf">with</span> <span class="bu">open</span>(missing_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>        data <span class="op">=</span> f.read()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>FileNotFoundError: [Errno 2] No such file or directory:</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>'.../nonexistent_cohort.csv'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Opening a file in read mode (<code>"r"</code>) requires the file to already exist on disk. A single misspelled filename or wrong working folder triggers <code>FileNotFoundError</code>.<br>
+<strong>Fix:</strong> Verify <code>missing_path.exists()</code> or inspect <code>missing_path.resolve()</code> to confirm the exact path before opening.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — json.JSONDecodeError on Malformed JSON
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="im">import</span> json</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>    broken_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"broken_report.json"</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>    broken_path.write_text(<span class="st">'{"Dengue": 14, "Cholera": }'</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>    <span class="cf">with</span> <span class="bu">open</span>(broken_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>        report <span class="op">=</span> json.load(f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>json.decoder.JSONDecodeError: Expecting value: line 1 column 27 (char 26)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> JSON syntax is strict: missing values, trailing commas (<code>{"a": 1,}</code>), or Python single quotes (<code>{'a': 1}</code>) make <code>json.load()</code> reject the file at the exact line and column of the syntax error.<br>
+<strong>Fix:</strong> Always produce JSON files with <code>json.dump(...)</code> rather than hand-building strings or calling <code>str(my_dict)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — io.UnsupportedOperation Writing to a Read-Only Handle
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>    ro_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"readonly_log.txt"</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>    ro_path.write_text(<span class="st">"Existing shift entry</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>    <span class="cf">with</span> <span class="bu">open</span>(ro_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>        f.write(<span class="st">"New urgent entry</span><span class="ch">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>io.UnsupportedOperation: not writable</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> The file was opened in read-only mode (<code>"r"</code>), so calling <code>f.write(...)</code> violates the handle’s permissions and raises <code>io.UnsupportedOperation</code>.<br>
+<strong>Fix:</strong> Open with <code>"w"</code> (create/overwrite) or <code>"a"</code> (append to end) whenever you intend to write bytes to disk.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch09-blueprint" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="sec-ch09-blueprint"><span class="header-section-number">9.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> An Upazila Health Complex exports a messy daily antenatal CSV containing inconsistent district labels (<code>"  dhaka "</code>, <code>"DHAKA"</code>, <code>"sylhet"</code>) and missing hemoglobin sentinels (<code>""</code>, <code>"N/A"</code>, <code>"999"</code>). Build a reusable function <code>csv_to_district_hb_json(in_csv, out_json)</code> that reads the raw CSV, normalizes districts, computes each district’s valid mean hemoglobin rounded to 2 decimal places, writes an indented JSON summary to <code>out_json</code>, and returns that summary dictionary.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="9.4.1">
+<h3 data-number="9.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">9.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Input &amp; Output Contract:</strong>
+<ul>
+<li>Input: <code>in_csv</code> (<code>Path</code> or <code>str</code>) with columns <code>id,district,hb_g_dl</code>.</li>
+<li>Output: Indented UTF-8 JSON file at <code>out_json</code> + returned <code>dict[str, float]</code>.</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Every <code>csv.DictReader</code> value is a <code>str</code>—skip <code>""</code>, <code>"N/A"</code>, and <code>"999"</code> <em>before</em> calling <code>float(...)</code>.</li>
+<li>Normalize <code>row["district"].strip().title()</code> so <code>"  dhaka "</code> and <code>"Dhaka"</code> merge into one <code>"Dhaka"</code> key instead of splitting into duplicate entries.</li>
+<li>Skip invalid rows <em>before</em> inserting a district key into <code>grouped</code> so an all-invalid district never triggers <code>ZeroDivisionError</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Initialize <code>grouped = {}</code>.</li>
+<li>Stream <code>in_csv</code> with <code>csv.DictReader</code>; strip <code>hb_g_dl</code> and skip sentinel values.</li>
+<li>Normalize district name and append <code>float(raw_hb)</code> via <code>grouped.setdefault(district, []).append(...)</code>.</li>
+<li>Compute rounded per-district means with a dict comprehension.</li>
+<li>Save with <code>json.dump(summary, out_f, indent=2)</code> and return <code>summary</code>.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li>Dhaka valid values: <code>10.4</code>, <code>11.6</code> (skipping <code>999</code>) <span class="math inline">\(\rightarrow\)</span> <span class="math inline">\((10.4 + 11.6) / 2 = 11.0\)</span>.</li>
+<li>Sylhet valid values: <code>12.2</code>, <code>11.4</code> (skipping <code>N/A</code>) <span class="math inline">\(\rightarrow\)</span> <span class="math inline">\((12.2 + 11.4) / 2 = 11.8\)</span>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="9.4.2">
+<h3 data-number="9.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">9.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a><span class="im">import</span> json</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a><span class="im">import</span> tempfile</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a><span class="kw">def</span> csv_to_district_hb_json(in_csv, out_json):</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>    <span class="co">"""Aggregate valid Hb by normalized district and save JSON."""</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>    grouped <span class="op">=</span> {}</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>    <span class="cf">with</span> <span class="bu">open</span>(in_csv, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> in_f:</span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>        <span class="cf">for</span> row <span class="kw">in</span> csv.DictReader(in_f):</span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a>            raw_hb <span class="op">=</span> row[<span class="st">"hb_g_dl"</span>].strip()</span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a>            <span class="cf">if</span> raw_hb <span class="kw">in</span> (<span class="st">""</span>, <span class="st">"N/A"</span>, <span class="st">"999"</span>):</span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a>                <span class="cf">continue</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-label="14"></a>            district <span class="op">=</span> row[<span class="st">"district"</span>].strip().title()</span>
+<span id="cb13-15"><a href="#cb13-15" aria-label="15"></a>            grouped.setdefault(district, []).append(<span class="bu">float</span>(raw_hb))</span>
+<span id="cb13-16"><a href="#cb13-16" aria-label="16"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-label="17"></a>    summary <span class="op">=</span> {</span>
+<span id="cb13-18"><a href="#cb13-18" aria-label="18"></a>        dist: <span class="bu">round</span>(<span class="bu">sum</span>(vals) <span class="op">/</span> <span class="bu">len</span>(vals), <span class="dv">2</span>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-label="19"></a>        <span class="cf">for</span> dist, vals <span class="kw">in</span> grouped.items()</span>
+<span id="cb13-20"><a href="#cb13-20" aria-label="20"></a>    }</span>
+<span id="cb13-21"><a href="#cb13-21" aria-label="21"></a>    <span class="cf">with</span> <span class="bu">open</span>(out_json, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb13-22"><a href="#cb13-22" aria-label="22"></a>        json.dump(summary, out_f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb13-23"><a href="#cb13-23" aria-label="23"></a>    <span class="cf">return</span> summary</span>
+<span id="cb13-24"><a href="#cb13-24" aria-label="24"></a></span>
+<span id="cb13-25"><a href="#cb13-25" aria-label="25"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb13-26"><a href="#cb13-26" aria-label="26"></a>    raw_csv <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"raw_hb.csv"</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-label="27"></a>    out_json <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"district_hb.json"</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-label="28"></a>    raw_csv.write_text(</span>
+<span id="cb13-29"><a href="#cb13-29" aria-label="29"></a>        <span class="st">"id,district,hb_g_dl</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-label="30"></a>        <span class="st">"M1,  dhaka ,10.4</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-label="31"></a>        <span class="st">"M2,DHAKA,999</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-label="32"></a>        <span class="st">"M3,Dhaka,11.6</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-label="33"></a>        <span class="st">"M4,sylhet,12.2</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-label="34"></a>        <span class="st">"M5,Sylhet,N/A</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-label="35"></a>        <span class="st">"M6,SYLHET,11.4</span><span class="ch">\n</span><span class="st">"</span>,</span>
+<span id="cb13-36"><a href="#cb13-36" aria-label="36"></a>        encoding<span class="op">=</span><span class="st">"utf-8"</span>,</span>
+<span id="cb13-37"><a href="#cb13-37" aria-label="37"></a>    )</span>
+<span id="cb13-38"><a href="#cb13-38" aria-label="38"></a>    report <span class="op">=</span> csv_to_district_hb_json(raw_csv, out_json)</span>
+<span id="cb13-39"><a href="#cb13-39" aria-label="39"></a>    <span class="bu">print</span>(<span class="st">"Returned summary:"</span>, report)</span>
+<span id="cb13-40"><a href="#cb13-40" aria-label="40"></a>    <span class="bu">print</span>(<span class="st">"Saved JSON:</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> out_json.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>Returned summary: {'Dhaka': 11.0, 'Sylhet': 11.8}</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>Saved JSON:</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>{</span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a>  "Dhaka": 11.0,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-label="5"></a>  "Sylhet": 11.8</span>
+<span id="cb14-6"><a href="#cb14-6" aria-label="6"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch09-todos" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="sec-ch09-todos"><span class="header-section-number">9.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six file-handling functions below. Each <code>tutor.check(...)</code> test creates clean temporary files inside <code>tempfile.TemporaryDirectory()</code> and passes <code>Path</code> objects directly to your function:</p>
+<ul>
+<li><strong>To-Do 9.1 (Warm-Up — <code>count_nonempty_lines(filepath)</code>):</strong> Read a UTF-8 text file via <code>with open(...)</code> and return the <code>int</code> count of lines where <code>line.strip()</code> is non-empty.</li>
+<li><strong>To-Do 9.2 (UTF-8 Text Writer — <code>write_clinic_log(filepath, entries)</code>):</strong> Write each entry in <code>entries</code> on its own line in UTF-8 (<code>mode="w"</code>) and return the integer count written.</li>
+<li><strong>To-Do 9.3 (CSV Reader — <code>read_csv_as_dicts(csv_path)</code>):</strong> Read a CSV file via <code>csv.DictReader</code> (<code>encoding="utf-8"</code>, <code>newline=""</code>) and return a materialized <code>list[dict]</code>.</li>
+<li><strong>To-Do 9.4 (Sentinel-Safe CSV Mean — <code>mean_csv_column(csv_path, col_name)</code>):</strong> Read column <code>col_name</code> via <code>csv.DictReader</code>, skip <code>""</code>, <code>"N/A"</code>, and <code>"999"</code>, and return the mean rounded to 2 decimal places (or <code>None</code> if no valid values exist).</li>
+<li><strong>To-Do 9.5 (JSON Writer — <code>save_study_metadata(json_path, metadata_dict)</code>):</strong> Persist <code>metadata_dict</code> to <code>json_path</code> as valid, indented UTF-8 JSON (<code>indent=2</code>).</li>
+<li><strong>To-Do 9.6 (Safe JSON Loader — <code>load_json_key(json_path, key, default=None)</code>):</strong> Load a JSON dictionary from <code>json_path</code> and return <code>data.get(key, default)</code> without crashing on missing keys or clobbering falsy values (<code>0</code>, <code>False</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch09-test" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="sec-ch09-test"><span class="header-section-number">9.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Test your understanding on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong>Context Manager Safety:</strong> Why is <code>with open(path, "w", encoding="utf-8") as f:</code> strictly safer than calling <code>f = open(path, "w")</code> followed by <code>f.close()</code> at the bottom of a function?</p></li>
+<li><p><strong>Mode Difference (<code>"w"</code> vs.&nbsp;<code>"a"</code>):</strong> A clinic script opens <code>daily_log.txt</code> that already has 10 lines using mode <code>"w"</code> and writes 2 lines. How many lines are in <code>daily_log.txt</code> afterward? What if it used mode <code>"a"</code> instead?</p></li>
+<li><p><strong>Path Joining:</strong> Why should you write <code>Path("data") / "raw" / "mch.csv"</code> instead of <code>"data\\raw\\mch.csv"</code>?</p></li>
+<li><p><strong>CSV Cell Types:</strong> In a CSV with row <code>P001,Dhaka,10.8</code>, what Python data type is <code>row["hb_g_dl"]</code> right after <code>csv.DictReader</code> yields <code>row</code>? What happens if you run <code>row["hb_g_dl"] &lt; 11.0</code> without converting first?</p></li>
+<li><p><strong>Closed-File Iterator Bug:</strong> What error happens if you run this snippet?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a><span class="cf">with</span> <span class="bu">open</span>(csv_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> f:</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>    reader <span class="op">=</span> csv.DictReader(f)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>rows <span class="op">=</span> <span class="bu">list</span>(reader)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong><code>newline=""</code> Purpose:</strong> Why does Python’s official <code>csv</code> documentation require <code>newline=""</code> inside <code>open(...)</code> for both <code>DictReader</code> and <code>DictWriter</code>?</p></li>
+<li><p><strong><code>json.dump</code> vs.&nbsp;<code>json.dumps</code>:</strong> Which function writes directly to an open file handle, and which returns an in-memory JSON string?</p></li>
+<li><p><strong>Invalid JSON Serialization Trap:</strong> Why does <code>f.write(str({"active": True, "site": "Dhaka"}))</code> produce a file that crashes <code>json.load()</code>?</p></li>
+<li><p><strong>Falsy Value Trap:</strong> Suppose <code>config.json</code> contains <code>{"missing_count": 0}</code>. What does <code>data.get("missing_count") or 99</code> return versus <code>data.get("missing_count", 99)</code>?</p></li>
+<li><p><strong>Temporary Sandbox Cleanup:</strong> If code inside <code>with tempfile.TemporaryDirectory() as tmp:</code> raises a <code>ValueError</code>, does the temporary directory get left behind on disk or cleaned up automatically?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch09-exam" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="sec-ch09-exam"><span class="header-section-number">9.7</span> Stage 7 — Chapter 9 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb</code>, implement all three persistent file-pipeline functions, and run <code>tutor.check_exam("ch09", exam_submissions)</code> to earn your Chapter 9 score out of 100 points.</p>
+<section id="exam-task-9.1-30-points-filter-urgent-triage-rows-to-csv" class="level3" data-number="9.7.1">
+<h3 data-number="9.7.1" class="anchored" data-anchor-id="exam-task-9.1-30-points-filter-urgent-triage-rows-to-csv"><span class="header-section-number">9.7.1</span> Exam Task 9.1 (30 Points): Filter Urgent Triage Rows to CSV</h3>
+<p>Write <code>filter_urgent_to_csv(in_csv, out_csv)</code> to export priority clinical referrals:</p>
+<ul>
+<li>Read <code>in_csv</code> with <code>csv.DictReader</code> (<code>encoding="utf-8"</code>, <code>newline=""</code>).</li>
+<li>Write to <code>out_csv</code> using <code>csv.DictWriter(out_f, fieldnames=reader.fieldnames)</code> and always call <code>writer.writeheader()</code> so even 0-match exports preserve valid CSV headers.</li>
+<li>Write only rows where <code>row["triage_priority"] == "Urgent"</code>.</li>
+<li>Return the <code>int</code> count of Urgent rows written.</li>
+</ul>
+</section>
+<section id="exam-task-9.2-35-points-messy-mch-csv-to-per-residence-json-summary" class="level3" data-number="9.7.2">
+<h3 data-number="9.7.2" class="anchored" data-anchor-id="exam-task-9.2-35-points-messy-mch-csv-to-per-residence-json-summary"><span class="header-section-number">9.7.2</span> Exam Task 9.2 (35 Points): Messy MCH CSV to Per-Residence JSON Summary</h3>
+<p>Write <code>summarize_mch_csv_to_json(in_csv, out_json)</code> to aggregate antenatal care visits from a messy field export:</p>
+<ul>
+<li>Read <code>in_csv</code> containing <code>residence</code> (e.g., <code>"rural"</code>, <code>"  Rural "</code>, <code>"URBAN"</code>) and <code>anc_visits</code> (with missing sentinels <code>"999"</code> and <code>""</code>).</li>
+<li>Skip rows where <code>anc_visits.strip()</code> is <code>""</code>, <code>"999"</code>, or <code>"N/A"</code>.</li>
+<li>Normalize <code>residence</code> via <code>.strip().title()</code> and compute each group’s valid mean <code>anc_visits</code> rounded to <strong>2 decimal places</strong>.</li>
+<li>Write the summary dictionary to <code>out_json</code> as indented UTF-8 JSON (<code>indent=2</code>) and return that dictionary.</li>
+</ul>
+</section>
+<section id="exam-task-9.3-35-points-merge-daily-json-disease-reports" class="level3" data-number="9.7.3">
+<h3 data-number="9.7.3" class="anchored" data-anchor-id="exam-task-9.3-35-points-merge-daily-json-disease-reports"><span class="header-section-number">9.7.3</span> Exam Task 9.3 (35 Points): Merge Daily JSON Disease Reports</h3>
+<p>Write <code>merge_daily_json_reports(json_paths)</code> to combine multi-day outbreak counts across separate files:</p>
+<ul>
+<li>Accept a list of <code>Path</code> (or <code>str</code>) objects, each pointing to a UTF-8 JSON file mapping <code>disease -&gt; count</code>.</li>
+<li>Load every JSON file and sum counts for each disease across all files into a single combined dictionary.</li>
+<li>Return the combined dictionary (returning <code>{}</code> when <code>json_paths</code> is empty).</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch09-solutions" class="level2" data-number="9.8">
+<h2 data-number="9.8" class="anchored" data-anchor-id="sec-ch09-solutions"><span class="header-section-number">9.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="9.8.1">
+<h3 data-number="9.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">9.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>with open(...)</code> guarantees the file handle is flushed and closed automatically when leaving the block, even if an exception interrupts execution before the end of the function.</li>
+<li>Mode <code>"w"</code> truncates and overwrites the file, leaving <strong>2 lines</strong>. Mode <code>"a"</code> appends to the end, leaving <strong>12 lines</strong>.</li>
+<li><code>pathlib.Path</code> with <code>/</code> produces portable paths across Windows, macOS, and Linux, whereas hardcoded backslashes fail on Unix/Colab systems and risk escape-sequence bugs (<code>\t</code>, <code>\n</code>).</li>
+<li><code>row["hb_g_dl"]</code> is a <strong><code>str</code></strong> (<code>"10.8"</code>). Comparing <code>"10.8" &lt; 11.0</code> directly raises <code>TypeError: '&lt;' not supported between instances of 'str' and 'float'</code>.</li>
+<li>Raises <strong><code>ValueError: I/O operation on closed file</code></strong>, because <code>list(reader)</code> tried to read from <code>f</code> <em>after</em> exiting the <code>with</code> block closed <code>f</code>.</li>
+<li>The <code>csv</code> module handles universal newline translation and embedded newlines inside quoted fields itself; passing <code>newline=""</code> prevents Python from double-translating <code>\r\n</code> into extra blank rows on Windows.</li>
+<li><strong><code>json.dump(obj, f)</code></strong> writes to an open file handle; <strong><code>json.dumps(obj)</code></strong> returns a JSON-formatted <code>str</code> in memory.</li>
+<li><code>str(...)</code> outputs Python literal syntax—single quotes (<code>'active'</code>) and capitalized <code>True</code>—whereas the JSON standard strictly requires double quotes (<code>"active"</code>) and lowercase <code>true</code>.</li>
+<li><code>data.get("missing_count") or 99</code> treats <code>0</code> as falsy and wrongly returns <strong><code>99</code></strong>; <code>data.get("missing_count", 99)</code> checks key membership and accurately returns <strong><code>0</code></strong>.</li>
+<li>It is <strong>cleaned up automatically</strong>—<code>TemporaryDirectory</code> is a context manager whose <code>__exit__</code> method deletes the scratch folder even when an exception occurs.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="9.8.2">
+<h3 data-number="9.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">9.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a><span class="im">import</span> json</span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a><span class="co"># To-Do 9.1</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-label="5"></a><span class="kw">def</span> count_nonempty_lines(filepath):</span>
+<span id="cb16-6"><a href="#cb16-6" aria-label="6"></a>    <span class="co">"""Return int count of lines whose stripped text is non-empty."""</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-label="7"></a>    count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-label="8"></a>    <span class="cf">with</span> <span class="bu">open</span>(filepath, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb16-9"><a href="#cb16-9" aria-label="9"></a>        <span class="cf">for</span> line <span class="kw">in</span> f:</span>
+<span id="cb16-10"><a href="#cb16-10" aria-label="10"></a>            <span class="cf">if</span> line.strip():</span>
+<span id="cb16-11"><a href="#cb16-11" aria-label="11"></a>                count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-label="12"></a>    <span class="cf">return</span> count</span>
+<span id="cb16-13"><a href="#cb16-13" aria-label="13"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-label="14"></a><span class="co"># To-Do 9.2</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-label="15"></a><span class="kw">def</span> write_clinic_log(filepath, entries):</span>
+<span id="cb16-16"><a href="#cb16-16" aria-label="16"></a>    <span class="co">"""Write each entry on its own UTF-8 line and return count."""</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-label="17"></a>    <span class="cf">with</span> <span class="bu">open</span>(filepath, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb16-18"><a href="#cb16-18" aria-label="18"></a>        <span class="cf">for</span> entry <span class="kw">in</span> entries:</span>
+<span id="cb16-19"><a href="#cb16-19" aria-label="19"></a>            f.write(<span class="ss">f"</span><span class="sc">{</span>entry<span class="sc">}</span><span class="ch">\n</span><span class="ss">"</span>)</span>
+<span id="cb16-20"><a href="#cb16-20" aria-label="20"></a>    <span class="cf">return</span> <span class="bu">len</span>(entries)</span>
+<span id="cb16-21"><a href="#cb16-21" aria-label="21"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-label="22"></a><span class="co"># To-Do 9.3</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-label="23"></a><span class="kw">def</span> read_csv_as_dicts(csv_path):</span>
+<span id="cb16-24"><a href="#cb16-24" aria-label="24"></a>    <span class="co">"""Load a CSV file via csv.DictReader and return list[dict]."""</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-label="25"></a>    <span class="cf">with</span> <span class="bu">open</span>(csv_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> f:</span>
+<span id="cb16-26"><a href="#cb16-26" aria-label="26"></a>        <span class="cf">return</span> <span class="bu">list</span>(csv.DictReader(f))</span>
+<span id="cb16-27"><a href="#cb16-27" aria-label="27"></a></span>
+<span id="cb16-28"><a href="#cb16-28" aria-label="28"></a><span class="co"># To-Do 9.4</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-label="29"></a><span class="kw">def</span> mean_csv_column(csv_path, col_name):</span>
+<span id="cb16-30"><a href="#cb16-30" aria-label="30"></a>    <span class="co">"""Return mean of col_name skipping '', 'N/A', '999', or None."""</span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-label="31"></a>    values <span class="op">=</span> []</span>
+<span id="cb16-32"><a href="#cb16-32" aria-label="32"></a>    <span class="cf">with</span> <span class="bu">open</span>(csv_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> f:</span>
+<span id="cb16-33"><a href="#cb16-33" aria-label="33"></a>        <span class="cf">for</span> row <span class="kw">in</span> csv.DictReader(f):</span>
+<span id="cb16-34"><a href="#cb16-34" aria-label="34"></a>            raw <span class="op">=</span> row[col_name].strip()</span>
+<span id="cb16-35"><a href="#cb16-35" aria-label="35"></a>            <span class="cf">if</span> raw <span class="kw">in</span> (<span class="st">""</span>, <span class="st">"N/A"</span>, <span class="st">"999"</span>):</span>
+<span id="cb16-36"><a href="#cb16-36" aria-label="36"></a>                <span class="cf">continue</span></span>
+<span id="cb16-37"><a href="#cb16-37" aria-label="37"></a>            values.append(<span class="bu">float</span>(raw))</span>
+<span id="cb16-38"><a href="#cb16-38" aria-label="38"></a>    <span class="cf">if</span> <span class="kw">not</span> values:</span>
+<span id="cb16-39"><a href="#cb16-39" aria-label="39"></a>        <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb16-40"><a href="#cb16-40" aria-label="40"></a>    <span class="cf">return</span> <span class="bu">round</span>(<span class="bu">sum</span>(values) <span class="op">/</span> <span class="bu">len</span>(values), <span class="dv">2</span>)</span>
+<span id="cb16-41"><a href="#cb16-41" aria-label="41"></a></span>
+<span id="cb16-42"><a href="#cb16-42" aria-label="42"></a><span class="co"># To-Do 9.5</span></span>
+<span id="cb16-43"><a href="#cb16-43" aria-label="43"></a><span class="kw">def</span> save_study_metadata(json_path, metadata_dict):</span>
+<span id="cb16-44"><a href="#cb16-44" aria-label="44"></a>    <span class="co">"""Serialize metadata_dict to indented UTF-8 JSON at json_path."""</span></span>
+<span id="cb16-45"><a href="#cb16-45" aria-label="45"></a>    <span class="cf">with</span> <span class="bu">open</span>(json_path, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb16-46"><a href="#cb16-46" aria-label="46"></a>        json.dump(metadata_dict, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb16-47"><a href="#cb16-47" aria-label="47"></a></span>
+<span id="cb16-48"><a href="#cb16-48" aria-label="48"></a><span class="co"># To-Do 9.6</span></span>
+<span id="cb16-49"><a href="#cb16-49" aria-label="49"></a><span class="kw">def</span> load_json_key(json_path, key, default<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb16-50"><a href="#cb16-50" aria-label="50"></a>    <span class="co">"""Load JSON dict from json_path and return data.get(key, default)."""</span></span>
+<span id="cb16-51"><a href="#cb16-51" aria-label="51"></a>    <span class="cf">with</span> <span class="bu">open</span>(json_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb16-52"><a href="#cb16-52" aria-label="52"></a>        data <span class="op">=</span> json.load(f)</span>
+<span id="cb16-53"><a href="#cb16-53" aria-label="53"></a>    <span class="cf">return</span> data.get(key, default)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-9-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="9.8.3">
+<h3 data-number="9.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-9-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">9.8.3</span> C. Annotated Solutions — Chapter 9 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a><span class="im">import</span> json</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a><span class="co"># Exam Task 9.1 (30 pts)</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a><span class="kw">def</span> filter_urgent_to_csv(in_csv, out_csv):</span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a>    <span class="co">"""Write Urgent rows to out_csv with header and return count."""</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a>    count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a>    <span class="cf">with</span> <span class="bu">open</span>(in_csv, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> in_f, <span class="op">\</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-label="9"></a>         <span class="bu">open</span>(out_csv, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> out_f:</span>
+<span id="cb17-10"><a href="#cb17-10" aria-label="10"></a>        reader <span class="op">=</span> csv.DictReader(in_f)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-label="11"></a>        writer <span class="op">=</span> csv.DictWriter(out_f, fieldnames<span class="op">=</span>reader.fieldnames)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-label="12"></a>        writer.writeheader()</span>
+<span id="cb17-13"><a href="#cb17-13" aria-label="13"></a>        <span class="cf">for</span> row <span class="kw">in</span> reader:</span>
+<span id="cb17-14"><a href="#cb17-14" aria-label="14"></a>            <span class="cf">if</span> row[<span class="st">"triage_priority"</span>] <span class="op">==</span> <span class="st">"Urgent"</span>:</span>
+<span id="cb17-15"><a href="#cb17-15" aria-label="15"></a>                writer.writerow(row)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-label="16"></a>                count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-label="17"></a>    <span class="cf">return</span> count</span>
+<span id="cb17-18"><a href="#cb17-18" aria-label="18"></a></span>
+<span id="cb17-19"><a href="#cb17-19" aria-label="19"></a><span class="co"># Exam Task 9.2 (35 pts)</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-label="20"></a><span class="kw">def</span> summarize_mch_csv_to_json(in_csv, out_json):</span>
+<span id="cb17-21"><a href="#cb17-21" aria-label="21"></a>    <span class="co">"""Compute per-residence mean ANC visits, save JSON, return dict."""</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-label="22"></a>    grouped <span class="op">=</span> {}</span>
+<span id="cb17-23"><a href="#cb17-23" aria-label="23"></a>    <span class="cf">with</span> <span class="bu">open</span>(in_csv, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> in_f:</span>
+<span id="cb17-24"><a href="#cb17-24" aria-label="24"></a>        <span class="cf">for</span> row <span class="kw">in</span> csv.DictReader(in_f):</span>
+<span id="cb17-25"><a href="#cb17-25" aria-label="25"></a>            raw_anc <span class="op">=</span> row[<span class="st">"anc_visits"</span>].strip()</span>
+<span id="cb17-26"><a href="#cb17-26" aria-label="26"></a>            <span class="cf">if</span> raw_anc <span class="kw">in</span> (<span class="st">""</span>, <span class="st">"999"</span>, <span class="st">"N/A"</span>):</span>
+<span id="cb17-27"><a href="#cb17-27" aria-label="27"></a>                <span class="cf">continue</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-label="28"></a>            residence <span class="op">=</span> row[<span class="st">"residence"</span>].strip().title()</span>
+<span id="cb17-29"><a href="#cb17-29" aria-label="29"></a>            grouped.setdefault(residence, []).append(<span class="bu">float</span>(raw_anc))</span>
+<span id="cb17-30"><a href="#cb17-30" aria-label="30"></a></span>
+<span id="cb17-31"><a href="#cb17-31" aria-label="31"></a>    summary <span class="op">=</span> {</span>
+<span id="cb17-32"><a href="#cb17-32" aria-label="32"></a>        res: <span class="bu">round</span>(<span class="bu">sum</span>(vals) <span class="op">/</span> <span class="bu">len</span>(vals), <span class="dv">2</span>)</span>
+<span id="cb17-33"><a href="#cb17-33" aria-label="33"></a>        <span class="cf">for</span> res, vals <span class="kw">in</span> grouped.items()</span>
+<span id="cb17-34"><a href="#cb17-34" aria-label="34"></a>    }</span>
+<span id="cb17-35"><a href="#cb17-35" aria-label="35"></a>    <span class="cf">with</span> <span class="bu">open</span>(out_json, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb17-36"><a href="#cb17-36" aria-label="36"></a>        json.dump(summary, out_f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb17-37"><a href="#cb17-37" aria-label="37"></a>    <span class="cf">return</span> summary</span>
+<span id="cb17-38"><a href="#cb17-38" aria-label="38"></a></span>
+<span id="cb17-39"><a href="#cb17-39" aria-label="39"></a><span class="co"># Exam Task 9.3 (35 pts)</span></span>
+<span id="cb17-40"><a href="#cb17-40" aria-label="40"></a><span class="kw">def</span> merge_daily_json_reports(json_paths):</span>
+<span id="cb17-41"><a href="#cb17-41" aria-label="41"></a>    <span class="co">"""Load daily disease-&gt;count JSON files and return summed totals."""</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-label="42"></a>    totals <span class="op">=</span> {}</span>
+<span id="cb17-43"><a href="#cb17-43" aria-label="43"></a>    <span class="cf">for</span> path <span class="kw">in</span> json_paths:</span>
+<span id="cb17-44"><a href="#cb17-44" aria-label="44"></a>        <span class="cf">with</span> <span class="bu">open</span>(path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb17-45"><a href="#cb17-45" aria-label="45"></a>            report <span class="op">=</span> json.load(f)</span>
+<span id="cb17-46"><a href="#cb17-46" aria-label="46"></a>        <span class="cf">for</span> disease, count <span class="kw">in</span> report.items():</span>
+<span id="cb17-47"><a href="#cb17-47" aria-label="47"></a>            totals[disease] <span class="op">=</span> totals.get(disease, <span class="dv">0</span>) <span class="op">+</span> count</span>
+<span id="cb17-48"><a href="#cb17-48" aria-label="48"></a>    <span class="cf">return</span> totals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-9-failure-modes" class="level3" data-number="9.8.4">
+<h3 data-number="9.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-9-failure-modes"><span class="header-section-number">9.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 9 Failure Modes</h3>
+<ol type="1">
+<li><strong>Treating CSV Numbers as Floats Before Cleaning:</strong> Because <code>csv.DictReader</code> returns every cell as a string, calling <code>float(row["anc_visits"])</code> immediately crashes with <code>ValueError</code> on <code>""</code> or <code>"N/A"</code>, or silently includes <code>999.0</code> in your published mean. Always strip, filter sentinels (<code>""</code>, <code>"N/A"</code>, <code>"999"</code>), and <em>then</em> cast with <code>float()</code>.</li>
+<li><strong>Reading After the <code>with</code> Block Closes or Skipping <code>writeheader()</code>:</strong> Returning <code>csv.DictReader(f)</code> directly instead of <code>list(csv.DictReader(f))</code> fails the moment the <code>with</code> block exits; likewise, omitting <code>writer.writeheader()</code> leaves your exported CSV without column headers so downstream tools misread row 1 as column names.</li>
+<li><strong>Writing Python <code>str(dict)</code> Instead of <code>json.dump()</code>:</strong> Printing or writing <code>str(my_dict)</code> produces single quotes and <code>True</code>/<code>False</code>, which breaks every JSON parser with <code>json.JSONDecodeError</code>. Always serialize with <code>json.dump(obj, f, indent=2)</code> and retrieve optional keys with <code>data.get(key, default)</code>.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Persistent Pipelines Unlocked!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can now move seamlessly between raw disk files, structured CSV registries, and nested JSON summaries without leaving stray temporary files behind. In the next chapter, we combine these persistent file workflows with defensive exception handling, assertions, and reusable scientific modules.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="pagination-link" aria-label="Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="pagination-link" aria-label="Exceptions, Defensive Programming, Testing, and Systematic Debugging">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

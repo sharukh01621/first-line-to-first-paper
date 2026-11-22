@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>14&nbsp; Professional Engineering with VS Code, Virtual Environments, Modules, and Packages – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_03_engineering_workflow/ch15_git_clean_code.html" rel="next">
+<link href="../part_03_engineering_workflow/ch13_jupyter_colab.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch14_vscode_packages.html"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch14-intuition" id="toc-sec-ch14-intuition" class="nav-link" data-scroll-target="#sec-ch14-intuition"><span class="header-section-number">14.1</span> Stage 1 — First-Principles Intuition: Escaping the Single-Notebook Cliff</a></li>
+  <li><a href="#sec-ch14-mental-model" id="toc-sec-ch14-mental-model" class="nav-link" data-scroll-target="#sec-ch14-mental-model"><span class="header-section-number">14.2</span> Stage 2 — Visual Mental Model: Notebook-to-Package &amp; Environment Isolation</a></li>
+  <li><a href="#sec-ch14-walkthrough" id="toc-sec-ch14-walkthrough" class="nav-link" data-scroll-target="#sec-ch14-walkthrough"><span class="header-section-number">14.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch14-vscode" id="toc-sec-ch14-vscode" class="nav-link" data-scroll-target="#sec-ch14-vscode"><span class="header-section-number">14.3.1</span> Working Professionally in VS Code: Interpreters &amp; Breakpoints</a></li>
+  <li><a href="#sec-ch14-modules" id="toc-sec-ch14-modules" class="nav-link" data-scroll-target="#sec-ch14-modules"><span class="header-section-number">14.3.2</span> Notebook-to-Module Refactoring &amp; <code>if __name__ == "__main__":</code></a></li>
+  <li><a href="#sec-ch14-venv" id="toc-sec-ch14-venv" class="nav-link" data-scroll-target="#sec-ch14-venv"><span class="header-section-number">14.3.3</span> Virtual Environments, <code>sys.prefix</code>, &amp; Dependency Files</a></li>
+  <li><a href="#sec-ch14-src-env" id="toc-sec-ch14-src-env" class="nav-link" data-scroll-target="#sec-ch14-src-env"><span class="header-section-number">14.3.4</span> Standard <code>src/</code> Package Layout &amp; <code>.env</code> Configuration</a></li>
+  <li><a href="#sec-ch14-argparse" id="toc-sec-ch14-argparse" class="nav-link" data-scroll-target="#sec-ch14-argparse"><span class="header-section-number">14.3.5</span> Reproducible CLI Tools with <code>argparse.parse_args([...])</code></a></li>
+  <li><a href="#sec-ch14-errors" id="toc-sec-ch14-errors" class="nav-link" data-scroll-target="#sec-ch14-errors"><span class="header-section-number">14.3.6</span> Break It On Purpose! (Packaging, CLI &amp; <code>.env</code> Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch14-blueprint" id="toc-sec-ch14-blueprint" class="nav-link" data-scroll-target="#sec-ch14-blueprint"><span class="header-section-number">14.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">14.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">14.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch14-todos" id="toc-sec-ch14-todos" class="nav-link" data-scroll-target="#sec-ch14-todos"><span class="header-section-number">14.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch14-test" id="toc-sec-ch14-test" class="nav-link" data-scroll-target="#sec-ch14-test"><span class="header-section-number">14.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch14-exam" id="toc-sec-ch14-exam" class="nav-link" data-scroll-target="#sec-ch14-exam"><span class="header-section-number">14.7</span> Stage 7 — Chapter 14 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-14.1-30-points-dependency-reproducibility-auditor" id="toc-exam-task-14.1-30-points-dependency-reproducibility-auditor" class="nav-link" data-scroll-target="#exam-task-14.1-30-points-dependency-reproducibility-auditor"><span class="header-section-number">14.7.1</span> Exam Task 14.1 (30 Points): Dependency Reproducibility Auditor</a></li>
+  <li><a href="#exam-task-14.2-35-points-research-package-scaffolder-src-layout" id="toc-exam-task-14.2-35-points-research-package-scaffolder-src-layout" class="nav-link" data-scroll-target="#exam-task-14.2-35-points-research-package-scaffolder-src-layout"><span class="header-section-number">14.7.2</span> Exam Task 14.2 (35 Points): Research Package Scaffolder (<code>src/</code> Layout)</a></li>
+  <li><a href="#exam-task-14.3-35-points-clinical-vitals-triage-cli-runner" id="toc-exam-task-14.3-35-points-clinical-vitals-triage-cli-runner" class="nav-link" data-scroll-target="#exam-task-14.3-35-points-clinical-vitals-triage-cli-runner"><span class="header-section-number">14.7.3</span> Exam Task 14.3 (35 Points): Clinical Vitals Triage CLI Runner</a></li>
+  </ul></li>
+  <li><a href="#sec-ch14-solutions" id="toc-sec-ch14-solutions" class="nav-link" data-scroll-target="#sec-ch14-solutions"><span class="header-section-number">14.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">14.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">14.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-14-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-14-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-14-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">14.8.3</span> C. Annotated Solutions — Chapter 14 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-14-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-14-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-14-failure-modes"><span class="header-section-number">14.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 14 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch14_vscode_packages.html"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch14" class="quarto-section-identifier"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Graduate from single-notebook prototypes to installable, peer-review-ready Python software. Master VS Code interpreter selection and breakpoint debugging, isolated virtual environments (<code>venv</code> and <code>uv</code>), exact dependency pinning (<code>requirements.txt</code> and <code>pyproject.toml</code>), the standard <code>src/</code> package layout, <code>if __name__ == "__main__":</code> module guards, <code>.env</code> secret hygiene, and testable command-line interfaces with <code>argparse</code>.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb">ch14 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 14 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb">ch14 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 14 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb">ch14 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 14 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Configure <strong>VS Code</strong> with a project-specific Python interpreter and inspect live program state with breakpoints, step-over controls, and the Variables/Call Stack panels.</li>
+<li>Create isolated project environments with <code>python -m venv .venv</code> or <code>uv venv</code>, explain why exact version pins (<code>==</code>) prevent silent numerical drift, and parse or audit <code>requirements.txt</code> files programmatically.</li>
+<li>Refactor exploratory Jupyter notebook cells into reusable <code>.py</code> modules protected by <code>if __name__ == "__main__":</code> entry guards.</li>
+<li>Structure and validate a modern <strong><code>src/</code>-layout Python package</strong> (<code>pyproject.toml</code>, <code>src/&lt;pkg&gt;/__init__.py</code>, <code>tests/</code>) and normalize messy project titles into valid snake_case Python import names.</li>
+<li>Separate local API keys and database URLs from source code using gitignored <code>.env</code> files parsed safely with <code>split("=", 1)</code>.</li>
+<li>Build testable command-line tools using <code>argparse.ArgumentParser</code> and explicit <code>parse_args(argv)</code> lists, and diagnose <code>ModuleNotFoundError</code>, <code>SystemExit</code>, and malformed <code>.env</code> <code>ValueError</code> failures.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch14-intuition" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="sec-ch14-intuition"><span class="header-section-number">14.1</span> Stage 1 — First-Principles Intuition: Escaping the Single-Notebook Cliff</h2>
+<p>Jupyter notebooks and Google Colab are unmatched for <em>exploration</em>: loading a fresh maternal-health CSV, plotting hemoglobin histograms, and checking edge cases interactively. Yet every growing research project eventually hits the <strong>Single-Notebook Cliff</strong>:</p>
+<ul>
+<li>Cell 47 silently depends on a variable you mutated back in Cell 12 and forgot to re-run.</li>
+<li>Copy-pasting your triage helper across three manuscript notebooks creates three slightly incompatible versions of the same clinical cutoff.</li>
+<li>Six months later, upgrading <code>pandas</code> globally for a new project breaks your published paper’s analysis script—the dreaded <em>“it worked on my laptop last semester”</em> failure.</li>
+</ul>
+<p>Professional research software engineering solves all three problems by separating <strong>exploration</strong> (thin notebooks) from <strong>reusable logic</strong> (importable <code>.py</code> modules inside a <code>src/</code> package), <strong>execution</strong> (typed <code>argparse</code> CLIs), and <strong>isolation</strong> (one virtual environment per project).</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Sterile Clinical Laboratory Bench
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Think of a professional Python project like a biosafety-certified wet lab:</p>
+<ol type="1">
+<li><strong>Sealed Reagent Cabinet (<code>.venv</code> / <code>uv</code>):</strong> Every study gets its own private shelf of exact reagent concentrations (<code>pandas==2.2.0</code>, <code>numpy==1.26.4</code>). Updating a package in Project B can never contaminate Project A.</li>
+<li><strong>Standard Operating Procedures (<code>src/&lt;pkg&gt;/</code>):</strong> Validated helper functions live in clean <code>.py</code> modules with unit tests (<code>tests/</code>), while notebooks stay short and import directly from your package (<code>from mch_tools import classify_hb</code>).</li>
+<li><strong>Lab Instrument Dial (<code>argparse</code> CLI):</strong> Instead of editing hardcoded filenames inside a script before every batch run, you pass typed flags (<code>--input dhaka.csv --threshold 11.0</code>) from the terminal—creating an auditable command history.</li>
+<li><strong>Locked Safe (<code>.env</code>):</strong> Private tokens, clinic server credentials, and local paths stay in a gitignored <code>.env</code> file, never committed into public GitHub repositories.</li>
+<li><strong>Microscope Under Glass (VS Code Debugger):</strong> Rather than scattering temporary <code>print()</code> statements everywhere, VS Code breakpoints pause execution mid-flight so you can inspect every local variable and step line-by-line.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch14-mental-model" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="sec-ch14-mental-model"><span class="header-section-number">14.2</span> Stage 2 — Visual Mental Model: Notebook-to-Package &amp; Environment Isolation</h2>
+<p>Trace how an exploratory notebook matures into an installable <code>src/</code> package running inside an isolated virtual environment and VS Code debugger:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 14 (Notebook-to-Package &amp; Environment Isolation) illustrating 1. Explore; Jupyter / Colab Notebook Prototype &amp; Inspect; 2. src/ Package; pyproject.toml &amp; requirements.txt; src/pkg/ __init__.py &amp; cl...">flowchart TD
+    subgraph S1["1. Explore"]
+        N1["Jupyter / Colab Notebook&lt;br/&gt;Prototype &amp; Inspect"]
+    end
+    subgraph S2["2. src/ Package"]
+        direction LR
+        P1["pyproject.toml&lt;br/&gt;&amp; requirements.txt"]
+        P2["src/pkg/&lt;br/&gt;__init__.py &amp; cli.py"]
+        P3["tests/&lt;br/&gt;&amp; .env (gitignored)"]
+        P1 --- P2 --- P3
+    end
+    subgraph S3["3. Isolated .venv"]
+        direction LR
+        V1["Project .venv / uv&lt;br/&gt;Pinned Packages"]
+        V2["VS Code Debugger&lt;br/&gt;Breakpoints &amp; CLI"]
+        V1 --&gt; V2
+    end
+    S1 --&gt;|"Extract Functions"| S2
+    S2 --&gt;|"pip install -e ."| S3
+</pre>
+</div>
+<p></p><figcaption> Chapter 14 visual mental model: Notebook-to-Package &amp; Environment Isolation</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice why the <strong><code>src/</code> layout</strong> is recommended by the Python Packaging Authority (PyPA):</p>
+<ul>
+<li><strong>No Accidental Local Imports:</strong> If your package lives directly in the repository root (<code>./mch_tools/</code>), Python can import the uninstalled local folder by mistake and hide packaging bugs. Placing code inside <code>src/mch_tools/</code> forces you to install the package properly (<code>pip install -e .</code> or <code>uv pip install -e .</code>) inside <code>.venv</code>—guaranteeing your tests verify the exact package your collaborators will install.</li>
+<li><strong>Exact Reproducibility Boundary:</strong> A project’s <code>pyproject.toml</code> declares its build metadata and broad compatibility, while a pinned lockfile (<code>requirements.txt</code> with <code>==</code> or <code>uv.lock</code>) freezes every exact package version for manuscript replication.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch14-walkthrough" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="sec-ch14-walkthrough"><span class="header-section-number">14.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb</code> in Colab and run every cell alongside the dissections below.</p>
+<section id="sec-ch14-vscode" class="level3" data-number="14.3.1">
+<h3 data-number="14.3.1" class="anchored" data-anchor-id="sec-ch14-vscode"><span class="header-section-number">14.3.1</span> Working Professionally in VS Code: Interpreters &amp; Breakpoints</h3>
+<p>When you open your project folder locally in <strong>Visual Studio Code</strong>, follow this three-step engineering checklist before writing a single line:</p>
+<ol type="1">
+<li><strong>Select the Virtual Environment Interpreter:</strong> Press <code>Ctrl+Shift+P</code> (macOS: <code>Cmd+Shift+P</code>), run <strong><code>Python: Select Interpreter</code></strong>, and pick <code>.venv/bin/python</code> (Windows: <code>.venv\Scripts\python.exe</code>). Check the bottom-right status bar to confirm VS Code is bound to your project’s <code>.venv</code>, not the global system Python.</li>
+<li><strong>Use Breakpoints Instead of <code>print()</code> Spam:</strong> Click the left gutter next to any line number to place a red <strong>breakpoint dot</strong>, then press <code>F5</code> (<code>Python Debugger: Current File</code>). Execution pauses <em>before</em> that line runs so you can inspect every local variable in the <strong>Variables</strong> pane, evaluate expressions in the <strong>Debug Console</strong>, and step through code with <strong>Step Over (<code>F10</code>)</strong> or <strong>Step Into (<code>F11</code>)</strong>.</li>
+<li><strong>Create &amp; Activate <code>.venv</code> from the Integrated Terminal (`Ctrl+``):</strong></li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="co"># Built-in standard-library venv (works everywhere)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="ex">python3</span> <span class="at">-m</span> venv .venv</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="bu">source</span> .venv/bin/activate          <span class="co"># Windows: .venv\Scripts\activate</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="co"># Ultra-fast modern alternative with uv</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="ex">uv</span> venv .venv</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="ex">uv</span> pip install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Why <code>pip install -e .</code> (Editable Install) Changes Everything
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Passing <code>-e</code> (“editable mode”) links your <code>src/&lt;pkg&gt;/</code> folder directly into <code>.venv/lib/.../site-packages</code>. Any edit you save in VS Code takes effect immediately in every notebook, CLI command, and <code>pytest</code> run—without ever re-running <code>pip install</code> or hacking <code>sys.path</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch14-modules" class="level3" data-number="14.3.2">
+<h3 data-number="14.3.2" class="anchored" data-anchor-id="sec-ch14-modules"><span class="header-section-number">14.3.2</span> Notebook-to-Module Refactoring &amp; <code>if __name__ == "__main__":</code></h3>
+<p>When you extract a tested function out of a notebook into a <code>.py</code> file, wrap any demo or CLI execution inside <code>if __name__ == "__main__":</code>. Python sets <code>__name__</code> to <code>"__main__"</code> <strong>only</strong> when the file is executed directly (<code>python triage_utils.py</code>), and to the module’s own name (<code>"triage_utils"</code>) whenever another file imports it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a><span class="im">import</span> importlib.util</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>module_code <span class="op">=</span> <span class="st">'''</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a><span class="st">def classify_hb(hb_g_dl, cutoff=11.0):</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a><span class="st">    """Return 'Anemic' if hb_g_dl &lt; cutoff else 'Normal'."""</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-label="8"></a><span class="st">    return "Anemic" if hb_g_dl &lt; cutoff else "Normal"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-label="9"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-label="10"></a><span class="st">if __name__ == "__main__":</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-label="11"></a><span class="st">    print("CLI smoke test:", classify_hb(10.2))</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-label="12"></a><span class="st">'''</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-label="13"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-label="14"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb2-15"><a href="#cb2-15" aria-label="15"></a>    mod_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"triage_utils.py"</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-label="16"></a>    mod_path.write_text(module_code.strip() <span class="op">+</span> <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-label="17"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-label="18"></a>    spec <span class="op">=</span> importlib.util.spec_from_file_location(</span>
+<span id="cb2-19"><a href="#cb2-19" aria-label="19"></a>        <span class="st">"triage_utils"</span>, mod_path</span>
+<span id="cb2-20"><a href="#cb2-20" aria-label="20"></a>    )</span>
+<span id="cb2-21"><a href="#cb2-21" aria-label="21"></a>    mod <span class="op">=</span> importlib.util.module_from_spec(spec)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-label="22"></a>    spec.loader.exec_module(mod)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-label="23"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-label="24"></a>    <span class="bu">print</span>(<span class="st">"Imported __name__:"</span>, mod.<span class="va">__name__</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-label="25"></a>    <span class="bu">print</span>(<span class="st">"Hb 10.4 -&gt;"</span>, mod.classify_hb(<span class="fl">10.4</span>))</span>
+<span id="cb2-26"><a href="#cb2-26" aria-label="26"></a>    <span class="bu">print</span>(<span class="st">"Hb 12.1 -&gt;"</span>, mod.classify_hb(<span class="fl">12.1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>Imported __name__: triage_utils</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>Hb 10.4 -&gt; Anemic</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>Hb 12.1 -&gt; Normal</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice that <code>"CLI smoke test: Anemic"</code> did <strong>not</strong> print on import! Because <code>mod.__name__</code> evaluated to <code>"triage_utils"</code>, the <code>if __name__ == "__main__":</code> guard kept the import completely side-effect-free.</p>
+<hr>
+</section>
+<section id="sec-ch14-venv" class="level3" data-number="14.3.3">
+<h3 data-number="14.3.3" class="anchored" data-anchor-id="sec-ch14-venv"><span class="header-section-number">14.3.3</span> Virtual Environments, <code>sys.prefix</code>, &amp; Dependency Files</h3>
+<p>Python itself knows whether it is running inside an isolated virtual environment by comparing <code>sys.prefix</code> against <code>sys.base_prefix</code>. Meanwhile, auditing <code>requirements.txt</code> lets you verify whether every dependency is pinned with <code>==</code> rather than loose ranges (<code>&gt;=</code>, <code>&lt;=</code>, <code>~=</code>) or bare names:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a><span class="im">import</span> sys</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a>in_venv <span class="op">=</span> sys.prefix <span class="op">!=</span> sys.base_prefix</span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Python version:"</span>, sys.version.split()[<span class="dv">0</span>])</span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Inside virtual env:"</span>, in_venv)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-label="8"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-label="9"></a>req_text <span class="op">=</span> (</span>
+<span id="cb4-10"><a href="#cb4-10" aria-label="10"></a>    <span class="st">"# Pinned cohort pipeline dependencies</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-label="11"></a>    <span class="st">"pandas==2.2.0</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-label="12"></a>    <span class="st">"numpy&gt;=1.26</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-label="13"></a>    <span class="st">"scipy</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-label="14"></a>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-label="15"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-label="16"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb4-17"><a href="#cb4-17" aria-label="17"></a>    req_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"requirements.txt"</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-label="18"></a>    req_path.write_text(req_text, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-label="19"></a>    reqs <span class="op">=</span> {}</span>
+<span id="cb4-20"><a href="#cb4-20" aria-label="20"></a>    <span class="cf">with</span> <span class="bu">open</span>(req_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb4-21"><a href="#cb4-21" aria-label="21"></a>        <span class="cf">for</span> raw <span class="kw">in</span> f:</span>
+<span id="cb4-22"><a href="#cb4-22" aria-label="22"></a>            line <span class="op">=</span> raw.strip()</span>
+<span id="cb4-23"><a href="#cb4-23" aria-label="23"></a>            <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb4-24"><a href="#cb4-24" aria-label="24"></a>                <span class="cf">continue</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-label="25"></a>            <span class="cf">for</span> op <span class="kw">in</span> (<span class="st">"=="</span>, <span class="st">"&gt;="</span>, <span class="st">"&lt;="</span>, <span class="st">"~="</span>):</span>
+<span id="cb4-26"><a href="#cb4-26" aria-label="26"></a>                <span class="cf">if</span> op <span class="kw">in</span> line:</span>
+<span id="cb4-27"><a href="#cb4-27" aria-label="27"></a>                    pkg, ver <span class="op">=</span> line.split(op, <span class="dv">1</span>)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-label="28"></a>                    reqs[pkg.strip().lower()] <span class="op">=</span> op <span class="op">+</span> ver.strip()</span>
+<span id="cb4-29"><a href="#cb4-29" aria-label="29"></a>                    <span class="cf">break</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-label="30"></a>            <span class="cf">else</span>:</span>
+<span id="cb4-31"><a href="#cb4-31" aria-label="31"></a>                reqs[line.lower()] <span class="op">=</span> <span class="st">""</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-label="32"></a>    <span class="bu">print</span>(<span class="st">"Parsed requirements:"</span>, reqs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output (version and venv status depend on your runtime):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>Python version: 3.12.x</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>Inside virtual env: True</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>Parsed requirements: {'pandas': '==2.2.0', 'numpy': '&gt;=1.26', 'scipy': ''}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Key mechanics in the parser loop:</p>
+<ul>
+<li><strong>Operator preservation (<code>op + ver.strip()</code>):</strong> Calling <code>line.split(op, 1)</code> consumes <code>op</code>, so concatenating <code>op</code> back keeps <code>"==2.2.0"</code> distinct from <code>"&gt;=2.2.0"</code>.</li>
+<li><strong><code>for ... else:</code> idiom:</strong> Python runs the <code>else:</code> block <em>only</em> if the <code>for op</code> loop finishes without hitting <code>break</code>—catching bare package names like <code>"scipy"</code> cleanly.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch14-src-env" class="level3" data-number="14.3.4">
+<h3 data-number="14.3.4" class="anchored" data-anchor-id="sec-ch14-src-env"><span class="header-section-number">14.3.4</span> Standard <code>src/</code> Package Layout &amp; <code>.env</code> Configuration</h3>
+<p>A minimal, production-ready scientific package contains <code>pyproject.toml</code>, <code>src/&lt;pkg&gt;/__init__.py</code>, and <code>tests/</code>, while keeping local tokens in a gitignored <code>.env</code> file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb6-5"><a href="#cb6-5" aria-label="5"></a>    root <span class="op">=</span> Path(tmp)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-label="6"></a>    (root <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"mch_tools"</span>).mkdir(parents<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-label="7"></a>    (root <span class="op">/</span> <span class="st">"tests"</span>).mkdir()</span>
+<span id="cb6-8"><a href="#cb6-8" aria-label="8"></a>    (root <span class="op">/</span> <span class="st">"pyproject.toml"</span>).write_text(</span>
+<span id="cb6-9"><a href="#cb6-9" aria-label="9"></a>        <span class="st">'[project]</span><span class="ch">\n</span><span class="st">name = "mch_tools"</span><span class="ch">\n</span><span class="st">version = "0.1.0"</span><span class="ch">\n</span><span class="st">'</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-label="10"></a>        encoding<span class="op">=</span><span class="st">"utf-8"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-label="11"></a>    )</span>
+<span id="cb6-12"><a href="#cb6-12" aria-label="12"></a>    (root <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"mch_tools"</span> <span class="op">/</span> <span class="st">"__init__.py"</span>).write_text(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-label="13"></a>        <span class="st">'__version__ = "0.1.0"</span><span class="ch">\n</span><span class="st">'</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-label="14"></a>    )</span>
+<span id="cb6-15"><a href="#cb6-15" aria-label="15"></a>    env_path <span class="op">=</span> root <span class="op">/</span> <span class="st">".env"</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-label="16"></a>    env_path.write_text(</span>
+<span id="cb6-17"><a href="#cb6-17" aria-label="17"></a>        <span class="st">'# Local secrets (never commit to Git!)</span><span class="ch">\n</span><span class="st">'</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-label="18"></a>        <span class="st">'STUDY_ID="MCH-BD-2026"</span><span class="ch">\n</span><span class="st">'</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-label="19"></a>        <span class="st">"API_TOKEN='demo-key-99'</span><span class="ch">\n</span><span class="st">"</span>,</span>
+<span id="cb6-20"><a href="#cb6-20" aria-label="20"></a>        encoding<span class="op">=</span><span class="st">"utf-8"</span>,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-label="21"></a>    )</span>
+<span id="cb6-22"><a href="#cb6-22" aria-label="22"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-label="23"></a>    has_pyp <span class="op">=</span> (root <span class="op">/</span> <span class="st">"pyproject.toml"</span>).is_file()</span>
+<span id="cb6-24"><a href="#cb6-24" aria-label="24"></a>    has_init <span class="op">=</span> (root <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"mch_tools"</span> <span class="op">/</span> <span class="st">"__init__.py"</span>).is_file()</span>
+<span id="cb6-25"><a href="#cb6-25" aria-label="25"></a>    has_tests <span class="op">=</span> (root <span class="op">/</span> <span class="st">"tests"</span>).is_dir()</span>
+<span id="cb6-26"><a href="#cb6-26" aria-label="26"></a>    <span class="bu">print</span>(<span class="st">"Layout valid:"</span>, has_pyp <span class="kw">and</span> has_init <span class="kw">and</span> has_tests)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-label="27"></a></span>
+<span id="cb6-28"><a href="#cb6-28" aria-label="28"></a>    env_vars <span class="op">=</span> {}</span>
+<span id="cb6-29"><a href="#cb6-29" aria-label="29"></a>    <span class="cf">for</span> raw <span class="kw">in</span> env_path.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>).splitlines():</span>
+<span id="cb6-30"><a href="#cb6-30" aria-label="30"></a>        line <span class="op">=</span> raw.strip()</span>
+<span id="cb6-31"><a href="#cb6-31" aria-label="31"></a>        <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb6-32"><a href="#cb6-32" aria-label="32"></a>            <span class="cf">continue</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-label="33"></a>        key, val <span class="op">=</span> line.split(<span class="st">"="</span>, <span class="dv">1</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-label="34"></a>        val <span class="op">=</span> val.strip()</span>
+<span id="cb6-35"><a href="#cb6-35" aria-label="35"></a>        <span class="cf">if</span> <span class="bu">len</span>(val) <span class="op">&gt;=</span> <span class="dv">2</span> <span class="kw">and</span> val[<span class="dv">0</span>] <span class="op">==</span> val[<span class="op">-</span><span class="dv">1</span>] <span class="kw">and</span> val[<span class="dv">0</span>] <span class="kw">in</span> (<span class="st">'"'</span>, <span class="st">"'"</span>):</span>
+<span id="cb6-36"><a href="#cb6-36" aria-label="36"></a>            val <span class="op">=</span> val[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb6-37"><a href="#cb6-37" aria-label="37"></a>        env_vars[key.strip()] <span class="op">=</span> val</span>
+<span id="cb6-38"><a href="#cb6-38" aria-label="38"></a>    <span class="bu">print</span>(<span class="st">"Loaded .env keys:"</span>, env_vars)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>Layout valid: True</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>Loaded .env keys: {'STUDY_ID': 'MCH-BD-2026', 'API_TOKEN': 'demo-key-99'}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Why <code>split('=', 1)</code> Beats <code>split('=')</code> for <code>.env</code> Files
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>API tokens, base64 keys, and query URLs frequently contain <code>=</code> characters inside the value (for example, <code>QUERY_URL="https://api.clinic.org/v1?site=dhaka"</code>). Passing <code>maxsplit=1</code> via <code>line.split("=", 1)</code> splits <strong>only on the first <code>=</code></strong>, keeping the value completely intact.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch14-argparse" class="level3" data-number="14.3.5">
+<h3 data-number="14.3.5" class="anchored" data-anchor-id="sec-ch14-argparse"><span class="header-section-number">14.3.5</span> Reproducible CLI Tools with <code>argparse.parse_args([...])</code></h3>
+<p>Python’s standard-library <code>argparse</code> module validates required flags, converts strings directly to <code>float</code> or <code>int</code>, handles boolean switches (<code>action="store_true"</code>), and generates <code>--help</code> documentation automatically. Passing an explicit list into <code>parser.parse_args([...])</code> lets you test your CLI inside notebooks and <code>pytest</code> without touching <code>sys.argv</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a><span class="im">import</span> argparse</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>parser <span class="op">=</span> argparse.ArgumentParser(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a>    description<span class="op">=</span><span class="st">"Screen a cohort CSV for maternal anemia."</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-label="6"></a>parser.add_argument(<span class="st">"--input"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">str</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-label="7"></a>parser.add_argument(<span class="st">"--threshold"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, default<span class="op">=</span><span class="fl">11.0</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-label="8"></a>parser.add_argument(<span class="st">"--verbose"</span>, action<span class="op">=</span><span class="st">"store_true"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-label="9"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-label="10"></a>args <span class="op">=</span> parser.parse_args(</span>
+<span id="cb8-11"><a href="#cb8-11" aria-label="11"></a>    [<span class="st">"--input"</span>, <span class="st">"dhaka_mch.csv"</span>, <span class="st">"--threshold"</span>, <span class="st">"10.5"</span>, <span class="st">"--verbose"</span>]</span>
+<span id="cb8-12"><a href="#cb8-12" aria-label="12"></a>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"Input file:"</span>, args.<span class="bu">input</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"Cutoff (g/dL):"</span>, args.threshold, <span class="bu">type</span>(args.threshold).<span class="va">__name__</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"Verbose mode:"</span>, args.verbose)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>Input file: dhaka_mch.csv</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>Cutoff (g/dL): 10.5 float</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>Verbose mode: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch14-errors" class="level3" data-number="14.3.6">
+<h3 data-number="14.3.6" class="anchored" data-anchor-id="sec-ch14-errors"><span class="header-section-number">14.3.6</span> Break It On Purpose! (Packaging, CLI &amp; <code>.env</code> Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — ModuleNotFoundError on Uninstalled Package
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a><span class="co"># Intentional Bug #1: ModuleNotFoundError — missing or uninstalled pkg</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a><span class="im">import</span> nonexistent_clinic_pkg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>ModuleNotFoundError: No module named 'nonexistent_clinic_pkg'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Python searched every directory in <code>sys.path</code> (standard library + active <code>.venv/site-packages</code>) and found no package with that name. In real projects, this almost always means either you forgot to activate <code>.venv</code> in VS Code or you haven’t run <code>pip install -e .</code> yet.<br>
+<strong>Fix:</strong> Select the <code>.venv</code> interpreter in VS Code, run <code>pip install -e .</code>, and confirm your import name uses underscores (<code>_</code>), not hyphens (<code>-</code>).</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — SystemExit from Missing Required argparse Flag
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a><span class="co"># Intentional Bug #2: SystemExit — missing required --input CLI flag</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a><span class="im">import</span> argparse</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>parser <span class="op">=</span> argparse.ArgumentParser(prog<span class="op">=</span><span class="st">"screen_cohort"</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-label="5"></a>parser.add_argument(<span class="st">"--input"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">str</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-label="6"></a>parser.parse_args([])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>usage: screen_cohort [-h] --input INPUT</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>screen_cohort: error: the following arguments are required: --input</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>SystemExit: 2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> When a required flag is omitted (or a <code>--threshold</code> receives non-numeric text), <code>argparse</code> prints a usage hint to <code>stderr</code> and raises <code>SystemExit(2)</code> to halt the script cleanly with a non-zero exit code.<br>
+<strong>Fix:</strong> Supply every required flag (<code>["--input", "cohort.csv"]</code>), and remember to pass an explicit <code>argv</code> list when testing CLI parsers inside Jupyter or Colab!</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError Unpacking Malformed .env Line
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a><span class="co"># Intentional Bug #3: ValueError — malformed .env line missing '='</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-label="5"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb14-6"><a href="#cb14-6" aria-label="6"></a>    bad_env <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">".env"</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-label="7"></a>    bad_env.write_text(<span class="st">"API_TOKEN_WITHOUT_EQUALS</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-label="8"></a>    <span class="cf">for</span> raw <span class="kw">in</span> bad_env.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>).splitlines():</span>
+<span id="cb14-9"><a href="#cb14-9" aria-label="9"></a>        key, value <span class="op">=</span> raw.split(<span class="st">"="</span>, <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>ValueError: not enough values to unpack (expected 2, got 1)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>raw.split("=", 1)</code> returned a 1-element list because the line lacked <code>=</code>, so tuple unpacking into <code>key, value</code> raised <code>ValueError</code>.<br>
+<strong>Fix:</strong> Always skip empty lines and <code>#</code> comments first, and validate <code>"=" in line</code> (or raise a clear diagnostic error with the offending line number) before unpacking.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch14-blueprint" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="sec-ch14-blueprint"><span class="header-section-number">14.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Before submitting supplementary code to a peer-reviewed journal, your lab runs an automated pre-submission gatekeeper. Write <code>check_package_readiness(root_dir, raw_pkg_name, req_path)</code> that normalizes a messy repository name (like <code>"Dhaka-Epi"</code>), verifies the three required <code>src/</code> layout artifacts (<code>pyproject.toml</code>, <code>src/&lt;pkg&gt;/__init__.py</code>, <code>tests/</code>), scans <code>requirements.txt</code> for any dependency missing an exact <code>==</code> pin, and returns a structured readiness report dictionary.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="14.4.1">
+<h3 data-number="14.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">14.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Input &amp; Output Contract:</strong>
+<ul>
+<li>Inputs: <code>root_dir</code> (<code>Path</code> or <code>str</code>), <code>raw_pkg_name</code> (<code>str</code>), <code>req_path</code> (<code>Path</code> or <code>str</code>).</li>
+<li>Output: <code>{"package": str, "layout_ok": bool, "unpinned": list[str], "ready": bool}</code>.</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Normalize <code>raw_pkg_name</code> (strip, lowercase, replace <code>-</code> and spaces with <code>_</code>, collapse repeated <code>_</code>, strip outer <code>_</code>) <em>before</em> constructing <code>root / "src" / pkg / "__init__.py"</code>.</li>
+<li>Ignore blank lines and <code>#</code> comments in <code>requirements.txt</code>.</li>
+<li>Sort <code>unpinned</code> alphabetically for deterministic reports.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Normalize <code>raw_pkg_name</code> into <code>pkg</code>.</li>
+<li>Check <code>.is_file()</code> for <code>pyproject.toml</code> and <code>src/&lt;pkg&gt;/__init__.py</code>, and <code>.is_dir()</code> for <code>tests</code>.</li>
+<li>Read <code>req_path</code>; for each non-comment line lacking <code>"=="</code>, split off any version operator (<code>&gt;</code>, <code>&lt;</code>, <code>~</code>, <code>=</code>) and collect the lowercased package name.</li>
+<li>Sort <code>unpinned</code>, set <code>ready = layout_ok and len(unpinned) == 0</code>, and return the report dict.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li>For <code>"Dhaka-Epi"</code> with valid <code>src/dhaka_epi/__init__.py</code> and <code>requirements.txt</code> containing <code>pandas==2.2.0</code> + <code>numpy&gt;=1.26</code>: <code>package="dhaka_epi"</code>, <code>layout_ok=True</code>, <code>unpinned=["numpy"]</code>, <code>ready=False</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="14.4.2">
+<h3 data-number="14.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">14.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a><span class="im">import</span> re</span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-label="5"></a><span class="kw">def</span> check_package_readiness(root_dir, raw_pkg_name, req_path):</span>
+<span id="cb16-6"><a href="#cb16-6" aria-label="6"></a>    <span class="co">"""Normalize name, check src/ layout, and flag unpinned deps."""</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-label="7"></a>    cleaned <span class="op">=</span> raw_pkg_name.strip().lower()</span>
+<span id="cb16-8"><a href="#cb16-8" aria-label="8"></a>    cleaned <span class="op">=</span> cleaned.replace(<span class="st">"-"</span>, <span class="st">"_"</span>).replace(<span class="st">" "</span>, <span class="st">"_"</span>)</span>
+<span id="cb16-9"><a href="#cb16-9" aria-label="9"></a>    pkg <span class="op">=</span> re.sub(<span class="vs">r"_</span><span class="op">+</span><span class="vs">"</span>, <span class="st">"_"</span>, cleaned).strip(<span class="st">"_"</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-label="10"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-label="11"></a>    root <span class="op">=</span> Path(root_dir)</span>
+<span id="cb16-12"><a href="#cb16-12" aria-label="12"></a>    layout_ok <span class="op">=</span> (</span>
+<span id="cb16-13"><a href="#cb16-13" aria-label="13"></a>        (root <span class="op">/</span> <span class="st">"pyproject.toml"</span>).is_file()</span>
+<span id="cb16-14"><a href="#cb16-14" aria-label="14"></a>        <span class="kw">and</span> (root <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> pkg <span class="op">/</span> <span class="st">"__init__.py"</span>).is_file()</span>
+<span id="cb16-15"><a href="#cb16-15" aria-label="15"></a>        <span class="kw">and</span> (root <span class="op">/</span> <span class="st">"tests"</span>).is_dir()</span>
+<span id="cb16-16"><a href="#cb16-16" aria-label="16"></a>    )</span>
+<span id="cb16-17"><a href="#cb16-17" aria-label="17"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-label="18"></a>    unpinned <span class="op">=</span> []</span>
+<span id="cb16-19"><a href="#cb16-19" aria-label="19"></a>    <span class="cf">for</span> raw <span class="kw">in</span> Path(req_path).read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>).splitlines():</span>
+<span id="cb16-20"><a href="#cb16-20" aria-label="20"></a>        line <span class="op">=</span> raw.strip()</span>
+<span id="cb16-21"><a href="#cb16-21" aria-label="21"></a>        <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb16-22"><a href="#cb16-22" aria-label="22"></a>            <span class="cf">continue</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-label="23"></a>        <span class="cf">if</span> <span class="st">"=="</span> <span class="kw">not</span> <span class="kw">in</span> line:</span>
+<span id="cb16-24"><a href="#cb16-24" aria-label="24"></a>            name <span class="op">=</span> re.split(<span class="vs">r"</span><span class="pp">[&gt;&lt;~=]</span><span class="vs">"</span>, line, maxsplit<span class="op">=</span><span class="dv">1</span>)[<span class="dv">0</span>]</span>
+<span id="cb16-25"><a href="#cb16-25" aria-label="25"></a>            unpinned.append(name.strip().lower())</span>
+<span id="cb16-26"><a href="#cb16-26" aria-label="26"></a></span>
+<span id="cb16-27"><a href="#cb16-27" aria-label="27"></a>    unpinned.sort()</span>
+<span id="cb16-28"><a href="#cb16-28" aria-label="28"></a>    <span class="cf">return</span> {</span>
+<span id="cb16-29"><a href="#cb16-29" aria-label="29"></a>        <span class="st">"package"</span>: pkg,</span>
+<span id="cb16-30"><a href="#cb16-30" aria-label="30"></a>        <span class="st">"layout_ok"</span>: layout_ok,</span>
+<span id="cb16-31"><a href="#cb16-31" aria-label="31"></a>        <span class="st">"unpinned"</span>: unpinned,</span>
+<span id="cb16-32"><a href="#cb16-32" aria-label="32"></a>        <span class="st">"ready"</span>: layout_ok <span class="kw">and</span> <span class="bu">len</span>(unpinned) <span class="op">==</span> <span class="dv">0</span>,</span>
+<span id="cb16-33"><a href="#cb16-33" aria-label="33"></a>    }</span>
+<span id="cb16-34"><a href="#cb16-34" aria-label="34"></a></span>
+<span id="cb16-35"><a href="#cb16-35" aria-label="35"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb16-36"><a href="#cb16-36" aria-label="36"></a>    proj <span class="op">=</span> Path(tmp)</span>
+<span id="cb16-37"><a href="#cb16-37" aria-label="37"></a>    (proj <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"dhaka_epi"</span>).mkdir(parents<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb16-38"><a href="#cb16-38" aria-label="38"></a>    (proj <span class="op">/</span> <span class="st">"tests"</span>).mkdir()</span>
+<span id="cb16-39"><a href="#cb16-39" aria-label="39"></a>    (proj <span class="op">/</span> <span class="st">"pyproject.toml"</span>).write_text(</span>
+<span id="cb16-40"><a href="#cb16-40" aria-label="40"></a>        <span class="st">'[project]</span><span class="ch">\n</span><span class="st">name = "dhaka_epi"</span><span class="ch">\n</span><span class="st">'</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span></span>
+<span id="cb16-41"><a href="#cb16-41" aria-label="41"></a>    )</span>
+<span id="cb16-42"><a href="#cb16-42" aria-label="42"></a>    (proj <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"dhaka_epi"</span> <span class="op">/</span> <span class="st">"__init__.py"</span>).write_text(</span>
+<span id="cb16-43"><a href="#cb16-43" aria-label="43"></a>        <span class="st">'__version__ = "0.1.0"</span><span class="ch">\n</span><span class="st">'</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span></span>
+<span id="cb16-44"><a href="#cb16-44" aria-label="44"></a>    )</span>
+<span id="cb16-45"><a href="#cb16-45" aria-label="45"></a>    req <span class="op">=</span> proj <span class="op">/</span> <span class="st">"requirements.txt"</span></span>
+<span id="cb16-46"><a href="#cb16-46" aria-label="46"></a>    req.write_text(<span class="st">"pandas==2.2.0</span><span class="ch">\n</span><span class="st">numpy&gt;=1.26</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb16-47"><a href="#cb16-47" aria-label="47"></a>    report <span class="op">=</span> check_package_readiness(proj, <span class="st">"Dhaka-Epi"</span>, req)</span>
+<span id="cb16-48"><a href="#cb16-48" aria-label="48"></a>    <span class="bu">print</span>(<span class="st">"Readiness audit:"</span>, report)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>Readiness audit: {'package': 'dhaka_epi', 'layout_ok': True,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>'unpinned': ['numpy'], 'ready': False}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch14-todos" class="level2" data-number="14.5">
+<h2 data-number="14.5" class="anchored" data-anchor-id="sec-ch14-todos"><span class="header-section-number">14.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six software-engineering helpers below. Every file check executes inside an isolated <code>tempfile.TemporaryDirectory()</code>:</p>
+<ul>
+<li><strong>To-Do 14.1 (Warm-Up — <code>parse_requirements_file(req_path)</code>):</strong> Read a UTF-8 <code>requirements.txt</code>, ignore blank lines and <code>#</code> comments, split on <code>==</code>, <code>&gt;=</code>, <code>&lt;=</code>, or <code>~=</code> (or bare package name), and return a dictionary mapping <code>pkg_lower -&gt; full_spec_or_empty_str</code>.</li>
+<li><strong>To-Do 14.2 (Dependency Pinning — <code>find_unpinned_packages(req_dict)</code>):</strong> Return a sorted list of package names whose version specifier does <strong>not</strong> start with <code>"=="</code>.</li>
+<li><strong>To-Do 14.3 (CLI Design — <code>build_cli_parser()</code>):</strong> Build and return an <code>argparse.ArgumentParser</code> supporting <code>--input</code> (required <code>str</code>), <code>--threshold</code> (<code>float</code>, default <code>11.0</code>), and <code>--verbose</code> (<code>action="store_true"</code>).</li>
+<li><strong>To-Do 14.4 (Package Hygiene — <code>validate_src_package_layout(root_dir, pkg_name)</code>):</strong> Check for <code>pyproject.toml</code>, <code>src/&lt;pkg_name&gt;/__init__.py</code>, and <code>tests/</code>, returning <code>{"has_pyproject", "has_init", "has_tests", "is_valid"}</code>.</li>
+<li><strong>To-Do 14.5 (Import Naming — <code>normalize_package_name(raw_name)</code>):</strong> Strip, lowercase, replace <code>-</code> and spaces with <code>_</code>, collapse repeated <code>_</code>, and strip leading/trailing <code>_</code>.</li>
+<li><strong>To-Do 14.6 (Config Hygiene — <code>load_env_file(env_path)</code>):</strong> Parse <code>KEY=VALUE</code> lines ignoring blank lines and <code>#</code> comments, strip matching surrounding single or double quotes from values, and return the dictionary.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch14-test" class="level2" data-number="14.6">
+<h2 data-number="14.6" class="anchored" data-anchor-id="sec-ch14-test"><span class="header-section-number">14.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Test your understanding on paper before consulting Stage 8:</p>
+<ol type="1">
+<li><strong>Module Entry Guard:</strong> A file <code>metrics.py</code> contains <code>print("Loading...")</code> at top level and <code>print("Running CLI...")</code> inside <code>if __name__ == "__main__":</code>. What prints when another script runs <code>import metrics</code>?</li>
+<li><strong>Virtual Environment Detection:</strong> How does Python distinguish whether it is running inside a <code>.venv</code> versus the global system interpreter using the <code>sys</code> module?</li>
+<li><strong>Why Pin with <code>==</code>?</strong> Why can <code>numpy&gt;=1.26</code> in a manuscript’s <code>requirements.txt</code> fail reproducibility two years later, whereas <code>numpy==1.26.4</code> locks the environment?</li>
+<li><strong>Editable Install (<code>-e</code>):</strong> After running <code>pip install -e .</code> on a <code>src/</code>-layout package, do you need to re-run <code>pip install</code> every time you edit a function in <code>src/mch_tools/stats.py</code>?</li>
+<li><strong>Why <code>src/</code> Beats Flat Layout:</strong> What subtle testing bug does placing your package inside <code>src/&lt;pkg&gt;/</code> prevent compared to placing <code>&lt;pkg&gt;/</code> directly in the repository root?</li>
+<li><strong>Notebook <code>argparse</code> Crash:</strong> Why does calling <code>parser.parse_args()</code> <em>with no arguments</em> inside a Jupyter or Colab cell crash with <code>SystemExit: 2</code>? How do you make it testable?</li>
+<li><strong><code>action="store_true"</code> Default:</strong> In <code>parser.add_argument("--verbose", action="store_true")</code>, what value does <code>args.verbose</code> hold when <code>--verbose</code> is <em>omitted</em> from <code>argv</code>?</li>
+<li><strong>PyPI vs.&nbsp;Python Identifier:</strong> Why is <code>sharukh-tutor</code> valid in <code>pip install sharukh-tutor</code> and <code>pyproject.toml</code>, yet <code>import sharukh-tutor</code> raises <code>SyntaxError</code>?</li>
+<li><strong><code>.env</code> Splitting Trap:</strong> Given the <code>.env</code> line <code>DB_URL="postgres://host/db?sslmode=require"</code>, what happens if you parse it with <code>key, val = line.split("=")</code> instead of <code>line.split("=", 1)</code>?</li>
+<li><strong>VS Code Breakpoint Advantage:</strong> During debugging in VS Code, what is the difference between <strong>Step Over (<code>F10</code>)</strong> and <strong>Step Into (<code>F11</code>)</strong> when paused on a function call like <code>clean_vitals(row)</code>?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch14-exam" class="level2" data-number="14.7">
+<h2 data-number="14.7" class="anchored" data-anchor-id="sec-ch14-exam"><span class="header-section-number">14.7</span> Stage 7 — Chapter 14 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb</code>, implement all three engineering-workflow functions, and run <code>tutor.check_exam("ch14", exam_submissions)</code> to earn your Chapter 14 score out of 100 points.</p>
+<section id="exam-task-14.1-30-points-dependency-reproducibility-auditor" class="level3" data-number="14.7.1">
+<h3 data-number="14.7.1" class="anchored" data-anchor-id="exam-task-14.1-30-points-dependency-reproducibility-auditor"><span class="header-section-number">14.7.1</span> Exam Task 14.1 (30 Points): Dependency Reproducibility Auditor</h3>
+<p>Write <code>audit_dependencies(req_path)</code> to inspect a <code>requirements.txt</code> file:</p>
+<ul>
+<li>Parse <code>req_path</code> (ignoring blanks and <code>#</code> comments, lowercasing package names, splitting on <code>==</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>~=</code> or bare names).</li>
+<li>Return <code>{"total": int, "pinned_count": int, "unpinned": sorted_list, "reproducible": bool}</code>, where <code>"reproducible"</code> is <code>True</code> if and only if <code>len(unpinned) == 0</code>.</li>
+</ul>
+</section>
+<section id="exam-task-14.2-35-points-research-package-scaffolder-src-layout" class="level3" data-number="14.7.2">
+<h3 data-number="14.7.2" class="anchored" data-anchor-id="exam-task-14.2-35-points-research-package-scaffolder-src-layout"><span class="header-section-number">14.7.2</span> Exam Task 14.2 (35 Points): Research Package Scaffolder (<code>src/</code> Layout)</h3>
+<p>Write <code>scaffold_research_package(base_dir, pkg_name)</code> to generate a starter repository inside <code>base_dir</code>:</p>
+<ul>
+<li>Normalize <code>pkg_name</code> (strip, lowercase, replace <code>-</code> and spaces with <code>_</code>, collapse repeated <code>_</code>, strip leading/trailing <code>_</code>).</li>
+<li>Create <code>pyproject.toml</code>, <code>README.md</code>, <code>src/&lt;pkg&gt;/__init__.py</code>, and <code>tests/test_smoke.py</code> inside <code>base_dir</code>, each containing non-empty UTF-8 starter text.</li>
+<li>Return the <strong>sorted list</strong> of created relative <strong>POSIX</strong> paths (using forward slashes <code>/</code>).</li>
+</ul>
+</section>
+<section id="exam-task-14.3-35-points-clinical-vitals-triage-cli-runner" class="level3" data-number="14.7.3">
+<h3 data-number="14.7.3" class="anchored" data-anchor-id="exam-task-14.3-35-points-clinical-vitals-triage-cli-runner"><span class="header-section-number">14.7.3</span> Exam Task 14.3 (35 Points): Clinical Vitals Triage CLI Runner</h3>
+<p>Write <code>run_triage_cli(argv)</code> to power a reproducible command-line triage tool:</p>
+<ul>
+<li>Parse <code>argv</code> via <code>argparse.ArgumentParser</code> with required flags <code>--temp</code> (<code>float</code>), <code>--hb</code> (<code>float</code>), and <code>--sbp</code> (<code>int</code>).</li>
+<li>Classify <code>priority</code> as <code>"Urgent"</code> if <code>temp &gt;= 39.5</code> or <code>sbp &gt;= 170</code> or <code>hb &lt; 8.5</code>; <code>"Moderate"</code> if <code>temp &gt;= 38.0</code> or <code>sbp &gt;= 140</code> or <code>hb &lt; 11.0</code>; else <code>"Routine"</code>.</li>
+<li>Return <code>{"temp_c": args.temp, "hb_g_dl": args.hb, "sbp_mmhg": args.sbp, "priority": priority}</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch14-solutions" class="level2" data-number="14.8">
+<h2 data-number="14.8" class="anchored" data-anchor-id="sec-ch14-solutions"><span class="header-section-number">14.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="14.8.1">
+<h3 data-number="14.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">14.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li>Only <strong><code>Loading...</code></strong> prints. During <code>import metrics</code>, Python sets <code>__name__ == "metrics"</code>, so the <code>if __name__ == "__main__":</code> block is skipped.</li>
+<li>Compare <code>sys.prefix != sys.base_prefix</code>. Inside an active virtual environment, <code>sys.prefix</code> points to <code>.venv</code> while <code>sys.base_prefix</code> points to the base Python installation.</li>
+<li><code>numpy&gt;=1.26</code> allows future major releases (such as <code>2.x</code>) with breaking API or floating-point changes; <code>numpy==1.26.4</code> pins the exact release used for your paper.</li>
+<li><strong>No.</strong> Editable mode (<code>-e</code>) links <code>.venv</code> directly to your live <code>src/</code> directory, so saved code edits are reflected immediately on the next import or test run.</li>
+<li>In a flat layout, Python can import the uninstalled local directory directly, masking missing files or broken <code>pyproject.toml</code> metadata that would fail for external users. The <code>src/</code> layout forces tests to import the installed package.</li>
+<li>Without arguments, <code>parser.parse_args()</code> inspects <code>sys.argv[1:]</code>, which contains Jupyter’s internal kernel flags (like <code>-f kernel.json</code>) that your parser doesn’t recognize. Pass an explicit list <code>parser.parse_args(argv)</code> instead.</li>
+<li><strong><code>False</code></strong> (<code>action="store_true"</code> defaults to <code>False</code> when omitted and switches to <code>True</code> when present).</li>
+<li>Python parses <code>-</code> as the <strong>subtraction operator</strong> in <code>import</code> statements, so importable package directories must use underscores (<code>sharukh_tutor</code>).</li>
+<li><code>line.split("=")</code> produces <strong>3 parts</strong> (<code>"DB_URL"</code>, <code>'"postgres://host/db?sslmode'</code>, <code>'require"'</code>), raising <code>ValueError: too many values to unpack (expected 2)</code>. Using <code>line.split("=", 1)</code> splits only once.</li>
+<li><strong>Step Over (<code>F10</code>)</strong> executes <code>clean_vitals(row)</code> as a single step and pauses on the next line of the caller; <strong>Step Into (<code>F11</code>)</strong> jumps inside the body of <code>clean_vitals</code> so you can trace it line by line.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="14.8.2">
+<h3 data-number="14.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">14.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a><span class="im">import</span> argparse</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a><span class="im">import</span> re</span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-label="5"></a><span class="co"># To-Do 14.1</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-label="6"></a><span class="kw">def</span> parse_requirements_file(req_path):</span>
+<span id="cb18-7"><a href="#cb18-7" aria-label="7"></a>    <span class="co">"""Parse requirements.txt into dict of pkg_lower -&gt; spec_or_empty."""</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-label="8"></a>    reqs <span class="op">=</span> {}</span>
+<span id="cb18-9"><a href="#cb18-9" aria-label="9"></a>    <span class="cf">with</span> <span class="bu">open</span>(req_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb18-10"><a href="#cb18-10" aria-label="10"></a>        <span class="cf">for</span> raw <span class="kw">in</span> f:</span>
+<span id="cb18-11"><a href="#cb18-11" aria-label="11"></a>            line <span class="op">=</span> raw.strip()</span>
+<span id="cb18-12"><a href="#cb18-12" aria-label="12"></a>            <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb18-13"><a href="#cb18-13" aria-label="13"></a>                <span class="cf">continue</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-label="14"></a>            <span class="cf">for</span> op <span class="kw">in</span> (<span class="st">"=="</span>, <span class="st">"&gt;="</span>, <span class="st">"&lt;="</span>, <span class="st">"~="</span>):</span>
+<span id="cb18-15"><a href="#cb18-15" aria-label="15"></a>                <span class="cf">if</span> op <span class="kw">in</span> line:</span>
+<span id="cb18-16"><a href="#cb18-16" aria-label="16"></a>                    name, version <span class="op">=</span> line.split(op, <span class="dv">1</span>)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-label="17"></a>                    reqs[name.strip().lower()] <span class="op">=</span> op <span class="op">+</span> version.strip()</span>
+<span id="cb18-18"><a href="#cb18-18" aria-label="18"></a>                    <span class="cf">break</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-label="19"></a>            <span class="cf">else</span>:</span>
+<span id="cb18-20"><a href="#cb18-20" aria-label="20"></a>                reqs[line.lower()] <span class="op">=</span> <span class="st">""</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-label="21"></a>    <span class="cf">return</span> reqs</span>
+<span id="cb18-22"><a href="#cb18-22" aria-label="22"></a></span>
+<span id="cb18-23"><a href="#cb18-23" aria-label="23"></a><span class="co"># To-Do 14.2</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-label="24"></a><span class="kw">def</span> find_unpinned_packages(req_dict):</span>
+<span id="cb18-25"><a href="#cb18-25" aria-label="25"></a>    <span class="co">"""Return sorted list of package names not pinned with '=='."""</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-label="26"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(</span>
+<span id="cb18-27"><a href="#cb18-27" aria-label="27"></a>        pkg <span class="cf">for</span> pkg, spec <span class="kw">in</span> req_dict.items()</span>
+<span id="cb18-28"><a href="#cb18-28" aria-label="28"></a>        <span class="cf">if</span> <span class="kw">not</span> spec.startswith(<span class="st">"=="</span>)</span>
+<span id="cb18-29"><a href="#cb18-29" aria-label="29"></a>    )</span>
+<span id="cb18-30"><a href="#cb18-30" aria-label="30"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-label="31"></a><span class="co"># To-Do 14.3</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-label="32"></a><span class="kw">def</span> build_cli_parser():</span>
+<span id="cb18-33"><a href="#cb18-33" aria-label="33"></a>    <span class="co">"""Return an ArgumentParser with --input, --threshold, --verbose."""</span></span>
+<span id="cb18-34"><a href="#cb18-34" aria-label="34"></a>    parser <span class="op">=</span> argparse.ArgumentParser(</span>
+<span id="cb18-35"><a href="#cb18-35" aria-label="35"></a>        description<span class="op">=</span><span class="st">"Clinical cohort analysis CLI"</span></span>
+<span id="cb18-36"><a href="#cb18-36" aria-label="36"></a>    )</span>
+<span id="cb18-37"><a href="#cb18-37" aria-label="37"></a>    parser.add_argument(<span class="st">"--input"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">str</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb18-38"><a href="#cb18-38" aria-label="38"></a>    parser.add_argument(<span class="st">"--threshold"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, default<span class="op">=</span><span class="fl">11.0</span>)</span>
+<span id="cb18-39"><a href="#cb18-39" aria-label="39"></a>    parser.add_argument(<span class="st">"--verbose"</span>, action<span class="op">=</span><span class="st">"store_true"</span>)</span>
+<span id="cb18-40"><a href="#cb18-40" aria-label="40"></a>    <span class="cf">return</span> parser</span>
+<span id="cb18-41"><a href="#cb18-41" aria-label="41"></a></span>
+<span id="cb18-42"><a href="#cb18-42" aria-label="42"></a><span class="co"># To-Do 14.4</span></span>
+<span id="cb18-43"><a href="#cb18-43" aria-label="43"></a><span class="kw">def</span> validate_src_package_layout(root_dir, pkg_name):</span>
+<span id="cb18-44"><a href="#cb18-44" aria-label="44"></a>    <span class="co">"""Check pyproject.toml, src/&lt;pkg&gt;/__init__.py, and tests/ dir."""</span></span>
+<span id="cb18-45"><a href="#cb18-45" aria-label="45"></a>    root <span class="op">=</span> Path(root_dir)</span>
+<span id="cb18-46"><a href="#cb18-46" aria-label="46"></a>    has_pyproject <span class="op">=</span> (root <span class="op">/</span> <span class="st">"pyproject.toml"</span>).is_file()</span>
+<span id="cb18-47"><a href="#cb18-47" aria-label="47"></a>    has_init <span class="op">=</span> (root <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> pkg_name <span class="op">/</span> <span class="st">"__init__.py"</span>).is_file()</span>
+<span id="cb18-48"><a href="#cb18-48" aria-label="48"></a>    has_tests <span class="op">=</span> (root <span class="op">/</span> <span class="st">"tests"</span>).is_dir()</span>
+<span id="cb18-49"><a href="#cb18-49" aria-label="49"></a>    <span class="cf">return</span> {</span>
+<span id="cb18-50"><a href="#cb18-50" aria-label="50"></a>        <span class="st">"has_pyproject"</span>: has_pyproject,</span>
+<span id="cb18-51"><a href="#cb18-51" aria-label="51"></a>        <span class="st">"has_init"</span>: has_init,</span>
+<span id="cb18-52"><a href="#cb18-52" aria-label="52"></a>        <span class="st">"has_tests"</span>: has_tests,</span>
+<span id="cb18-53"><a href="#cb18-53" aria-label="53"></a>        <span class="st">"is_valid"</span>: has_pyproject <span class="kw">and</span> has_init <span class="kw">and</span> has_tests,</span>
+<span id="cb18-54"><a href="#cb18-54" aria-label="54"></a>    }</span>
+<span id="cb18-55"><a href="#cb18-55" aria-label="55"></a></span>
+<span id="cb18-56"><a href="#cb18-56" aria-label="56"></a><span class="co"># To-Do 14.5</span></span>
+<span id="cb18-57"><a href="#cb18-57" aria-label="57"></a><span class="kw">def</span> normalize_package_name(raw_name):</span>
+<span id="cb18-58"><a href="#cb18-58" aria-label="58"></a>    <span class="co">"""Normalize raw project name into snake_case package name."""</span></span>
+<span id="cb18-59"><a href="#cb18-59" aria-label="59"></a>    cleaned <span class="op">=</span> raw_name.strip().lower()</span>
+<span id="cb18-60"><a href="#cb18-60" aria-label="60"></a>    cleaned <span class="op">=</span> cleaned.replace(<span class="st">"-"</span>, <span class="st">"_"</span>).replace(<span class="st">" "</span>, <span class="st">"_"</span>)</span>
+<span id="cb18-61"><a href="#cb18-61" aria-label="61"></a>    cleaned <span class="op">=</span> re.sub(<span class="vs">r"_</span><span class="op">+</span><span class="vs">"</span>, <span class="st">"_"</span>, cleaned)</span>
+<span id="cb18-62"><a href="#cb18-62" aria-label="62"></a>    <span class="cf">return</span> cleaned.strip(<span class="st">"_"</span>)</span>
+<span id="cb18-63"><a href="#cb18-63" aria-label="63"></a></span>
+<span id="cb18-64"><a href="#cb18-64" aria-label="64"></a><span class="co"># To-Do 14.6</span></span>
+<span id="cb18-65"><a href="#cb18-65" aria-label="65"></a><span class="kw">def</span> load_env_file(env_path):</span>
+<span id="cb18-66"><a href="#cb18-66" aria-label="66"></a>    <span class="co">"""Parse KEY=VALUE pairs from .env ignoring comments and blanks."""</span></span>
+<span id="cb18-67"><a href="#cb18-67" aria-label="67"></a>    env <span class="op">=</span> {}</span>
+<span id="cb18-68"><a href="#cb18-68" aria-label="68"></a>    <span class="cf">with</span> <span class="bu">open</span>(env_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb18-69"><a href="#cb18-69" aria-label="69"></a>        <span class="cf">for</span> raw <span class="kw">in</span> f:</span>
+<span id="cb18-70"><a href="#cb18-70" aria-label="70"></a>            line <span class="op">=</span> raw.strip()</span>
+<span id="cb18-71"><a href="#cb18-71" aria-label="71"></a>            <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb18-72"><a href="#cb18-72" aria-label="72"></a>                <span class="cf">continue</span></span>
+<span id="cb18-73"><a href="#cb18-73" aria-label="73"></a>            key, val <span class="op">=</span> line.split(<span class="st">"="</span>, <span class="dv">1</span>)</span>
+<span id="cb18-74"><a href="#cb18-74" aria-label="74"></a>            key, val <span class="op">=</span> key.strip(), val.strip()</span>
+<span id="cb18-75"><a href="#cb18-75" aria-label="75"></a>            <span class="cf">if</span> <span class="bu">len</span>(val) <span class="op">&gt;=</span> <span class="dv">2</span> <span class="kw">and</span> val[<span class="dv">0</span>] <span class="op">==</span> val[<span class="op">-</span><span class="dv">1</span>]:</span>
+<span id="cb18-76"><a href="#cb18-76" aria-label="76"></a>                <span class="cf">if</span> val[<span class="dv">0</span>] <span class="kw">in</span> (<span class="st">'"'</span>, <span class="st">"'"</span>):</span>
+<span id="cb18-77"><a href="#cb18-77" aria-label="77"></a>                    val <span class="op">=</span> val[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb18-78"><a href="#cb18-78" aria-label="78"></a>            env[key] <span class="op">=</span> val</span>
+<span id="cb18-79"><a href="#cb18-79" aria-label="79"></a>    <span class="cf">return</span> env</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-14-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="14.8.3">
+<h3 data-number="14.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-14-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">14.8.3</span> C. Annotated Solutions — Chapter 14 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="im">import</span> argparse</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a><span class="im">import</span> re</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a><span class="co"># Exam Task 14.1 (30 pts)</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a><span class="kw">def</span> audit_dependencies(req_path):</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>    <span class="co">"""Audit requirements.txt and return reproducibility report."""</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>    reqs <span class="op">=</span> {}</span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>    <span class="cf">with</span> <span class="bu">open</span>(req_path, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a>        <span class="cf">for</span> raw <span class="kw">in</span> f:</span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a>            line <span class="op">=</span> raw.strip()</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a>            <span class="cf">if</span> <span class="kw">not</span> line <span class="kw">or</span> line.startswith(<span class="st">"#"</span>):</span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a>                <span class="cf">continue</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>            <span class="cf">for</span> op <span class="kw">in</span> (<span class="st">"=="</span>, <span class="st">"&gt;="</span>, <span class="st">"&lt;="</span>, <span class="st">"~="</span>):</span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>                <span class="cf">if</span> op <span class="kw">in</span> line:</span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>                    name, ver <span class="op">=</span> line.split(op, <span class="dv">1</span>)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>                    reqs[name.strip().lower()] <span class="op">=</span> op <span class="op">+</span> ver.strip()</span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>                    <span class="cf">break</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a>            <span class="cf">else</span>:</span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a>                reqs[line.lower()] <span class="op">=</span> <span class="st">""</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a>    unpinned <span class="op">=</span> <span class="bu">sorted</span>(</span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>        pkg <span class="cf">for</span> pkg, spec <span class="kw">in</span> reqs.items()</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a>        <span class="cf">if</span> <span class="kw">not</span> spec.startswith(<span class="st">"=="</span>)</span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a>    )</span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a>    total <span class="op">=</span> <span class="bu">len</span>(reqs)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a>    <span class="cf">return</span> {</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a>        <span class="st">"total"</span>: total,</span>
+<span id="cb19-29"><a href="#cb19-29" aria-label="29"></a>        <span class="st">"pinned_count"</span>: total <span class="op">-</span> <span class="bu">len</span>(unpinned),</span>
+<span id="cb19-30"><a href="#cb19-30" aria-label="30"></a>        <span class="st">"unpinned"</span>: unpinned,</span>
+<span id="cb19-31"><a href="#cb19-31" aria-label="31"></a>        <span class="st">"reproducible"</span>: <span class="bu">len</span>(unpinned) <span class="op">==</span> <span class="dv">0</span>,</span>
+<span id="cb19-32"><a href="#cb19-32" aria-label="32"></a>    }</span>
+<span id="cb19-33"><a href="#cb19-33" aria-label="33"></a></span>
+<span id="cb19-34"><a href="#cb19-34" aria-label="34"></a><span class="co"># Exam Task 14.2 (35 pts)</span></span>
+<span id="cb19-35"><a href="#cb19-35" aria-label="35"></a><span class="kw">def</span> scaffold_research_package(base_dir, pkg_name):</span>
+<span id="cb19-36"><a href="#cb19-36" aria-label="36"></a>    <span class="co">"""Create a src-layout research package and return POSIX paths."""</span></span>
+<span id="cb19-37"><a href="#cb19-37" aria-label="37"></a>    cleaned <span class="op">=</span> pkg_name.strip().lower()</span>
+<span id="cb19-38"><a href="#cb19-38" aria-label="38"></a>    cleaned <span class="op">=</span> cleaned.replace(<span class="st">"-"</span>, <span class="st">"_"</span>).replace(<span class="st">" "</span>, <span class="st">"_"</span>)</span>
+<span id="cb19-39"><a href="#cb19-39" aria-label="39"></a>    pkg <span class="op">=</span> re.sub(<span class="vs">r"_</span><span class="op">+</span><span class="vs">"</span>, <span class="st">"_"</span>, cleaned).strip(<span class="st">"_"</span>)</span>
+<span id="cb19-40"><a href="#cb19-40" aria-label="40"></a></span>
+<span id="cb19-41"><a href="#cb19-41" aria-label="41"></a>    root <span class="op">=</span> Path(base_dir)</span>
+<span id="cb19-42"><a href="#cb19-42" aria-label="42"></a>    files <span class="op">=</span> {</span>
+<span id="cb19-43"><a href="#cb19-43" aria-label="43"></a>        <span class="st">"pyproject.toml"</span>: (</span>
+<span id="cb19-44"><a href="#cb19-44" aria-label="44"></a>            <span class="ss">f'[project]</span><span class="ch">\n</span><span class="ss">name = "</span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ss">"</span><span class="ch">\n</span><span class="ss">version = "0.1.0"</span><span class="ch">\n</span><span class="ss">'</span></span>
+<span id="cb19-45"><a href="#cb19-45" aria-label="45"></a>        ),</span>
+<span id="cb19-46"><a href="#cb19-46" aria-label="46"></a>        <span class="st">"README.md"</span>: <span class="ss">f"# </span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">Reproducible research package.</span><span class="ch">\n</span><span class="ss">"</span>,</span>
+<span id="cb19-47"><a href="#cb19-47" aria-label="47"></a>        <span class="ss">f"src/</span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ss">/__init__.py"</span>: (</span>
+<span id="cb19-48"><a href="#cb19-48" aria-label="48"></a>            <span class="ss">f'"""Core module for </span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ss">."""</span><span class="ch">\n</span><span class="ss">__version__ = "0.1.0"</span><span class="ch">\n</span><span class="ss">'</span></span>
+<span id="cb19-49"><a href="#cb19-49" aria-label="49"></a>        ),</span>
+<span id="cb19-50"><a href="#cb19-50" aria-label="50"></a>        <span class="st">"tests/test_smoke.py"</span>: (</span>
+<span id="cb19-51"><a href="#cb19-51" aria-label="51"></a>            <span class="ss">f"import </span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ch">\n\n</span><span class="ss">"</span></span>
+<span id="cb19-52"><a href="#cb19-52" aria-label="52"></a>            <span class="ss">f"def test_version():</span><span class="ch">\n</span><span class="ss">"</span></span>
+<span id="cb19-53"><a href="#cb19-53" aria-label="53"></a>            <span class="ss">f"    assert hasattr(</span><span class="sc">{</span>pkg<span class="sc">}</span><span class="ss">, '__version__')</span><span class="ch">\n</span><span class="ss">"</span></span>
+<span id="cb19-54"><a href="#cb19-54" aria-label="54"></a>        ),</span>
+<span id="cb19-55"><a href="#cb19-55" aria-label="55"></a>    }</span>
+<span id="cb19-56"><a href="#cb19-56" aria-label="56"></a>    created <span class="op">=</span> []</span>
+<span id="cb19-57"><a href="#cb19-57" aria-label="57"></a>    <span class="cf">for</span> rel_path, content <span class="kw">in</span> files.items():</span>
+<span id="cb19-58"><a href="#cb19-58" aria-label="58"></a>        target <span class="op">=</span> root <span class="op">/</span> rel_path</span>
+<span id="cb19-59"><a href="#cb19-59" aria-label="59"></a>        target.parent.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-60"><a href="#cb19-60" aria-label="60"></a>        target.write_text(content, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb19-61"><a href="#cb19-61" aria-label="61"></a>        created.append(target.relative_to(root).as_posix())</span>
+<span id="cb19-62"><a href="#cb19-62" aria-label="62"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(created)</span>
+<span id="cb19-63"><a href="#cb19-63" aria-label="63"></a></span>
+<span id="cb19-64"><a href="#cb19-64" aria-label="64"></a><span class="co"># Exam Task 14.3 (35 pts)</span></span>
+<span id="cb19-65"><a href="#cb19-65" aria-label="65"></a><span class="kw">def</span> run_triage_cli(argv):</span>
+<span id="cb19-66"><a href="#cb19-66" aria-label="66"></a>    <span class="co">"""Parse clinical vitals from argv and return triage dict."""</span></span>
+<span id="cb19-67"><a href="#cb19-67" aria-label="67"></a>    parser <span class="op">=</span> argparse.ArgumentParser(</span>
+<span id="cb19-68"><a href="#cb19-68" aria-label="68"></a>        description<span class="op">=</span><span class="st">"Clinical vitals triage CLI"</span></span>
+<span id="cb19-69"><a href="#cb19-69" aria-label="69"></a>    )</span>
+<span id="cb19-70"><a href="#cb19-70" aria-label="70"></a>    parser.add_argument(<span class="st">"--temp"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-71"><a href="#cb19-71" aria-label="71"></a>    parser.add_argument(<span class="st">"--hb"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">float</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-72"><a href="#cb19-72" aria-label="72"></a>    parser.add_argument(<span class="st">"--sbp"</span>, <span class="bu">type</span><span class="op">=</span><span class="bu">int</span>, required<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-73"><a href="#cb19-73" aria-label="73"></a>    args <span class="op">=</span> parser.parse_args(argv)</span>
+<span id="cb19-74"><a href="#cb19-74" aria-label="74"></a></span>
+<span id="cb19-75"><a href="#cb19-75" aria-label="75"></a>    <span class="cf">if</span> args.temp <span class="op">&gt;=</span> <span class="fl">39.5</span> <span class="kw">or</span> args.sbp <span class="op">&gt;=</span> <span class="dv">170</span> <span class="kw">or</span> args.hb <span class="op">&lt;</span> <span class="fl">8.5</span>:</span>
+<span id="cb19-76"><a href="#cb19-76" aria-label="76"></a>        priority <span class="op">=</span> <span class="st">"Urgent"</span></span>
+<span id="cb19-77"><a href="#cb19-77" aria-label="77"></a>    <span class="cf">elif</span> args.temp <span class="op">&gt;=</span> <span class="fl">38.0</span> <span class="kw">or</span> args.sbp <span class="op">&gt;=</span> <span class="dv">140</span> <span class="kw">or</span> args.hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb19-78"><a href="#cb19-78" aria-label="78"></a>        priority <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb19-79"><a href="#cb19-79" aria-label="79"></a>    <span class="cf">else</span>:</span>
+<span id="cb19-80"><a href="#cb19-80" aria-label="80"></a>        priority <span class="op">=</span> <span class="st">"Routine"</span></span>
+<span id="cb19-81"><a href="#cb19-81" aria-label="81"></a></span>
+<span id="cb19-82"><a href="#cb19-82" aria-label="82"></a>    <span class="cf">return</span> {</span>
+<span id="cb19-83"><a href="#cb19-83" aria-label="83"></a>        <span class="st">"temp_c"</span>: args.temp,</span>
+<span id="cb19-84"><a href="#cb19-84" aria-label="84"></a>        <span class="st">"hb_g_dl"</span>: args.hb,</span>
+<span id="cb19-85"><a href="#cb19-85" aria-label="85"></a>        <span class="st">"sbp_mmhg"</span>: args.sbp,</span>
+<span id="cb19-86"><a href="#cb19-86" aria-label="86"></a>        <span class="st">"priority"</span>: priority,</span>
+<span id="cb19-87"><a href="#cb19-87" aria-label="87"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-14-failure-modes" class="level3" data-number="14.8.4">
+<h3 data-number="14.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-14-failure-modes"><span class="header-section-number">14.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 14 Failure Modes</h3>
+<ol type="1">
+<li><strong>Wrong Interpreter Selected in VS Code (<code>ModuleNotFoundError</code>):</strong> Installing packages into <code>.venv</code> while VS Code’s terminal or notebook kernel still points to the global Python triggers immediate <code>ModuleNotFoundError</code>. Always check the bottom-right Python version badge in VS Code and confirm <code>sys.prefix != sys.base_prefix</code>.</li>
+<li><strong>Calling <code>parser.parse_args()</code> Without <code>argv</code> Inside Functions:</strong> Hardcoding <code>parser.parse_args()</code> inside library helpers reads <code>sys.argv</code> globally, breaking both Jupyter notebooks and <code>pytest</code> suites. Design CLI entrypoints around <code>def main(argv=None): args = parser.parse_args(argv)</code> so tests pass explicit lists cleanly.</li>
+<li><strong>Leaking <code>.env</code> Files or Leaving Unpinned Dependencies:</strong> Committing <code>.env</code> exposes credentials permanently in Git history, while leaving <code>pandas</code> or <code>numpy&gt;=1.26</code> unpinned invites silent breaking upgrades. Pair <code>.gitignore</code> (with <code>.env</code> and <code>.venv/</code>) with pinned lockfiles and an automated <code>audit_dependencies()</code> check before every release.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Engineering Foundations Locked In!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You now have the exact project architecture used by professional scientific software teams: isolated <code>.venv</code> environments, <code>src/</code>-layout packages, breakpoint debugging in VS Code, secret-safe <code>.env</code> configs, and testable <code>argparse</code> CLIs. Next, we put these clean packages under automated version control with Git, GitHub, and <code>pytest</code>.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="pagination-link" aria-label="Mastering Jupyter Notebooks &amp; Google Colab Engineering">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="pagination-link" aria-label="Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates">
+        <span class="nav-page-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

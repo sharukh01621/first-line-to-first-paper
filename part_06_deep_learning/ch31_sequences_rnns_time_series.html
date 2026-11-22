@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>31&nbsp; Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" rel="next">
+<link href="../part_06_deep_learning/ch30_cnns_computer_vision.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</a></li><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch31-intuition" id="toc-sec-ch31-intuition" class="nav-link" data-scroll-target="#sec-ch31-intuition"><span class="header-section-number">31.1</span> Stage 1 — First-Principles Intuition: Why Order, Memory, and Time Arrows Matter</a></li>
+  <li><a href="#sec-ch31-mental-model" id="toc-sec-ch31-mental-model" class="nav-link" data-scroll-target="#sec-ch31-mental-model"><span class="header-section-number">31.2</span> Stage 2 — Visual Mental Model: Sliding Window <span class="math inline">\(\rightarrow\)</span> Unrolled GRU/LSTM <span class="math inline">\(\rightarrow\)</span> Forecast Audit</a></li>
+  <li><a href="#sec-ch31-walkthrough" id="toc-sec-ch31-walkthrough" class="nav-link" data-scroll-target="#sec-ch31-walkthrough"><span class="header-section-number">31.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch31-setup" id="toc-sec-ch31-setup" class="nav-link" data-scroll-target="#sec-ch31-setup"><span class="header-section-number">31.3.1</span> Setup: Loading <code>epi_surveillance</code> Chronologically</a></li>
+  <li><a href="#sec-ch31-windows" id="toc-sec-ch31-windows" class="nav-link" data-scroll-target="#sec-ch31-windows"><span class="header-section-number">31.3.2</span> Leak-Free Temporal Splitting &amp; Sliding Windows</a></li>
+  <li><a href="#sec-ch31-rnn-step" id="toc-sec-ch31-rnn-step" class="nav-link" data-scroll-target="#sec-ch31-rnn-step"><span class="header-section-number">31.3.3</span> Pure-NumPy Elman RNN Cell &amp; Vanishing/Exploding Gradients</a></li>
+  <li><a href="#sec-ch31-shapes" id="toc-sec-ch31-shapes" class="nav-link" data-scroll-target="#sec-ch31-shapes"><span class="header-section-number">31.3.4</span> PyTorch <code>nn.GRU</code> &amp; <code>nn.LSTM</code> <code>batch_first=True</code> Tensor Shapes</a></li>
+  <li><a href="#sec-ch31-padding" id="toc-sec-ch31-padding" class="nav-link" data-scroll-target="#sec-ch31-padding"><span class="header-section-number">31.3.5</span> Variable-Length Clinical Vital Sequences: Padding &amp; Masking</a></li>
+  <li><a href="#sec-ch31-bench" id="toc-sec-ch31-bench" class="nav-link" data-scroll-target="#sec-ch31-bench"><span class="header-section-number">31.3.6</span> Persistence vs.&nbsp;GRU vs.&nbsp;LSTM on Held-Out 2025 Dhaka Dengue Weeks</a></li>
+  <li><a href="#sec-ch31-errors" id="toc-sec-ch31-errors" class="nav-link" data-scroll-target="#sec-ch31-errors"><span class="header-section-number">31.3.7</span> Break It On Purpose! (Sequence Modeling Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch31-blueprint" id="toc-sec-ch31-blueprint" class="nav-link" data-scroll-target="#sec-ch31-blueprint"><span class="header-section-number">31.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">31.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">31.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch31-todos" id="toc-sec-ch31-todos" class="nav-link" data-scroll-target="#sec-ch31-todos"><span class="header-section-number">31.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch31-test" id="toc-sec-ch31-test" class="nav-link" data-scroll-target="#sec-ch31-test"><span class="header-section-number">31.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch31-exam" id="toc-sec-ch31-exam" class="nav-link" data-scroll-target="#sec-ch31-exam"><span class="header-section-number">31.7</span> Stage 7 — Chapter 31 Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-31.1-30-points-temporal_district_window_splitepi_df-district-seq_len8-cutoff_year2025" id="toc-exam-task-31.1-30-points-temporal_district_window_splitepi_df-district-seq_len8-cutoff_year2025" class="nav-link" data-scroll-target="#exam-task-31.1-30-points-temporal_district_window_splitepi_df-district-seq_len8-cutoff_year2025"><span class="header-section-number">31.7.1</span> Exam Task 31.1 (30 Points): <code>temporal_district_window_split(epi_df, district, seq_len=8, cutoff_year=2025)</code></a></li>
+  <li><a href="#exam-task-31.2-35-points-train_epi_gru_forecasterx_train-y_train-x_test-y_test-hidden_size16-epochs40-lr0.02-seed42" id="toc-exam-task-31.2-35-points-train_epi_gru_forecasterx_train-y_train-x_test-y_test-hidden_size16-epochs40-lr0.02-seed42" class="nav-link" data-scroll-target="#exam-task-31.2-35-points-train_epi_gru_forecasterx_train-y_train-x_test-y_test-hidden_size16-epochs40-lr0.02-seed42"><span class="header-section-number">31.7.2</span> Exam Task 31.2 (35 Points): <code>train_epi_gru_forecaster(X_train, y_train, X_test, y_test, hidden_size=16, epochs=40, lr=0.02, seed=42)</code></a></li>
+  <li><a href="#exam-task-31.3-35-points-compare_gru_lstm_persistence_epiepi_df-districtdhaka-seq_len8-seed42" id="toc-exam-task-31.3-35-points-compare_gru_lstm_persistence_epiepi_df-districtdhaka-seq_len8-seed42" class="nav-link" data-scroll-target="#exam-task-31.3-35-points-compare_gru_lstm_persistence_epiepi_df-districtdhaka-seq_len8-seed42"><span class="header-section-number">31.7.3</span> Exam Task 31.3 (35 Points): <code>compare_gru_lstm_persistence_epi(epi_df, district="Dhaka", seq_len=8, seed=42)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch31-solutions" id="toc-sec-ch31-solutions" class="nav-link" data-scroll-target="#sec-ch31-solutions"><span class="header-section-number">31.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">31.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">31.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-31-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-31-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-31-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">31.8.3</span> C. Annotated Solutions — Chapter 31 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-31-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-31-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-31-failure-modes"><span class="header-section-number">31.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 31 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</a></li><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch31" class="quarto-section-identifier"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Master <strong>temporal sequence modeling</strong> from first principles—starting from chronological sliding windows and pure-NumPy recurrent hidden states, diagnosing <strong>vanishing and exploding gradients</strong> across long horizons, and advancing to PyTorch <strong><code>nn.GRU</code></strong> and <strong><code>nn.LSTM</code></strong> forecasters on real Bangladesh weekly dengue surveillance data (<code>epi_surveillance</code>). You will learn to eliminate <strong>temporal data leakage</strong>, handle <strong>variable-length clinical vital-sign sequences</strong> via padding and boolean masking, stabilize recurrent training with <strong>gradient clipping</strong>, and prove that gated neural models genuinely beat the <strong>naive persistence baseline</strong> (<span class="math inline">\(\hat{y}_t = y_{t-1}\)</span>) before claiming forecasting skill.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb">ch31 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 31 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb">ch31 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 31 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb">ch31 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 31 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Construct <strong>leakage-free chronological train/test splits</strong> and <code>(N, seq_len, F)</code> sliding-window tensors where <code>StandardScaler</code> is fit strictly on past (<code>year &lt; cutoff_year</code>) observations.</li>
+<li>Implement the <strong>Elman RNN recurrence</strong> <span class="math inline">\(h_t = \tanh(x_t W_{xh} + h_{t-1} W_{hh} + b_h)\)</span> in pure NumPy and prove mathematically why repeated matrix multiplication causes <strong>vanishing</strong> (<span class="math inline">\(0.5^{30} \approx 10^{-9}\)</span>) or <strong>exploding</strong> (<span class="math inline">\(1.5^{30} \approx 1.9 \times 10^5\)</span>) gradients across long sequences.</li>
+<li>Explain how <strong>LSTM</strong> (additive cell-state highway <span class="math inline">\(c_t\)</span> with forget, input, and output gates) and <strong>GRU</strong> (merged reset and update gates) preserve long-range temporal memory without vanishing gradients.</li>
+<li>Build PyTorch <strong><code>EpiGRUForecaster</code></strong> and <strong><code>EpiLSTMForecaster</code></strong> <code>nn.Module</code> classes using <code>batch_first=True</code>, tracking <code>(B, T, F)</code> inputs, <code>(B, T, H)</code> outputs, and nested <code>(out, (h_n, c_n))</code> LSTM return tuples.</li>
+<li>Batch <strong>variable-length clinical vital-sign sequences</strong> cleanly with <code>nn.utils.rnn.pad_sequence(..., batch_first=True, padding_value=0.0)</code> and boolean <code>valid_mask</code> tensors so zero-padded tail steps never corrupt clinical averages or losses.</li>
+<li>Stabilize recurrent training with <strong><code>clip_grad_norm_(..., 1.0)</code></strong> and benchmark GRU and LSTM forecasts directly against the <strong>naive persistence baseline</strong> (<span class="math inline">\(\hat{y}_t = y_{t-1}\)</span>) on held-out 2025 Bangladesh dengue surveillance weeks.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch31-intuition" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="sec-ch31-intuition"><span class="header-section-number">31.1</span> Stage 1 — First-Principles Intuition: Why Order, Memory, and Time Arrows Matter</h2>
+<p>In Chapters 28–30, every row of a clinical dataset was independent (an MLP on tabular vitals) or spatially local (a CNN on a chest X-ray). Shuffling patient rows with <code>train_test_split(..., shuffle=True)</code> was harmless—even encouraged.</p>
+<p>Now step into an epidemiological surveillance unit tracking weekly dengue admissions (<code>dengue_cases</code>), monsoon rainfall (<code>rainfall_mm</code>), and temperature (<code>mean_temp_c</code>) in Dhaka. Two fundamental laws immediately break the tabular assumptions:</p>
+<ul>
+<li><strong>Time Has a One-Way Arrow (No Random Shuffling!):</strong> If you randomly split 2024–2025 weekly surveillance rows 80/20, Week 31 of 2025 lands in your training set while Week 30 lands in your test set! Your neural network “predicts” the past using the future—and fitting <code>StandardScaler</code> across both years leaks 2025 monsoon peaks into 2024 training inputs. Always split chronologically (<code>year &lt; cutoff_year</code> vs.&nbsp;<code>year &gt;= cutoff_year</code>) and fit scalers strictly on the past.</li>
+<li><strong>Lagged Biological Causality Requires Sequence Memory:</strong> Heavy monsoon rain does not create dengue hospitalizations tomorrow morning. Standing water breeds <em>Aedes</em> larvae, which mature, bite, incubate, and drive clinic admissions <strong>2 to 6 weeks later</strong>. A model needs an explicit lookback window <code>(T = 8 weeks)</code> and an internal <strong>hidden state</strong> <span class="math inline">\(h_t\)</span> that carries recent outbreak momentum and rainfall history forward step by step.</li>
+<li><strong>Weight Sharing Across Time &amp; The Vanishing Gradient Trap:</strong> A vanilla Recurrent Neural Network (RNN) applies the exact same recurrent weight matrix <span class="math inline">\(W_{hh}\)</span> at every timestep <span class="math inline">\(t = 1, \dots, T\)</span>. During Backpropagation Through Time (BPTT), the gradient flowing backward across <span class="math inline">\(T\)</span> steps multiplies by <span class="math inline">\(W_{hh}\)</span> <span class="math inline">\(T\)</span> times. If the dominant singular value is <span class="math inline">\(0.5\)</span>, the gradient shrinks by <span class="math inline">\(0.5^{30} \approx 9.31 \times 10^{-10}\)</span> (vanishing—early rainfall is forgotten!); if it is <span class="math inline">\(1.5\)</span>, it blows up by <span class="math inline">\(1.5^{30} \approx 1.92 \times 10^5\)</span> (exploding—<code>NaN</code> weights!).</li>
+<li><strong>Gated Recurrence (LSTM &amp; GRU) + Gradient Clipping:</strong> <strong>Long Short-Term Memory (LSTM)</strong> introduces an additive <strong>cell-state highway</strong> <span class="math inline">\(c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t\)</span> so gradients flow backward through addition rather than repeated squashing. <strong>Gated Recurrent Units (GRUs)</strong> streamline this into two gates (reset <span class="math inline">\(r_t\)</span> and update <span class="math inline">\(z_t\)</span>) with ~25% fewer parameters. Pairing gated cells with <strong><code>clip_grad_norm_(model.parameters(), 1.0)</code></strong> tames both vanishing and exploding gradients simultaneously.</li>
+<li><strong>The Persistence Litmus Test:</strong> Weekly disease counts are strongly autocorrelated—next week often looks close to this week. Therefore, <strong>every neural time-series model MUST beat the zero-effort persistence baseline</strong> (<span class="math inline">\(\hat{y}_t = y_{t-1}\)</span>) on the exact same chronological test weeks!</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Recurrent State as an Epidemiologist’s Running Notebook
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Picture an epidemiologist reviewing Dhaka’s dengue dashboard week by week over an 8-week window. At week <span class="math inline">\(t\)</span>, they read the new report <span class="math inline">\(x_t\)</span> (cases, rainfall, temperature), glance at their running summary notes <span class="math inline">\(h_{t-1}\)</span> from the previous week, decide via <strong>gates</strong> what stale noise to forget and what new monsoon surge to write down, and update their summary state <span class="math inline">\(h_t\)</span>. After reading week <span class="math inline">\(t = 8\)</span>, a linear readout layer translates <span class="math inline">\(h_8\)</span> into next week’s dengue forecast <span class="math inline">\(\hat{y}_{9}\)</span>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch31-mental-model" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="sec-ch31-mental-model"><span class="header-section-number">31.2</span> Stage 2 — Visual Mental Model: Sliding Window <span class="math inline">\(\rightarrow\)</span> Unrolled GRU/LSTM <span class="math inline">\(\rightarrow\)</span> Forecast Audit</h2>
+<p>Trace how a chronological epidemiological series flows from raw weekly surveillance rows into leak-free windows, through an unrolled gated recurrent cell, and finally into a fair comparison against the persistence baseline:</p>
+<div class="cell" data-fig-width="5.4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 31 (Sliding Window to Unrolled GRU/LSTM to Forecast Audit) illustrating 1. Temporal Split; Sort by Year, Week Fit Scaler (< 2025); Sliding Windows X: (B, T=8, F=3); 2. Recurre...">flowchart TD
+    subgraph Split["1. Temporal Split"]
+        direction LR
+        S1["Sort by Year, Week&lt;br/&gt;Fit Scaler (&lt; 2025)"]
+        S2["Sliding Windows&lt;br/&gt;X: (B, T=8, F=3)"]
+        S1 --&gt; S2
+    end
+    subgraph Core["2. Recurrent Core"]
+        direction LR
+        R1["Unroll t=1..T&lt;br/&gt;GRU / LSTM Cell"]
+        R2["Final Hidden h_T&lt;br/&gt;Linear Head -&gt; (B,1)"]
+        R1 --&gt; R2
+    end
+    subgraph Audit["3. Forecast Audit"]
+        direction LR
+        A1["Clip Grad (1.0)&lt;br/&gt;Adam + MSELoss"]
+        A2["Held-Out 2025 Test&lt;br/&gt;vs Persistence y_t-1"]
+        A1 --&gt; A2
+    end
+    Split --&gt; Core
+    Core --&gt; Audit
+</pre>
+</div>
+<p></p><figcaption> Chapter 31 visual mental model: Sliding Window to Unrolled GRU/LSTM to Forecast Audit</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the strict causal firewall between Block 1 and Block 3: <code>StandardScaler</code> sees <strong>only 2024 rows</strong>, every training window stays strictly inside 2024, and every 2025 test forecast reads only its 8 immediately preceding weeks before being graded side by side against naive persistence.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>The #1 Silent Bug in PyTorch RNNs: Missing <code>batch_first=True</code>!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>By historical PyTorch default, <code>nn.RNN</code>, <code>nn.GRU</code>, and <code>nn.LSTM</code> expect input shape <strong><code>(T, B, F)</code></strong> (sequence length first!), whereas <code>DataLoader</code>, NumPy sliding windows, and every other layer in this book use <strong><code>(B, T, F)</code></strong> (batch first!). If you forget <code>batch_first=True</code>, PyTorch will <strong>not crash</strong>—it will silently treat your batch dimension as time and your time dimension as separate patients, producing garbage forecasts! Always write <code>batch_first=True</code> explicitly.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch31-walkthrough" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="sec-ch31-walkthrough"><span class="header-section-number">31.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch31-setup" class="level3" data-number="31.3.1">
+<h3 data-number="31.3.1" class="anchored" data-anchor-id="sec-ch31-setup"><span class="header-section-number">31.3.1</span> Setup: Loading <code>epi_surveillance</code> Chronologically</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> torch</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>torch.set_num_threads(<span class="dv">1</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a>epi_raw <span class="op">=</span> tutor.load_data(<span class="st">"epi_surveillance"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>dhaka <span class="op">=</span> (</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>    epi_raw[epi_raw[<span class="st">"district"</span>] <span class="op">==</span> <span class="st">"Dhaka"</span>]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a>    .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a>    .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>n24 <span class="op">=</span> <span class="bu">int</span>((dhaka[<span class="st">"year"</span>] <span class="op">==</span> <span class="dv">2024</span>).<span class="bu">sum</span>())</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>n25 <span class="op">=</span> <span class="bu">int</span>((dhaka[<span class="st">"year"</span>] <span class="op">==</span> <span class="dv">2025</span>).<span class="bu">sum</span>())</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a><span class="bu">print</span>(<span class="ss">f"Dataset shape: </span><span class="sc">{</span>epi_raw<span class="sc">.</span>shape<span class="sc">}</span><span class="ss"> | Dhaka weeks: </span><span class="sc">{</span><span class="bu">len</span>(dhaka)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a><span class="bu">print</span>(<span class="ss">f"2024 weeks: </span><span class="sc">{</span>n24<span class="sc">}</span><span class="ss"> | 2025 weeks: </span><span class="sc">{</span>n25<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a><span class="bu">print</span>(</span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>    <span class="ss">f"Dhaka dengue cases -&gt; min=</span><span class="sc">{</span>dhaka[<span class="st">'dengue_cases'</span>]<span class="sc">.</span><span class="bu">min</span>()<span class="sc">}</span><span class="ss">, "</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a>    <span class="ss">f"median=</span><span class="sc">{</span>dhaka[<span class="st">'dengue_cases'</span>]<span class="sc">.</span>median()<span class="sc">:.1f}</span><span class="ss">, "</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a>    <span class="ss">f"max=</span><span class="sc">{</span>dhaka[<span class="st">'dengue_cases'</span>]<span class="sc">.</span><span class="bu">max</span>()<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Dataset shape: (416, 8) | Dhaka weeks: 104</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>2024 weeks: 52 | 2025 weeks: 52</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Dhaka dengue cases -&gt; min=21, median=57.5, max=395</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Let’s inspect three hygiene details right at the top:</p>
+<ul>
+<li><strong><code>torch.set_num_threads(1)</code>:</strong> For compact recurrent tensors <code>(44, 8, 3)</code> on CPU, single-threaded execution avoids multi-core OpenMP barrier overhead and runs nearly <strong>10x faster</strong> with identical numerical precision.</li>
+<li><strong>Explicit chronological sorting:</strong> Never assume an epidemiological CSV arrives pre-sorted. <code>.sort_values(["year", "epi_week"]).reset_index(drop=True)</code> guarantees strictly monotone weekly order across 2024 (<code>52</code> weeks) and 2025 (<code>52</code> weeks).</li>
+<li><strong>Strong monsoon seasonality:</strong> Dhaka weekly dengue counts swing nearly 19-fold from winter lows (<code>21</code> cases) to monsoon peaks (<code>395</code> cases), making multivariate weather + case history essential.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-windows" class="level3" data-number="31.3.2">
+<h3 data-number="31.3.2" class="anchored" data-anchor-id="sec-ch31-windows"><span class="header-section-number">31.3.2</span> Leak-Free Temporal Splitting &amp; Sliding Windows</h3>
+<p>We reserve all 52 weeks of <code>2024</code> for fitting <code>StandardScaler</code> and training, and hold out all 52 weeks of <code>2025</code> for evaluation. Notice how each 2025 test window uses <strong>only the 8 immediately preceding weeks</strong> (including late-2024 history for early-2025 weeks) with zero target leakage:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>feat_cols <span class="op">=</span> [<span class="st">"dengue_cases"</span>, <span class="st">"rainfall_mm"</span>, <span class="st">"mean_temp_c"</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>raw_vals <span class="op">=</span> dhaka[feat_cols].to_numpy(dtype<span class="op">=</span>np.float32)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>n_train <span class="op">=</span> <span class="bu">int</span>((dhaka[<span class="st">"year"</span>] <span class="op">&lt;</span> <span class="dv">2025</span>).<span class="bu">sum</span>())</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a><span class="co"># Fit StandardScaler strictly on 2024 training rows (zero future leak!)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>scaler.fit(raw_vals[:n_train])</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>scaled <span class="op">=</span> scaler.transform(raw_vals).astype(np.float32)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>seq_len <span class="op">=</span> <span class="dv">8</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>X_tr <span class="op">=</span> np.stack(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>    [scaled[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(seq_len, n_train)]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>y_tr <span class="op">=</span> scaled[seq_len:n_train, <span class="dv">0</span>]</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>X_te <span class="op">=</span> np.stack(</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>    [scaled[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(n_train, <span class="bu">len</span>(dhaka))]</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>y_te <span class="op">=</span> scaled[n_train:, <span class="dv">0</span>]</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a><span class="bu">print</span>(<span class="ss">f"Train scaler mean (2024 only): </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(scaler.mean_, <span class="dv">2</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a><span class="bu">print</span>(<span class="ss">f"Full-series mean (LEAKY!):     </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(raw_vals.mean(<span class="dv">0</span>), <span class="dv">2</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a><span class="bu">print</span>(<span class="ss">f"X_train: </span><span class="sc">{</span>X_tr<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">, y_train: </span><span class="sc">{</span>y_tr<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a><span class="bu">print</span>(<span class="ss">f"X_test:  </span><span class="sc">{</span>X_te<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">, y_test:  </span><span class="sc">{</span>y_te<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Train scaler mean (2024 only): [126.6   77.53  21.5 ]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Full-series mean (LEAKY!):     [128.4   80.83  21.44]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>X_train: (44, 8, 3), y_train: (44,)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>X_test:  (52, 8, 3), y_test:  (52,)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Examine the tensor dimensions carefully:</p>
+<ul>
+<li><strong>Why <code>44</code> training windows instead of <code>52</code>?</strong> With <code>seq_len = 8</code>, the first valid target strictly inside 2024 is Week 9 (index <code>8</code>), which reads Weeks 1–8 (<code>indices 0..7</code>). That yields <span class="math inline">\(52 - 8 = 44\)</span> leak-free training sequences of shape <code>(44, 8, 3)</code>.</li>
+<li><strong>Why <code>52</code> test windows?</strong> Every week in 2025 (<code>t = 52 .. 103</code>) already has 8 strictly preceding weeks available (<code>t - 8 .. t - 1</code>), so we evaluate on <strong>all 52 weeks of 2025</strong>!</li>
+<li><strong>Why standardize both features and target?</strong> Keeping <code>y_tr</code> and <code>y_te</code> on the training-fitted z-score scale lets a linear output head converge cleanly in 40 epochs with <code>lr=0.02</code> and <code>clip_grad_norm_(..., 1.0)</code>. To recover raw case counts at reporting time, simply invert via <code>cases = z * scaler.scale_[0] + scaler.mean_[0]</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-rnn-step" class="level3" data-number="31.3.3">
+<h3 data-number="31.3.3" class="anchored" data-anchor-id="sec-ch31-rnn-step"><span class="header-section-number">31.3.3</span> Pure-NumPy Elman RNN Cell &amp; Vanishing/Exploding Gradients</h3>
+<p>Before touching PyTorch’s built-in layers, inspect a single Elman RNN timestep in pure NumPy:</p>
+<p><span class="math display">\[h_t = \tanh\big(x_t W_{xh} + h_{t-1} W_{hh} + b_h\big)\]</span></p>
+<p>where <span class="math inline">\(x_t \in \mathbb{R}^{B \times F}\)</span>, <span class="math inline">\(h_{t-1} \in \mathbb{R}^{B \times H}\)</span>, <span class="math inline">\(W_{xh} \in \mathbb{R}^{F \times H}\)</span>, <span class="math inline">\(W_{hh} \in \mathbb{R}^{H \times H}\)</span>, and <span class="math inline">\(b_h \in \mathbb{R}^{H}\)</span>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>x_t <span class="op">=</span> np.array([[<span class="fl">0.5</span>, <span class="op">-</span><span class="fl">0.2</span>, <span class="fl">1.1</span>], [<span class="op">-</span><span class="fl">0.4</span>, <span class="fl">0.8</span>, <span class="fl">0.3</span>]])</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>h_prev <span class="op">=</span> np.zeros((<span class="dv">2</span>, <span class="dv">4</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>W_xh <span class="op">=</span> rng.normal(<span class="fl">0.0</span>, <span class="fl">0.3</span>, size<span class="op">=</span>(<span class="dv">3</span>, <span class="dv">4</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>W_hh <span class="op">=</span> rng.normal(<span class="fl">0.0</span>, <span class="fl">0.3</span>, size<span class="op">=</span>(<span class="dv">4</span>, <span class="dv">4</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>b_h <span class="op">=</span> np.zeros(<span class="dv">4</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>h_next <span class="op">=</span> np.tanh(x_t <span class="op">@</span> W_xh <span class="op">+</span> h_prev <span class="op">@</span> W_hh <span class="op">+</span> b_h)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a><span class="bu">print</span>(<span class="ss">f"RNN step output shape: </span><span class="sc">{</span>h_next<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"h_next[0]: </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(h_next[<span class="dv">0</span>], <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a><span class="co"># Why vanilla RNN gradients vanish or explode over long horizons:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a><span class="cf">for</span> steps <span class="kw">in</span> [<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">30</span>]:</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>    <span class="bu">print</span>(</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>        <span class="ss">f"After </span><span class="sc">{</span>steps<span class="sc">:2d}</span><span class="ss"> steps -&gt; "</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>        <span class="ss">f"0.5^</span><span class="sc">{</span>steps<span class="sc">:2d}</span><span class="ss"> = </span><span class="sc">{</span><span class="fl">0.5</span> <span class="op">**</span> steps<span class="sc">:.2e}</span><span class="ss"> | "</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>        <span class="ss">f"1.5^</span><span class="sc">{</span>steps<span class="sc">:2d}</span><span class="ss"> = </span><span class="sc">{</span><span class="fl">1.5</span> <span class="op">**</span> steps<span class="sc">:.2e}</span><span class="ss">"</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>RNN step output shape: (2, 4)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>h_next[0]: [ 0.1559 -0.3447  0.3757  0.3942]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>After  5 steps -&gt; 0.5^ 5 = 3.12e-02 | 1.5^ 5 = 7.59e+00</span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>After 10 steps -&gt; 0.5^10 = 9.77e-04 | 1.5^10 = 5.77e+01</span>
+<span id="cb6-5"><a href="#cb6-5" aria-label="5"></a>After 20 steps -&gt; 0.5^20 = 9.54e-07 | 1.5^20 = 3.33e+03</span>
+<span id="cb6-6"><a href="#cb6-6" aria-label="6"></a>After 30 steps -&gt; 0.5^30 = 9.31e-10 | 1.5^30 = 1.92e+05</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That tiny loop exposes the entire mathematical motivation behind LSTMs and GRUs:</p>
+<ul>
+<li><strong>Vanishing gradients (<span class="math inline">\(0.5^{30} = 9.31 \times 10^{-10}\)</span>):</strong> Since <span class="math inline">\(\tanh'(z) = 1 - \tanh^2(z) \le 1\)</span>, backpropagating across 30 timesteps shrinks error signals by <strong>nine orders of magnitude</strong>, erasing memory of early monsoon rainfall.</li>
+<li><strong>Exploding gradients (<span class="math inline">\(1.5^{30} = 1.92 \times 10^5\)</span>):</strong> Conversely, if eigenvalues of <span class="math inline">\(W_{hh}\)</span> exceed <code>1.0</code>, gradients skyrocket exponentially, destabilizing SGD/Adam updates unless capped by <strong>gradient clipping</strong> (<code>clip_grad_norm_</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-shapes" class="level3" data-number="31.3.4">
+<h3 data-number="31.3.4" class="anchored" data-anchor-id="sec-ch31-shapes"><span class="header-section-number">31.3.4</span> PyTorch <code>nn.GRU</code> &amp; <code>nn.LSTM</code> <code>batch_first=True</code> Tensor Shapes</h3>
+<p>Both <code>nn.GRU</code> and <code>nn.LSTM</code> consume 3D <code>(B, T, F)</code> batches when <code>batch_first=True</code>, but inspect the subtle difference in their <strong>return tuples</strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>sample_x <span class="op">=</span> torch.tensor(X_tr[:<span class="dv">4</span>], dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>gru <span class="op">=</span> nn.GRU(input_size<span class="op">=</span><span class="dv">3</span>, hidden_size<span class="op">=</span><span class="dv">16</span>, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>gru_out, gru_hn <span class="op">=</span> gru(sample_x)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>lstm <span class="op">=</span> nn.LSTM(input_size<span class="op">=</span><span class="dv">3</span>, hidden_size<span class="op">=</span><span class="dv">16</span>, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>lstm_out, (lstm_hn, lstm_cn) <span class="op">=</span> lstm(sample_x)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"Input x:  </span><span class="sc">{</span><span class="bu">tuple</span>(sample_x.shape)<span class="sc">}</span><span class="ss">  (B, T, F)"</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"GRU out:  </span><span class="sc">{</span><span class="bu">tuple</span>(gru_out.shape)<span class="sc">}</span><span class="ss"> | h_n: </span><span class="sc">{</span><span class="bu">tuple</span>(gru_hn.shape)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a><span class="bu">print</span>(</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>    <span class="ss">f"LSTM out: </span><span class="sc">{</span><span class="bu">tuple</span>(lstm_out.shape)<span class="sc">}</span><span class="ss"> | "</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>    <span class="ss">f"h_n: </span><span class="sc">{</span><span class="bu">tuple</span>(lstm_hn.shape)<span class="sc">}</span><span class="ss"> | c_n: </span><span class="sc">{</span><span class="bu">tuple</span>(lstm_cn.shape)<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Input x:  (4, 8, 3)  (B, T, F)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>GRU out:  (4, 8, 16) | h_n: (1, 4, 16)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>LSTM out: (4, 8, 16) | h_n: (1, 4, 16) | c_n: (1, 4, 16)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Memorize these three shape invariants—they eliminate 90% of PyTorch RNN debugging time:</p>
+<ul>
+<li><strong><code>out</code> is <code>(B, T, H)</code>:</strong> Contains the top-layer hidden state at <strong>every timestep</strong> (<code>0..T-1</code>). Slicing <code>out[:, -1, :]</code> extracts the <code>(B, H)</code> final-step summary ready for <code>nn.Linear(H, 1)</code>.</li>
+<li><strong><code>h_n</code> (and LSTM’s <code>c_n</code>) is ALWAYS <code>(num_layers, B, H)</code>:</strong> Even with <code>batch_first=True</code>, PyTorch puts <code>num_layers</code> first in the final hidden/cell state tensors!</li>
+<li><strong>GRU returns 2 tensors <code>(out, h_n)</code>; LSTM returns a nested 2-tuple <code>(out, (h_n, c_n))</code>:</strong> Unpacking <code>out, _ = self.lstm(x)</code> works identically for both when you only need <code>out[:, -1, :]</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-padding" class="level3" data-number="31.3.5">
+<h3 data-number="31.3.5" class="anchored" data-anchor-id="sec-ch31-padding"><span class="header-section-number">31.3.5</span> Variable-Length Clinical Vital Sequences: Padding &amp; Masking</h3>
+<p>Fixed 8-week windows work cleanly for weekly epidemiology, but hospitalized ICU patients stay for <strong>different lengths of time</strong> (3 hours, 5 hours, 2 hours). To batch variable-length 2D tensors <code>(T_i, F)</code> onto a GPU/CPU without fabricating fake <code>0.0</code> vital signs, we combine <code>pad_sequence</code> with a boolean <code>valid_mask</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>vitals <span class="op">=</span> [</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>    torch.tensor([[<span class="fl">98.0</span>, <span class="fl">120.0</span>], [<span class="fl">97.5</span>, <span class="fl">118.0</span>], [<span class="fl">96.0</span>, <span class="fl">115.0</span>]]),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>    torch.tensor([</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>        [<span class="fl">99.0</span>, <span class="fl">110.0</span>], [<span class="fl">98.5</span>, <span class="fl">112.0</span>], [<span class="fl">98.0</span>, <span class="fl">114.0</span>],</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>        [<span class="fl">97.0</span>, <span class="fl">116.0</span>], [<span class="fl">96.5</span>, <span class="fl">119.0</span>],</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>    ]),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>    torch.tensor([[<span class="fl">95.0</span>, <span class="fl">130.0</span>], [<span class="fl">94.0</span>, <span class="fl">135.0</span>]]),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>]</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>lengths <span class="op">=</span> torch.tensor([s.shape[<span class="dv">0</span>] <span class="cf">for</span> s <span class="kw">in</span> vitals], dtype<span class="op">=</span>torch.<span class="bu">long</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>padded <span class="op">=</span> nn.utils.rnn.pad_sequence(</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>    vitals, batch_first<span class="op">=</span><span class="va">True</span>, padding_value<span class="op">=</span><span class="fl">0.0</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>max_len <span class="op">=</span> padded.shape[<span class="dv">1</span>]</span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a>valid_mask <span class="op">=</span> torch.arange(max_len).unsqueeze(<span class="dv">0</span>) <span class="op">&lt;</span> lengths.unsqueeze(<span class="dv">1</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a><span class="bu">print</span>(<span class="ss">f"Padded shape: </span><span class="sc">{</span><span class="bu">tuple</span>(padded.shape)<span class="sc">}</span><span class="ss"> | lengths: </span><span class="sc">{</span>lengths<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a><span class="bu">print</span>(<span class="st">"Valid mask:"</span>, valid_mask.<span class="bu">int</span>().tolist())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Padded shape: (3, 5, 2) | lengths: [3, 5, 2]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Valid mask: [[1, 1, 1, 0, 0], [1, 1, 1, 1, 1], [1, 1, 0, 0, 0]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look how clean that broadcasting idiom is: <code>torch.arange(max_len).unsqueeze(0)</code> has shape <code>(1, 5)</code>, <code>lengths.unsqueeze(1)</code> has shape <code>(3, 1)</code>, and <code>&lt;</code> broadcasts them into a <code>(3, 5)</code> boolean tensor where <code>True</code> marks genuine clinical measurements and <code>False</code> marks artificial zero padding (ready for masked mean pooling, masked loss, or <code>pack_padded_sequence</code>).</p>
+<hr>
+</section>
+<section id="sec-ch31-bench" class="level3" data-number="31.3.6">
+<h3 data-number="31.3.6" class="anchored" data-anchor-id="sec-ch31-bench"><span class="header-section-number">31.3.6</span> Persistence vs.&nbsp;GRU vs.&nbsp;LSTM on Held-Out 2025 Dhaka Dengue Weeks</h3>
+<p>Now put everything together on Dhaka’s 52 held-out 2025 weeks—comparing the zero-effort <strong>Persistence baseline</strong> (<span class="math inline">\(\hat{y}_t = y_{t-1} = \text{X\_te}[:, -1, 0]\)</span>) against <code>EpiGRUForecaster</code> and <code>EpiLSTMForecaster</code> trained with <code>MSELoss</code>, <code>Adam(lr=0.02)</code>, and <code>clip_grad_norm_(..., 1.0)</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="kw">class</span> EpiGRUForecaster(nn.Module):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_size, hidden_size<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>        <span class="va">self</span>.gru <span class="op">=</span> nn.GRU(input_size, hidden_size, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>        <span class="va">self</span>.head <span class="op">=</span> nn.Linear(hidden_size, <span class="dv">1</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>        out, _ <span class="op">=</span> <span class="va">self</span>.gru(x)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>        <span class="cf">return</span> <span class="va">self</span>.head(out[:, <span class="op">-</span><span class="dv">1</span>, :])</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a><span class="kw">class</span> EpiLSTMForecaster(nn.Module):</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_size, hidden_size<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>        <span class="va">self</span>.lstm <span class="op">=</span> nn.LSTM(input_size, hidden_size, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>        <span class="va">self</span>.head <span class="op">=</span> nn.Linear(hidden_size, <span class="dv">1</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>        out, _ <span class="op">=</span> <span class="va">self</span>.lstm(x)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a>        <span class="cf">return</span> <span class="va">self</span>.head(out[:, <span class="op">-</span><span class="dv">1</span>, :])</span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a><span class="kw">def</span> fit_forecaster(</span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a>    model_cls, X_train, y_train, X_test,</span>
+<span id="cb11-23"><a href="#cb11-23" aria-label="23"></a>    hidden_size<span class="op">=</span><span class="dv">16</span>, epochs<span class="op">=</span><span class="dv">40</span>, lr<span class="op">=</span><span class="fl">0.02</span>, seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb11-24"><a href="#cb11-24" aria-label="24"></a>):</span>
+<span id="cb11-25"><a href="#cb11-25" aria-label="25"></a>    torch.manual_seed(seed)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-label="26"></a>    model <span class="op">=</span> model_cls(X_train.shape[<span class="op">-</span><span class="dv">1</span>], hidden_size<span class="op">=</span>hidden_size)</span>
+<span id="cb11-27"><a href="#cb11-27" aria-label="27"></a>    opt <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span>lr)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-label="28"></a>    loss_fn <span class="op">=</span> nn.MSELoss()</span>
+<span id="cb11-29"><a href="#cb11-29" aria-label="29"></a>    xt <span class="op">=</span> torch.tensor(X_train, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-label="30"></a>    yt <span class="op">=</span> torch.tensor(y_train, dtype<span class="op">=</span>torch.float32).unsqueeze(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-label="31"></a>    xe <span class="op">=</span> torch.tensor(X_test, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-label="32"></a>    model.train()</span>
+<span id="cb11-33"><a href="#cb11-33" aria-label="33"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb11-34"><a href="#cb11-34" aria-label="34"></a>        opt.zero_grad()</span>
+<span id="cb11-35"><a href="#cb11-35" aria-label="35"></a>        loss <span class="op">=</span> loss_fn(model(xt), yt)</span>
+<span id="cb11-36"><a href="#cb11-36" aria-label="36"></a>        loss.backward()</span>
+<span id="cb11-37"><a href="#cb11-37" aria-label="37"></a>        nn.utils.clip_grad_norm_(model.parameters(), <span class="fl">1.0</span>)</span>
+<span id="cb11-38"><a href="#cb11-38" aria-label="38"></a>        opt.step()</span>
+<span id="cb11-39"><a href="#cb11-39" aria-label="39"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb11-40"><a href="#cb11-40" aria-label="40"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb11-41"><a href="#cb11-41" aria-label="41"></a>        preds <span class="op">=</span> model(xe).squeeze(<span class="op">-</span><span class="dv">1</span>).numpy()</span>
+<span id="cb11-42"><a href="#cb11-42" aria-label="42"></a>    <span class="cf">return</span> preds, <span class="bu">float</span>(loss.item())</span>
+<span id="cb11-43"><a href="#cb11-43" aria-label="43"></a></span>
+<span id="cb11-44"><a href="#cb11-44" aria-label="44"></a>pers_preds <span class="op">=</span> X_te[:, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb11-45"><a href="#cb11-45" aria-label="45"></a>gru_preds, _ <span class="op">=</span> fit_forecaster(EpiGRUForecaster, X_tr, y_tr, X_te)</span>
+<span id="cb11-46"><a href="#cb11-46" aria-label="46"></a>lstm_preds, _ <span class="op">=</span> fit_forecaster(EpiLSTMForecaster, X_tr, y_tr, X_te)</span>
+<span id="cb11-47"><a href="#cb11-47" aria-label="47"></a></span>
+<span id="cb11-48"><a href="#cb11-48" aria-label="48"></a>rows <span class="op">=</span> []</span>
+<span id="cb11-49"><a href="#cb11-49" aria-label="49"></a><span class="cf">for</span> name, p <span class="kw">in</span> [</span>
+<span id="cb11-50"><a href="#cb11-50" aria-label="50"></a>    (<span class="st">"Persistence"</span>, pers_preds),</span>
+<span id="cb11-51"><a href="#cb11-51" aria-label="51"></a>    (<span class="st">"GRU"</span>, gru_preds),</span>
+<span id="cb11-52"><a href="#cb11-52" aria-label="52"></a>    (<span class="st">"LSTM"</span>, lstm_preds),</span>
+<span id="cb11-53"><a href="#cb11-53" aria-label="53"></a>]:</span>
+<span id="cb11-54"><a href="#cb11-54" aria-label="54"></a>    rmse_z <span class="op">=</span> <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> p) <span class="op">**</span> <span class="dv">2</span>)))</span>
+<span id="cb11-55"><a href="#cb11-55" aria-label="55"></a>    mae_z <span class="op">=</span> <span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(y_te <span class="op">-</span> p)))</span>
+<span id="cb11-56"><a href="#cb11-56" aria-label="56"></a>    rows.append({</span>
+<span id="cb11-57"><a href="#cb11-57" aria-label="57"></a>        <span class="st">"model"</span>: name,</span>
+<span id="cb11-58"><a href="#cb11-58" aria-label="58"></a>        <span class="st">"rmse_z"</span>: <span class="bu">round</span>(rmse_z, <span class="dv">4</span>),</span>
+<span id="cb11-59"><a href="#cb11-59" aria-label="59"></a>        <span class="st">"mae_z"</span>: <span class="bu">round</span>(mae_z, <span class="dv">4</span>),</span>
+<span id="cb11-60"><a href="#cb11-60" aria-label="60"></a>        <span class="st">"rmse_cases"</span>: <span class="bu">round</span>(rmse_z <span class="op">*</span> <span class="bu">float</span>(scaler.scale_[<span class="dv">0</span>]), <span class="dv">2</span>),</span>
+<span id="cb11-61"><a href="#cb11-61" aria-label="61"></a>    })</span>
+<span id="cb11-62"><a href="#cb11-62" aria-label="62"></a>lb <span class="op">=</span> pd.DataFrame(rows).sort_values(<span class="st">"rmse_z"</span>).reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-63"><a href="#cb11-63" aria-label="63"></a><span class="bu">print</span>(lb.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>      model  rmse_z  mae_z  rmse_cases</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>       LSTM  0.2287 0.1748       25.24</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>        GRU  0.2477 0.1754       27.34</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>Persistence  0.2796 0.2103       30.86</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read those held-out 2025 numbers like a peer reviewer:</p>
+<ul>
+<li><strong>Persistence (<code>rmse_z = 0.2796</code>, <code>30.86</code> cases/week):</strong> Simply repeating last week’s dengue count is already a strong baseline—proving why reporting an unbenchmarked neural RMSE is meaningless.</li>
+<li><strong>GRU (<code>rmse_z = 0.2477</code>, <code>27.34</code> cases/week):</strong> Cuts forecast RMSE by <strong>11.4%</strong> over persistence by combining 8 weeks of case trajectory with lagged rainfall and temperature signals.</li>
+<li><strong>LSTM (<code>rmse_z = 0.2287</code>, <code>25.24</code> cases/week):</strong> Cuts forecast RMSE by <strong>18.2%</strong> over persistence (<code>5.6</code> fewer mispredicted cases per week across all 52 weeks of 2025!), leveraging its additive cell-state highway <span class="math inline">\(c_t\)</span> to track multi-week monsoon buildup cleanly.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-errors" class="level3" data-number="31.3.7">
+<h3 data-number="31.3.7" class="anchored" data-anchor-id="sec-ch31-errors"><span class="header-section-number">31.3.7</span> Break It On Purpose! (Sequence Modeling Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — RuntimeError (2D <code>(B, F)</code> Input Passed Instead of 3D <code>(B, T, F)</code> into <code>nn.GRU</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>bad_x_2d <span class="op">=</span> torch.zeros(<span class="dv">4</span>, <span class="dv">3</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>h0_batched <span class="op">=</span> torch.zeros(<span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">16</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>nn.GRU(<span class="dv">3</span>, <span class="dv">16</span>, batch_first<span class="op">=</span><span class="va">True</span>)(bad_x_2d, h0_batched)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>RuntimeError: For unbatched 2-D input, hx should also be 2-D</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>but got 3-D tensor</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Recurrent layers expect 3D batched tensors <code>(B, T, F)</code>. When you accidentally omit the sequence-length axis and pass a 2D tabular matrix <code>(B, F)</code>, PyTorch interprets it as a single <em>unbatched</em> sequence <code>(T, F)</code>, immediately crashing against a 3D batched hidden state <code>(1, B, H)</code> (or raising <code>IndexError</code> on <code>out[:, -1, :]</code>).<br>
+<strong>Fix:</strong> Always shape inputs as 3D <code>(B, T, F)</code> via <code>build_sliding_windows</code> (or <code>x.unsqueeze(1)</code> for a 1-step window) before calling <code>nn.GRU</code> or <code>nn.LSTM</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — RuntimeError (Mismatched <code>input_size</code> in <code>nn.LSTM</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>bad_x_feat <span class="op">=</span> torch.zeros(<span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">5</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>nn.LSTM(input_size<span class="op">=</span><span class="dv">3</span>, hidden_size<span class="op">=</span><span class="dv">16</span>, batch_first<span class="op">=</span><span class="va">True</span>)(bad_x_feat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>RuntimeError: input.size(-1) must be equal to input_size.</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>Expected 3, got 5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> The last axis <code>x.shape[-1]</code> (<code>F = 5</code>) must match the <code>input_size</code> declared in <code>nn.LSTM(input_size=3, ...)</code>. This commonly happens when you add new weather or demographic columns to your feature list without updating the model’s <code>input_size</code>, or when you forget <code>batch_first=True</code> and accidentally place <code>T</code> on the wrong axis.<br>
+<strong>Fix:</strong> Pass <code>input_size=X_train.shape[-1]</code> dynamically instead of hardcoding <code>3</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (Unpacking <code>nn.LSTM</code> Output Into 3 Flat Variables)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>x_ok <span class="op">=</span> torch.zeros(<span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">3</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>out, h_n, c_n <span class="op">=</span> nn.LSTM(<span class="dv">3</span>, <span class="dv">16</span>, batch_first<span class="op">=</span><span class="va">True</span>)(x_ok)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: not enough values to unpack (expected 3, got 2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Unlike <code>nn.GRU</code>, which returns <code>(out, h_n)</code>, <code>nn.LSTM</code> returns a <strong>2-element tuple whose second element is itself a tuple</strong>: <code>(out, (h_n, c_n))</code>. Attempting flat 3-way unpacking <code>out, h_n, c_n = lstm(x)</code> always fails with <code>ValueError</code>.<br>
+<strong>Fix:</strong> Unpack as <code>out, (h_n, c_n) = self.lstm(x)</code> (or simply <code>out, _ = self.lstm(x)</code> when reading <code>out[:, -1, :]</code>).</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch31-blueprint" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="sec-ch31-blueprint"><span class="header-section-number">31.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Before recommending a national dengue early-warning architecture to Bangladesh’s Directorate General of Health Services (DGHS), your team must test whether gated recurrent models beat the naive persistence baseline <strong>consistently across multiple climate zones</strong>—not just Dhaka! Design a reusable function <code>forecast_district_suite(epi_df, districts=("Dhaka", "Chattogram", "Sylhet"), seq_len=8, cutoff_year=2025, seed=42)</code> that produces a clean multi-district comparison table.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="31.4.1">
+<h3 data-number="31.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">31.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Per-District Isolation &amp; Causal Split:</strong></p>
+<ul>
+<li>Filter each district independently (<code>epi_df[epi_df["district"] == dist]</code>), sort chronologically by <code>["year", "epi_week"]</code>, and fit a fresh <code>StandardScaler</code> exclusively on <code>year &lt; cutoff_year</code> rows.</li>
+<li>Construct standardized <code>(N_tr, seq_len, 3)</code> training windows strictly within 2024 and <code>(52, seq_len, 3)</code> test windows covering all 52 weeks of 2025.</li>
+</ul></li>
+<li><p><strong>Apples-to-Apples Multi-Model Audit:</strong></p>
+<ul>
+<li>Evaluate Persistence (<code>X_te[:, -1, 0]</code>), <code>EpiGRUForecaster</code>, and <code>EpiLSTMForecaster</code> on the exact same held-out 2025 targets <code>y_te</code> using identical hyperparameters (<code>hidden_size=16, epochs=40, lr=0.02, seed=seed</code>).</li>
+</ul></li>
+<li><p><strong>Verification Plan:</strong></p>
+<ul>
+<li>Confirm both GRU and LSTM beat Persistence across all three districts (<code>Dhaka</code>, <code>Chattogram</code>, <code>Sylhet</code>) and verify runtime stays under 3 seconds on CPU with <code>torch.set_num_threads(1)</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="31.4.2">
+<h3 data-number="31.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">31.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="kw">def</span> forecast_district_suite(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>    epi_df,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>    districts<span class="op">=</span>(<span class="st">"Dhaka"</span>, <span class="st">"Chattogram"</span>, <span class="st">"Sylhet"</span>),</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>    seq_len<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>    cutoff_year<span class="op">=</span><span class="dv">2025</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>    seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>):</span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>    <span class="co">"""Benchmark Persistence, GRU &amp; LSTM across Bangladesh districts."""</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>    rows <span class="op">=</span> []</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a>    cols <span class="op">=</span> [<span class="st">"dengue_cases"</span>, <span class="st">"rainfall_mm"</span>, <span class="st">"mean_temp_c"</span>]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a>    <span class="cf">for</span> dist <span class="kw">in</span> districts:</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a>        sub <span class="op">=</span> (</span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a>            epi_df[epi_df[<span class="st">"district"</span>] <span class="op">==</span> dist]</span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>            .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>            .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>        )</span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>        raw <span class="op">=</span> sub[cols].to_numpy(dtype<span class="op">=</span>np.float32)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>        n_tr <span class="op">=</span> <span class="bu">int</span>((sub[<span class="st">"year"</span>] <span class="op">&lt;</span> cutoff_year).<span class="bu">sum</span>())</span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a>        sc <span class="op">=</span> StandardScaler().fit(raw[:n_tr])</span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a>        z <span class="op">=</span> sc.transform(raw).astype(np.float32)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a>        X_tr <span class="op">=</span> np.stack(</span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a>            [z[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(seq_len, n_tr)]</span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>        )</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a>        y_tr <span class="op">=</span> z[seq_len:n_tr, <span class="dv">0</span>]</span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a>        X_te <span class="op">=</span> np.stack(</span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a>            [z[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(n_tr, <span class="bu">len</span>(sub))]</span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a>        )</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a>        y_te <span class="op">=</span> z[n_tr:, <span class="dv">0</span>]</span>
+<span id="cb19-29"><a href="#cb19-29" aria-label="29"></a>        p_pers <span class="op">=</span> X_te[:, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb19-30"><a href="#cb19-30" aria-label="30"></a>        p_gru, _ <span class="op">=</span> fit_forecaster(</span>
+<span id="cb19-31"><a href="#cb19-31" aria-label="31"></a>            EpiGRUForecaster, X_tr, y_tr, X_te, seed<span class="op">=</span>seed</span>
+<span id="cb19-32"><a href="#cb19-32" aria-label="32"></a>        )</span>
+<span id="cb19-33"><a href="#cb19-33" aria-label="33"></a>        p_lstm, _ <span class="op">=</span> fit_forecaster(</span>
+<span id="cb19-34"><a href="#cb19-34" aria-label="34"></a>            EpiLSTMForecaster, X_tr, y_tr, X_te, seed<span class="op">=</span>seed</span>
+<span id="cb19-35"><a href="#cb19-35" aria-label="35"></a>        )</span>
+<span id="cb19-36"><a href="#cb19-36" aria-label="36"></a>        rmses <span class="op">=</span> {</span>
+<span id="cb19-37"><a href="#cb19-37" aria-label="37"></a>            <span class="st">"Persistence"</span>: <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> p_pers) <span class="op">**</span> <span class="dv">2</span>))),</span>
+<span id="cb19-38"><a href="#cb19-38" aria-label="38"></a>            <span class="st">"GRU"</span>: <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> p_gru) <span class="op">**</span> <span class="dv">2</span>))),</span>
+<span id="cb19-39"><a href="#cb19-39" aria-label="39"></a>            <span class="st">"LSTM"</span>: <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> p_lstm) <span class="op">**</span> <span class="dv">2</span>))),</span>
+<span id="cb19-40"><a href="#cb19-40" aria-label="40"></a>        }</span>
+<span id="cb19-41"><a href="#cb19-41" aria-label="41"></a>        winner <span class="op">=</span> <span class="bu">min</span>(rmses, key<span class="op">=</span>rmses.get)</span>
+<span id="cb19-42"><a href="#cb19-42" aria-label="42"></a>        rows.append({</span>
+<span id="cb19-43"><a href="#cb19-43" aria-label="43"></a>            <span class="st">"district"</span>: dist,</span>
+<span id="cb19-44"><a href="#cb19-44" aria-label="44"></a>            <span class="st">"pers_rmse"</span>: <span class="bu">round</span>(rmses[<span class="st">"Persistence"</span>], <span class="dv">4</span>),</span>
+<span id="cb19-45"><a href="#cb19-45" aria-label="45"></a>            <span class="st">"gru_rmse"</span>: <span class="bu">round</span>(rmses[<span class="st">"GRU"</span>], <span class="dv">4</span>),</span>
+<span id="cb19-46"><a href="#cb19-46" aria-label="46"></a>            <span class="st">"lstm_rmse"</span>: <span class="bu">round</span>(rmses[<span class="st">"LSTM"</span>], <span class="dv">4</span>),</span>
+<span id="cb19-47"><a href="#cb19-47" aria-label="47"></a>            <span class="st">"winner"</span>: winner,</span>
+<span id="cb19-48"><a href="#cb19-48" aria-label="48"></a>        })</span>
+<span id="cb19-49"><a href="#cb19-49" aria-label="49"></a>    <span class="cf">return</span> pd.DataFrame(rows)</span>
+<span id="cb19-50"><a href="#cb19-50" aria-label="50"></a></span>
+<span id="cb19-51"><a href="#cb19-51" aria-label="51"></a><span class="bu">print</span>(forecast_district_suite(epi_raw).to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>  district  pers_rmse  gru_rmse  lstm_rmse winner</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>     Dhaka     0.2796    0.2477     0.2287   LSTM</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>Chattogram     0.4301    0.3320     0.3197   LSTM</span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a>    Sylhet     0.3883    0.3589     0.3522   LSTM</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Across all three districts—megacity Dhaka, coastal Chattogram, and high-rainfall Sylhet—both GRU and LSTM beat the naive persistence baseline cleanly (cutting Chattogram RMSE by more than <strong>25%</strong>!), with LSTM leading every district.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch31-todos" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="sec-ch31-todos"><span class="header-section-number">31.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six sequence modeling components below. Pass each <strong>function or class name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 31.1 (<code>build_sliding_windows(series_2d, seq_len=8, target_col=0)</code>):</strong> Convert a 2D <code>(T, F)</code> array into <code>(X_seq, y_next)</code> of shapes <code>(T - seq_len, seq_len, F)</code> and <code>(T - seq_len,)</code> where <code>X_seq[i] = series_2d[i : i + seq_len]</code> and <code>y_next[i] = series_2d[i + seq_len, target_col]</code>, raising <code>ValueError</code> if <code>len(series_2d) &lt;= seq_len</code>.</li>
+<li><strong>To-Do 31.2 (<code>rnn_cell_step_numpy(x_t, h_prev, W_xh, W_hh, b_h)</code>):</strong> Compute one pure-NumPy recurrent step <code>np.tanh(x_t @ W_xh + h_prev @ W_hh + b_h)</code> returning a <code>(B, H)</code> float ndarray without mutating inputs.</li>
+<li><strong>To-Do 31.3 (<code>EpiGRUForecaster</code>):</strong> Build an <code>nn.Module</code> (<code>__init__(self, input_size, hidden_size=16)</code>) with <code>nn.GRU(input_size, hidden_size, batch_first=True)</code> and <code>nn.Linear(hidden_size, 1)</code>, returning the <code>(B, 1)</code> forecast from the final timestep <code>out[:, -1, :]</code>.</li>
+<li><strong>To-Do 31.4 (<code>EpiLSTMForecaster</code>):</strong> Build an <code>nn.Module</code> (<code>__init__(self, input_size, hidden_size=16)</code>) with <code>nn.LSTM(input_size, hidden_size, batch_first=True)</code> and <code>nn.Linear(hidden_size, 1)</code>, unpacking <code>out, _ = self.lstm(x)</code> and returning <code>(B, 1)</code> from <code>out[:, -1, :]</code>.</li>
+<li><strong>To-Do 31.5 (<code>pad_variable_vital_sequences(seq_list)</code>):</strong> Take a list of 2D <code>(T_i, F)</code> tensors, compute <code>lengths</code> (<code>torch.long</code>), zero-pad with <code>nn.utils.rnn.pad_sequence(..., batch_first=True, padding_value=0.0)</code>, build boolean <code>valid_mask</code> <code>(B, max_len)</code>, and return <code>(padded, lengths, valid_mask)</code>.</li>
+<li><strong>To-Do 31.6 (<code>naive_persistence_forecast_rmse(y_seq_last, y_true)</code>):</strong> Return the persistence baseline RMSE <code>round(float(sqrt(mean((y_true - y_seq_last) ** 2))), 4)</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch31-test" class="level2" data-number="31.6">
+<h2 data-number="31.6" class="anchored" data-anchor-id="sec-ch31-test"><span class="header-section-number">31.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 sequence modeling, tensor shape, and temporal hygiene questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Sliding-Window Count:</strong> A weekly district surveillance table has <code>T = 52</code> rows and <code>F = 3</code> features. If you call <code>build_sliding_windows(series_2d, seq_len=8, target_col=0)</code>, what are the exact shapes of <code>X_seq</code> and <code>y_next</code>?</li>
+<li><strong>Why Not Random <code>train_test_split</code>?</strong> Suppose a colleague runs <code>train_test_split(X_all, y_all, test_size=0.2, shuffle=True)</code> on sliding windows built from Dhaka 2024–2025 dengue data and reports a dazzling test RMSE of <code>0.09</code>. Explain the <strong>two distinct forms of temporal leakage</strong> inflating that score.</li>
+<li><strong>Scaling Leakage Diagnosis:</strong> In <code>epi_surveillance</code>, fitting <code>StandardScaler</code> on all 104 Dhaka weeks gives a dengue mean of <code>128.40</code>, whereas fitting strictly on 2024 gives <code>126.60</code>. Why is fitting <code>StandardScaler</code> before splitting chronologically scientifically invalid even though it does not touch the model weights directly?</li>
+<li><strong>Pure-NumPy RNN Shape Trace:</strong> Given <code>x_t</code> of shape <code>(4, 3)</code>, <code>h_prev</code> of shape <code>(4, 16)</code>, <code>W_xh</code> of shape <code>(3, 16)</code>, <code>W_hh</code> of shape <code>(16, 16)</code>, and <code>b_h</code> of shape <code>(16,)</code>, what is the output shape of <code>np.tanh(x_t @ W_xh + h_prev @ W_hh + b_h)</code> and what numeric interval bounds every entry?</li>
+<li><strong>Vanishing vs.&nbsp;Exploding Gradients:</strong> During Backpropagation Through Time across <code>T = 20</code> weeks, if the Jacobian factor per step is <code>0.5</code>, roughly how large is <span class="math inline">\(0.5^{20}\)</span>? What happens instead if the factor is <code>1.5</code>, and which single PyTorch line prevents weight overflow from the exploding case?</li>
+<li><strong>LSTM vs.&nbsp;GRU Architecture:</strong> What extra internal state tensor does <code>nn.LSTM</code> maintain that <code>nn.GRU</code> does not, and how does its additive update equation help gradients survive long sequences?</li>
+<li><strong>The <code>batch_first=True</code> Shape Audit:</strong> You pass a tensor <code>x</code> of shape <code>(12, 8, 3)</code> into <code>nn.LSTM(input_size=3, hidden_size=24, num_layers=1, batch_first=True)</code>. What are the exact shapes of <code>out</code>, <code>h_n</code>, and <code>c_n</code> in <code>out, (h_n, c_n) = lstm(x)</code>?</li>
+<li><strong>Final Timestep vs.&nbsp;Full Sequence Output:</strong> Inside <code>EpiGRUForecaster.forward(self, x)</code>, why do we pass <code>out[:, -1, :]</code> (shape <code>(B, H)</code>) instead of the entire 3D <code>out</code> tensor (shape <code>(B, T, H)</code>) into <code>self.head = nn.Linear(hidden_size, 1)</code> for next-week forecasting?</li>
+<li><strong>Padding &amp; Boolean Mask Trace:</strong> Three ICU patients have sequence lengths <code>[2, 4, 1]</code> with <code>F = 3</code> vitals. After <code>pad_variable_vital_sequences(seq_list)</code>, what are the shapes of <code>padded</code>, <code>lengths</code>, and <code>valid_mask</code>, and how many <code>True</code> entries exist in <code>valid_mask</code>?</li>
+<li><strong>Persistence Hand Calculation:</strong> Over four test weeks, <code>y_seq_last = [10, 20, 30, 40]</code> and <code>y_true = [12, 18, 33, 37]</code>. Compute the exact <strong>naive persistence MSE and RMSE</strong> by hand.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch31-exam" class="level2" data-number="31.7">
+<h2 data-number="31.7" class="anchored" data-anchor-id="sec-ch31-exam"><span class="header-section-number">31.7</span> Stage 7 — Chapter 31 Coding Exam (100 Points)</h2>
+<p>Open <code>part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch31", exam_submissions)</code> to earn your Chapter 31 Exam score out of 100 points.</p>
+<section id="exam-task-31.1-30-points-temporal_district_window_splitepi_df-district-seq_len8-cutoff_year2025" class="level3" data-number="31.7.1">
+<h3 data-number="31.7.1" class="anchored" data-anchor-id="exam-task-31.1-30-points-temporal_district_window_splitepi_df-district-seq_len8-cutoff_year2025"><span class="header-section-number">31.7.1</span> Exam Task 31.1 (30 Points): <code>temporal_district_window_split(epi_df, district, seq_len=8, cutoff_year=2025)</code></h3>
+<p>Without mutating <code>epi_df</code>:</p>
+<ul>
+<li>Filter <code>epi_df[epi_df["district"] == district]</code> and sort chronologically by <code>["year", "epi_week"]</code>.</li>
+<li>Extract the 3 numeric columns in exact order <code>["dengue_cases", "rainfall_mm", "mean_temp_c"]</code> (<code>target_col=0</code> is <code>dengue_cases</code>).</li>
+<li>Fit <code>StandardScaler()</code> <strong>strictly on rows with <code>year &lt; cutoff_year</code></strong>, then transform the full sorted feature matrix <code>scaled = scaler.transform(raw)</code>.</li>
+<li>Build standardized sliding windows on <code>scaled</code> (so <code>y_train</code> and <code>y_test</code> are on the training-fitted standardized <code>dengue_cases</code> scale):
+<ul>
+<li><strong>Train windows</strong> strictly inside <code>year &lt; cutoff_year</code>: indices <code>t in range(seq_len, n_train)</code> with <code>X_train</code> window <code>scaled[t - seq_len : t]</code> and target <code>scaled[t, 0]</code>.</li>
+<li><strong>Test windows</strong> for <code>year &gt;= cutoff_year</code>: indices <code>t in range(n_train, len(sub))</code> with <code>X_test</code> window <code>scaled[t - seq_len : t]</code> (strictly preceding history!) and target <code>scaled[t, 0]</code>.</li>
+</ul></li>
+<li>Return <code>{"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test, "scaler": scaler}</code>.</li>
+</ul>
+</section>
+<section id="exam-task-31.2-35-points-train_epi_gru_forecasterx_train-y_train-x_test-y_test-hidden_size16-epochs40-lr0.02-seed42" class="level3" data-number="31.7.2">
+<h3 data-number="31.7.2" class="anchored" data-anchor-id="exam-task-31.2-35-points-train_epi_gru_forecasterx_train-y_train-x_test-y_test-hidden_size16-epochs40-lr0.02-seed42"><span class="header-section-number">31.7.2</span> Exam Task 31.2 (35 Points): <code>train_epi_gru_forecaster(X_train, y_train, X_test, y_test, hidden_size=16, epochs=40, lr=0.02, seed=42)</code></h3>
+<p>Train a PyTorch GRU forecaster cleanly with gradient clipping:</p>
+<ul>
+<li>Call <code>torch.manual_seed(seed)</code> and instantiate a GRU forecaster (<code>nn.GRU(input_size, hidden_size, batch_first=True)</code> + <code>nn.Linear(hidden_size, 1)</code> projecting <code>out[:, -1, :]</code>).</li>
+<li>Train for <code>epochs</code> epochs with <code>nn.MSELoss()</code>, <code>torch.optim.Adam(model.parameters(), lr=lr)</code>, and <code>nn.utils.clip_grad_norm_(model.parameters(), 1.0)</code> before each <code>optimizer.step()</code>.</li>
+<li>Evaluate in <code>model.eval()</code> and <code>torch.no_grad()</code> to obtain 1D float NumPy array <code>preds</code> on <code>X_test</code>.</li>
+<li>Return <code>{"test_rmse": round4, "test_mae": round4, "final_train_loss": round5, "preds": preds}</code>.</li>
+</ul>
+</section>
+<section id="exam-task-31.3-35-points-compare_gru_lstm_persistence_epiepi_df-districtdhaka-seq_len8-seed42" class="level3" data-number="31.7.3">
+<h3 data-number="31.7.3" class="anchored" data-anchor-id="exam-task-31.3-35-points-compare_gru_lstm_persistence_epiepi_df-districtdhaka-seq_len8-seed42"><span class="header-section-number">31.7.3</span> Exam Task 31.3 (35 Points): <code>compare_gru_lstm_persistence_epi(epi_df, district="Dhaka", seq_len=8, seed=42)</code></h3>
+<p>Without mutating <code>epi_df</code>:</p>
+<ul>
+<li>Call <code>temporal_district_window_split(epi_df, district=district, seq_len=seq_len, cutoff_year=2025)</code>.</li>
+<li>Benchmark three models on the <strong>exact same</strong> held-out test weeks <code>(X_test, y_test)</code>:
+<ul>
+<li><code>"Persistence"</code>: predicts <code>X_test[:, -1, 0]</code> (previous week’s standardized dengue count).</li>
+<li><code>"GRU"</code>: <code>EpiGRUForecaster</code> trained with <code>hidden_size=16, epochs=40, lr=0.02, seed=seed</code>, <code>MSELoss</code>, <code>Adam</code>, and <code>clip_grad_norm_(..., 1.0)</code>.</li>
+<li><code>"LSTM"</code>: <code>EpiLSTMForecaster</code> trained with the identical setup (<code>hidden_size=16, epochs=40, lr=0.02, seed=seed</code>).</li>
+</ul></li>
+<li>Return <code>{"leaderboard": df, "best_model": str}</code> where <code>leaderboard</code> is a <code>pd.DataFrame</code> with exact columns <code>["model", "test_rmse", "test_mae"]</code> (rounded to 4 decimals), sorted ascending by <code>test_rmse</code> (<code>reset_index(drop=True)</code>), and <code>best_model</code> equals <code>leaderboard.loc[0, "model"]</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch31-solutions" class="level2" data-number="31.8">
+<h2 data-number="31.8" class="anchored" data-anchor-id="sec-ch31-solutions"><span class="header-section-number">31.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="31.8.1">
+<h3 data-number="31.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">31.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>X_seq</code> has shape <strong><code>(44, 8, 3)</code></strong> (<code>52 - 8 = 44</code> windows) and <code>y_next</code> has shape <strong><code>(44,)</code></strong>.</li>
+<li>First, adjacent sliding windows share <strong>7 out of 8 overlapping weeks</strong>, so randomly splitting windows places nearly identical copies in train and test! Second, future windows (<code>t + 1</code>) leak directly into training to “predict” past targets (<code>t</code>), violating the arrow of time.</li>
+<li>Computing <code>mean</code> and <code>std</code> across 2024 + 2025 peeks at 2025’s monsoon peak height before forecasting 2025—a subtle form of <strong>preprocessing leakage</strong> that would be impossible in live real-time deployment.</li>
+<li>Output shape is <strong><code>(4, 16)</code></strong>, and because <span class="math inline">\(\tanh(\cdot)\)</span> squashes all real numbers strictly between <span class="math inline">\(-1\)</span> and <span class="math inline">\(+1\)</span>, every entry lies in <strong><code>(-1, 1)</code></strong> (bounded in <code>[-1, 1]</code> in floating point).</li>
+<li><span class="math inline">\(0.5^{20} \approx \mathbf{9.54 \times 10^{-7}}\)</span> (vanishing by a factor of one million!). Conversely, <span class="math inline">\(1.5^{20} \approx \mathbf{3{,}325}\)</span> (exploding!). Calling <code>nn.utils.clip_grad_norm_(model.parameters(), 1.0)</code> after <code>loss.backward()</code> and before <code>optimizer.step()</code> prevents exploding weight updates.</li>
+<li><code>nn.LSTM</code> maintains a separate <strong>cell state</strong> <span class="math inline">\(c_t\)</span> updated additively via <span class="math inline">\(c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t\)</span>. When the forget gate <span class="math inline">\(f_t \approx 1\)</span>, <span class="math inline">\(\partial c_t / \partial c_{t-1} \approx 1\)</span>, giving gradients an unobstructed linear highway across many timesteps.</li>
+<li><code>out</code>: <strong><code>(12, 8, 24)</code></strong> (<code>(B, T, H)</code>); <code>h_n</code>: <strong><code>(1, 12, 24)</code></strong> (<code>(num_layers, B, H)</code>); <code>c_n</code>: <strong><code>(1, 12, 24)</code></strong> (<code>(num_layers, B, H)</code>).</li>
+<li>Passing <code>out</code> of shape <code>(B, T, H)</code> into <code>nn.Linear(H, 1)</code> produces <code>(B, T, 1)</code> (one prediction per input week), whereas next-week forecasting needs a single scalar prediction <code>(B, 1)</code> summarizing the entire 8-week lookback—which is precisely <code>out[:, -1, :]</code>.</li>
+<li><code>padded</code>: <strong><code>(3, 4, 3)</code></strong>, <code>lengths</code>: <strong><code>(3,)</code></strong> (<code>tensor([2, 4, 1])</code>), <code>valid_mask</code>: <strong><code>(3, 4)</code></strong> with <span class="math inline">\(2 + 4 + 1 = \mathbf{7}\)</span> <code>True</code> entries (and 5 <code>False</code> padded positions).</li>
+<li>Residuals are <code>[12-10, 18-20, 33-30, 37-40] = [2, -2, 3, -3]</code>; squared errors are <code>[4, 4, 9, 9]</code>; <strong>MSE</strong> <span class="math inline">\(= 26 / 4 = \mathbf{6.5}\)</span>; <strong>RMSE</strong> <span class="math inline">\(= \sqrt{6.5} \approx \mathbf{2.5495}\)</span>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="31.8.2">
+<h3 data-number="31.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">31.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="im">import</span> torch</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a><span class="co"># To-Do 31.1</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a><span class="kw">def</span> build_sliding_windows(series_2d, seq_len<span class="op">=</span><span class="dv">8</span>, target_col<span class="op">=</span><span class="dv">0</span>):</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    <span class="co">"""Convert (T, F) series into (X_seq, y_next) sliding windows."""</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    arr <span class="op">=</span> np.asarray(series_2d, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    <span class="cf">if</span> arr.ndim <span class="op">!=</span> <span class="dv">2</span> <span class="kw">or</span> seq_len <span class="op">&lt;=</span> <span class="dv">0</span> <span class="kw">or</span> <span class="bu">len</span>(arr) <span class="op">&lt;=</span> seq_len:</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"series_2d must be 2D with len &gt; seq_len"</span>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    n_win <span class="op">=</span> <span class="bu">len</span>(arr) <span class="op">-</span> seq_len</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    X_seq <span class="op">=</span> np.stack([arr[i : i <span class="op">+</span> seq_len] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_win)])</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    y_next <span class="op">=</span> np.array(</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>        [arr[i <span class="op">+</span> seq_len, target_col] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_win)],</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>        dtype<span class="op">=</span><span class="bu">float</span>,</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>    )</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    <span class="cf">return</span> (X_seq, y_next)</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a></span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a><span class="co"># To-Do 31.2</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a><span class="kw">def</span> rnn_cell_step_numpy(x_t, h_prev, W_xh, W_hh, b_h):</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>    <span class="co">"""Compute pure-NumPy RNN step tanh(x_t @ W_xh + h_prev @ W_hh + b)."""</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    x <span class="op">=</span> np.asarray(x_t, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    h <span class="op">=</span> np.asarray(h_prev, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>    wx <span class="op">=</span> np.asarray(W_xh, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>    wh <span class="op">=</span> np.asarray(W_hh, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>    b <span class="op">=</span> np.asarray(b_h, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    <span class="cf">return</span> np.tanh(x <span class="op">@</span> wx <span class="op">+</span> h <span class="op">@</span> wh <span class="op">+</span> b)</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a></span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a><span class="co"># To-Do 31.3</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a><span class="kw">class</span> EpiGRUForecaster(nn.Module):</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    <span class="co">"""PyTorch GRU forecaster mapping (B, T, F) windows to (B, 1)."""</span></span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a></span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_size, hidden_size<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>        <span class="va">self</span>.gru <span class="op">=</span> nn.GRU(input_size, hidden_size, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>        <span class="va">self</span>.head <span class="op">=</span> nn.Linear(hidden_size, <span class="dv">1</span>)</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a></span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>        out, _ <span class="op">=</span> <span class="va">self</span>.gru(x)</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>        <span class="cf">return</span> <span class="va">self</span>.head(out[:, <span class="op">-</span><span class="dv">1</span>, :])</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a></span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a><span class="co"># To-Do 31.4</span></span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a><span class="kw">class</span> EpiLSTMForecaster(nn.Module):</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>    <span class="co">"""PyTorch LSTM forecaster mapping (B, T, F) windows to (B, 1)."""</span></span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a></span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_size, hidden_size<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>        <span class="va">self</span>.lstm <span class="op">=</span> nn.LSTM(input_size, hidden_size, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>        <span class="va">self</span>.head <span class="op">=</span> nn.Linear(hidden_size, <span class="dv">1</span>)</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a></span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a>        out, _ <span class="op">=</span> <span class="va">self</span>.lstm(x)</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>        <span class="cf">return</span> <span class="va">self</span>.head(out[:, <span class="op">-</span><span class="dv">1</span>, :])</span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a></span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a><span class="co"># To-Do 31.5</span></span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a><span class="kw">def</span> pad_variable_vital_sequences(seq_list):</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>    <span class="co">"""Zero-pad variable-length (T_i, F) tensors and build valid mask."""</span></span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>    lengths <span class="op">=</span> torch.tensor(</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a>        [s.shape[<span class="dv">0</span>] <span class="cf">for</span> s <span class="kw">in</span> seq_list], dtype<span class="op">=</span>torch.<span class="bu">long</span></span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>    )</span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a>    padded <span class="op">=</span> nn.utils.rnn.pad_sequence(</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>        seq_list, batch_first<span class="op">=</span><span class="va">True</span>, padding_value<span class="op">=</span><span class="fl">0.0</span></span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a>    )</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>    max_len <span class="op">=</span> padded.shape[<span class="dv">1</span>]</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>    valid_mask <span class="op">=</span> (</span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>        torch.arange(max_len).unsqueeze(<span class="dv">0</span>) <span class="op">&lt;</span> lengths.unsqueeze(<span class="dv">1</span>)</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>    )</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>    <span class="cf">return</span> (padded, lengths, valid_mask)</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a></span>
+<span id="cb21-70"><a href="#cb21-70" aria-label="70"></a><span class="co"># To-Do 31.6</span></span>
+<span id="cb21-71"><a href="#cb21-71" aria-label="71"></a><span class="kw">def</span> naive_persistence_forecast_rmse(y_seq_last, y_true):</span>
+<span id="cb21-72"><a href="#cb21-72" aria-label="72"></a>    <span class="co">"""Compute RMSE of naive persistence forecast y_hat_t = y_{t-1}."""</span></span>
+<span id="cb21-73"><a href="#cb21-73" aria-label="73"></a>    yl <span class="op">=</span> np.asarray(y_seq_last, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-74"><a href="#cb21-74" aria-label="74"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb21-75"><a href="#cb21-75" aria-label="75"></a>    rmse <span class="op">=</span> <span class="bu">float</span>(np.sqrt(np.mean((yt <span class="op">-</span> yl) <span class="op">**</span> <span class="dv">2</span>)))</span>
+<span id="cb21-76"><a href="#cb21-76" aria-label="76"></a>    <span class="cf">return</span> <span class="bu">round</span>(rmse, <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-31-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="31.8.3">
+<h3 data-number="31.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-31-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">31.8.3</span> C. Annotated Solutions — Chapter 31 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a><span class="co"># Exam Task 31.1 (30 pts)</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a><span class="kw">def</span> temporal_district_window_split(</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    epi_df, district, seq_len<span class="op">=</span><span class="dv">8</span>, cutoff_year<span class="op">=</span><span class="dv">2025</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>):</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>    <span class="co">"""Leak-free temporal train/test sliding windows (standardized)."""</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a>    sub <span class="op">=</span> (</span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a>        epi_df[epi_df[<span class="st">"district"</span>] <span class="op">==</span> district]</span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a>        .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>    )</span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>    feat_cols <span class="op">=</span> [<span class="st">"dengue_cases"</span>, <span class="st">"rainfall_mm"</span>, <span class="st">"mean_temp_c"</span>]</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>    raw <span class="op">=</span> sub[feat_cols].to_numpy(dtype<span class="op">=</span>np.float32)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>    n_train <span class="op">=</span> <span class="bu">int</span>((sub[<span class="st">"year"</span>] <span class="op">&lt;</span> cutoff_year).<span class="bu">sum</span>())</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a>    scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a>    scaler.fit(raw[:n_train])</span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a>    scaled <span class="op">=</span> scaler.transform(raw).astype(np.float32)</span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a>    X_train <span class="op">=</span> np.stack(</span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>        [scaled[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(seq_len, n_train)]</span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a>    )</span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>    y_train <span class="op">=</span> scaled[seq_len:n_train, <span class="dv">0</span>].astype(np.float32)</span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>    X_test <span class="op">=</span> np.stack(</span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>        [scaled[t <span class="op">-</span> seq_len : t] <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(n_train, <span class="bu">len</span>(sub))]</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>    )</span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>    y_test <span class="op">=</span> scaled[n_train:, <span class="dv">0</span>].astype(np.float32)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>    <span class="cf">return</span> {</span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>        <span class="st">"X_train"</span>: X_train,</span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>        <span class="st">"y_train"</span>: y_train,</span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>        <span class="st">"X_test"</span>: X_test,</span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>        <span class="st">"y_test"</span>: y_test,</span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>        <span class="st">"scaler"</span>: scaler,</span>
+<span id="cb22-34"><a href="#cb22-34" aria-label="34"></a>    }</span>
+<span id="cb22-35"><a href="#cb22-35" aria-label="35"></a></span>
+<span id="cb22-36"><a href="#cb22-36" aria-label="36"></a><span class="co"># Exam Task 31.2 (35 pts)</span></span>
+<span id="cb22-37"><a href="#cb22-37" aria-label="37"></a><span class="kw">def</span> train_epi_gru_forecaster(</span>
+<span id="cb22-38"><a href="#cb22-38" aria-label="38"></a>    X_train, y_train, X_test, y_test,</span>
+<span id="cb22-39"><a href="#cb22-39" aria-label="39"></a>    hidden_size<span class="op">=</span><span class="dv">16</span>, epochs<span class="op">=</span><span class="dv">40</span>, lr<span class="op">=</span><span class="fl">0.02</span>, seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb22-40"><a href="#cb22-40" aria-label="40"></a>):</span>
+<span id="cb22-41"><a href="#cb22-41" aria-label="41"></a>    <span class="co">"""Train GRU forecaster with MSELoss, Adam &amp; gradient clipping."""</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-label="42"></a>    torch.manual_seed(seed)</span>
+<span id="cb22-43"><a href="#cb22-43" aria-label="43"></a>    x_tr <span class="op">=</span> torch.tensor(np.asarray(X_train, dtype<span class="op">=</span>np.float32))</span>
+<span id="cb22-44"><a href="#cb22-44" aria-label="44"></a>    y_tr <span class="op">=</span> torch.tensor(</span>
+<span id="cb22-45"><a href="#cb22-45" aria-label="45"></a>        np.asarray(y_train, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb22-46"><a href="#cb22-46" aria-label="46"></a>    ).unsqueeze(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb22-47"><a href="#cb22-47" aria-label="47"></a>    x_te <span class="op">=</span> torch.tensor(np.asarray(X_test, dtype<span class="op">=</span>np.float32))</span>
+<span id="cb22-48"><a href="#cb22-48" aria-label="48"></a>    y_te <span class="op">=</span> np.asarray(y_test, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb22-49"><a href="#cb22-49" aria-label="49"></a>    model <span class="op">=</span> EpiGRUForecaster(x_tr.shape[<span class="op">-</span><span class="dv">1</span>], hidden_size<span class="op">=</span>hidden_size)</span>
+<span id="cb22-50"><a href="#cb22-50" aria-label="50"></a>    opt <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span>lr)</span>
+<span id="cb22-51"><a href="#cb22-51" aria-label="51"></a>    loss_fn <span class="op">=</span> nn.MSELoss()</span>
+<span id="cb22-52"><a href="#cb22-52" aria-label="52"></a>    model.train()</span>
+<span id="cb22-53"><a href="#cb22-53" aria-label="53"></a>    final_loss <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb22-54"><a href="#cb22-54" aria-label="54"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb22-55"><a href="#cb22-55" aria-label="55"></a>        opt.zero_grad()</span>
+<span id="cb22-56"><a href="#cb22-56" aria-label="56"></a>        loss <span class="op">=</span> loss_fn(model(x_tr), y_tr)</span>
+<span id="cb22-57"><a href="#cb22-57" aria-label="57"></a>        loss.backward()</span>
+<span id="cb22-58"><a href="#cb22-58" aria-label="58"></a>        nn.utils.clip_grad_norm_(model.parameters(), <span class="fl">1.0</span>)</span>
+<span id="cb22-59"><a href="#cb22-59" aria-label="59"></a>        opt.step()</span>
+<span id="cb22-60"><a href="#cb22-60" aria-label="60"></a>        final_loss <span class="op">=</span> <span class="bu">float</span>(loss.item())</span>
+<span id="cb22-61"><a href="#cb22-61" aria-label="61"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb22-62"><a href="#cb22-62" aria-label="62"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb22-63"><a href="#cb22-63" aria-label="63"></a>        preds <span class="op">=</span> model(x_te).squeeze(<span class="op">-</span><span class="dv">1</span>).numpy().astype(<span class="bu">float</span>)</span>
+<span id="cb22-64"><a href="#cb22-64" aria-label="64"></a>    test_rmse <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> preds) <span class="op">**</span> <span class="dv">2</span>))), <span class="dv">4</span>)</span>
+<span id="cb22-65"><a href="#cb22-65" aria-label="65"></a>    test_mae <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(y_te <span class="op">-</span> preds))), <span class="dv">4</span>)</span>
+<span id="cb22-66"><a href="#cb22-66" aria-label="66"></a>    <span class="cf">return</span> {</span>
+<span id="cb22-67"><a href="#cb22-67" aria-label="67"></a>        <span class="st">"test_rmse"</span>: test_rmse,</span>
+<span id="cb22-68"><a href="#cb22-68" aria-label="68"></a>        <span class="st">"test_mae"</span>: test_mae,</span>
+<span id="cb22-69"><a href="#cb22-69" aria-label="69"></a>        <span class="st">"final_train_loss"</span>: <span class="bu">round</span>(final_loss, <span class="dv">5</span>),</span>
+<span id="cb22-70"><a href="#cb22-70" aria-label="70"></a>        <span class="st">"preds"</span>: preds,</span>
+<span id="cb22-71"><a href="#cb22-71" aria-label="71"></a>    }</span>
+<span id="cb22-72"><a href="#cb22-72" aria-label="72"></a></span>
+<span id="cb22-73"><a href="#cb22-73" aria-label="73"></a><span class="co"># Exam Task 31.3 (35 pts)</span></span>
+<span id="cb22-74"><a href="#cb22-74" aria-label="74"></a><span class="kw">def</span> compare_gru_lstm_persistence_epi(</span>
+<span id="cb22-75"><a href="#cb22-75" aria-label="75"></a>    epi_df, district<span class="op">=</span><span class="st">"Dhaka"</span>, seq_len<span class="op">=</span><span class="dv">8</span>, seed<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb22-76"><a href="#cb22-76" aria-label="76"></a>):</span>
+<span id="cb22-77"><a href="#cb22-77" aria-label="77"></a>    <span class="co">"""Benchmark Persistence vs GRU vs LSTM on held-out test weeks."""</span></span>
+<span id="cb22-78"><a href="#cb22-78" aria-label="78"></a>    split <span class="op">=</span> temporal_district_window_split(</span>
+<span id="cb22-79"><a href="#cb22-79" aria-label="79"></a>        epi_df, district<span class="op">=</span>district, seq_len<span class="op">=</span>seq_len, cutoff_year<span class="op">=</span><span class="dv">2025</span></span>
+<span id="cb22-80"><a href="#cb22-80" aria-label="80"></a>    )</span>
+<span id="cb22-81"><a href="#cb22-81" aria-label="81"></a>    X_tr, y_tr <span class="op">=</span> split[<span class="st">"X_train"</span>], split[<span class="st">"y_train"</span>]</span>
+<span id="cb22-82"><a href="#cb22-82" aria-label="82"></a>    X_te, y_te <span class="op">=</span> split[<span class="st">"X_test"</span>], split[<span class="st">"y_test"</span>].astype(<span class="bu">float</span>)</span>
+<span id="cb22-83"><a href="#cb22-83" aria-label="83"></a>    pers <span class="op">=</span> X_te[:, <span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>].astype(<span class="bu">float</span>)</span>
+<span id="cb22-84"><a href="#cb22-84" aria-label="84"></a>    gru_res <span class="op">=</span> train_epi_gru_forecaster(</span>
+<span id="cb22-85"><a href="#cb22-85" aria-label="85"></a>        X_tr, y_tr, X_te, y_te,</span>
+<span id="cb22-86"><a href="#cb22-86" aria-label="86"></a>        hidden_size<span class="op">=</span><span class="dv">16</span>, epochs<span class="op">=</span><span class="dv">40</span>, lr<span class="op">=</span><span class="fl">0.02</span>, seed<span class="op">=</span>seed,</span>
+<span id="cb22-87"><a href="#cb22-87" aria-label="87"></a>    )</span>
+<span id="cb22-88"><a href="#cb22-88" aria-label="88"></a>    torch.manual_seed(seed)</span>
+<span id="cb22-89"><a href="#cb22-89" aria-label="89"></a>    lstm_model <span class="op">=</span> EpiLSTMForecaster(X_tr.shape[<span class="op">-</span><span class="dv">1</span>], hidden_size<span class="op">=</span><span class="dv">16</span>)</span>
+<span id="cb22-90"><a href="#cb22-90" aria-label="90"></a>    opt <span class="op">=</span> torch.optim.Adam(lstm_model.parameters(), lr<span class="op">=</span><span class="fl">0.02</span>)</span>
+<span id="cb22-91"><a href="#cb22-91" aria-label="91"></a>    loss_fn <span class="op">=</span> nn.MSELoss()</span>
+<span id="cb22-92"><a href="#cb22-92" aria-label="92"></a>    xt <span class="op">=</span> torch.tensor(X_tr, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb22-93"><a href="#cb22-93" aria-label="93"></a>    yt <span class="op">=</span> torch.tensor(y_tr, dtype<span class="op">=</span>torch.float32).unsqueeze(<span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb22-94"><a href="#cb22-94" aria-label="94"></a>    xe <span class="op">=</span> torch.tensor(X_te, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb22-95"><a href="#cb22-95" aria-label="95"></a>    lstm_model.train()</span>
+<span id="cb22-96"><a href="#cb22-96" aria-label="96"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">40</span>):</span>
+<span id="cb22-97"><a href="#cb22-97" aria-label="97"></a>        opt.zero_grad()</span>
+<span id="cb22-98"><a href="#cb22-98" aria-label="98"></a>        loss <span class="op">=</span> loss_fn(lstm_model(xt), yt)</span>
+<span id="cb22-99"><a href="#cb22-99" aria-label="99"></a>        loss.backward()</span>
+<span id="cb22-100"><a href="#cb22-100" aria-label="100"></a>        nn.utils.clip_grad_norm_(lstm_model.parameters(), <span class="fl">1.0</span>)</span>
+<span id="cb22-101"><a href="#cb22-101" aria-label="101"></a>        opt.step()</span>
+<span id="cb22-102"><a href="#cb22-102" aria-label="102"></a>    lstm_model.<span class="bu">eval</span>()</span>
+<span id="cb22-103"><a href="#cb22-103" aria-label="103"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb22-104"><a href="#cb22-104" aria-label="104"></a>        lstm_preds <span class="op">=</span> lstm_model(xe).squeeze(<span class="op">-</span><span class="dv">1</span>).numpy().astype(<span class="bu">float</span>)</span>
+<span id="cb22-105"><a href="#cb22-105" aria-label="105"></a>    rows <span class="op">=</span> [</span>
+<span id="cb22-106"><a href="#cb22-106" aria-label="106"></a>        {</span>
+<span id="cb22-107"><a href="#cb22-107" aria-label="107"></a>            <span class="st">"model"</span>: <span class="st">"Persistence"</span>,</span>
+<span id="cb22-108"><a href="#cb22-108" aria-label="108"></a>            <span class="st">"test_rmse"</span>: <span class="bu">round</span>(</span>
+<span id="cb22-109"><a href="#cb22-109" aria-label="109"></a>                <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> pers) <span class="op">**</span> <span class="dv">2</span>))), <span class="dv">4</span></span>
+<span id="cb22-110"><a href="#cb22-110" aria-label="110"></a>            ),</span>
+<span id="cb22-111"><a href="#cb22-111" aria-label="111"></a>            <span class="st">"test_mae"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(y_te <span class="op">-</span> pers))), <span class="dv">4</span>),</span>
+<span id="cb22-112"><a href="#cb22-112" aria-label="112"></a>        },</span>
+<span id="cb22-113"><a href="#cb22-113" aria-label="113"></a>        {</span>
+<span id="cb22-114"><a href="#cb22-114" aria-label="114"></a>            <span class="st">"model"</span>: <span class="st">"GRU"</span>,</span>
+<span id="cb22-115"><a href="#cb22-115" aria-label="115"></a>            <span class="st">"test_rmse"</span>: gru_res[<span class="st">"test_rmse"</span>],</span>
+<span id="cb22-116"><a href="#cb22-116" aria-label="116"></a>            <span class="st">"test_mae"</span>: gru_res[<span class="st">"test_mae"</span>],</span>
+<span id="cb22-117"><a href="#cb22-117" aria-label="117"></a>        },</span>
+<span id="cb22-118"><a href="#cb22-118" aria-label="118"></a>        {</span>
+<span id="cb22-119"><a href="#cb22-119" aria-label="119"></a>            <span class="st">"model"</span>: <span class="st">"LSTM"</span>,</span>
+<span id="cb22-120"><a href="#cb22-120" aria-label="120"></a>            <span class="st">"test_rmse"</span>: <span class="bu">round</span>(</span>
+<span id="cb22-121"><a href="#cb22-121" aria-label="121"></a>                <span class="bu">float</span>(np.sqrt(np.mean((y_te <span class="op">-</span> lstm_preds) <span class="op">**</span> <span class="dv">2</span>))), <span class="dv">4</span></span>
+<span id="cb22-122"><a href="#cb22-122" aria-label="122"></a>            ),</span>
+<span id="cb22-123"><a href="#cb22-123" aria-label="123"></a>            <span class="st">"test_mae"</span>: <span class="bu">round</span>(</span>
+<span id="cb22-124"><a href="#cb22-124" aria-label="124"></a>                <span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(y_te <span class="op">-</span> lstm_preds))), <span class="dv">4</span></span>
+<span id="cb22-125"><a href="#cb22-125" aria-label="125"></a>            ),</span>
+<span id="cb22-126"><a href="#cb22-126" aria-label="126"></a>        },</span>
+<span id="cb22-127"><a href="#cb22-127" aria-label="127"></a>    ]</span>
+<span id="cb22-128"><a href="#cb22-128" aria-label="128"></a>    lb <span class="op">=</span> (</span>
+<span id="cb22-129"><a href="#cb22-129" aria-label="129"></a>        pd.DataFrame(rows, columns<span class="op">=</span>[<span class="st">"model"</span>, <span class="st">"test_rmse"</span>, <span class="st">"test_mae"</span>])</span>
+<span id="cb22-130"><a href="#cb22-130" aria-label="130"></a>        .sort_values(<span class="st">"test_rmse"</span>)</span>
+<span id="cb22-131"><a href="#cb22-131" aria-label="131"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-132"><a href="#cb22-132" aria-label="132"></a>    )</span>
+<span id="cb22-133"><a href="#cb22-133" aria-label="133"></a>    <span class="cf">return</span> {<span class="st">"leaderboard"</span>: lb, <span class="st">"best_model"</span>: <span class="bu">str</span>(lb.loc[<span class="dv">0</span>, <span class="st">"model"</span>])}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-31-failure-modes" class="level3" data-number="31.8.4">
+<h3 data-number="31.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-31-failure-modes"><span class="header-section-number">31.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 31 Failure Modes</h3>
+<ol type="1">
+<li><strong>Temporal Leakage via Shuffled Splits or Full-Series Scaling:</strong> Calling <code>train_test_split(..., shuffle=True)</code> on overlapping sliding windows or fitting <code>StandardScaler</code> on both 2024 and 2025 leaks future outbreaks directly into training. Always sort by <code>["year", "epi_week"]</code>, split strictly by <code>year &lt; cutoff_year</code>, and fit scalers exclusively on past training rows.</li>
+<li><strong>Tensor Axis &amp; Tuple-Unpacking Traps (<code>batch_first=True</code> and <code>(out, (h_n, c_n))</code>):</strong> Forgetting <code>batch_first=True</code> silently swaps batch and time axes without raising an error, while flat 3-way unpacking <code>out, h_n, c_n = lstm(x)</code> immediately triggers <code>ValueError</code>. Always specify <code>batch_first=True</code>, verify <code>(B, T, F)</code> inputs, and unpack <code>out, _ = self.lstm(x)</code>.</li>
+<li><strong>Publishing Unbenchmarked Neural RMSEs (Skipping Persistence):</strong> On smooth weekly disease curves, even an undertrained model can look deceptively accurate until compared against <span class="math inline">\(\hat{y}_t = y_{t-1}\)</span>. Always evaluate Persistence, GRU, and LSTM on identical held-out windows and apply <code>clip_grad_norm_(..., 1.0)</code> so recurrent gradients stay stable.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Bridge to Chapter 32 — Attention, Transformers &amp; Biomedical Language Models
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Gated recurrent networks (<code>GRU</code> and <code>LSTM</code>) conquer vanilla RNN vanishing gradients, yet they still process sequences <strong>one timestep at a time</strong> (<span class="math inline">\(t = 1 \rightarrow 2 \rightarrow \dots \rightarrow T\)</span>), creating a sequential bottleneck when reading 512-token clinical discharge summaries or long genomic sequences. In Chapter 32, you will replace sequential recurrence with <strong>Scaled Dot-Product Self-Attention</strong> and the <strong>Transformer</strong> architecture—letting every timestep attend directly to every other timestep in parallel!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="pagination-link" aria-label="Convolutional Neural Networks (CNNs) and Medical Image Classification">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="pagination-link" aria-label="Attention, Transformers, Fine-Tuning, and Modern Foundation Models">
+        <span class="nav-page-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

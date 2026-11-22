@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>5&nbsp; Loops, Iteration Patterns, Accumulators, and Execution Tracing – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_01_python_foundations/ch06_functions_scope.html" rel="next">
+<link href="../part_01_python_foundations/ch04_conditionals_logic.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch05_loops_tracing.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch05-intuition" id="toc-sec-ch05-intuition" class="nav-link" data-scroll-target="#sec-ch05-intuition"><span class="header-section-number">5.1</span> Stage 1 — First-Principles Intuition: The Triage Conveyor Belt</a>
+  <ul class="collapse">
+  <li><a href="#choosing-for-vs.-while" id="toc-choosing-for-vs.-while" class="nav-link" data-scroll-target="#choosing-for-vs.-while"><span class="header-section-number">5.1.1</span> Choosing <code>for</code> vs.&nbsp;<code>while</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-mental-model" id="toc-sec-ch05-mental-model" class="nav-link" data-scroll-target="#sec-ch05-mental-model"><span class="header-section-number">5.2</span> Stage 2 — Visual Mental Model: The Loop Execution Cycle</a></li>
+  <li><a href="#sec-ch05-walkthrough" id="toc-sec-ch05-walkthrough" class="nav-link" data-scroll-target="#sec-ch05-walkthrough"><span class="header-section-number">5.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch05-range" id="toc-sec-ch05-range" class="nav-link" data-scroll-target="#sec-ch05-range"><span class="header-section-number">5.3.1</span> <code>for</code> Loops &amp; <code>range()</code> (Half-Open Intervals)</a></li>
+  <li><a href="#sec-ch05-patterns" id="toc-sec-ch05-patterns" class="nav-link" data-scroll-target="#sec-ch05-patterns"><span class="header-section-number">5.3.2</span> The 4 Universal Loop Patterns</a></li>
+  <li><a href="#sec-ch05-flow" id="toc-sec-ch05-flow" class="nav-link" data-scroll-target="#sec-ch05-flow"><span class="header-section-number">5.3.3</span> <code>continue</code> &amp; <code>break</code> (DHS Missing Codes &amp; Early Outbreak Alert)</a></li>
+  <li><a href="#sec-ch05-enumerate" id="toc-sec-ch05-enumerate" class="nav-link" data-scroll-target="#sec-ch05-enumerate"><span class="header-section-number">5.3.4</span> <code>enumerate()</code> for Peak Dengue Week Identification</a></li>
+  <li><a href="#sec-ch05-while" id="toc-sec-ch05-while" class="nav-link" data-scroll-target="#sec-ch05-while"><span class="header-section-number">5.3.5</span> <code>while</code> Loops: Epidemic Doubling &amp; Hospital Bed Capacity</a></li>
+  <li><a href="#sec-ch05-nested" id="toc-sec-ch05-nested" class="nav-link" data-scroll-target="#sec-ch05-nested"><span class="header-section-number">5.3.6</span> Nested Loops: Multi-Ward Surveillance Summary</a></li>
+  <li><a href="#sec-ch05-errors" id="toc-sec-ch05-errors" class="nav-link" data-scroll-target="#sec-ch05-errors"><span class="header-section-number">5.3.7</span> Break It On Purpose! (Loop Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-blueprint" id="toc-sec-ch05-blueprint" class="nav-link" data-scroll-target="#sec-ch05-blueprint"><span class="header-section-number">5.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">5.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">5.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-todos" id="toc-sec-ch05-todos" class="nav-link" data-scroll-target="#sec-ch05-todos"><span class="header-section-number">5.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch05-test" id="toc-sec-ch05-test" class="nav-link" data-scroll-target="#sec-ch05-test"><span class="header-section-number">5.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch05-exam" id="toc-sec-ch05-exam" class="nav-link" data-scroll-target="#sec-ch05-exam"><span class="header-section-number">5.7</span> Stage 7 — Chapter 5 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-5.1-30-points-dirty-maternal-hemoglobin-cleaning-summary" id="toc-exam-task-5.1-30-points-dirty-maternal-hemoglobin-cleaning-summary" class="nav-link" data-scroll-target="#exam-task-5.1-30-points-dirty-maternal-hemoglobin-cleaning-summary"><span class="header-section-number">5.7.1</span> Exam Task 5.1 (30 Points): Dirty Maternal Hemoglobin Cleaning &amp; Summary</a></li>
+  <li><a href="#exam-task-5.2-35-points-monsoon-dengue-peak-week-high-alert-surveillance" id="toc-exam-task-5.2-35-points-monsoon-dengue-peak-week-high-alert-surveillance" class="nav-link" data-scroll-target="#exam-task-5.2-35-points-monsoon-dengue-peak-week-high-alert-surveillance"><span class="header-section-number">5.7.2</span> Exam Task 5.2 (35 Points): Monsoon Dengue Peak-Week &amp; High-Alert Surveillance</a></li>
+  <li><a href="#exam-task-5.3-35-points-hospital-surge-capacity-day-simulation-while-loop" id="toc-exam-task-5.3-35-points-hospital-surge-capacity-day-simulation-while-loop" class="nav-link" data-scroll-target="#exam-task-5.3-35-points-hospital-surge-capacity-day-simulation-while-loop"><span class="header-section-number">5.7.3</span> Exam Task 5.3 (35 Points): Hospital Surge-Capacity Day Simulation (<code>while</code> Loop)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch05-solutions" id="toc-sec-ch05-solutions" class="nav-link" data-scroll-target="#sec-ch05-solutions"><span class="header-section-number">5.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">5.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">5.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-5-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-5-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-5-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">5.8.3</span> C. Annotated Solutions — Chapter 5 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-5-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-5-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-5-failure-modes"><span class="header-section-number">5.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 5 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch05_loops_tracing.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch05" class="quarto-section-identifier"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Automate repetitive epidemiological calculations across hundreds or millions of patient records using <code>for</code> and <code>while</code> loops, master the <strong>4 Universal Loop Patterns</strong> (Accumulator, Counter, Filter, Running Max/Min), control iteration flow with <code>range()</code>, <code>enumerate()</code>, <code>continue</code>, and <code>break</code>, and trace every variable state on paper using <strong>Loop Execution Trace Tables</strong>.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb">ch05 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch05_loops_tracing__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 5 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb">ch05 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch05_loops_tracing__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 5 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb">ch05 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch05_loops_tracing__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 5 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Iterate cleanly over sequences and integer ranges using <code>for</code> loops and the half-open interval <code>range(start, stop, step)</code>.</li>
+<li>Implement the <strong>4 Universal Loop Patterns</strong>—<strong>Accumulator</strong>, <strong>Counter</strong>, <strong>Filter</strong>, and <strong>Running Max/Min</strong>—in a single clean pass over clinical data.</li>
+<li>Skip DHS missing-value sentinels (<code>999</code>, <code>None</code>) with <code>continue</code> and exit outbreak scans early with <code>break</code>.</li>
+<li>Track human-readable 1-based weeks or days alongside values using <code>enumerate(..., start=1)</code>.</li>
+<li>Model unknown-duration processes—such as epidemic doubling and hospital bed surge capacity—using condition-driven <code>while</code> loops without creating infinite loops.</li>
+<li>Build <strong>Loop Execution Trace Tables</strong> to verify nested loops, catch off-by-one bugs, and prevent <code>TypeError</code>, <code>NameError</code>, and <code>ZeroDivisionError</code>.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch05-intuition" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="sec-ch05-intuition"><span class="header-section-number">5.1</span> Stage 1 — First-Principles Intuition: The Triage Conveyor Belt</h2>
+<p>In Chapter 2, you totaled 4 days of dengue cases by writing four copy-pasted lines: <code>total_cases += day_1</code>, <code>+= day_2</code>, <code>+= day_3</code>, <code>+= day_4</code>. That works for 4 days—and collapses completely when your thesis analyzes 365 days of national surveillance across 64 districts or 20,000 mothers in the Bangladesh DHS.</p>
+<p>Loops let you write the clinical rule <strong>once</strong> and instruct Python to apply it faithfully to every patient record automatically.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Hospital Triage Conveyor Belt
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Picture two different stations in a district hospital:</p>
+<ol type="1">
+<li><strong>The <code>for</code> Loop (Fixed Stack of Patient Charts):</strong> A triage nurse receives a finite stack of charts (<code>hb_readings</code>). She picks up Chart 1, checks hemoglobin, updates her clipboard tallies (<code>total_hb</code>, <code>anemic_count</code>), sets it down, and repeats for Chart 2, Chart 3, …, stopping automatically when the stack is empty.</li>
+<li><strong>The <code>while</code> Loop (Emergency Ward Bed Monitor):</strong> A hospital director watches active dengue admissions climb day by day. She does <strong>not</strong> know in advance whether beds will run out on Day 6 or Day 14—she simply keeps simulating <em>“as long as <code>occupied_beds &lt;= bed_capacity</code>,”</em> stopping the moment capacity is breached.</li>
+</ol>
+</div>
+</div>
+<section id="choosing-for-vs.-while" class="level3" data-number="5.1.1">
+<h3 data-number="5.1.1" class="anchored" data-anchor-id="choosing-for-vs.-while"><span class="header-section-number">5.1.1</span> Choosing <code>for</code> vs.&nbsp;<code>while</code></h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Loop Type</th>
+<th style="text-align: left;">When to Choose It</th>
+<th style="text-align: left;">Public Health Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong><code>for</code> loop</strong></td>
+<td style="text-align: left;">You have a known collection (list of readings) or exact count (<code>range(1, 8)</code>).</td>
+<td style="text-align: left;">Computing clean mean hemoglobin across 500 survey rows.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong><code>while</code> loop</strong></td>
+<td style="text-align: left;">You do <strong>not</strong> know how many steps it will take until a condition becomes <code>False</code>.</td>
+<td style="text-align: left;">Simulating days until epidemic doubling overflows 200 hospital beds.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="sec-ch05-mental-model" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="sec-ch05-mental-model"><span class="header-section-number">5.2</span> Stage 2 — Visual Mental Model: The Loop Execution Cycle</h2>
+<p>Every loop in Python—whether processing 5 clinic rows or 50 million genomic reads—follows the exact same cyclic execution engine:</p>
+<div class="cell" data-fig-width="3.8" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 5 (The Loop Execution Cycle) illustrating 1. Initialize State total = 0 | count = 0; 3. Run Loop Body Inspect current item; 4. Update State total += val | count += 1; 5. Loop Finished Use final state">flowchart TD
+    Init["1. Initialize State&lt;br/&gt;total = 0 | count = 0"]
+    Next{"2. Next item left&lt;br/&gt;or condition True?"}
+    Body["3. Run Loop Body&lt;br/&gt;Inspect current item"]
+    Skip{"Hit continue?"}
+    Stop{"Hit break?"}
+    Update["4. Update State&lt;br/&gt;total += val | count += 1"]
+    Done["5. Loop Finished&lt;br/&gt;Use final state"]
+
+    Init --&gt; Next
+    Next -- "Yes" --&gt; Body
+    Body --&gt; Skip
+    Skip -- "Yes (skip rest)" --&gt; Next
+    Skip -- "No" --&gt; Stop
+    Stop -- "Yes (exit early)" --&gt; Done
+    Stop -- "No" --&gt; Update
+    Update --&gt; Next
+    Next -- "No (exhausted)" --&gt; Done
+</pre>
+</div>
+<p></p><figcaption> Chapter 5 visual mental model: The Loop Execution Cycle</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>Golden Rule of Loop Initialization:</strong> Always initialize accumulators (<code>total = 0</code>), counters (<code>count = 0</code>), and filter lists (<code>results = []</code>) <strong>ONCE before the loop begins</strong>. Putting <code>total = 0</code> <em>inside</em> the loop body wipes out your progress on every iteration; forgetting it entirely triggers a <code>NameError</code>!</p>
+</blockquote>
+<hr>
+</section>
+<section id="sec-ch05-walkthrough" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="sec-ch05-walkthrough"><span class="header-section-number">5.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb</code> in Colab and execute each cell while reading the step-by-step <strong>Loop Execution Trace Tables</strong> below.</p>
+<section id="sec-ch05-range" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1" class="anchored" data-anchor-id="sec-ch05-range"><span class="header-section-number">5.3.1</span> <code>for</code> Loops &amp; <code>range()</code> (Half-Open Intervals)</h3>
+<p>Python’s <code>range(start, stop, step)</code> follows the half-open mathematical interval <span class="math inline">\([start, stop)\)</span>—it <strong>includes <code>start</code></strong> and <strong>stops one step before <code>stop</code></strong>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="co"># range(start, stop, step) stops BEFORE 'stop' (half-open interval)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="cf">for</span> day <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">6</span>):</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a>    <span class="bu">print</span>(<span class="ss">f"Day </span><span class="sc">{</span>day<span class="sc">}</span><span class="ss">: Surveillance report submitted"</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"Days counted:"</span>, <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">6</span>)))</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Even clinic hours:"</span>, <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">8</span>, <span class="dv">17</span>, <span class="dv">2</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Day 1: Surveillance report submitted</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Day 2: Surveillance report submitted</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Day 3: Surveillance report submitted</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>Day 4: Surveillance report submitted</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>Day 5: Surveillance report submitted</span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a>Days counted: [1, 2, 3, 4, 5]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a>Even clinic hours: [8, 10, 12, 14, 16]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch05-patterns" class="level3" data-number="5.3.2">
+<h3 data-number="5.3.2" class="anchored" data-anchor-id="sec-ch05-patterns"><span class="header-section-number">5.3.2</span> The 4 Universal Loop Patterns</h3>
+<p>Over 90% of real-world data processing loops are combinations of just <strong>four universal patterns</strong>:</p>
+<ol type="1">
+<li><strong>Accumulator:</strong> Running sum (<code>total_hb += hb</code>), initialized to <code>0</code> or <code>0.0</code>.</li>
+<li><strong>Counter:</strong> Running tally of matching records (<code>anemic_count += 1</code>), initialized to <code>0</code>.</li>
+<li><strong>Filter:</strong> Growing list of qualifying items (<code>anemic_cases.append(hb)</code>), initialized to <code>[]</code>.</li>
+<li><strong>Running Max / Min:</strong> Tracking the extreme value seen so far (<code>max_hb = hb_readings[0]</code>).</li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>hb_readings <span class="op">=</span> [<span class="fl">10.4</span>, <span class="fl">12.1</span>, <span class="fl">9.6</span>, <span class="fl">11.8</span>, <span class="fl">10.9</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>total_hb <span class="op">=</span> <span class="fl">0.0</span>           <span class="co"># Pattern 1: Accumulator</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>anemic_count <span class="op">=</span> <span class="dv">0</span>         <span class="co"># Pattern 2: Counter</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>anemic_cases <span class="op">=</span> []        <span class="co"># Pattern 3: Filter</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>max_hb <span class="op">=</span> hb_readings[<span class="dv">0</span>]  <span class="co"># Pattern 4: Running Max</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a><span class="cf">for</span> hb <span class="kw">in</span> hb_readings:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a>    total_hb <span class="op">+=</span> hb</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>    <span class="cf">if</span> hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>        anemic_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>        anemic_cases.append(hb)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>    <span class="cf">if</span> hb <span class="op">&gt;</span> max_hb:</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>        max_hb <span class="op">=</span> hb</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>mean_hb <span class="op">=</span> <span class="bu">round</span>(total_hb <span class="op">/</span> <span class="bu">len</span>(hb_readings), <span class="dv">2</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a><span class="bu">print</span>(<span class="st">"Mean Hb:"</span>, mean_hb, <span class="st">"| Anemic count:"</span>, anemic_count)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a><span class="bu">print</span>(<span class="st">"Anemic list:"</span>, anemic_cases, <span class="st">"| Highest Hb:"</span>, max_hb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Mean Hb: 10.96 | Anemic count: 3</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Anemic list: [10.4, 9.6, 10.9] | Highest Hb: 12.1</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Loop Execution Trace Table (Exact State After Each Iteration):</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 11%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Iter</th>
+<th style="text-align: center;"><code>hb</code></th>
+<th style="text-align: center;"><code>total_hb</code></th>
+<th style="text-align: center;"><code>hb &lt; 11.0</code>?</th>
+<th style="text-align: center;"><code>anemic_count</code></th>
+<th style="text-align: left;"><code>anemic_cases</code></th>
+<th style="text-align: center;"><code>max_hb</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Init</code></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;"><code>0.0</code></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;"><code>0</code></td>
+<td style="text-align: left;"><code>[]</code></td>
+<td style="text-align: center;"><code>10.4</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: center;"><code>10.4</code></td>
+<td style="text-align: center;"><code>10.4</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: left;"><code>[10.4]</code></td>
+<td style="text-align: center;"><code>10.4</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: center;"><code>12.1</code></td>
+<td style="text-align: center;"><code>22.5</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: left;"><code>[10.4]</code></td>
+<td style="text-align: center;"><code>12.1</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: center;"><code>9.6</code></td>
+<td style="text-align: center;"><code>32.1</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: left;"><code>[10.4, 9.6]</code></td>
+<td style="text-align: center;"><code>12.1</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>4</code></td>
+<td style="text-align: center;"><code>11.8</code></td>
+<td style="text-align: center;"><code>43.9</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: left;"><code>[10.4, 9.6]</code></td>
+<td style="text-align: center;"><code>12.1</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>5</code></td>
+<td style="text-align: center;"><code>10.9</code></td>
+<td style="text-align: center;"><code>54.8</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: left;"><code>[10.4, 9.6, 10.9]</code></td>
+<td style="text-align: center;"><code>12.1</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="sec-ch05-flow" class="level3" data-number="5.3.3">
+<h3 data-number="5.3.3" class="anchored" data-anchor-id="sec-ch05-flow"><span class="header-section-number">5.3.3</span> <code>continue</code> &amp; <code>break</code> (DHS Missing Codes &amp; Early Outbreak Alert)</h3>
+<p>Real epidemiology datasets are never pristine. Demographic and Health Surveys (DHS) routinely encode <em>“refused / not measured”</em> as <code>999</code> or <code>None</code>. Use <strong><code>continue</code></strong> to skip bad rows immediately, and <strong><code>break</code></strong> to stop an alert scan the instant a threshold is crossed:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Part A: continue skips DHS missing sentinels (999 or None)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>raw_sbp <span class="op">=</span> [<span class="dv">122</span>, <span class="dv">999</span>, <span class="dv">148</span>, <span class="va">None</span>, <span class="dv">134</span>, <span class="dv">999</span>]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>valid_total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a><span class="cf">for</span> sbp <span class="kw">in</span> raw_sbp:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>    <span class="cf">if</span> sbp <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> sbp <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>        <span class="cf">continue</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>    valid_total <span class="op">+=</span> sbp</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>    valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a><span class="bu">print</span>(<span class="st">"Clean SBP mean:"</span>, <span class="bu">round</span>(valid_total <span class="op">/</span> valid_count, <span class="dv">1</span>))</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a><span class="co"># Part B: break halts scan on FIRST outbreak threshold breach (&gt;= 50)</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>daily_cases <span class="op">=</span> [<span class="dv">14</span>, <span class="dv">28</span>, <span class="dv">53</span>, <span class="dv">61</span>, <span class="dv">40</span>]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>first_alert_day <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a><span class="cf">for</span> day_num, cases <span class="kw">in</span> <span class="bu">enumerate</span>(daily_cases, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>    <span class="cf">if</span> cases <span class="op">&gt;=</span> <span class="dv">50</span>:</span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>        first_alert_day <span class="op">=</span> day_num</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>        <span class="cf">break</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a><span class="bu">print</span>(<span class="st">"First outbreak alert on Day:"</span>, first_alert_day)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Clean SBP mean: 134.7</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>First outbreak alert on Day: 3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Loop Execution Trace Table — Part A (<code>continue</code> Skipping Missing Sentinels):</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: center;">Iter</th>
+<th style="text-align: center;"><code>sbp</code></th>
+<th style="text-align: center;">Skipped (<code>continue</code>)?</th>
+<th style="text-align: center;"><code>valid_total</code></th>
+<th style="text-align: center;"><code>valid_count</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Init</code></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;"><code>0</code></td>
+<td style="text-align: center;"><code>0</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: center;"><code>122</code></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;"><code>122</code></td>
+<td style="text-align: center;"><code>1</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: center;"><code>999</code></td>
+<td style="text-align: center;"><strong>Yes</strong></td>
+<td style="text-align: center;"><code>122</code></td>
+<td style="text-align: center;"><code>1</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: center;"><code>148</code></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;"><code>270</code></td>
+<td style="text-align: center;"><code>2</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>4</code></td>
+<td style="text-align: center;"><code>None</code></td>
+<td style="text-align: center;"><strong>Yes</strong></td>
+<td style="text-align: center;"><code>270</code></td>
+<td style="text-align: center;"><code>2</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>5</code></td>
+<td style="text-align: center;"><code>134</code></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;"><code>404</code></td>
+<td style="text-align: center;"><code>3</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>6</code></td>
+<td style="text-align: center;"><code>999</code></td>
+<td style="text-align: center;"><strong>Yes</strong></td>
+<td style="text-align: center;"><code>404</code></td>
+<td style="text-align: center;"><code>3</code></td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Researcher’s Note — Check <code>is None</code> Before Arithmetic
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Notice we wrote <code>if sbp is None or sbp == 999:</code>. Checking <code>is None</code> first is good defensive habit: because of Python’s short-circuit <code>or</code>, if <code>sbp</code> is <code>None</code>, Python skips immediately without ever attempting numeric comparisons like <code>None &lt; 11.0</code> (which would crash with <code>TypeError</code>)!</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch05-enumerate" class="level3" data-number="5.3.4">
+<h3 data-number="5.3.4" class="anchored" data-anchor-id="sec-ch05-enumerate"><span class="header-section-number">5.3.4</span> <code>enumerate()</code> for Peak Dengue Week Identification</h3>
+<p>Whenever you need <strong>both</strong> the position (e.g., Week 1, Week 2, …) and the value, reach for <strong><code>enumerate(sequence, start=1)</code></strong>. Passing <code>start=1</code> aligns Python’s 0-based indexing with human epidemiological week numbers:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="co"># Weekly dengue cases across 6 monsoon weeks</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>weekly_cases <span class="op">=</span> [<span class="dv">32</span>, <span class="dv">48</span>, <span class="dv">79</span>, <span class="dv">115</span>, <span class="dv">94</span>, <span class="dv">61</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>peak_week <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>peak_cases <span class="op">=</span> weekly_cases[<span class="dv">0</span>]</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a><span class="cf">for</span> week, cases <span class="kw">in</span> <span class="bu">enumerate</span>(weekly_cases, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>    <span class="cf">if</span> cases <span class="op">&gt;</span> peak_cases:</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>        peak_cases <span class="op">=</span> cases</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>        peak_week <span class="op">=</span> week</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"Peak dengue week: Week </span><span class="sc">{</span>peak_week<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>peak_cases<span class="sc">}</span><span class="ss"> cases)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Peak dengue week: Week 4 (115 cases)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch05-while" class="level3" data-number="5.3.5">
+<h3 data-number="5.3.5" class="anchored" data-anchor-id="sec-ch05-while"><span class="header-section-number">5.3.5</span> <code>while</code> Loops: Epidemic Doubling &amp; Hospital Bed Capacity</h3>
+<p>When you want to simulate forward in time until a clinical threshold is breached—without knowing how many steps it will take—use a <strong><code>while</code></strong> loop:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="co"># Simulate cases doubling every 3 days until exceeding 200 beds</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>active_cases <span class="op">=</span> <span class="dv">25</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>bed_capacity <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>days <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="cf">while</span> active_cases <span class="op">&lt;=</span> bed_capacity:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>    active_cases <span class="op">*=</span> <span class="dv">2</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>    days <span class="op">+=</span> <span class="dv">3</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"Capacity exceeded on Day </span><span class="sc">{</span>days<span class="sc">}</span><span class="ss"> with </span><span class="sc">{</span>active_cases<span class="sc">}</span><span class="ss"> cases"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Capacity exceeded on Day 12 with 400 cases</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Loop Execution Trace Table (<code>while active_cases &lt;= 200</code>):</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Iter</th>
+<th style="text-align: center;">Check <code>active_cases &lt;= 200</code></th>
+<th style="text-align: center;"><code>active_cases</code> After</th>
+<th style="text-align: center;"><code>days</code> After</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>Start</code></td>
+<td style="text-align: center;"><code>25 &lt;= 200</code> (<code>True</code>)</td>
+<td style="text-align: center;"><code>25</code></td>
+<td style="text-align: center;"><code>0</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: center;"><code>50 &lt;= 200</code> (<code>True</code>)</td>
+<td style="text-align: center;"><code>50</code></td>
+<td style="text-align: center;"><code>3</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: center;"><code>100 &lt;= 200</code> (<code>True</code>)</td>
+<td style="text-align: center;"><code>100</code></td>
+<td style="text-align: center;"><code>6</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: center;"><code>200 &lt;= 200</code> (<code>True</code>)</td>
+<td style="text-align: center;"><code>200</code></td>
+<td style="text-align: center;"><code>9</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>4</code></td>
+<td style="text-align: center;"><code>400 &lt;= 200</code> (<code>False</code> <span class="math inline">\(\rightarrow\)</span> <strong>EXIT</strong>)</td>
+<td style="text-align: center;"><code>400</code></td>
+<td style="text-align: center;"><code>12</code></td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Common Trap — Infinite Loops!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you forget to update the state variable inside a <code>while</code> loop (for instance, forgetting <code>active_cases *= 2</code>), the condition <code>25 &lt;= 200</code> stays <code>True</code> forever! In Google Colab, click the <strong>Stop (■)</strong> button on the cell—and always verify on paper that every <code>while</code> body moves strictly closer to terminating.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch05-nested" class="level3" data-number="5.3.6">
+<h3 data-number="5.3.6" class="anchored" data-anchor-id="sec-ch05-nested"><span class="header-section-number">5.3.6</span> Nested Loops: Multi-Ward Surveillance Summary</h3>
+<p>Real health data is hierarchical: clinics inside districts, days inside wards, visits inside patients. A <strong>nested loop</strong> places one loop inside another. Watch carefully where <code>ward_total = 0</code> is reset:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="co"># Each inner list holds 3 daily dengue admissions for one ward</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>ward_admissions <span class="op">=</span> [</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>    [<span class="dv">6</span>, <span class="dv">9</span>, <span class="dv">11</span>],    <span class="co"># Ward 1 -&gt; sum 26</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>    [<span class="dv">14</span>, <span class="dv">18</span>, <span class="dv">12</span>],  <span class="co"># Ward 2 -&gt; sum 44</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>grand_total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a><span class="cf">for</span> ward_num, daily_counts <span class="kw">in</span> <span class="bu">enumerate</span>(ward_admissions, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>    ward_total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>    <span class="cf">for</span> count <span class="kw">in</span> daily_counts:</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>        ward_total <span class="op">+=</span> count</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    grand_total <span class="op">+=</span> ward_total</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>    <span class="bu">print</span>(<span class="ss">f"Ward </span><span class="sc">{</span>ward_num<span class="sc">}</span><span class="ss"> 3-day total: </span><span class="sc">{</span>ward_total<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"Hospital grand total:"</span>, grand_total)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>Ward 1 3-day total: 26</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>Ward 2 3-day total: 44</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>Hospital grand total: 70</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the two accumulator scopes: <code>grand_total = 0</code> is initialized <strong>outside both loops</strong> (accumulates the entire hospital), while <code>ward_total = 0</code> is reset <strong>inside the outer loop</strong> so Ward 2 does not inherit Ward 1’s 26 admissions!</p>
+<hr>
+</section>
+<section id="sec-ch05-errors" class="level3" data-number="5.3.7">
+<h3 data-number="5.3.7" class="anchored" data-anchor-id="sec-ch05-errors"><span class="header-section-number">5.3.7</span> Break It On Purpose! (Loop Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — TypeError: ‘int’ object is not iterable
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a><span class="cf">for</span> day <span class="kw">in</span> <span class="dv">5</span>:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>    <span class="bu">print</span>(<span class="st">"Day:"</span>, day)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>TypeError: 'int' object is not iterable</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> A single integer (<code>5</code>) is a scalar object, not a sequence of items. Python cannot loop over a single number directly.<br>
+<strong>Fix:</strong> Wrap the count in <code>range(5)</code> (or <code>range(1, 6)</code> for 1-based days): <code>for day in range(1, 6):</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — NameError on Uninitialized Accumulator
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a><span class="cf">for</span> cases <span class="kw">in</span> [<span class="dv">12</span>, <span class="dv">18</span>, <span class="dv">25</span>]:</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>    uninitialized_total <span class="op">+=</span> cases</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>NameError: name 'uninitialized_total' is not defined</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>uninitialized_total += cases</code> means <code>uninitialized_total = uninitialized_total + cases</code>. On the very first iteration, Python looks up <code>uninitialized_total</code> on the right-hand side and discovers it does not exist yet!<br>
+<strong>Fix:</strong> Initialize <code>uninitialized_total = 0</code> on the line <strong>above</strong> the <code>for</code> header.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ZeroDivisionError When All Readings Are Missing
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>all_missing_hb <span class="op">=</span> [<span class="dv">999</span>, <span class="dv">999</span>, <span class="dv">999</span>]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>hb_sum <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>valid_n <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a><span class="cf">for</span> val <span class="kw">in</span> all_missing_hb:</span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a>    <span class="cf">if</span> val <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a>        <span class="cf">continue</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a>    hb_sum <span class="op">+=</span> val</span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a>    valid_n <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-label="9"></a>mean_missing <span class="op">=</span> hb_sum <span class="op">/</span> valid_n</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ZeroDivisionError: float division by zero</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Every reading hit <code>continue</code>, leaving <code>valid_n == 0</code>. Dividing <code>0.0 / 0</code> crashes your entire pipeline on the first empty clinic subgroup!<br>
+<strong>Fix:</strong> Always guard the division: <code>mean_missing = round(hb_sum / valid_n, 2) if valid_n &gt; 0 else None</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch05-blueprint" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="sec-ch05-blueprint"><span class="header-section-number">5.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A rural maternal health camp collects 7 hemoglobin readings (in g/dL), but two assays failed and were coded as <code>999</code> and <code>None</code>: <code>raw_hb = [10.2, 999, 11.6, None, 9.4, 12.3, 10.8]</code>. In a single clean pass, skip missing codes, compute <code>valid_count</code>, <code>mean_hb</code> (rounded to 2 decimals, safely returning <code>None</code> if no valid readings exist), <code>anemic_count</code> (<span class="math inline">\(&lt; 11.0\text{ g/dL}\)</span>), and <code>min_hb</code> (the lowest valid hemoglobin reading to flag the most severe case).</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="5.4.1">
+<h3 data-number="5.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">5.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Inputs &amp; Units:</strong> List <code>raw_hb</code> containing floats (g/dL), DHS missing code <code>999</code>, and Python <code>None</code>.</li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Initializing <code>min_hb = raw_hb[0]</code> is dangerous if the first record happens to be <code>999</code> or <code>None</code>! Initialize <code>min_hb = None</code> and update whenever <code>min_hb is None or hb &lt; min_hb</code>.</li>
+<li>Dividing by <code>len(raw_hb)</code> (<code>7</code>) instead of <code>valid_count</code> (<code>5</code>) biases the mean downward.</li>
+<li>Guard <code>valid_count &gt; 0</code> before dividing to prevent <code>ZeroDivisionError</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Initialize <code>valid_sum = 0.0</code>, <code>valid_count = 0</code>, <code>anemic_count = 0</code>, <code>min_hb = None</code>.</li>
+<li>Loop <code>for hb in raw_hb:</code>; if <code>hb is None or hb == 999:</code>, <code>continue</code>.</li>
+<li>Update <code>valid_sum += hb</code>, <code>valid_count += 1</code>, check <code>hb &lt; 11.0</code>, and update <code>min_hb</code>.</li>
+<li>After the loop, compute <code>mean_hb = round(valid_sum / valid_count, 2)</code> if <code>valid_count &gt; 0</code> else <code>None</code>.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li>Valid readings: <span class="math inline">\(10.2, 11.6, 9.4, 12.3, 10.8\)</span> (<code>valid_count = 5</code>).</li>
+<li>Sum: <span class="math inline">\(10.2 + 11.6 + 9.4 + 12.3 + 10.8 = 54.3\)</span>; Mean: <span class="math inline">\(54.3 / 5 = 10.86\)</span>.</li>
+<li>Anemic (<span class="math inline">\(&lt; 11.0\)</span>): <span class="math inline">\(10.2, 9.4, 10.8 \Rightarrow 3\)</span>; Minimum: <span class="math inline">\(9.4\)</span>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="5.4.2">
+<h3 data-number="5.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">5.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="co"># Step 1: Raw maternal hemoglobin readings with DHS missing codes</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>raw_hb <span class="op">=</span> [<span class="fl">10.2</span>, <span class="dv">999</span>, <span class="fl">11.6</span>, <span class="va">None</span>, <span class="fl">9.4</span>, <span class="fl">12.3</span>, <span class="fl">10.8</span>]</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a><span class="co"># Step 2: Initialize accumulators, counters, and safe running min</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>valid_sum <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>anemic_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>min_hb <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a><span class="co"># Step 3: Single-pass cleaning + summary loop</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a><span class="cf">for</span> hb <span class="kw">in</span> raw_hb:</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a>    <span class="cf">if</span> hb <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> hb <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a>        <span class="cf">continue</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>    valid_sum <span class="op">+=</span> hb</span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>    valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>    <span class="cf">if</span> hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>        anemic_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>    <span class="cf">if</span> min_hb <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> hb <span class="op">&lt;</span> min_hb:</span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a>        min_hb <span class="op">=</span> hb</span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a></span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a><span class="co"># Step 4: Guard against ZeroDivisionError before computing mean</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a><span class="cf">if</span> valid_count <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>    mean_hb <span class="op">=</span> <span class="bu">round</span>(valid_sum <span class="op">/</span> valid_count, <span class="dv">2</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a><span class="cf">else</span>:</span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a>    mean_hb <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a></span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a><span class="bu">print</span>(<span class="ss">f"Valid: </span><span class="sc">{</span>valid_count<span class="sc">}</span><span class="ss"> | Mean Hb: </span><span class="sc">{</span>mean_hb<span class="sc">}</span><span class="ss"> g/dL"</span>)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a><span class="bu">print</span>(<span class="ss">f"Anemic: </span><span class="sc">{</span>anemic_count<span class="sc">}</span><span class="ss"> | Most severe (Min Hb): </span><span class="sc">{</span>min_hb<span class="sc">}</span><span class="ss"> g/dL"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>Valid: 5 | Mean Hb: 10.86 g/dL</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>Anemic: 3 | Most severe (Min Hb): 9.4 g/dL</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch05-todos" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="sec-ch05-todos"><span class="header-section-number">5.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and complete all six loop exercises below:</p>
+<ul>
+<li><strong>To-Do 5.1 (Warm-Up — Accumulator &amp; Counter):</strong> Given <code>daily_doses = [45, 52, 48, 60, 55, 40, 50]</code>, use a <code>for</code> loop to compute <code>total_doses</code> (<code>int</code>) and <code>high_volume_days</code> (count of days with <span class="math inline">\(\ge 50\)</span> doses).</li>
+<li><strong>To-Do 5.2 (Filter Pattern):</strong> Given <code>temps_c = [36.8, 38.4, 37.5, 39.1, 38.0, 36.9]</code>, build a new list <code>febrile_temps</code> containing only temperatures <span class="math inline">\(\ge 38.0^\circ\text{C}\)</span>.</li>
+<li><strong>To-Do 5.3 (<code>continue</code> Pattern — DHS Missing Codes):</strong> Given <code>raw_ages = [24, 999, 31, None, 28, 999, 37]</code>, skip <code>None</code> and <code>999</code> with <code>continue</code>, then compute <code>valid_count</code> (<code>int</code>) and <code>mean_age</code> rounded to 1 decimal place.</li>
+<li><strong>To-Do 5.4 (<code>break</code> + <code>enumerate()</code> — First Outbreak Breach):</strong> Given <code>daily_cases = [18, 29, 44, 52, 67, 58]</code> and <code>alert_threshold = 50</code>, loop with <code>enumerate(daily_cases, start=1)</code> and <code>break</code> on the first day <span class="math inline">\(\ge 50\)</span> to capture <code>breach_day</code> and <code>breach_cases</code>.</li>
+<li><strong>To-Do 5.5 (<code>while</code> Loop — Epidemic Doubling):</strong> Starting from <code>cases = 15</code>, <code>bed_limit = 200</code>, <code>days_elapsed = 0</code>, double <code>cases</code> and add <code>2</code> to <code>days_elapsed</code> while <code>cases &lt;= bed_limit</code>.</li>
+<li><strong>To-Do 5.6 (Nested Loops — Multi-District Clinic Totals):</strong> Given <code>district_clinics = [[12, 18, 15], [22, 19, 25], [10, 14, 16]]</code>, compute <code>district_totals</code> (sum of each inner list) and <code>top_district</code> (1-based district number with the highest total).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch05-test" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="sec-ch05-test"><span class="header-section-number">5.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Trace every loop by hand on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong><code>range()</code> Half-Open Interval:</strong> What exact list does <code>list(range(2, 10, 2))</code> produce? Why is <code>10</code> excluded?</p></li>
+<li><p><strong>Accumulator Trace Table:</strong> Trace <code>total</code> after every iteration:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a>total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="cf">for</span> x <span class="kw">in</span> [<span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">3</span>]:</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>    total <span class="op">+=</span> x <span class="op">*</span> <span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong><code>continue</code> vs.&nbsp;<code>break</code>:</strong> What exact numbers are printed by:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="cf">for</span> n <span class="kw">in</span> [<span class="dv">10</span>, <span class="dv">999</span>, <span class="dv">20</span>, <span class="op">-</span><span class="dv">1</span>, <span class="dv">30</span>]:</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>    <span class="cf">if</span> n <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>        <span class="cf">continue</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>        <span class="cf">break</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    <span class="bu">print</span>(n)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Reset-Inside-Loop Bug:</strong> A student places <code>total = 0</code> <em>inside</em> a <code>for</code> loop right before <code>total += x</code> when iterating over <code>[10, 20, 30]</code>. What final value does <code>total</code> hold, and why?</p></li>
+<li><p><strong><code>enumerate()</code> Start Parameter:</strong> What tuple <code>(idx, val)</code> does <code>enumerate(["A", "B", "C"], start=1)</code> yield on its second iteration?</p></li>
+<li><p><strong>Boundary Condition (<code>&lt;</code> vs.&nbsp;<code>&lt;=</code>):</strong> For <code>cases = 50; while cases &lt; 200: cases *= 2</code>, what is the final value of <code>cases</code>? What changes if the condition is <code>cases &lt;= 200</code>?</p></li>
+<li><p><strong>Spot the Exception #1:</strong> Why does <code>for i in 10:</code> raise <code>TypeError: 'int' object is not iterable</code>, and how do you fix it?</p></li>
+<li><p><strong>Spot the Exception #2:</strong> Why does computing <code>hb_sum / valid_count</code> after skipping <code>999</code> values risk <code>ZeroDivisionError</code>, and how should you guard it?</p></li>
+<li><p><strong>Nested Loop Iterations:</strong> If an outer loop iterates over <code>4</code> districts and an inner loop iterates over <code>7</code> days, how many total times does the innermost statement execute?</p></li>
+<li><p><strong>Safe Running Minimum:</strong> Why is initializing <code>min_hb = 0</code> a silent bug when searching for the lowest hemoglobin in <code>[10.2, 9.4, 11.8]</code>, and how should you initialize <code>min_hb</code> instead?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch05-exam" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="sec-ch05-exam"><span class="header-section-number">5.7</span> Stage 7 — Chapter 5 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb</code>, complete all three tasks, and run <code>tutor.check_exam("ch05", exam_submissions)</code> to grade your work out of 100 points.</p>
+<section id="exam-task-5.1-30-points-dirty-maternal-hemoglobin-cleaning-summary" class="level3" data-number="5.7.1">
+<h3 data-number="5.7.1" class="anchored" data-anchor-id="exam-task-5.1-30-points-dirty-maternal-hemoglobin-cleaning-summary"><span class="header-section-number">5.7.1</span> Exam Task 5.1 (30 Points): Dirty Maternal Hemoglobin Cleaning &amp; Summary</h3>
+<p>Given raw maternal hemoglobin readings <code>raw_hb_readings = [10.5, 999, 11.8, None, 9.2, 12.4, 999, 10.1, None, 11.0]</code>, use a <code>for</code> loop with <code>continue</code> to skip <code>None</code> and <code>999</code>, and compute:</p>
+<ul>
+<li><code>valid_count</code> (<code>int</code>, number of valid readings)</li>
+<li><code>missing_count</code> (<code>int</code>, number of skipped <code>None</code> or <code>999</code> entries)</li>
+<li><code>mean_hb</code> (<code>float</code>, mean of valid readings rounded to 2 decimal places, guarded against <code>valid_count == 0</code>)</li>
+<li><code>anemic_count</code> (<code>int</code>, count of valid readings strictly <code>&lt; 11.0</code> g/dL)</li>
+</ul>
+</section>
+<section id="exam-task-5.2-35-points-monsoon-dengue-peak-week-high-alert-surveillance" class="level3" data-number="5.7.2">
+<h3 data-number="5.7.2" class="anchored" data-anchor-id="exam-task-5.2-35-points-monsoon-dengue-peak-week-high-alert-surveillance"><span class="header-section-number">5.7.2</span> Exam Task 5.2 (35 Points): Monsoon Dengue Peak-Week &amp; High-Alert Surveillance</h3>
+<p>A district records 8 consecutive weeks of monsoon dengue cases: <code>weekly_dengue = [42, 65, 98, 134, 178, 162, 115, 74]</code> with <code>high_alert_threshold = 100</code>. Using <code>enumerate(weekly_dengue, start=1)</code>, compute:</p>
+<ul>
+<li><code>total_cases</code> (<code>int</code>, cumulative 8-week cases)</li>
+<li><code>peak_week</code> (<code>int</code>, 1-based week number with maximum cases)</li>
+<li><code>peak_cases</code> (<code>int</code>, maximum weekly case count)</li>
+<li><code>high_alert_weeks</code> (<code>int</code>, count of weeks with <code>cases &gt;= 100</code>)</li>
+<li><code>first_alert_week</code> (<code>int</code>, 1-based week number of the first week with <code>cases &gt;= 100</code>)</li>
+</ul>
+</section>
+<section id="exam-task-5.3-35-points-hospital-surge-capacity-day-simulation-while-loop" class="level3" data-number="5.7.3">
+<h3 data-number="5.7.3" class="anchored" data-anchor-id="exam-task-5.3-35-points-hospital-surge-capacity-day-simulation-while-loop"><span class="header-section-number">5.7.3</span> Exam Task 5.3 (35 Points): Hospital Surge-Capacity Day Simulation (<code>while</code> Loop)</h3>
+<p>A district hospital starts on Day <code>0</code> with <code>occupied_beds = 40</code>, <code>bed_capacity = 250</code>, <code>daily_admissions = 20</code> (for Day 1), and <code>daily_discharges = 10</code> (constant daily recoveries). Simulate with <code>while occupied_beds &lt;= bed_capacity:</code>, executing these exact steps each day:</p>
+<ul>
+<li>Increment <code>surge_day += 1</code></li>
+<li>Update <code>occupied_beds += daily_admissions - daily_discharges</code></li>
+<li>Accumulate <code>total_admitted += daily_admissions</code></li>
+<li>Increase <code>daily_admissions += 5</code> for the following day</li>
+</ul>
+<p>After the loop exits, report <code>surge_day</code>, <code>final_occupied_beds</code> (<code>occupied_beds</code>), <code>overflow_beds</code> (<code>occupied_beds - bed_capacity</code>), and <code>total_admitted</code>.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch05-solutions" class="level2" data-number="5.8">
+<h2 data-number="5.8" class="anchored" data-anchor-id="sec-ch05-solutions"><span class="header-section-number">5.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="5.8.1">
+<h3 data-number="5.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">5.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>[2, 4, 6, 8]</code>. <code>range(start, stop, step)</code> is half-open <span class="math inline">\([2, 10)\)</span>, so it stops strictly before <code>10</code>.</li>
+<li><code>0</code> <span class="math inline">\(\rightarrow\)</span> <code>8</code> (<span class="math inline">\(+4 \times 2\)</span>) <span class="math inline">\(\rightarrow\)</span> <code>22</code> (<span class="math inline">\(+7 \times 2\)</span>) <span class="math inline">\(\rightarrow\)</span> <code>28</code> (<span class="math inline">\(+3 \times 2\)</span>).</li>
+<li>Prints <strong><code>10</code></strong> and <strong><code>20</code></strong> only (<code>999</code> is skipped by <code>continue</code>; <code>-1</code> triggers <code>break</code>, so <code>30</code> is never reached).</li>
+<li><code>total</code> ends at <strong><code>30</code></strong> (the last item only), because <code>total = 0</code> wipes out the accumulated sum at the start of each iteration.</li>
+<li><code>(2, "B")</code> (iteration 1 yields <code>(1, "A")</code>, iteration 2 yields <code>(2, "B")</code>).</li>
+<li>With <code>&lt; 200</code>: <code>50</code> <span class="math inline">\(\rightarrow\)</span> <code>100</code> <span class="math inline">\(\rightarrow\)</span> <code>200</code> (stops at <strong><code>200</code></strong>). With <code>&lt;= 200</code>: <code>200 &lt;= 200</code> is still <code>True</code>, so it doubles once more to <strong><code>400</code></strong>.</li>
+<li><code>10</code> is a single <code>int</code>, not an iterable sequence. Fix: <code>for i in range(10):</code>.</li>
+<li>If every reading is <code>999</code>, <code>valid_count</code> stays <code>0</code>, so <code>hb_sum / 0</code> raises <code>ZeroDivisionError</code>. Guard with <code>if valid_count &gt; 0: ... else: None</code>.</li>
+<li><span class="math inline">\(4 \times 7 = 28\)</span> total executions.</li>
+<li>Because every valid hemoglobin reading (<span class="math inline">\(&gt; 0\)</span>) is larger than <code>0</code>, <code>hb &lt; min_hb</code> is never <code>True</code> and <code>min_hb</code> stays stuck at <code>0</code>! Initialize <code>min_hb = None</code> (and check <code>if min_hb is None or hb &lt; min_hb:</code>) or <code>min_hb = valid_list[0]</code>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="5.8.2">
+<h3 data-number="5.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">5.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="co"># To-Do 5.1</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a>daily_doses <span class="op">=</span> [<span class="dv">45</span>, <span class="dv">52</span>, <span class="dv">48</span>, <span class="dv">60</span>, <span class="dv">55</span>, <span class="dv">40</span>, <span class="dv">50</span>]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a>total_doses <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a>high_volume_days <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a><span class="cf">for</span> doses <span class="kw">in</span> daily_doses:</span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a>    total_doses <span class="op">+=</span> doses</span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a>    <span class="cf">if</span> doses <span class="op">&gt;=</span> <span class="dv">50</span>:</span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a>        high_volume_days <span class="op">+=</span> <span class="dv">1</span>                <span class="co"># 350, 4</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a><span class="co"># To-Do 5.2</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a>temps_c <span class="op">=</span> [<span class="fl">36.8</span>, <span class="fl">38.4</span>, <span class="fl">37.5</span>, <span class="fl">39.1</span>, <span class="fl">38.0</span>, <span class="fl">36.9</span>]</span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a>febrile_temps <span class="op">=</span> []</span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a><span class="cf">for</span> temp <span class="kw">in</span> temps_c:</span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a>    <span class="cf">if</span> temp <span class="op">&gt;=</span> <span class="fl">38.0</span>:</span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a>        febrile_temps.append(temp)           <span class="co"># [38.4, 39.1, 38.0]</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a></span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a><span class="co"># To-Do 5.3</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a>raw_ages <span class="op">=</span> [<span class="dv">24</span>, <span class="dv">999</span>, <span class="dv">31</span>, <span class="va">None</span>, <span class="dv">28</span>, <span class="dv">999</span>, <span class="dv">37</span>]</span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a>age_sum <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a>valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a><span class="cf">for</span> age <span class="kw">in</span> raw_ages:</span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a>    <span class="cf">if</span> age <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> age <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a>        <span class="cf">continue</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a>    age_sum <span class="op">+=</span> age</span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>    valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a>mean_age <span class="op">=</span> <span class="bu">round</span>(age_sum <span class="op">/</span> valid_count, <span class="dv">1</span>)   <span class="co"># 4, 30.0</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a></span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a><span class="co"># To-Do 5.4</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>daily_cases <span class="op">=</span> [<span class="dv">18</span>, <span class="dv">29</span>, <span class="dv">44</span>, <span class="dv">52</span>, <span class="dv">67</span>, <span class="dv">58</span>]</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a>breach_day, breach_cases <span class="op">=</span> <span class="va">None</span>, <span class="va">None</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a><span class="cf">for</span> day, cases <span class="kw">in</span> <span class="bu">enumerate</span>(daily_cases, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a>    <span class="cf">if</span> cases <span class="op">&gt;=</span> <span class="dv">50</span>:</span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a>        breach_day, breach_cases <span class="op">=</span> day, cases</span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a>        <span class="cf">break</span>                                <span class="co"># Day 4, 52</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a></span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a><span class="co"># To-Do 5.5</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a>cases, bed_limit, days_elapsed <span class="op">=</span> <span class="dv">15</span>, <span class="dv">200</span>, <span class="dv">0</span></span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a><span class="cf">while</span> cases <span class="op">&lt;=</span> bed_limit:</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>    cases <span class="op">*=</span> <span class="dv">2</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>    days_elapsed <span class="op">+=</span> <span class="dv">2</span>                        <span class="co"># Day 8, 240</span></span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a></span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a><span class="co"># To-Do 5.6</span></span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a>district_clinics <span class="op">=</span> [[<span class="dv">12</span>, <span class="dv">18</span>, <span class="dv">15</span>], [<span class="dv">22</span>, <span class="dv">19</span>, <span class="dv">25</span>], [<span class="dv">10</span>, <span class="dv">14</span>, <span class="dv">16</span>]]</span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a>district_totals <span class="op">=</span> []</span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a>top_district, best_total <span class="op">=</span> <span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a><span class="cf">for</span> d_num, clinics <span class="kw">in</span> <span class="bu">enumerate</span>(district_clinics, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>    d_total <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a>    <span class="cf">for</span> count <span class="kw">in</span> clinics:</span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a>        d_total <span class="op">+=</span> count</span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a>    district_totals.append(d_total)</span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a>    <span class="cf">if</span> d_total <span class="op">&gt;</span> best_total:</span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a>        best_total, top_district <span class="op">=</span> d_total, d_num  <span class="co"># [45, 66, 40], 2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-5-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="5.8.3">
+<h3 data-number="5.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-5-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">5.8.3</span> C. Annotated Solutions — Chapter 5 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a><span class="co"># Exam Task 5.1 (30 pts)</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a>raw_hb_readings <span class="op">=</span> [</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a>    <span class="fl">10.5</span>, <span class="dv">999</span>, <span class="fl">11.8</span>, <span class="va">None</span>, <span class="fl">9.2</span>, <span class="fl">12.4</span>, <span class="dv">999</span>, <span class="fl">10.1</span>, <span class="va">None</span>, <span class="fl">11.0</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a>]</span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a>valid_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-label="6"></a>missing_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-label="7"></a>hb_sum <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-label="8"></a>anemic_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-label="9"></a></span>
+<span id="cb24-10"><a href="#cb24-10" aria-label="10"></a><span class="cf">for</span> hb <span class="kw">in</span> raw_hb_readings:</span>
+<span id="cb24-11"><a href="#cb24-11" aria-label="11"></a>    <span class="cf">if</span> hb <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> hb <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb24-12"><a href="#cb24-12" aria-label="12"></a>        missing_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-label="13"></a>        <span class="cf">continue</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-label="14"></a>    hb_sum <span class="op">+=</span> hb</span>
+<span id="cb24-15"><a href="#cb24-15" aria-label="15"></a>    valid_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-label="16"></a>    <span class="cf">if</span> hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb24-17"><a href="#cb24-17" aria-label="17"></a>        anemic_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-label="18"></a></span>
+<span id="cb24-19"><a href="#cb24-19" aria-label="19"></a>mean_hb <span class="op">=</span> <span class="bu">round</span>(hb_sum <span class="op">/</span> valid_count, <span class="dv">2</span>) <span class="cf">if</span> valid_count <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb24-20"><a href="#cb24-20" aria-label="20"></a><span class="co"># valid_count=6, missing_count=4, mean_hb=10.83, anemic_count=3</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-label="21"></a></span>
+<span id="cb24-22"><a href="#cb24-22" aria-label="22"></a><span class="co"># Exam Task 5.2 (35 pts)</span></span>
+<span id="cb24-23"><a href="#cb24-23" aria-label="23"></a>weekly_dengue <span class="op">=</span> [<span class="dv">42</span>, <span class="dv">65</span>, <span class="dv">98</span>, <span class="dv">134</span>, <span class="dv">178</span>, <span class="dv">162</span>, <span class="dv">115</span>, <span class="dv">74</span>]</span>
+<span id="cb24-24"><a href="#cb24-24" aria-label="24"></a>total_cases <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-25"><a href="#cb24-25" aria-label="25"></a>peak_week <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb24-26"><a href="#cb24-26" aria-label="26"></a>peak_cases <span class="op">=</span> weekly_dengue[<span class="dv">0</span>]</span>
+<span id="cb24-27"><a href="#cb24-27" aria-label="27"></a>high_alert_weeks <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-label="28"></a>first_alert_week <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-label="29"></a></span>
+<span id="cb24-30"><a href="#cb24-30" aria-label="30"></a><span class="cf">for</span> week, cases <span class="kw">in</span> <span class="bu">enumerate</span>(weekly_dengue, start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb24-31"><a href="#cb24-31" aria-label="31"></a>    total_cases <span class="op">+=</span> cases</span>
+<span id="cb24-32"><a href="#cb24-32" aria-label="32"></a>    <span class="cf">if</span> cases <span class="op">&gt;</span> peak_cases:</span>
+<span id="cb24-33"><a href="#cb24-33" aria-label="33"></a>        peak_cases <span class="op">=</span> cases</span>
+<span id="cb24-34"><a href="#cb24-34" aria-label="34"></a>        peak_week <span class="op">=</span> week</span>
+<span id="cb24-35"><a href="#cb24-35" aria-label="35"></a>    <span class="cf">if</span> cases <span class="op">&gt;=</span> <span class="dv">100</span>:</span>
+<span id="cb24-36"><a href="#cb24-36" aria-label="36"></a>        high_alert_weeks <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb24-37"><a href="#cb24-37" aria-label="37"></a>        <span class="cf">if</span> first_alert_week <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb24-38"><a href="#cb24-38" aria-label="38"></a>            first_alert_week <span class="op">=</span> week</span>
+<span id="cb24-39"><a href="#cb24-39" aria-label="39"></a><span class="co"># total=868, peak_week=5, peak_cases=178, alerts=4, first_alert=4</span></span>
+<span id="cb24-40"><a href="#cb24-40" aria-label="40"></a></span>
+<span id="cb24-41"><a href="#cb24-41" aria-label="41"></a><span class="co"># Exam Task 5.3 (35 pts)</span></span>
+<span id="cb24-42"><a href="#cb24-42" aria-label="42"></a>occupied_beds <span class="op">=</span> <span class="dv">40</span></span>
+<span id="cb24-43"><a href="#cb24-43" aria-label="43"></a>bed_capacity <span class="op">=</span> <span class="dv">250</span></span>
+<span id="cb24-44"><a href="#cb24-44" aria-label="44"></a>daily_admissions <span class="op">=</span> <span class="dv">20</span></span>
+<span id="cb24-45"><a href="#cb24-45" aria-label="45"></a>daily_discharges <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb24-46"><a href="#cb24-46" aria-label="46"></a>surge_day <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-47"><a href="#cb24-47" aria-label="47"></a>total_admitted <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb24-48"><a href="#cb24-48" aria-label="48"></a></span>
+<span id="cb24-49"><a href="#cb24-49" aria-label="49"></a><span class="cf">while</span> occupied_beds <span class="op">&lt;=</span> bed_capacity:</span>
+<span id="cb24-50"><a href="#cb24-50" aria-label="50"></a>    surge_day <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb24-51"><a href="#cb24-51" aria-label="51"></a>    occupied_beds <span class="op">+=</span> daily_admissions <span class="op">-</span> daily_discharges</span>
+<span id="cb24-52"><a href="#cb24-52" aria-label="52"></a>    total_admitted <span class="op">+=</span> daily_admissions</span>
+<span id="cb24-53"><a href="#cb24-53" aria-label="53"></a>    daily_admissions <span class="op">+=</span> <span class="dv">5</span></span>
+<span id="cb24-54"><a href="#cb24-54" aria-label="54"></a></span>
+<span id="cb24-55"><a href="#cb24-55" aria-label="55"></a>final_occupied_beds <span class="op">=</span> occupied_beds       <span class="co"># 260</span></span>
+<span id="cb24-56"><a href="#cb24-56" aria-label="56"></a>overflow_beds <span class="op">=</span> occupied_beds <span class="op">-</span> bed_capacity  <span class="co"># 10</span></span>
+<span id="cb24-57"><a href="#cb24-57" aria-label="57"></a><span class="co"># surge_day=8, final_occupied_beds=260, overflow_beds=10, total=300</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-5-failure-modes" class="level3" data-number="5.8.4">
+<h3 data-number="5.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-5-failure-modes"><span class="header-section-number">5.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 5 Failure Modes</h3>
+<ol type="1">
+<li><strong>Dividing by <code>len(raw_list)</code> Instead of <code>valid_count</code>:</strong> After skipping missing <code>999</code> and <code>None</code> records with <code>continue</code>, dividing <code>hb_sum</code> by <code>len(raw_hb_readings)</code> (<code>10</code>) instead of <code>valid_count</code> (<code>6</code>) silently fabricates a catastrophic mean hemoglobin of <strong>6.50 g/dL</strong> instead of <strong>10.83 g/dL</strong>—zero error message, completely corrupted research!</li>
+<li><strong>Overwriting First-Occurrence Alerts:</strong> In Exam Task 5.2, setting <code>first_alert_week = week</code> unconditionally inside <code>if cases &gt;= 100:</code> overwrites Week 4 with Week 5, Week 6, and finally Week 7. Guarding with <code>if first_alert_week is None:</code> latches onto the earliest breach while letting the loop complete the remaining totals.</li>
+<li><strong>Statement-Order Drift Inside <code>while</code> Loops:</strong> In Exam Task 5.3, moving <code>daily_admissions += 5</code> <em>above</em> <code>total_admitted += daily_admissions</code> counts Day 2’s admissions (<code>25</code>) on Day 1—inflating <code>total_admitted</code> from <strong>300</strong> to <strong>340</strong>. Always sketch a 2-row <strong>Loop Execution Trace Table</strong> whenever a <code>while</code> loop updates coupled state variables!</li>
+</ol>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="pagination-link" aria-label="Boolean Logic, Conditionals, and Decision Trees in Code">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_01_python_foundations/ch06_functions_scope.html" class="pagination-link" aria-label="Functions, Scope, Decomposition, and Modular Problem Solving">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

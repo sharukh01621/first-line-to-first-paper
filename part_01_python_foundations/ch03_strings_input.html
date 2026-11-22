@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3&nbsp; Strings, Text Processing, Formatting, and User Input – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_01_python_foundations/ch04_conditionals_logic.html" rel="next">
+<link href="../part_01_python_foundations/ch02_variables_types.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch03_strings_input.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch03-intuition" id="toc-sec-ch03-intuition" class="nav-link" data-scroll-target="#sec-ch03-intuition"><span class="header-section-number">3.1</span> Stage 1 — First-Principles Intuition: Laminated Hospital Wristbands</a>
+  <ul class="collapse">
+  <li><a href="#why-half-open-slicing-startstop-is-brilliant" id="toc-why-half-open-slicing-startstop-is-brilliant" class="nav-link" data-scroll-target="#why-half-open-slicing-startstop-is-brilliant"><span class="header-section-number">3.1.1</span> Why Half-Open Slicing (<code>[start:stop]</code>) Is Brilliant</a></li>
+  </ul></li>
+  <li><a href="#sec-ch03-mental-model" id="toc-sec-ch03-mental-model" class="nav-link" data-scroll-target="#sec-ch03-mental-model"><span class="header-section-number">3.2</span> Stage 2 — Visual Mental Model: Immutable String Transformation Pipeline</a></li>
+  <li><a href="#sec-ch03-walkthrough" id="toc-sec-ch03-walkthrough" class="nav-link" data-scroll-target="#sec-ch03-walkthrough"><span class="header-section-number">3.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch03-slicing" id="toc-sec-ch03-slicing" class="nav-link" data-scroll-target="#sec-ch03-slicing"><span class="header-section-number">3.3.1</span> Indexing, Negative Indexing &amp; Half-Open Slicing</a></li>
+  <li><a href="#sec-ch03-methods" id="toc-sec-ch03-methods" class="nav-link" data-scroll-target="#sec-ch03-methods"><span class="header-section-number">3.3.2</span> String Immutability &amp; Method Chaining</a></li>
+  <li><a href="#sec-ch03-split-join" id="toc-sec-ch03-split-join" class="nav-link" data-scroll-target="#sec-ch03-split-join"><span class="header-section-number">3.3.3</span> Splitting Delimited Records &amp; Joining Fields</a></li>
+  <li><a href="#sec-ch03-fstrings" id="toc-sec-ch03-fstrings" class="nav-link" data-scroll-target="#sec-ch03-fstrings"><span class="header-section-number">3.3.4</span> Publication-Grade f-String Formatting</a></li>
+  <li><a href="#sec-ch03-input" id="toc-sec-ch03-input" class="nav-link" data-scroll-target="#sec-ch03-input"><span class="header-section-number">3.3.5</span> Interactive User Input (<code>input()</code>) &amp; Validation Hygiene</a></li>
+  <li><a href="#sec-ch03-errors" id="toc-sec-ch03-errors" class="nav-link" data-scroll-target="#sec-ch03-errors"><span class="header-section-number">3.3.6</span> Break It On Purpose! (String Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch03-blueprint" id="toc-sec-ch03-blueprint" class="nav-link" data-scroll-target="#sec-ch03-blueprint"><span class="header-section-number">3.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">3.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">3.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch03-todos" id="toc-sec-ch03-todos" class="nav-link" data-scroll-target="#sec-ch03-todos"><span class="header-section-number">3.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch03-test" id="toc-sec-ch03-test" class="nav-link" data-scroll-target="#sec-ch03-test"><span class="header-section-number">3.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch03-exam" id="toc-sec-ch03-exam" class="nav-link" data-scroll-target="#sec-ch03-exam"><span class="header-section-number">3.7</span> Stage 7 — Chapter 3 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-3.1-30-points-clinical-specimen-barcode-parser" id="toc-exam-task-3.1-30-points-clinical-specimen-barcode-parser" class="nav-link" data-scroll-target="#exam-task-3.1-30-points-clinical-specimen-barcode-parser"><span class="header-section-number">3.7.1</span> Exam Task 3.1 (30 Points): Clinical Specimen Barcode Parser</a></li>
+  <li><a href="#exam-task-3.2-35-points-dirty-field-survey-intake-cleaner" id="toc-exam-task-3.2-35-points-dirty-field-survey-intake-cleaner" class="nav-link" data-scroll-target="#exam-task-3.2-35-points-dirty-field-survey-intake-cleaner"><span class="header-section-number">3.7.2</span> Exam Task 3.2 (35 Points): Dirty Field-Survey Intake Cleaner</a></li>
+  <li><a href="#exam-task-3.3-35-points-publication-ready-surveillance-bulletin-generator" id="toc-exam-task-3.3-35-points-publication-ready-surveillance-bulletin-generator" class="nav-link" data-scroll-target="#exam-task-3.3-35-points-publication-ready-surveillance-bulletin-generator"><span class="header-section-number">3.7.3</span> Exam Task 3.3 (35 Points): Publication-Ready Surveillance Bulletin Generator</a></li>
+  </ul></li>
+  <li><a href="#sec-ch03-solutions" id="toc-sec-ch03-solutions" class="nav-link" data-scroll-target="#sec-ch03-solutions"><span class="header-section-number">3.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">3.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">3.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-3-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-3-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-3-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">3.8.3</span> C. Annotated Solutions — Chapter 3 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-3-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-3-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-3-failure-modes"><span class="header-section-number">3.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 3 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch03_strings_input.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch03" class="quarto-section-identifier"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Master Python’s <code>str</code> type from first principles—zero-based and negative indexing, half-open slicing, string immutability, method chaining, splitting delimited clinical records, publication-grade f-string formatting, and safe handling of interactive <code>input()</code>—so messy real-world health records never break your analysis pipeline.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb">ch03 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch03_strings_input__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 3 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb">ch03 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch03_strings_input__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 3 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb">ch03 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch03_strings_input__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 3 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Extract structured fields from clinical IDs and barcodes using <strong>0-based indexing</strong>, <strong>negative indexing</strong>, and <strong>half-open slicing</strong> (<code>s[start:stop]</code>).</li>
+<li>Explain <strong>string immutability</strong> and avoid the two classic beginner traps: trying to mutate a string in place (<code>TypeError</code>) and calling <code>.strip()</code> without reassigning the result.</li>
+<li>Clean, normalize, search, split, and reassemble messy health-survey text using chained string methods (<code>.strip()</code>, <code>.replace()</code>, <code>.title()</code>, <code>.upper()</code>, <code>.split()</code>, <code>.join()</code>).</li>
+<li>Format numbers, percentages, thousands separators, zero-padded IDs, and aligned console tables cleanly using <strong>publication-grade f-strings</strong>.</li>
+<li>Sanitize and type-cast raw text coming from interactive <code>input()</code> prompts (and explain why automated notebooks simulate <code>input()</code> for reproducibility).</li>
+<li>Build end-to-end text-cleaning mini-pipelines that turn dirty field-survey payloads into clean biostatistics summaries.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch03-intuition" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="sec-ch03-intuition"><span class="header-section-number">3.1</span> Stage 1 — First-Principles Intuition: Laminated Hospital Wristbands</h2>
+<p>In public health and clinical research, <strong>over 70% of your real-world cleaning time happens on text</strong>: misspelled district names (<code>"  sylhet_sadar  "</code>), pipe-delimited hospital lab feeds (<code>"PAT_109 | 38.4 C | pos"</code>), structured specimen barcodes (<code>"BD-CTG-2026-0094-MAL"</code>), and blood pressure readings stuck together with a slash (<code>"148/92 mmHg"</code>).</p>
+<p>Before writing a single string method, anchor two permanent mental rules:</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Laminated Clinical Wristband
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Picture a <strong>sealed, laminated patient wristband</strong> printed with a 16-character barcode (<code>BD-DHK-2026-0042</code>). Two physical laws govern every Python <code>str</code> object:</p>
+<ol type="1">
+<li><strong>Every Character Has Two Addresses:</strong> Counting from the left starts at <strong><code>0</code></strong> (not <code>1</code>!), so the last character sits at <code>len(s) - 1</code>. Counting backwards from the right starts at <strong><code>-1</code></strong> (<code>-1</code> is the final character, <code>-2</code> is second-to-last, and so on).</li>
+<li><strong>The Band Is Permanently Laminated (Immutable):</strong> Once a <code>str</code> object is created in memory, <strong>you can never scratch out or overwrite a single character inside it</strong>. If you want to fix a typo or strip spaces, Python prints a <strong>brand-new laminated wristband</strong> in a new memory slot—and unless you attach a variable name tag (<code>clean = ...</code>) to that new band, it falls straight into the trash!</li>
+</ol>
+</div>
+</div>
+<section id="why-half-open-slicing-startstop-is-brilliant" class="level3" data-number="3.1.1">
+<h3 data-number="3.1.1" class="anchored" data-anchor-id="why-half-open-slicing-startstop-is-brilliant"><span class="header-section-number">3.1.1</span> Why Half-Open Slicing (<code>[start:stop]</code>) Is Brilliant</h3>
+<p>When slicing <code>s[start:stop]</code>, Python <strong>includes</strong> the character at <code>start</code> and <strong>stops right before</strong> <code>stop</code> (excluding <code>stop</code>). Mathematicians write this as the half-open interval <span class="math inline">\([ \text{start}, \text{stop} )\)</span>. That single design choice gives you two superpowers:</p>
+<ul>
+<li><strong>Instant Length Formula:</strong> The length of <code>s[start:stop]</code> is always <code>stop - start</code> (e.g., <code>patient_id[3:6]</code> has exact length <span class="math inline">\(6 - 3 = 3\)</span> characters: <code>"DHK"</code>).</li>
+<li><strong>Seamless Adjacent Splits:</strong> <code>s[:k] + s[k:]</code> always reconstructs the exact original string <code>s</code> with zero overlap and zero missing characters!</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch03-mental-model" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="sec-ch03-mental-model"><span class="header-section-number">3.2</span> Stage 2 — Visual Mental Model: Immutable String Transformation Pipeline</h2>
+<p>Watch what happens in memory when you chain <code>.strip().replace("_", " ").title()</code> onto a messy clinic string:</p>
+<div class="cell" data-fig-width="3" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 3 (Immutable String Transformation Pipeline) illustrating raw_clinic = ' dhaka_med ' (Immutable Original str); .strip() -> New str: 'dhaka_med'; .replace('_', ' ') -> New str: 'dhaka med'; .title()...">flowchart TD
+    R["raw_clinic = '  dhaka_med  '&lt;br/&gt;(Immutable Original str)"]
+    S1[".strip() -&gt; New str: 'dhaka_med'"]
+    S2[".replace('_', ' ') -&gt; New str: 'dhaka med'"]
+    S3[".title() -&gt; New str: 'Dhaka Med'"]
+    C["clean_clinic (Final Bound Name Tag)"]
+
+    R --&gt; S1 --&gt; S2 --&gt; S3 ==&gt; C
+</pre>
+</div>
+<p></p><figcaption> Chapter 3 visual mental model: Immutable String Transformation Pipeline</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the crucial insight: <strong><code>raw_clinic</code> itself never changes!</strong> Each method in the chain returns a <strong>brand-new <code>str</code> object</strong>, passes it straight to the next method on the right, and <code>clean_clinic = ...</code> binds our new name tag to the final cleaned object.</p>
+<hr>
+</section>
+<section id="sec-ch03-walkthrough" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="sec-ch03-walkthrough"><span class="header-section-number">3.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch03-slicing" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="sec-ch03-slicing"><span class="header-section-number">3.3.1</span> Indexing, Negative Indexing &amp; Half-Open Slicing</h3>
+<p>Look closely at the exact character coordinates of <code>"BD-DHK-2026-0042"</code> (length 16):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 7%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Char</th>
+<th style="text-align: center;"><code>B</code></th>
+<th style="text-align: center;"><code>D</code></th>
+<th style="text-align: center;"><code>-</code></th>
+<th style="text-align: center;"><code>D</code></th>
+<th style="text-align: center;"><code>H</code></th>
+<th style="text-align: center;"><code>K</code></th>
+<th style="text-align: center;"><code>-</code></th>
+<th style="text-align: center;"><code>2</code></th>
+<th style="text-align: center;"><code>0</code></th>
+<th style="text-align: center;"><code>2</code></th>
+<th style="text-align: center;"><code>6</code></th>
+<th style="text-align: center;"><code>-</code></th>
+<th style="text-align: center;"><code>0</code></th>
+<th style="text-align: center;"><code>0</code></th>
+<th style="text-align: center;"><code>4</code></th>
+<th style="text-align: center;"><code>2</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Idx</strong></td>
+<td style="text-align: center;"><code>0</code></td>
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: center;"><code>4</code></td>
+<td style="text-align: center;"><code>5</code></td>
+<td style="text-align: center;"><code>6</code></td>
+<td style="text-align: center;"><code>7</code></td>
+<td style="text-align: center;"><code>8</code></td>
+<td style="text-align: center;"><code>9</code></td>
+<td style="text-align: center;"><code>10</code></td>
+<td style="text-align: center;"><code>11</code></td>
+<td style="text-align: center;"><code>12</code></td>
+<td style="text-align: center;"><code>13</code></td>
+<td style="text-align: center;"><code>14</code></td>
+<td style="text-align: center;"><code>15</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Neg</strong></td>
+<td style="text-align: center;"><code>-16</code></td>
+<td style="text-align: center;"><code>-15</code></td>
+<td style="text-align: center;"><code>-14</code></td>
+<td style="text-align: center;"><code>-13</code></td>
+<td style="text-align: center;"><code>-12</code></td>
+<td style="text-align: center;"><code>-11</code></td>
+<td style="text-align: center;"><code>-10</code></td>
+<td style="text-align: center;"><code>-9</code></td>
+<td style="text-align: center;"><code>-8</code></td>
+<td style="text-align: center;"><code>-7</code></td>
+<td style="text-align: center;"><code>-6</code></td>
+<td style="text-align: center;"><code>-5</code></td>
+<td style="text-align: center;"><code>-4</code></td>
+<td style="text-align: center;"><code>-3</code></td>
+<td style="text-align: center;"><code>-2</code></td>
+<td style="text-align: center;"><code>-1</code></td>
+</tr>
+</tbody>
+</table>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a>patient_id <span class="op">=</span> <span class="st">"BD-DHK-2026-0042"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="bu">print</span>(<span class="st">"Length:"</span>, <span class="bu">len</span>(patient_id))</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="bu">print</span>(<span class="st">"First char [0]:"</span>, patient_id[<span class="dv">0</span>], <span class="st">"| Last char [-1]:"</span>, patient_id[<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="bu">print</span>(<span class="st">"Country [:2]:"</span>, patient_id[:<span class="dv">2</span>])</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"District [3:6]:"</span>, patient_id[<span class="dv">3</span>:<span class="dv">6</span>])</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Year [7:11]:"</span>, patient_id[<span class="dv">7</span>:<span class="dv">11</span>])</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Serial [-4:]:"</span>, patient_id[<span class="op">-</span><span class="dv">4</span>:])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Length: 16</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>First char [0]: B | Last char [-1]: 2</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Country [:2]: BD</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>District [3:6]: DHK</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>Year [7:11]: 2026</span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a>Serial [-4:]: 0042</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the two convenient slice shortcuts: omitting <code>start</code> (<code>[:2]</code>) starts from index <code>0</code>, and omitting <code>stop</code> (<code>[-4:]</code>) slices all the way through the final character!</p>
+<hr>
+</section>
+<section id="sec-ch03-methods" class="level3" data-number="3.3.2">
+<h3 data-number="3.3.2" class="anchored" data-anchor-id="sec-ch03-methods"><span class="header-section-number">3.3.2</span> String Immutability &amp; Method Chaining</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>raw_clinic <span class="op">=</span> <span class="st">"   dhaka_medical_college   "</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a><span class="co"># Calling a method WITHOUT reassignment discards the cleaned copy!</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>raw_clinic.strip()</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"Unchanged raw_clinic:"</span>, <span class="bu">repr</span>(raw_clinic))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a><span class="co"># Capture the new string object with assignment + method chaining</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>clean_clinic <span class="op">=</span> raw_clinic.strip().replace(<span class="st">"_"</span>, <span class="st">" "</span>).title()</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a><span class="bu">print</span>(<span class="st">"Cleaned clinic:"</span>, <span class="bu">repr</span>(clean_clinic))</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Starts with 'Dhaka'?:"</span>, clean_clinic.startswith(<span class="st">"Dhaka"</span>))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a><span class="bu">print</span>(<span class="st">"Count of 'a':"</span>, clean_clinic.lower().count(<span class="st">"a"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Unchanged raw_clinic: '   dhaka_medical_college   '</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Cleaned clinic: 'Dhaka Medical College'</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>Starts with 'Dhaka'?: True</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>Count of 'a': 3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Researcher’s Tool — Using repr() to Catch Invisible Whitespace
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When debugging messy survey text, <code>print("  Dhaka  ")</code> hides trailing spaces visually. Wrapping any string in <strong><code>repr(s)</code></strong> displays explicit quotes and escape characters (<code>'  Dhaka  '</code>, <code>'line1\n'</code>), exposing invisible whitespace bugs in one second!</p>
+</div>
+</div>
+<p>Here is your everyday Public Health string-method reference card:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Method / Operator</th>
+<th style="text-align: left;">Purpose</th>
+<th style="text-align: left;">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>.strip()</code></td>
+<td style="text-align: left;">Remove leading &amp; trailing whitespace</td>
+<td style="text-align: left;"><code>"  42 \n".strip()</code> <span class="math inline">\(\rightarrow\)</span> <code>"42"</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>.upper()</code> / <code>.lower()</code></td>
+<td style="text-align: left;">Standardize letter casing</td>
+<td style="text-align: left;"><code>"dhk".upper()</code> <span class="math inline">\(\rightarrow\)</span> <code>"DHK"</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>.title()</code></td>
+<td style="text-align: left;">Capitalize first letter of each word</td>
+<td style="text-align: left;"><code>"sylhet sadar".title()</code> <span class="math inline">\(\rightarrow\)</span> <code>"Sylhet Sadar"</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>.replace(a, b)</code></td>
+<td style="text-align: left;">Replace all occurrences of <code>a</code> with <code>b</code></td>
+<td style="text-align: left;"><code>"38.4 C".replace("C", "")</code> <span class="math inline">\(\rightarrow\)</span> <code>"38.4 "</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>.startswith(p)</code> / <code>.endswith(s)</code></td>
+<td style="text-align: left;">Check prefix or suffix (<code>bool</code>)</td>
+<td style="text-align: left;"><code>"BD-MAL".endswith("MAL")</code> <span class="math inline">\(\rightarrow\)</span> <code>True</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sub in text</code></td>
+<td style="text-align: left;">Membership test (<code>bool</code>)</td>
+<td style="text-align: left;"><code>"pos" in "ns1_pos"</code> <span class="math inline">\(\rightarrow\)</span> <code>True</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>.split(sep)</code></td>
+<td style="text-align: left;">Split text into a list of tokens</td>
+<td style="text-align: left;"><code>"148/92".split("/")</code> <span class="math inline">\(\rightarrow\)</span> <code>["148", "92"]</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sep.join(items)</code></td>
+<td style="text-align: left;">Join strings with delimiter <code>sep</code></td>
+<td style="text-align: left;"><code>",".join(["A", "B"])</code> <span class="math inline">\(\rightarrow\)</span> <code>"A,B"</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="sec-ch03-split-join" class="level3" data-number="3.3.3">
+<h3 data-number="3.3.3" class="anchored" data-anchor-id="sec-ch03-split-join"><span class="header-section-number">3.3.3</span> Splitting Delimited Records &amp; Joining Fields</h3>
+<p>Hospital lab systems (such as HL7 feeds) frequently separate columns with pipe symbols (<code>|</code>) or semicolons (<code>;</code>) instead of commas. Calling <code>.split("|")</code> breaks one raw row into indexable pieces (<code>parts[0]</code>, <code>parts[1]</code>, …), and <code>",".join([...])</code> reassembles clean string tokens into a standard CSV line:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>raw_row <span class="op">=</span> <span class="st">"  PAT-019 | 31 | 10.4 g/dL | positive  "</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>parts <span class="op">=</span> raw_row.split(<span class="st">"|"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>pat_id <span class="op">=</span> parts[<span class="dv">0</span>].strip()</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>age <span class="op">=</span> <span class="bu">int</span>(parts[<span class="dv">1</span>].strip())</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>hb <span class="op">=</span> <span class="bu">float</span>(parts[<span class="dv">2</span>].replace(<span class="st">"g/dL"</span>, <span class="st">""</span>).strip())</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>status <span class="op">=</span> parts[<span class="dv">3</span>].strip().upper()</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a><span class="co"># Reassemble a clean CSV row with .join()</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>clean_csv <span class="op">=</span> <span class="st">","</span>.join([pat_id, <span class="bu">str</span>(age), <span class="bu">str</span>(hb), status])</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a><span class="bu">print</span>(<span class="st">"Clean CSV row:"</span>, clean_csv)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Clean CSV row: PAT-019,31,10.4,POSITIVE</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice that <code>",".join(...)</code> requires every item in the list to be a <code>str</code>—that is why we wrap <code>str(age)</code> and <code>str(hb)</code> before joining!</p>
+<hr>
+</section>
+<section id="sec-ch03-fstrings" class="level3" data-number="3.3.4">
+<h3 data-number="3.3.4" class="anchored" data-anchor-id="sec-ch03-fstrings"><span class="header-section-number">3.3.4</span> Publication-Grade f-String Formatting</h3>
+<p>When reporting epidemiological tables or manuscript statistics, raw floating-point prints like <code>0.02233062330623306</code> look amateurish. Python <strong>f-strings</strong> accept a mini-language after a colon <code>:</code> inside <code>{...}</code> to format numbers with journal-grade precision:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 38%">
+<col style="width: 30%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Format Specifier</th>
+<th style="text-align: left;">Meaning</th>
+<th style="text-align: left;">Input <span class="math inline">\(\rightarrow\)</span> Output</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>:.1f</code> / <code>:.2f</code></td>
+<td style="text-align: left;">Fixed decimal places</td>
+<td style="text-align: left;"><code>128.467</code> <span class="math inline">\(\rightarrow\)</span> <code>128.5</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>:,</code></td>
+<td style="text-align: left;">Thousands comma separator</td>
+<td style="text-align: left;"><code>18450</code> <span class="math inline">\(\rightarrow\)</span> <code>18,450</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>:.2%</code></td>
+<td style="text-align: left;">Multiply by <span class="math inline">\(100\)</span> &amp; append <code>%</code></td>
+<td style="text-align: left;"><code>0.02233</code> <span class="math inline">\(\rightarrow\)</span> <code>2.23%</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>:04d</code></td>
+<td style="text-align: left;">Zero-padded integer (width 4)</td>
+<td style="text-align: left;"><code>42</code> <span class="math inline">\(\rightarrow\)</span> <code>0042</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>:&lt;14</code> / <code>:&gt;10</code></td>
+<td style="text-align: left;">Left- or right-align in fixed width</td>
+<td style="text-align: left;"><code>"Site"</code> <span class="math inline">\(\rightarrow\)</span> <code>"Site          "</code></td>
+</tr>
+</tbody>
+</table>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>site <span class="op">=</span> <span class="st">"Chattogram"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>seq_num <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>screened <span class="op">=</span> <span class="dv">18450</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>cases <span class="op">=</span> <span class="dv">412</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>positivity <span class="op">=</span> cases <span class="op">/</span> screened</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>mean_sbp <span class="op">=</span> <span class="fl">128.467</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a><span class="bu">print</span>(<span class="ss">f"Facility ID : CTG-</span><span class="sc">{</span>seq_num<span class="sc">:04d}</span><span class="ss">"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a><span class="bu">print</span>(<span class="ss">f"Screened    : </span><span class="sc">{</span>screened<span class="sc">:,}</span><span class="ss"> adults"</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"Positivity  : </span><span class="sc">{</span>positivity<span class="sc">:.2%}</span><span class="ss"> (</span><span class="sc">{</span>cases<span class="sc">}</span><span class="ss"> / </span><span class="sc">{</span>screened<span class="sc">:,}</span><span class="ss">)"</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"Mean SBP    : </span><span class="sc">{</span>mean_sbp<span class="sc">:.1f}</span><span class="ss"> mmHg"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'Site'</span><span class="sc">:&lt;14}</span><span class="ss"> | </span><span class="sc">{</span><span class="st">'Screened'</span><span class="sc">:&gt;10}</span><span class="ss"> | </span><span class="sc">{</span><span class="st">'Positivity'</span><span class="sc">:&gt;10}</span><span class="ss">"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>site<span class="sc">:&lt;14}</span><span class="ss"> | </span><span class="sc">{</span>screened<span class="sc">:&gt;10,}</span><span class="ss"> | </span><span class="sc">{</span>positivity<span class="sc">:&gt;10.2%}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Facility ID : CTG-0042</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>Screened    : 18,450 adults</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>Positivity  : 2.23% (412 / 18,450)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a>Mean SBP    : 128.5 mmHg</span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>Site           |   Screened | Positivity</span>
+<span id="cb8-6"><a href="#cb8-6" aria-label="6"></a>Chattogram     |     18,450 |      2.23%</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Common Trap — Never Multiply by 100 When Using :.2%
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Python’s <code>%</code> format specifier <strong>already multiplies by 100</strong>! If <code>positivity = 0.02233</code>, writing <code>{positivity:.2%}</code> gives <code>2.23%</code>. Writing <code>{positivity * 100:.2%}</code> accidentally multiplies by <span class="math inline">\(100\)</span> <em>twice</em> and prints <code>223.31%</code>!</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch03-input" class="level3" data-number="3.3.5">
+<h3 data-number="3.3.5" class="anchored" data-anchor-id="sec-ch03-input"><span class="header-section-number">3.3.5</span> Interactive User Input (<code>input()</code>) &amp; Validation Hygiene</h3>
+<p>In an interactive Python script or Colab cell, <code>input("Prompt: ")</code> pauses execution, waits for the user to type text and press <code>Enter</code>, and <strong>always returns a <code>str</code></strong>—even when the user types <code>38.4</code> or <code>28</code>.</p>
+<p>Because interactive <code>input()</code> pauses execution forever in automated research pipelines and cloud notebook runners, disciplined researchers isolate raw input at the top of a cell (or simulate it cleanly during automated testing):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="co"># In an interactive Colab session, you can uncomment the line below:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a><span class="co"># raw_temp = input("Enter patient temperature (e.g., 38.4 C): ")</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a><span class="co"># For reproducible, non-blocking execution, we simulate the user's text:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>raw_temp <span class="op">=</span> <span class="st">"  38.4 C  "</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Raw input type:"</span>, <span class="bu">type</span>(raw_temp), <span class="st">"| Value:"</span>, <span class="bu">repr</span>(raw_temp))</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>temp_c <span class="op">=</span> <span class="bu">float</span>(raw_temp.replace(<span class="st">"C"</span>, <span class="st">""</span>).strip())</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>has_fever <span class="op">=</span> temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"Parsed Temp: </span><span class="sc">{</span>temp_c<span class="sc">:.1f}</span><span class="ss"> C | Fever Flag: </span><span class="sc">{</span>has_fever<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Raw input type: &lt;class 'str'&gt; | Value: '  38.4 C  '</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Parsed Temp: 38.4 C | Fever Flag: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Golden Rule of User Input:</strong> Treat <em>every</em> string returned by <code>input()</code> as untrusted messy text—always <code>.strip()</code> whitespace, strip expected units, and explicitly cast to <code>int</code> or <code>float</code> before arithmetic!</p>
+<hr>
+</section>
+<section id="sec-ch03-errors" class="level3" data-number="3.3.6">
+<h3 data-number="3.3.6" class="anchored" data-anchor-id="sec-ch03-errors"><span class="header-section-number">3.3.6</span> Break It On Purpose! (String Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — IndexError (Off-by-One Indexing)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>code <span class="op">=</span> <span class="st">"DHK-042"</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>last_char <span class="op">=</span> code[<span class="dv">7</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>IndexError: string index out of range</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>len("DHK-042")</code> is <code>7</code>, which means valid positive indices run from <code>0</code> through <code>6</code> (<code>len(code) - 1</code>). Index <code>7</code> steps one slot past the end of the string!<br>
+<strong>Fix:</strong> Use negative indexing <code>code[-1]</code> (always the last character, regardless of length) or <code>code[len(code) - 1]</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — TypeError (String Immutability)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>patient_id <span class="op">=</span> <span class="st">"uhc-0042"</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>patient_id[<span class="dv">0</span>] <span class="op">=</span> <span class="st">"U"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>TypeError: 'str' object does not support item assignment</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Python strings are <strong>immutable</strong>—you cannot modify individual characters in place.<br>
+<strong>Fix:</strong> Construct a brand-new string via slicing/concatenation (<code>patient_id = "U" + patient_id[1:]</code>) or <code>.upper()</code> (<code>patient_id = patient_id.upper()</code>).</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError on Dirty Unit String
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>raw_temp <span class="op">=</span> <span class="st">"38.6 C"</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>temp_c <span class="op">=</span> <span class="bu">float</span>(raw_temp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>ValueError: could not convert string to float: '38.6 C'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>float()</code> tolerates outer spaces (<code>float(" 38.6 ")</code> succeeds), but crashes on non-numeric unit suffixes like <code>"C"</code>, <code>"kg"</code>, or <code>"mmHg"</code>.<br>
+<strong>Fix:</strong> Strip the unit first: <code>temp_c = float(raw_temp.replace("C", "").strip())</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch03-blueprint" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="sec-ch03-blueprint"><span class="header-section-number">3.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A rural community health worker texts a rapid dengue triage SMS to the district surveillance desk: <code>raw_sms = "  barishal_sadar | 007 | 39.1 C | 112000 /uL  "</code>. The four pipe-delimited fields represent upazila name, patient serial number, body temperature (<span class="math inline">\(^\circ\text{C}\)</span>), and platelet count (normal <span class="math inline">\(\ge 150{,}000\text{ /}\mu\text{L}\)</span>). Parse all fields cleanly, generate a zero-padded case ID (<code>"BRS-0007"</code>), evaluate <code>urgent_referral</code> (<code>True</code> if febrile <span class="math inline">\(\ge 38.0^\circ\text{C}\)</span> <strong>and</strong> platelets <span class="math inline">\(&lt; 150{,}000\)</span>), and print a clean two-line clinical alert.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">3.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Inputs &amp; Units:</strong> One raw <code>str</code> containing 4 <code>|</code>-separated fields: messy text (<code>upazila</code>), zero-padded integer (<code>serial</code>), float with <code>"C"</code> unit (<code>temp_c</code>), and integer with <code>"/uL"</code> unit (<code>platelets</code>).</li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Leading/trailing spaces inside every token after <code>.split("|")</code>.</li>
+<li>Unit suffixes (<code>"C"</code>, <code>"/uL"</code>) will trigger <code>ValueError</code> if not removed before <code>float()</code>/<code>int()</code>.</li>
+<li>Calling <code>int("007")</code> turns <code>"007"</code> into <code>7</code>; we must re-pad with <code>:04d</code> to format <code>"BRS-0007"</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Split <code>raw_sms</code> on <code>"|"</code> into <code>parts</code>.</li>
+<li>Clean <code>parts[0]</code> with <code>.strip().replace("_", " ").title()</code>.</li>
+<li>Parse <code>serial</code>, <code>temp_c</code>, and <code>platelets</code> after removing units and whitespace.</li>
+<li>Build <code>case_id = f"BRS-{serial:04d}"</code>, compute boolean flags, and print formatted alert lines.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li><code>upazila</code> <span class="math inline">\(\rightarrow\)</span> <code>"Barishal Sadar"</code>; <code>case_id</code> <span class="math inline">\(\rightarrow\)</span> <code>"BRS-0007"</code>.</li>
+<li><code>39.1 &gt;= 38.0</code> (<code>True</code>) and <code>112000 &lt; 150000</code> (<code>True</code>) <span class="math inline">\(\Rightarrow\)</span> <code>urgent_referral = True</code>.</li>
+<li><code>112000</code> with <code>:,</code> prints <code>"112,000"</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">3.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a><span class="co"># Step 1: Raw incoming clinic SMS text</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>raw_sms <span class="op">=</span> <span class="st">"  barishal_sadar | 007 | 39.1 C | 112000 /uL  "</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a><span class="co"># Step 2: Split on '|' and sanitize each text field</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a>parts <span class="op">=</span> raw_sms.split(<span class="st">"|"</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a>upazila <span class="op">=</span> parts[<span class="dv">0</span>].strip().replace(<span class="st">"_"</span>, <span class="st">" "</span>).title()</span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a>serial <span class="op">=</span> <span class="bu">int</span>(parts[<span class="dv">1</span>].strip())</span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a>temp_c <span class="op">=</span> <span class="bu">float</span>(parts[<span class="dv">2</span>].replace(<span class="st">"C"</span>, <span class="st">""</span>).strip())</span>
+<span id="cb17-9"><a href="#cb17-9" aria-label="9"></a>platelets <span class="op">=</span> <span class="bu">int</span>(parts[<span class="dv">3</span>].replace(<span class="st">"/uL"</span>, <span class="st">""</span>).strip())</span>
+<span id="cb17-10"><a href="#cb17-10" aria-label="10"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-label="11"></a><span class="co"># Step 3: Derive clinical triage flags &amp; standardized ID</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-label="12"></a>case_id <span class="op">=</span> <span class="ss">f"BRS-</span><span class="sc">{</span>serial<span class="sc">:04d}</span><span class="ss">"</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-label="13"></a>is_febrile <span class="op">=</span> temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-label="14"></a>low_platelets <span class="op">=</span> platelets <span class="op">&lt;</span> <span class="dv">150000</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-label="15"></a>urgent_referral <span class="op">=</span> is_febrile <span class="kw">and</span> low_platelets</span>
+<span id="cb17-16"><a href="#cb17-16" aria-label="16"></a></span>
+<span id="cb17-17"><a href="#cb17-17" aria-label="17"></a><span class="co"># Step 4: Format publication-clean clinical alert</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-label="18"></a><span class="bu">print</span>(<span class="ss">f"[</span><span class="sc">{</span>case_id<span class="sc">}</span><span class="ss">] </span><span class="sc">{</span>upazila<span class="sc">}</span><span class="ss"> | Temp: </span><span class="sc">{</span>temp_c<span class="sc">:.1f}</span><span class="ss"> C"</span>)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-label="19"></a><span class="bu">print</span>(<span class="ss">f"Platelets: </span><span class="sc">{</span>platelets<span class="sc">:,}</span><span class="ss"> /uL | Urgent Referral: </span><span class="sc">{</span>urgent_referral<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>[BRS-0007] Barishal Sadar | Temp: 39.1 C</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>Platelets: 112,000 /uL | Urgent Referral: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch03-todos" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="sec-ch03-todos"><span class="header-section-number">3.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and complete all six exercises below:</p>
+<ul>
+<li><strong>To-Do 3.1 (Warm-Up — Cleaning Messy Clinic District Names):</strong> Turn <code>raw_district = "   sylhet_sadar   "</code> into <code>clean_district</code> (<code>"Sylhet Sadar"</code>) and compute <code>char_count = len(clean_district)</code> (<code>12</code>).</li>
+<li><strong>To-Do 3.2 (Indexing &amp; Slicing — Structured Patient IDs):</strong> From <code>patient_id = "BD-DHK-2026-0482"</code>, slice <code>country_code</code> (<code>"BD"</code>), <code>district_code</code> (<code>"DHK"</code>), <code>cohort_year</code> (<code>2026</code>, <code>int</code>), and <code>serial_str</code> (<code>"0482"</code>, <code>str</code>).</li>
+<li><strong>To-Do 3.3 (Splitting Delimited Text — Pipe-Delimited Lab Record):</strong> Split <code>raw_record = "  PAT_109 | 38.4 C | dengue_ns1_pos  "</code> on <code>"|"</code> to extract <code>lab_id</code> (<code>"PAT_109"</code>), <code>temp_c</code> (<code>38.4</code>), and <code>is_dengue_pos</code> (<code>True</code>).</li>
+<li><strong>To-Do 3.4 (Immutability &amp; Rebuild — Standardizing Facility Codes):</strong> From <code>raw_code = "uhc_0042"</code>, build <code>fixed_code</code> (<code>"UHC-0042"</code>) and <code>replaced_facility</code> (<code>"DHK-0042"</code>) without mutating in place.</li>
+<li><strong>To-Do 3.5 (Publication Formatting — Epidemiology f-String):</strong> Format <code>district = "Rajshahi"</code>, <code>screened = 12450</code>, <code>positive = 386</code>, <code>prevalence = positive / screened</code>, <code>mean_hb = 11.246</code> into <code>"Rajshahi: n=12,450 | Pos=386 (3.10%) | Mean Hb=11.2 g/dL"</code>.</li>
+<li><strong>To-Do 3.6 (Simulated <code>input()</code> Hygiene — Clinic Intake &amp; Zero-Padded Tag):</strong> Clean <code>raw_name = "  fatema akter  "</code>, <code>raw_age = " 28 "</code>, <code>raw_seq = " 7 "</code>, <code>raw_temp = " 38.6 C "</code> into <code>clean_name</code>, <code>age_int</code>, <code>temp_c</code>, and <code>case_tag</code> (<code>"CASE-0007"</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch03-test" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="sec-ch03-test"><span class="header-section-number">3.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Predict every output on paper before peeking at Stage 8:</p>
+<ol type="1">
+<li><p><strong>Zero-Based Bounds:</strong> If <code>code = "SYL-019"</code>, what does <code>len(code)</code> return, and what exact exception does <code>code[7]</code> raise?</p></li>
+<li><p><strong>Half-Open Slicing:</strong> Given <code>s = "EPIDEMIOLOGY"</code>, what exact substring does <code>s[0:3]</code> return? What about <code>s[-4:]</code>?</p></li>
+<li><p><strong>Silent Immutability Bug:</strong> After running:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>city <span class="op">=</span> <span class="st">"  dhaka  "</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>city.strip().upper()</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a><span class="bu">print</span>(<span class="bu">repr</span>(city))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What exact string prints, and why?</p></li>
+<li><p><strong>In-Place Edit Trap:</strong> Why does <code>tag = "uhc-01"; tag[0] = "U"</code> fail, and what exact exception name does Python raise?</p></li>
+<li><p><strong>Leading Zero Preservation:</strong> What is the difference between <code>serial_str = "0042"</code> and <code>serial_int = int("0042")</code>?</p></li>
+<li><p><strong>Split Return Type:</strong> What exact list does <code>"148/92".split("/")</code> produce—are the elements integers or strings?</p></li>
+<li><p><strong>Percentage Formatter Trap:</strong> If <code>rate = 0.045</code>, what does <code>f"{rate:.1%}"</code> produce? What mistake happens if you write <code>f"{rate * 100:.1%}"</code>?</p></li>
+<li><p><strong>Zero-Padding Format Specifier:</strong> What exact string does <code>f"PAT-{19:05d}"</code> evaluate to?</p></li>
+<li><p><strong>Interactive <code>input()</code> Return Type:</strong> If a clinician types <code>37.8</code> at an <code>input("Temp: ")</code> prompt, what does <code>type(val)</code> return?</p></li>
+<li><p><strong>Execution Trace:</strong> Trace <code>result</code> after these three lines:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>raw <span class="op">=</span> <span class="st">"  malaria_pos  "</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>clean <span class="op">=</span> raw.strip().upper()</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>result <span class="op">=</span> clean.replace(<span class="st">"_"</span>, <span class="st">"-"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch03-exam" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="sec-ch03-exam"><span class="header-section-number">3.7</span> Stage 7 — Chapter 3 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb</code>, solve all three tasks, and run <code>tutor.check_exam("ch03", exam_submissions)</code> to score your work out of 100 points.</p>
+<section id="exam-task-3.1-30-points-clinical-specimen-barcode-parser" class="level3" data-number="3.7.1">
+<h3 data-number="3.7.1" class="anchored" data-anchor-id="exam-task-3.1-30-points-clinical-specimen-barcode-parser"><span class="header-section-number">3.7.1</span> Exam Task 3.1 (30 Points): Clinical Specimen Barcode Parser</h3>
+<p>A surveillance laboratory scans a messy barcode string: <code>raw_barcode = "  bd-ctg-2026-0094-mal  "</code>. Standardize and extract with exact required types:</p>
+<ul>
+<li><code>clean_barcode</code>: stripped and uppercased (<code>"BD-CTG-2026-0094-MAL"</code>, <code>str</code>)</li>
+<li><code>division_code</code>: 3-letter division code (<code>"CTG"</code>, <code>str</code>)</li>
+<li><code>sample_year</code>: 4-digit collection year (<code>2026</code>, <code>int</code>)</li>
+<li><code>sample_number</code>: integer specimen sequence number (<code>94</code>, <code>int</code>)</li>
+<li><code>is_malaria_panel</code>: <code>True</code> if <code>clean_barcode</code> ends with <code>"MAL"</code> (<code>bool</code>)</li>
+</ul>
+</section>
+<section id="exam-task-3.2-35-points-dirty-field-survey-intake-cleaner" class="level3" data-number="3.7.2">
+<h3 data-number="3.7.2" class="anchored" data-anchor-id="exam-task-3.2-35-points-dirty-field-survey-intake-cleaner"><span class="header-section-number">3.7.2</span> Exam Task 3.2 (35 Points): Dirty Field-Survey Intake Cleaner</h3>
+<p>A mobile data-collection form sends a single semicolon-delimited text payload: <code>raw_payload = "  rahim_uddin ; 45 yrs ; 72.4 kg ; 168.0 cm ; 148/92 mmHg  "</code>. Parse and compute:</p>
+<ul>
+<li><code>patient_name</code>: stripped, underscores replaced with spaces, Title Case (<code>"Rahim Uddin"</code>, <code>str</code>)</li>
+<li><code>age_years</code>: integer age (<code>45</code>, <code>int</code>)</li>
+<li><code>bmi</code>: float BMI (<span class="math inline">\(\text{weight\_kg} / \text{height\_m}^2\)</span>) rounded to 2 decimal places (<code>25.65</code>, <code>float</code>)</li>
+<li><code>sbp_mmhg</code>: systolic blood pressure (number before <code>"/"</code>) as <code>int</code> (<code>148</code>)</li>
+<li><code>dbp_mmhg</code>: diastolic blood pressure (number after <code>"/"</code>) as <code>int</code> (<code>92</code>)</li>
+</ul>
+</section>
+<section id="exam-task-3.3-35-points-publication-ready-surveillance-bulletin-generator" class="level3" data-number="3.7.3">
+<h3 data-number="3.7.3" class="anchored" data-anchor-id="exam-task-3.3-35-points-publication-ready-surveillance-bulletin-generator"><span class="header-section-number">3.7.3</span> Exam Task 3.3 (35 Points): Publication-Ready Surveillance Bulletin Generator</h3>
+<p>Given district outbreak summary variables <code>facility_code = "uhc-syl-03"</code>, <code>report_seq = 14</code>, <code>population = 340500</code>, <code>confirmed_cases = 512</code>, and <code>deaths = 9</code>, compute and format:</p>
+<ul>
+<li><code>report_id</code>: uppercase facility code + <code>"-R"</code> + zero-padded 4-digit <code>report_seq</code> (<code>"UHC-SYL-03-R0014"</code>)</li>
+<li><code>incidence_per_100k</code>: <code>(confirmed_cases / population) * 100000</code> rounded to 2 decimals (<code>150.37</code>)</li>
+<li><code>cfr_pct_str</code>: Case Fatality Rate (<code>deaths / confirmed_cases</code>) formatted as a 2-decimal percentage string (<code>"1.76%"</code>)</li>
+<li><code>bulletin_line</code>: exact formatted summary string: <code>"[UHC-SYL-03-R0014] Pop=340,500 | Cases=512 (150.4/100k) | CFR=1.76%"</code></li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch03-solutions" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="sec-ch03-solutions"><span class="header-section-number">3.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="3.8.1">
+<h3 data-number="3.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">3.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>len(code)</code> is <code>7</code>; <code>code[7]</code> raises <strong><code>IndexError</code></strong> because valid positive indices are <code>0</code> through <code>6</code>.</li>
+<li><code>s[0:3]</code> returns <strong><code>"EPI"</code></strong> (length <span class="math inline">\(3 - 0 = 3\)</span>); <code>s[-4:]</code> returns <strong><code>"LOGY"</code></strong>.</li>
+<li>Prints <strong><code>'  dhaka  '</code></strong>! Because strings are immutable, <code>city.strip().upper()</code> created a new string and immediately discarded it since it was never reassigned (<code>city = ...</code>).</li>
+<li>Fails because <code>str</code> objects are immutable; Python raises <strong><code>TypeError</code></strong> (<code>'str' object does not support item assignment</code>).</li>
+<li><code>serial_str</code> preserves leading zeros (<code>"0042"</code>, <code>str</code>); <code>int("0042")</code> drops leading zeros and evaluates to integer <code>42</code> (<code>int</code>).</li>
+<li>Produces <strong><code>["148", "92"]</code></strong>—a list of <strong>strings</strong> (<code>str</code>), not integers! Always cast with <code>int(...)</code> before comparing blood pressures numerically.</li>
+<li><code>f"{rate:.1%}"</code> produces <strong><code>"4.5%"</code></strong>. Writing <code>f"{rate * 100:.1%}"</code> multiplies by <span class="math inline">\(100\)</span> twice and wrongly prints <strong><code>"450.0%"</code></strong>!</li>
+<li>Evaluates to <strong><code>"PAT-00019"</code></strong> (<code>:05d</code> pads <code>19</code> with three leading zeros to reach an exact total width of 5 digits).</li>
+<li>Always returns <strong><code>&lt;class 'str'&gt;</code></strong>—<code>input()</code> never automatically converts text to <code>float</code> or <code>int</code>.</li>
+<li><code>raw</code> = <code>"  malaria_pos  "</code> <span class="math inline">\(\rightarrow\)</span> <code>clean</code> = <code>"MALARIA_POS"</code> <span class="math inline">\(\rightarrow\)</span> <code>result</code> = <strong><code>"MALARIA-POS"</code></strong>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="3.8.2">
+<h3 data-number="3.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">3.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="co"># To-Do 3.1</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>raw_district <span class="op">=</span> <span class="st">"   sylhet_sadar   "</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>clean_district <span class="op">=</span> raw_district.strip().replace(<span class="st">"_"</span>, <span class="st">" "</span>).title()</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>char_count <span class="op">=</span> <span class="bu">len</span>(clean_district)                       <span class="co"># 12</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a><span class="co"># To-Do 3.2</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>patient_id <span class="op">=</span> <span class="st">"BD-DHK-2026-0482"</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>country_code <span class="op">=</span> patient_id[:<span class="dv">2</span>]                          <span class="co"># "BD"</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>district_code <span class="op">=</span> patient_id[<span class="dv">3</span>:<span class="dv">6</span>]                        <span class="co"># "DHK"</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>cohort_year <span class="op">=</span> <span class="bu">int</span>(patient_id[<span class="dv">7</span>:<span class="dv">11</span>])                    <span class="co"># 2026</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>serial_str <span class="op">=</span> patient_id[<span class="op">-</span><span class="dv">4</span>:]                           <span class="co"># "0482"</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a></span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a><span class="co"># To-Do 3.3</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>raw_record <span class="op">=</span> <span class="st">"  PAT_109 | 38.4 C | dengue_ns1_pos  "</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>parts <span class="op">=</span> raw_record.split(<span class="st">"|"</span>)</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>lab_id <span class="op">=</span> parts[<span class="dv">0</span>].strip()                              <span class="co"># "PAT_109"</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>temp_c <span class="op">=</span> <span class="bu">float</span>(parts[<span class="dv">1</span>].replace(<span class="st">"C"</span>, <span class="st">""</span>).strip())      <span class="co"># 38.4</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>is_dengue_pos <span class="op">=</span> <span class="st">"pos"</span> <span class="kw">in</span> parts[<span class="dv">2</span>].strip().lower()      <span class="co"># True</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a></span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a><span class="co"># To-Do 3.4</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>raw_code <span class="op">=</span> <span class="st">"uhc_0042"</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>fixed_code <span class="op">=</span> raw_code.upper().replace(<span class="st">"_"</span>, <span class="st">"-"</span>)        <span class="co"># "UHC-0042"</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>replaced_facility <span class="op">=</span> <span class="st">"DHK"</span> <span class="op">+</span> fixed_code[<span class="dv">3</span>:]             <span class="co"># "DHK-0042"</span></span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a></span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a><span class="co"># To-Do 3.5</span></span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>district, screened, positive <span class="op">=</span> <span class="st">"Rajshahi"</span>, <span class="dv">12450</span>, <span class="dv">386</span></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>prevalence <span class="op">=</span> positive <span class="op">/</span> screened</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>mean_hb <span class="op">=</span> <span class="fl">11.246</span></span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>report_line <span class="op">=</span> (</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    <span class="ss">f"</span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">: n=</span><span class="sc">{</span>screened<span class="sc">:,}</span><span class="ss"> | Pos=</span><span class="sc">{</span>positive<span class="sc">}</span><span class="ss"> "</span></span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    <span class="ss">f"(</span><span class="sc">{</span>prevalence<span class="sc">:.2%}</span><span class="ss">) | Mean Hb=</span><span class="sc">{</span>mean_hb<span class="sc">:.1f}</span><span class="ss"> g/dL"</span></span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>)</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a></span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a><span class="co"># To-Do 3.6</span></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>raw_name, raw_age <span class="op">=</span> <span class="st">"  fatema akter  "</span>, <span class="st">" 28 "</span></span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>raw_seq, raw_temp <span class="op">=</span> <span class="st">" 7 "</span>, <span class="st">" 38.6 C "</span></span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>clean_name <span class="op">=</span> raw_name.strip().title()                  <span class="co"># "Fatema Akter"</span></span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>age_int <span class="op">=</span> <span class="bu">int</span>(raw_age.strip())                         <span class="co"># 28</span></span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>temp_c <span class="op">=</span> <span class="bu">float</span>(raw_temp.replace(<span class="st">"C"</span>, <span class="st">""</span>).strip())      <span class="co"># 38.6</span></span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>case_tag <span class="op">=</span> <span class="ss">f"CASE-</span><span class="sc">{</span><span class="bu">int</span>(raw_seq.strip())<span class="sc">:04d}</span><span class="ss">"</span>          <span class="co"># "CASE-0007"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-3-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="3.8.3">
+<h3 data-number="3.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-3-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">3.8.3</span> C. Annotated Solutions — Chapter 3 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 3.1 (30 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>raw_barcode <span class="op">=</span> <span class="st">"  bd-ctg-2026-0094-mal  "</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>clean_barcode <span class="op">=</span> raw_barcode.strip().upper()  <span class="co"># "BD-CTG-2026-0094-MAL"</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>tokens <span class="op">=</span> clean_barcode.split(<span class="st">"-"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>division_code <span class="op">=</span> tokens[<span class="dv">1</span>]                              <span class="co"># "CTG"</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>sample_year <span class="op">=</span> <span class="bu">int</span>(tokens[<span class="dv">2</span>])                           <span class="co"># 2026</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>sample_number <span class="op">=</span> <span class="bu">int</span>(tokens[<span class="dv">3</span>])                         <span class="co"># 94</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>is_malaria_panel <span class="op">=</span> clean_barcode.endswith(<span class="st">"MAL"</span>)       <span class="co"># True</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a></span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a><span class="co"># Exam Task 3.2 (35 pts)</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a>raw_payload <span class="op">=</span> (</span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>    <span class="st">"  rahim_uddin ; 45 yrs ; 72.4 kg ; 168.0 cm ; 148/92 mmHg  "</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>)</span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>fields <span class="op">=</span> raw_payload.split(<span class="st">";"</span>)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>patient_name <span class="op">=</span> fields[<span class="dv">0</span>].strip().replace(<span class="st">"_"</span>, <span class="st">" "</span>).title()</span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>age_years <span class="op">=</span> <span class="bu">int</span>(fields[<span class="dv">1</span>].replace(<span class="st">"yrs"</span>, <span class="st">""</span>).strip())  <span class="co"># 45</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a>weight_kg <span class="op">=</span> <span class="bu">float</span>(fields[<span class="dv">2</span>].replace(<span class="st">"kg"</span>, <span class="st">""</span>).strip()) <span class="co"># 72.4</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a>height_m <span class="op">=</span> <span class="bu">float</span>(fields[<span class="dv">3</span>].replace(<span class="st">"cm"</span>, <span class="st">""</span>).strip()) <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a>bmi <span class="op">=</span> <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)            <span class="co"># 25.65</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a>bp_parts <span class="op">=</span> fields[<span class="dv">4</span>].replace(<span class="st">"mmHg"</span>, <span class="st">""</span>).strip().split(<span class="st">"/"</span>)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>sbp_mmhg, dbp_mmhg <span class="op">=</span> <span class="bu">int</span>(bp_parts[<span class="dv">0</span>]), <span class="bu">int</span>(bp_parts[<span class="dv">1</span>])</span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a></span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a><span class="co"># Exam Task 3.3 (35 pts)</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>facility_code, report_seq <span class="op">=</span> <span class="st">"uhc-syl-03"</span>, <span class="dv">14</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>population, confirmed_cases, deaths <span class="op">=</span> <span class="dv">340500</span>, <span class="dv">512</span>, <span class="dv">9</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>report_id <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>facility_code<span class="sc">.</span>upper()<span class="sc">}</span><span class="ss">-R</span><span class="sc">{</span>report_seq<span class="sc">:04d}</span><span class="ss">"</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>incidence_per_100k <span class="op">=</span> <span class="bu">round</span>((confirmed_cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span>, <span class="dv">2</span>)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>cfr_pct_str <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>deaths <span class="op">/</span> confirmed_cases<span class="sc">:.2%}</span><span class="ss">"</span>        <span class="co"># "1.76%"</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>bulletin_line <span class="op">=</span> (</span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>    <span class="ss">f"[</span><span class="sc">{</span>report_id<span class="sc">}</span><span class="ss">] Pop=</span><span class="sc">{</span>population<span class="sc">:,}</span><span class="ss"> | "</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>    <span class="ss">f"Cases=</span><span class="sc">{</span>confirmed_cases<span class="sc">:,}</span><span class="ss"> (</span><span class="sc">{</span>incidence_per_100k<span class="sc">:.1f}</span><span class="ss">/100k) | "</span></span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>    <span class="ss">f"CFR=</span><span class="sc">{</span>cfr_pct_str<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-3-failure-modes" class="level3" data-number="3.8.4">
+<h3 data-number="3.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-3-failure-modes"><span class="header-section-number">3.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 3 Failure Modes</h3>
+<ol type="1">
+<li><strong>The Silent Immutability Trap (<code>raw.strip()</code> Without Assignment):</strong> Calling <code>raw_district.strip()</code> looks like it should clean <code>raw_district</code>, and Python produces <em>zero</em> error message—yet <code>raw_district</code> stays completely unchanged! Always bind the returned copy (<code>clean_district = raw_district.strip()</code>).</li>
+<li><strong>Double-Multiplying Percentages (<code>{rate * 100:.2%}</code>):</strong> Because the <code>%</code> format specifier automatically multiplies proportions by <span class="math inline">\(100\)</span>, multiplying by <code>100</code> beforehand turns a <code>1.76%</code> Case Fatality Rate into an impossible <code>175.78%</code>! Always pass the raw decimal proportion (<code>deaths / confirmed_cases</code>) directly into <code>:.2%</code>.</li>
+<li><strong>Hidden Spaces Breaking <code>.endswith()</code> and Exact Matching:</strong> Checking <code>raw_barcode.upper().endswith("MAL")</code> <em>before</em> calling <code>.strip()</code> silently returns <code>False</code> because the last two characters are spaces (<code>"  "</code>), not <code>"MAL"</code>! Make <code>.strip()</code> the very first link in every text-cleaning chain.</li>
+</ol>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_01_python_foundations/ch02_variables_types.html" class="pagination-link" aria-label="Variables, Memory Models, Data Types, and Arithmetic Logic">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="pagination-link" aria-label="Boolean Logic, Conditionals, and Decision Trees in Code">
+        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>12&nbsp; Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_03_engineering_workflow/ch13_jupyter_colab.html" rel="next">
+<link href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch12-intuition" id="toc-sec-ch12-intuition" class="nav-link" data-scroll-target="#sec-ch12-intuition"><span class="header-section-number">12.1</span> Stage 1 — First-Principles Intuition: Why Researchers Need Classes</a>
+  <ul class="collapse">
+  <li><a href="#composition-over-inheritance-the-scientific-engineering-rule" id="toc-composition-over-inheritance-the-scientific-engineering-rule" class="nav-link" data-scroll-target="#composition-over-inheritance-the-scientific-engineering-rule"><span class="header-section-number">12.1.1</span> Composition Over Inheritance (The Scientific Engineering Rule)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch12-mental-model" id="toc-sec-ch12-mental-model" class="nav-link" data-scroll-target="#sec-ch12-mental-model"><span class="header-section-number">12.2</span> Stage 2 — Visual Mental Model: Class Blueprint, Live Instances &amp; ML Bridge</a></li>
+  <li><a href="#sec-ch12-walkthrough" id="toc-sec-ch12-walkthrough" class="nav-link" data-scroll-target="#sec-ch12-walkthrough"><span class="header-section-number">12.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch12-classes" id="toc-sec-ch12-classes" class="nav-link" data-scroll-target="#sec-ch12-classes"><span class="header-section-number">12.3.1</span> Classes, <code>__init__</code>, <code>self</code>, and Instance State</a></li>
+  <li><a href="#sec-ch12-dataclass" id="toc-sec-ch12-dataclass" class="nav-link" data-scroll-target="#sec-ch12-dataclass"><span class="header-section-number">12.3.2</span> Structured Scientific Records with <code>@dataclass</code></a></li>
+  <li><a href="#sec-ch12-dunder" id="toc-sec-ch12-dunder" class="nav-link" data-scroll-target="#sec-ch12-dunder"><span class="header-section-number">12.3.3</span> Dunder Protocols (<code>__len__</code>) &amp; Object Composition</a></li>
+  <li><a href="#sec-ch12-ml-bridge" id="toc-sec-ch12-ml-bridge" class="nav-link" data-scroll-target="#sec-ch12-ml-bridge"><span class="header-section-number">12.3.4</span> The ML Bridge: Mini Scikit-Learn (<code>fit</code>/<code>transform</code>) &amp; Mini PyTorch (<code>forward</code>/<code>__call__</code>)</a></li>
+  <li><a href="#sec-ch12-errors" id="toc-sec-ch12-errors" class="nav-link" data-scroll-target="#sec-ch12-errors"><span class="header-section-number">12.3.5</span> Break It On Purpose! (OOP Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch12-blueprint" id="toc-sec-ch12-blueprint" class="nav-link" data-scroll-target="#sec-ch12-blueprint"><span class="header-section-number">12.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">12.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">12.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch12-todos" id="toc-sec-ch12-todos" class="nav-link" data-scroll-target="#sec-ch12-todos"><span class="header-section-number">12.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch12-test" id="toc-sec-ch12-test" class="nav-link" data-scroll-target="#sec-ch12-test"><span class="header-section-number">12.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch12-exam" id="toc-sec-ch12-exam" class="nav-link" data-scroll-target="#sec-ch12-exam"><span class="header-section-number">12.7</span> Stage 7 — Chapter 12 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-12.1-30-points-validated-maternalpatient" id="toc-exam-task-12.1-30-points-validated-maternalpatient" class="nav-link" data-scroll-target="#exam-task-12.1-30-points-validated-maternalpatient"><span class="header-section-number">12.7.1</span> Exam Task 12.1 (30 Points): Validated <code>MaternalPatient</code></a></li>
+  <li><a href="#exam-task-12.2-35-points-production-zscorescaler" id="toc-exam-task-12.2-35-points-production-zscorescaler" class="nav-link" data-scroll-target="#exam-task-12.2-35-points-production-zscorescaler"><span class="header-section-number">12.7.2</span> Exam Task 12.2 (35 Points): Production <code>ZScoreScaler</code></a></li>
+  <li><a href="#exam-task-12.3-35-points-composed-epidemicregistry" id="toc-exam-task-12.3-35-points-composed-epidemicregistry" class="nav-link" data-scroll-target="#exam-task-12.3-35-points-composed-epidemicregistry"><span class="header-section-number">12.7.3</span> Exam Task 12.3 (35 Points): Composed <code>EpidemicRegistry</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch12-solutions" id="toc-sec-ch12-solutions" class="nav-link" data-scroll-target="#sec-ch12-solutions"><span class="header-section-number">12.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">12.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">12.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-12-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-12-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-12-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">12.8.3</span> C. Annotated Solutions — Chapter 12 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-12-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-12-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-12-failure-modes"><span class="header-section-number">12.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 12 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch12" class="quarto-section-identifier"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Launch <strong>Part III (Engineering Workflow, Architecture &amp; Reproducibility)</strong> by demystifying <strong>Object-Oriented Programming (OOP)</strong> for scientific Python and machine learning. Master classes, <code>__init__</code>, <code>self</code>, <code>@dataclass</code>, dunder protocols (<code>__repr__</code>, <code>__len__</code>, <code>__call__</code>), and object composition—and see firsthand how every Scikit-Learn <code>.fit()</code> / <code>.transform()</code> estimator and PyTorch <code>nn.Module</code> (<code>forward</code> / <code>__call__</code>) is simply a clean Python class.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb">ch12 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 12 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb">ch12 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 12 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb">ch12 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 12 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Design Python classes using <code>class</code>, <code>__init__</code>, and <code>self</code> to bundle domain data (attributes), validation guards, and behavior (methods) into cohesive scientific objects.</li>
+<li>Eliminate boilerplate for structured clinical and experimental records using Python’s standard <code>@dataclass</code> decorator with automatic <code>__init__</code>, <code>__repr__</code>, and value equality (<code>__eq__</code>).</li>
+<li>Implement core <strong>dunder (magic) protocols</strong>—<code>__repr__</code>, <code>__len__</code>, and <code>__call__</code>—so custom research containers and models integrate seamlessly with Python’s built-in idioms (<code>repr(obj)</code>, <code>len(cohort)</code>, <code>layer(x)</code>).</li>
+<li>Prefer <strong>object composition</strong> (“a cohort <em>has-a</em> list of patients”) over fragile inheritance hierarchies, while avoiding the notorious <strong>mutable class-attribute leak</strong> (<code>patients = []</code> at class scope).</li>
+<li>Build from scratch both the <strong>Scikit-Learn Estimator API</strong> (<code>.fit()</code> / <code>.transform()</code> with trailing-underscore fitted state and zero train/test leakage) and the <strong>PyTorch <code>nn.Module</code> pattern</strong> (<code>__call__</code> delegating to <code>.forward()</code>).</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch12-intuition" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="sec-ch12-intuition"><span class="header-section-number">12.1</span> Stage 1 — First-Principles Intuition: Why Researchers Need Classes</h2>
+<p>In <strong>Part I</strong> and <strong>Part II</strong>, you mastered pure functions, lists, dictionaries, sets, strings, files, and clean error handling. Pure functions remain the bedrock of scientific code—so when should you reach for a <code>class</code>?</p>
+<p>Whenever <strong>data and the rules that operate on that data travel together</strong>—or whenever a computation must <strong>remember learned state</strong> between two steps.</p>
+<p>Consider two ubiquitous situations in data science and public health research:</p>
+<ul>
+<li><strong>Validated Domain Records:</strong> A <code>MaternalPatient</code> carries <code>patient_id</code>, <code>district</code>, and <code>hb_g_dl</code>, and must <em>never</em> accept an impossible sentinel like <code>999.0</code> or <code>-4.5</code>. Passing loose dicts around lets typos (<code>"hb_gdl"</code> vs.&nbsp;<code>"hb_g_dl"</code>) and corrupted values slip silently across 500 lines of analysis.</li>
+<li><strong>Stateful ML Transformers &amp; Neural Layers:</strong> In Scikit-Learn, <code>StandardScaler().fit(X_train)</code> <em>learns</em> the training mean <span class="math inline">\(\mu\)</span> and standard deviation <span class="math inline">\(\sigma\)</span>, stores them inside the object (<code>self.mean_</code>, <code>self.std_</code>), and later applies those exact frozen statistics during <code>.transform(X_test)</code> without leaking test-set information. In PyTorch, a neural layer holds learned <code>weight</code> and <code>bias</code> parameters inside <code>self</code> and lets you call <code>layer(x)</code> like a mathematical function.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Blueprint Form vs.&nbsp;Filled Patient Charts
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Think of a Python <code>class</code> as a <strong>standardized hospital intake form template</strong>, and each object (<strong>instance</strong>) as a <strong>filled-out chart for one patient</strong>:</p>
+<ul>
+<li><strong>The Class (<code>class ClinicalSample</code>):</strong> Defines <em>what fields exist</em> (<code>patient_id</code>, <code>weight_kg</code>, <code>height_cm</code>) and <em>what calculations every chart knows how to run</em> (<code>.bmi()</code>). There is only <strong>one</strong> template.</li>
+<li><strong>The Instances (<code>s1</code>, <code>s2</code>):</strong> Calling <code>ClinicalSample("P-101", 64.5, 168.0)</code> stamps out a fresh chart in memory. Python runs <code>__init__(self, ...)</code> automatically, passing the newly created chart as <strong><code>self</code></strong> so <code>s1</code> and <code>s2</code> hold completely independent measurements.</li>
+<li><strong>Dunder Protocols (<code>__repr__</code>, <code>__len__</code>, <code>__call__</code>):</strong> Double-underscore methods teach Python’s built-in syntax how to talk to your objects—printing a clean chart summary (<code>repr(s1)</code>), counting enrolled patients (<code>len(cohort)</code>), or invoking a neural layer directly (<code>layer(x)</code>).</li>
+</ul>
+</div>
+</div>
+<section id="composition-over-inheritance-the-scientific-engineering-rule" class="level3" data-number="12.1.1">
+<h3 data-number="12.1.1" class="anchored" data-anchor-id="composition-over-inheritance-the-scientific-engineering-rule"><span class="header-section-number">12.1.1</span> Composition Over Inheritance (The Scientific Engineering Rule)</h3>
+<p>Introductory OOP textbooks often obsess over deep inheritance chains (<code>Animal -&gt; Mammal -&gt; Dog</code>). In real data science and ML engineering, <strong>composition</strong> (“has-a”) wins 90% of the time: a <code>ClinicCohort</code> <em>has a</em> list of <code>PatientRecord</code> objects; a <code>ClinicalRiskPipeline</code> <em>has an</em> imputer, a scaler, and a linear scorer. Small, composable classes are easier to read, test, debug, and swap without breaking downstream experiments.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch12-mental-model" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="sec-ch12-mental-model"><span class="header-section-number">12.2</span> Stage 2 — Visual Mental Model: Class Blueprint, Live Instances &amp; ML Bridge</h2>
+<p>Trace how a single class blueprint stamps out isolated instances in memory—and how that exact mechanism powers both Scikit-Learn estimators and PyTorch modules:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 12 (Class Blueprint, Live Instances &amp; ML Bridge) illustrating Class Blueprint; class ClinicalSample __init__(self, id, w, h) bmi(self) / __repr__(self); Live Instances; s1 (self #1) id='P-101', w=6...">flowchart TD
+    subgraph Blueprint["Class Blueprint"]
+        C1["class ClinicalSample&lt;br/&gt;__init__(self, id, w, h)&lt;br/&gt;bmi(self) / __repr__(self)"]
+    end
+    subgraph Instances["Live Instances"]
+        I1["s1 (self #1)&lt;br/&gt;id='P-101', w=64.5, h=168"]
+        I2["s2 (self #2)&lt;br/&gt;id='P-102', w=54.6, h=156"]
+    end
+    subgraph MLBridge["ML Framework API"]
+        SK["Estimator API (Sklearn)&lt;br/&gt;fit(X_train) -&gt; stores mean_, std_&lt;br/&gt;transform(X_test) -&gt; new list"]
+        PT["PyTorch Module Pattern&lt;br/&gt;__init__(weight, bias)&lt;br/&gt;__call__(x) -&gt; forward(x)"]
+    end
+    C1 --&gt;|"instantiate"| I1
+    C1 --&gt;|"instantiate"| I2
+    I1 -. "stateful object" .-&gt; SK
+    I2 -. "callable object" .-&gt; PT
+</pre>
+</div>
+<p></p><figcaption> Chapter 12 visual mental model: Class Blueprint, Live Instances &amp; ML Bridge</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the unifying insight at the bottom of the diagram: <strong>Scikit-Learn and PyTorch are not magic syntax.</strong> Every estimator stores learned parameters on <code>self</code> (marked by a trailing underscore like <code>self.mean_</code> and <code>self.std_</code>), and every PyTorch <code>nn.Module</code> stores weights on <code>self</code> and hooks <code>model(x)</code> into <code>self.forward(x)</code> via <code>__call__</code>.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Never Put Mutable Lists Directly in the Class Body!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you write <code>patients = []</code> directly under <code>class ClinicCohort:</code> instead of <code>self.patients = []</code> inside <code>def __init__(self, ...):</code>, Python creates <strong>one shared list on the class blueprint</strong>. Appending to <code>cohort_dhaka</code> will silently pollute <code>cohort_sylhet</code>! Always initialize mutable containers (<code>[]</code>, <code>{}</code>) on <code>self</code> inside <code>__init__</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch12-walkthrough" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="sec-ch12-walkthrough"><span class="header-section-number">12.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch12-classes" class="level3" data-number="12.3.1">
+<h3 data-number="12.3.1" class="anchored" data-anchor-id="sec-ch12-classes"><span class="header-section-number">12.3.1</span> Classes, <code>__init__</code>, <code>self</code>, and Instance State</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="kw">class</span> ClinicalSample:</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a>    <span class="co">"""Anthropometric record pairing patient data with BMI behavior."""</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, patient_id, weight_kg, height_cm):</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>        <span class="va">self</span>.patient_id <span class="op">=</span> patient_id</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>        <span class="va">self</span>.weight_kg <span class="op">=</span> weight_kg</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a>        <span class="va">self</span>.height_cm <span class="op">=</span> height_cm</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a>    <span class="kw">def</span> bmi(<span class="va">self</span>):</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>        height_m <span class="op">=</span> <span class="va">self</span>.height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>        <span class="cf">return</span> <span class="bu">round</span>(<span class="va">self</span>.weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>        <span class="cf">return</span> (</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>            <span class="ss">f"ClinicalSample(patient_id=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>patient_id<span class="sc">!r}</span><span class="ss">, "</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>            <span class="ss">f"weight_kg=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>weight_kg<span class="sc">}</span><span class="ss">, height_cm=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>height_cm<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>        )</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a>s1 <span class="op">=</span> ClinicalSample(<span class="st">"P-101"</span>, <span class="fl">64.5</span>, <span class="fl">168.0</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>s2 <span class="op">=</span> ClinicalSample(<span class="st">"P-102"</span>, <span class="fl">54.6</span>, <span class="fl">156.0</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a><span class="bu">print</span>(s1)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a><span class="bu">print</span>(<span class="st">"s1 BMI:"</span>, s1.bmi(), <span class="st">"| s2 BMI:"</span>, s2.bmi())</span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a><span class="bu">print</span>(<span class="st">"Independent objects?"</span>, s1 <span class="kw">is</span> <span class="kw">not</span> s2)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a><span class="bu">print</span>(<span class="st">"Is ClinicalSample?  "</span>, <span class="bu">isinstance</span>(s1, ClinicalSample))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>ClinicalSample(patient_id='P-101', weight_kg=64.5, height_cm=168.0)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>s1 BMI: 22.85 | s2 BMI: 22.44</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Independent objects? True</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>Is ClinicalSample?   True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Trace three vital mechanics here:</p>
+<ul>
+<li><strong>Automatic <code>self</code> binding:</strong> When you write <code>s1.bmi()</code>, Python quietly translates the call to <code>ClinicalSample.bmi(s1)</code>. That is why <code>self</code> is always the first parameter in the method definition, yet you never pass it manually at the call site.</li>
+<li><strong>Namespace isolation:</strong> <code>self.weight_kg</code> attaches <code>64.5</code> to <code>s1</code>’s private dictionary (<code>s1.__dict__</code>), leaving <code>s2.weight_kg</code> completely untouched at <code>54.6</code>.</li>
+<li><strong>Readable <code>__repr__</code>:</strong> Without <code>__repr__</code>, printing <code>s1</code> displays <code>&lt;__main__.ClinicalSample object at 0x7f...&gt;</code>. Using <code>{self.patient_id!r}</code> keeps the quotes around string IDs so the output reads like valid Python constructor code.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch12-dataclass" class="level3" data-number="12.3.2">
+<h3 data-number="12.3.2" class="anchored" data-anchor-id="sec-ch12-dataclass"><span class="header-section-number">12.3.2</span> Structured Scientific Records with <code>@dataclass</code></h3>
+<p>When a class primarily holds typed data fields plus a couple of helper methods, Python’s standard-library <code>@dataclass</code> decorator automatically generates <code>__init__</code>, <code>__repr__</code>, and value-based <code>__eq__</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a><span class="at">@dataclass</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a><span class="kw">class</span> VitalsSnapshot:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>    <span class="co">"""Single bedside vitals observation."""</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>    patient_id: <span class="bu">str</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>    temp_c: <span class="bu">float</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>    sbp_mmhg: <span class="bu">int</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>    <span class="kw">def</span> has_fever(<span class="va">self</span>):</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>        <span class="cf">return</span> <span class="va">self</span>.temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>v1 <span class="op">=</span> VitalsSnapshot(<span class="st">"P-201"</span>, <span class="fl">38.4</span>, <span class="dv">128</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>v2 <span class="op">=</span> VitalsSnapshot(patient_id<span class="op">=</span><span class="st">"P-201"</span>, temp_c<span class="op">=</span><span class="fl">38.4</span>, sbp_mmhg<span class="op">=</span><span class="dv">128</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>v3 <span class="op">=</span> VitalsSnapshot(<span class="st">"P-202"</span>, <span class="fl">36.8</span>, <span class="dv">118</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a><span class="bu">print</span>(<span class="st">"v1:"</span>, v1)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a><span class="bu">print</span>(<span class="st">"v1 has fever?: "</span>, v1.has_fever())</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a><span class="bu">print</span>(<span class="st">"v1 == v2 value:"</span>, v1 <span class="op">==</span> v2, <span class="st">"| same object?:"</span>, v1 <span class="kw">is</span> v2)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a><span class="bu">print</span>(<span class="st">"v1 == v3 value:"</span>, v1 <span class="op">==</span> v3)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>v1: VitalsSnapshot(patient_id='P-201', temp_c=38.4, sbp_mmhg=128)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>v1 has fever?:  True</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>v1 == v2 value: True | same object?: False</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>v1 == v3 value: False</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at <code>v1 == v2</code> (<code>True</code>) versus <code>v1 is v2</code> (<code>False</code>). On a plain class without <code>@dataclass</code>, <code>==</code> falls back to memory identity (<code>is</code>), so two distinct objects with identical measurements compare unequal! With <code>@dataclass</code>, equality compares field values—making unit testing and deduplication effortless.</p>
+<hr>
+</section>
+<section id="sec-ch12-dunder" class="level3" data-number="12.3.3">
+<h3 data-number="12.3.3" class="anchored" data-anchor-id="sec-ch12-dunder"><span class="header-section-number">12.3.3</span> Dunder Protocols (<code>__len__</code>) &amp; Object Composition</h3>
+<p>Watch how <code>WardMonitor</code> <strong>composes</strong> <code>VitalsSnapshot</code> objects and implements <code>__len__</code> so Python’s built-in <code>len(ward_a)</code> works natively:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="kw">class</span> WardMonitor:</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>    <span class="co">"""Composes VitalsSnapshot objects into an isolated ward tracker."""</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, ward_name):</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>        <span class="va">self</span>.ward_name <span class="op">=</span> ward_name</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>        <span class="va">self</span>.records <span class="op">=</span> []  <span class="co"># Always create mutable lists inside __init__!</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>    <span class="kw">def</span> add_record(<span class="va">self</span>, snapshot):</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>        <span class="va">self</span>.records.append(snapshot)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.records)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>    <span class="kw">def</span> fever_count(<span class="va">self</span>):</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>        <span class="cf">return</span> <span class="bu">sum</span>(<span class="dv">1</span> <span class="cf">for</span> r <span class="kw">in</span> <span class="va">self</span>.records <span class="cf">if</span> r.has_fever())</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>ward_a <span class="op">=</span> WardMonitor(<span class="st">"Dhaka Ward A"</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>ward_b <span class="op">=</span> WardMonitor(<span class="st">"Sylhet Ward B"</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>ward_a.add_record(v1)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>ward_a.add_record(v3)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a><span class="cf">for</span> w <span class="kw">in</span> (ward_a, ward_b):</span>
+<span id="cb5-24"><a href="#cb5-24" aria-label="24"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>w<span class="sc">.</span>ward_name<span class="sc">}</span><span class="ss">: len=</span><span class="sc">{</span><span class="bu">len</span>(w)<span class="sc">}</span><span class="ss">, fevers=</span><span class="sc">{</span>w<span class="sc">.</span>fever_count()<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Dhaka Ward A: len=2, fevers=1</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Sylhet Ward B: len=0, fevers=0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice how <code>WardMonitor</code> delegates fever logic to <code>r.has_fever()</code> instead of re-checking <code>r.temp_c &gt;= 38.0</code>. If the hospital updates the fever threshold tomorrow, you change <strong>one line</strong> in <code>VitalsSnapshot</code> and every monitor inherits the fix automatically.</p>
+<hr>
+</section>
+<section id="sec-ch12-ml-bridge" class="level3" data-number="12.3.4">
+<h3 data-number="12.3.4" class="anchored" data-anchor-id="sec-ch12-ml-bridge"><span class="header-section-number">12.3.4</span> The ML Bridge: Mini Scikit-Learn (<code>fit</code>/<code>transform</code>) &amp; Mini PyTorch (<code>forward</code>/<code>__call__</code>)</h3>
+<p>Now connect pure Python OOP directly to the two frameworks that dominate modern ML research:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="kw">class</span> MiniStandardizer:</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>    <span class="co">"""Scikit-Learn style transformer: fit on train, transform test."""</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>        <span class="va">self</span>.std_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>        mean <span class="op">=</span> <span class="bu">sum</span>(values) <span class="op">/</span> <span class="bu">len</span>(values)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>        var <span class="op">=</span> <span class="bu">sum</span>((x <span class="op">-</span> mean) <span class="op">**</span> <span class="dv">2</span> <span class="cf">for</span> x <span class="kw">in</span> values) <span class="op">/</span> <span class="bu">len</span>(values)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> mean</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>        <span class="va">self</span>.std_ <span class="op">=</span> var <span class="op">**</span> <span class="fl">0.5</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, values):</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>        <span class="cf">if</span> <span class="va">self</span>.std_ <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>            <span class="cf">return</span> [<span class="fl">0.0</span> <span class="cf">for</span> _ <span class="kw">in</span> values]</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>        <span class="cf">return</span> [<span class="bu">round</span>((x <span class="op">-</span> <span class="va">self</span>.mean_) <span class="op">/</span> <span class="va">self</span>.std_, <span class="dv">3</span>) <span class="cf">for</span> x <span class="kw">in</span> values]</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a><span class="kw">class</span> RiskNeuron:</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>    <span class="co">"""Mini PyTorch nn.Module pattern: __call__ delegates to forward."""</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, weight, bias):</span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>        <span class="va">self</span>.weight <span class="op">=</span> weight</span>
+<span id="cb7-25"><a href="#cb7-25" aria-label="25"></a>        <span class="va">self</span>.bias <span class="op">=</span> bias</span>
+<span id="cb7-26"><a href="#cb7-26" aria-label="26"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-label="27"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb7-28"><a href="#cb7-28" aria-label="28"></a>        <span class="cf">return</span> <span class="bu">round</span>(<span class="va">self</span>.weight <span class="op">*</span> x <span class="op">+</span> <span class="va">self</span>.bias, <span class="dv">3</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-label="29"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-label="30"></a>    <span class="kw">def</span> <span class="fu">__call__</span>(<span class="va">self</span>, x):</span>
+<span id="cb7-31"><a href="#cb7-31" aria-label="31"></a>        <span class="cf">return</span> <span class="va">self</span>.forward(x)</span>
+<span id="cb7-32"><a href="#cb7-32" aria-label="32"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-label="33"></a>train_hb <span class="op">=</span> [<span class="fl">10.0</span>, <span class="fl">11.0</span>, <span class="fl">12.0</span>, <span class="fl">13.0</span>]</span>
+<span id="cb7-34"><a href="#cb7-34" aria-label="34"></a>test_hb <span class="op">=</span> [<span class="fl">9.5</span>, <span class="fl">11.5</span>, <span class="fl">13.5</span>]</span>
+<span id="cb7-35"><a href="#cb7-35" aria-label="35"></a></span>
+<span id="cb7-36"><a href="#cb7-36" aria-label="36"></a>scaler <span class="op">=</span> MiniStandardizer().fit(train_hb)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-label="37"></a>z_test <span class="op">=</span> scaler.transform(test_hb)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-label="38"></a><span class="bu">print</span>(<span class="st">"Fitted mean_:"</span>, scaler.mean_, <span class="st">"| z_test:"</span>, z_test)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-label="39"></a></span>
+<span id="cb7-40"><a href="#cb7-40" aria-label="40"></a>neuron <span class="op">=</span> RiskNeuron(weight<span class="op">=-</span><span class="fl">0.8</span>, bias<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-label="41"></a><span class="bu">print</span>(<span class="st">"forward(z):  "</span>, [neuron.forward(z) <span class="cf">for</span> z <span class="kw">in</span> z_test])</span>
+<span id="cb7-42"><a href="#cb7-42" aria-label="42"></a><span class="bu">print</span>(<span class="st">"neuron(z):   "</span>, [neuron(z) <span class="cf">for</span> z <span class="kw">in</span> z_test])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Fitted mean_: 11.5 | z_test: [-1.789, 0.0, 1.789]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>forward(z):   [2.631, 1.2, -0.231]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>neuron(z):    [2.631, 1.2, -0.231]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three production ML conventions are packed into those 35 lines:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">ML Convention</th>
+<th style="text-align: left;">Python Mechanism</th>
+<th style="text-align: left;">Why It Matters in Research</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Trailing underscore (<code>mean_</code>, <code>std_</code>)</td>
+<td style="text-align: left;">Attributes set during <code>.fit()</code></td>
+<td style="text-align: left;">Visually distinguishes <em>learned</em> state from constructor hyperparameters</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>return self</code> inside <code>.fit()</code></td>
+<td style="text-align: left;">Method chaining</td>
+<td style="text-align: left;">Enables <code>scaler = MiniStandardizer().fit(train_hb)</code> cleanly</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>__call__(self, x)</code> <span class="math inline">\(\rightarrow\)</span> <code>self.forward(x)</code></td>
+<td style="text-align: left;">Dunder callable protocol</td>
+<td style="text-align: left;">Powers PyTorch’s <code>y_pred = model(x)</code> while keeping hooks intact</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="sec-ch12-errors" class="level3" data-number="12.3.5">
+<h3 data-number="12.3.5" class="anchored" data-anchor-id="sec-ch12-errors"><span class="header-section-number">12.3.5</span> Break It On Purpose! (OOP Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — AttributeError (Accessing an Unfitted Attribute)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="kw">class</span> RawMeanScaler:</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="bu">sum</span>(values) <span class="op">/</span> <span class="bu">len</span>(values)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>unfitted_scaler <span class="op">=</span> RawMeanScaler()</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a><span class="bu">print</span>(unfitted_scaler.mean_)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>AttributeError: 'RawMeanScaler' object has no attribute 'mean_'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>mean_</code> is only created inside <code>.fit()</code>, so reading it on a freshly instantiated object raises <code>AttributeError</code>.<br>
+<strong>Fix:</strong> Initialize <code>self.mean_ = None</code> inside <code>__init__</code>, and guard <code>.transform()</code> with <code>if self.mean_ is None: raise RuntimeError("Call fit() first.")</code> (mirroring Scikit-Learn’s <code>NotFittedError</code>).</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — TypeError (Forgetting <code>self</code> in a Method)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="kw">class</span> Sample:</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, weight_kg):</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>        <span class="va">self</span>.weight_kg <span class="op">=</span> weight_kg</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>    <span class="kw">def</span> double():</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>        <span class="cf">return</span> <span class="va">self</span>.weight_kg <span class="op">*</span> <span class="dv">2</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>sample <span class="op">=</span> Sample(<span class="fl">60.0</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a><span class="bu">print</span>(sample.double())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>TypeError: Sample.double() takes 0 positional arguments but 1 was given</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Calling <code>sample.double()</code> automatically passes <code>sample</code> as the 1st positional argument—even though the parentheses looked empty! Because <code>def double():</code> forgot <code>self</code>, Python reports “takes 0 positional arguments but 1 was given.”<br>
+<strong>Fix:</strong> Declare <code>def double(self):</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (Domain Guard Inside <code>__init__</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a><span class="kw">class</span> GuardedPatient:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, patient_id, hb_g_dl):</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>        <span class="cf">if</span> <span class="kw">not</span> (<span class="fl">2.0</span> <span class="op">&lt;=</span> hb_g_dl <span class="op">&lt;=</span> <span class="fl">25.0</span>):</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>                <span class="ss">f"Invalid hb_g_dl=</span><span class="sc">{</span>hb_g_dl<span class="sc">}</span><span class="ss">: expected [2.0, 25.0]"</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a>            )</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>        <span class="va">self</span>.patient_id <span class="op">=</span> patient_id</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>        <span class="va">self</span>.hb_g_dl <span class="op">=</span> hb_g_dl</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>bad_patient <span class="op">=</span> GuardedPatient(<span class="st">"P-999"</span>, <span class="fl">999.0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>ValueError: Invalid hb_g_dl=999.0: expected [2.0, 25.0]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> This is a <strong>deliberate fail-fast boundary guard</strong>—far better than silently letting sentinel <code>999.0</code> corrupt a cohort mean or regression fit!<br>
+<strong>Fix:</strong> Catch <code>ValueError</code> in your ingestion pipeline to quarantine malformed rows into an audit log.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch12-blueprint" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="sec-ch12-blueprint"><span class="header-section-number">12.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A clinical ML team needs a reproducible hemoglobin risk-scoring pipeline that (1) learns the training mean while skipping <code>None</code> and sentinel <code>999</code>, (2) standardizes imputed training values to <span class="math inline">\(z\)</span>-scores, and (3) scores unseen test patients through a callable linear neuron—without mutating either input list or leaking test statistics into training.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="12.4.1">
+<h3 data-number="12.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">12.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Component Decomposition (Composition Architecture):</strong></p>
+<ul>
+<li><code>SentinelMeanImputer</code>: learns <code>self.mean_</code> on valid training values (skipping <code>None</code>/<code>999</code>); guards against unfitted <code>.transform()</code> with <code>RuntimeError</code>.</li>
+<li><code>MiniStandardizer</code>: learns <code>self.mean_</code> and population <code>self.std_</code> on imputed training values.</li>
+<li><code>RiskNeuron</code>: stores <code>(weight, bias)</code> and computes <code>weight * z + bias</code> via <code>__call__</code> <span class="math inline">\(\rightarrow\)</span> <code>forward</code>.</li>
+<li><code>ClinicalRiskPipeline</code>: composes all three components inside <code>__init__</code> (<code>self.imputer</code>, <code>self.scaler</code>, <code>self.scorer</code>).</li>
+</ul></li>
+<li><p><strong>Anti-Leakage &amp; Purity Contract:</strong></p>
+<ul>
+<li><code>.fit(raw_train)</code> fits the imputer on <code>raw_train</code>, transforms <code>raw_train</code> into <code>clean_train</code>, and fits <code>self.scaler</code> strictly on <code>clean_train</code>.</li>
+<li><code>.predict_scores(raw_values)</code> calls <code>.transform()</code> (never <code>.fit()</code>!) on both preprocessors and returns a new list of risk scores, leaving <code>raw_values</code> completely untouched.</li>
+</ul></li>
+<li><p><strong>Verification Plan (Hand Check):</strong></p>
+<ul>
+<li><code>raw_train = [10.4, None, 11.8, 999, 13.2]</code> <span class="math inline">\(\rightarrow\)</span> valid <code>[10.4, 11.8, 13.2]</code>, learned <code>mean_ = 11.8</code>, imputed train <code>[10.4, 11.8, 11.8, 11.8, 13.2]</code>.</li>
+<li><code>raw_test = [9.8, None, 12.5]</code> <span class="math inline">\(\rightarrow\)</span> imputed <code>[9.8, 11.8, 12.5]</code> <span class="math inline">\(\rightarrow\)</span> <code>None</code> maps to <span class="math inline">\(z = 0.0\)</span> <span class="math inline">\(\rightarrow\)</span> score equals <code>bias = 0.5</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="12.4.2">
+<h3 data-number="12.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">12.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a><span class="kw">class</span> SentinelMeanImputer:</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>    <span class="co">"""Learns clean mean on training data and fills None/999 safely."""</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-label="4"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb15-5"><a href="#cb15-5" aria-label="5"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-label="6"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-label="7"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb15-8"><a href="#cb15-8" aria-label="8"></a>        valid <span class="op">=</span> [v <span class="cf">for</span> v <span class="kw">in</span> values <span class="cf">if</span> v <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> v <span class="op">!=</span> <span class="dv">999</span>]</span>
+<span id="cb15-9"><a href="#cb15-9" aria-label="9"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="bu">round</span>(<span class="bu">sum</span>(valid) <span class="op">/</span> <span class="bu">len</span>(valid), <span class="dv">2</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-label="10"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-label="11"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-label="12"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, values):</span>
+<span id="cb15-13"><a href="#cb15-13" aria-label="13"></a>        <span class="cf">if</span> <span class="va">self</span>.mean_ <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb15-14"><a href="#cb15-14" aria-label="14"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"Fit imputer before calling transform()."</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-label="15"></a>        <span class="cf">return</span> [</span>
+<span id="cb15-16"><a href="#cb15-16" aria-label="16"></a>            <span class="va">self</span>.mean_ <span class="cf">if</span> (v <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> v <span class="op">==</span> <span class="dv">999</span>) <span class="cf">else</span> v</span>
+<span id="cb15-17"><a href="#cb15-17" aria-label="17"></a>            <span class="cf">for</span> v <span class="kw">in</span> values</span>
+<span id="cb15-18"><a href="#cb15-18" aria-label="18"></a>        ]</span>
+<span id="cb15-19"><a href="#cb15-19" aria-label="19"></a></span>
+<span id="cb15-20"><a href="#cb15-20" aria-label="20"></a><span class="kw">class</span> ClinicalRiskPipeline:</span>
+<span id="cb15-21"><a href="#cb15-21" aria-label="21"></a>    <span class="co">"""Composes an imputer, standardizer, and callable linear scorer."""</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-label="22"></a></span>
+<span id="cb15-23"><a href="#cb15-23" aria-label="23"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, weight<span class="op">=-</span><span class="fl">1.5</span>, bias<span class="op">=</span><span class="fl">0.5</span>):</span>
+<span id="cb15-24"><a href="#cb15-24" aria-label="24"></a>        <span class="va">self</span>.imputer <span class="op">=</span> SentinelMeanImputer()</span>
+<span id="cb15-25"><a href="#cb15-25" aria-label="25"></a>        <span class="va">self</span>.scaler <span class="op">=</span> MiniStandardizer()</span>
+<span id="cb15-26"><a href="#cb15-26" aria-label="26"></a>        <span class="va">self</span>.scorer <span class="op">=</span> RiskNeuron(weight<span class="op">=</span>weight, bias<span class="op">=</span>bias)</span>
+<span id="cb15-27"><a href="#cb15-27" aria-label="27"></a></span>
+<span id="cb15-28"><a href="#cb15-28" aria-label="28"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, raw_train):</span>
+<span id="cb15-29"><a href="#cb15-29" aria-label="29"></a>        clean_train <span class="op">=</span> <span class="va">self</span>.imputer.fit(raw_train).transform(raw_train)</span>
+<span id="cb15-30"><a href="#cb15-30" aria-label="30"></a>        <span class="va">self</span>.scaler.fit(clean_train)</span>
+<span id="cb15-31"><a href="#cb15-31" aria-label="31"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-label="32"></a></span>
+<span id="cb15-33"><a href="#cb15-33" aria-label="33"></a>    <span class="kw">def</span> predict_scores(<span class="va">self</span>, raw_values):</span>
+<span id="cb15-34"><a href="#cb15-34" aria-label="34"></a>        imputed <span class="op">=</span> <span class="va">self</span>.imputer.transform(raw_values)</span>
+<span id="cb15-35"><a href="#cb15-35" aria-label="35"></a>        scaled <span class="op">=</span> <span class="va">self</span>.scaler.transform(imputed)</span>
+<span id="cb15-36"><a href="#cb15-36" aria-label="36"></a>        <span class="cf">return</span> [<span class="va">self</span>.scorer(z) <span class="cf">for</span> z <span class="kw">in</span> scaled]</span>
+<span id="cb15-37"><a href="#cb15-37" aria-label="37"></a></span>
+<span id="cb15-38"><a href="#cb15-38" aria-label="38"></a>raw_train <span class="op">=</span> [<span class="fl">10.4</span>, <span class="va">None</span>, <span class="fl">11.8</span>, <span class="dv">999</span>, <span class="fl">13.2</span>]</span>
+<span id="cb15-39"><a href="#cb15-39" aria-label="39"></a>raw_test <span class="op">=</span> [<span class="fl">9.8</span>, <span class="va">None</span>, <span class="fl">12.5</span>]</span>
+<span id="cb15-40"><a href="#cb15-40" aria-label="40"></a></span>
+<span id="cb15-41"><a href="#cb15-41" aria-label="41"></a>pipe <span class="op">=</span> ClinicalRiskPipeline(weight<span class="op">=-</span><span class="fl">1.5</span>, bias<span class="op">=</span><span class="fl">0.5</span>).fit(raw_train)</span>
+<span id="cb15-42"><a href="#cb15-42" aria-label="42"></a>scores <span class="op">=</span> pipe.predict_scores(raw_test)</span>
+<span id="cb15-43"><a href="#cb15-43" aria-label="43"></a></span>
+<span id="cb15-44"><a href="#cb15-44" aria-label="44"></a><span class="bu">print</span>(<span class="st">"Train mean_ learned:"</span>, pipe.imputer.mean_)</span>
+<span id="cb15-45"><a href="#cb15-45" aria-label="45"></a><span class="bu">print</span>(<span class="st">"Test risk scores:   "</span>, scores)</span>
+<span id="cb15-46"><a href="#cb15-46" aria-label="46"></a><span class="bu">print</span>(<span class="st">"Raw test untouched: "</span>, raw_test)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>Train mean_ learned: 11.8</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>Test risk scores:    [3.888, 0.5, -0.687]</span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>Raw test untouched:  [9.8, None, 12.5]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch12-todos" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="sec-ch12-todos"><span class="header-section-number">12.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six classes below. Pass each <strong>class name (without parentheses!)</strong> to <code>tutor.check(...)</code>—for example, <code>tutor.check("ch12_todo_01", PatientRecord)</code>.</p>
+<ul>
+<li><strong>To-Do 12.1 (Class Anatomy &amp; <code>__repr__</code> — <code>PatientRecord</code>):</strong> Implement <code>__init__(self, patient_id, weight_kg, height_cm)</code>, <code>.bmi(self)</code> (converting cm to m and rounding to 2 decimals), and a custom <code>__repr__(self)</code> including <code>'PatientRecord'</code> and <code>self.patient_id</code>.</li>
+<li><strong>To-Do 12.2 (Composition &amp; <code>__len__</code> — <code>ClinicCohort</code>):</strong> Implement <code>__init__(self, name)</code> with an instance-owned <code>self.patients = []</code>, <code>.add_patient(self, patient)</code>, <code>__len__(self)</code>, and <code>.mean_bmi(self)</code> rounded to 2 decimals (or <code>None</code> if empty).</li>
+<li><strong>To-Do 12.3 (Structured Records — <code>@dataclass LabResult</code>):</strong> Define <code>@dataclass class LabResult</code> with typed fields <code>patient_id: str</code> and <code>hb_g_dl: float</code>, plus <code>.is_anemic(self)</code> returning <code>bool</code> (<code>self.hb_g_dl &lt; 11.0</code>).</li>
+<li><strong>To-Do 12.4 (Scikit-Learn Estimator — <code>MeanImputer</code>):</strong> Implement <code>.fit(self, values)</code> skipping <code>None</code> and <code>999</code> (learning <code>self.mean_</code> rounded to 2 decimals) and <code>.transform(self, values)</code> returning a new list with <code>None</code>/<code>999</code> replaced by <code>self.mean_</code> without mutating input.</li>
+<li><strong>To-Do 12.5 (Scikit-Learn Scaling — <code>MinMaxScaler</code>):</strong> Implement <code>.fit(self, values)</code> and <code>.transform(self, values)</code> scaling to <span class="math inline">\([0.0, 1.0]\)</span> rounded to 4 decimals, returning <code>0.0</code> for all items when <code>max == min</code>, without mutating input.</li>
+<li><strong>To-Do 12.6 (Mini PyTorch Layer — <code>LinearLayer</code>):</strong> Implement <code>__init__(self, weight, bias)</code>, <code>.forward(self, x)</code> returning <code>self.weight * x + self.bias</code>, and <code>__call__(self, x)</code> delegating directly to <code>self.forward(x)</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch12-test" class="level2" data-number="12.6">
+<h2 data-number="12.6" class="anchored" data-anchor-id="sec-ch12-test"><span class="header-section-number">12.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Trace every OOP snippet carefully on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong>Hidden <code>self</code> Argument:</strong> If <code>class Meter</code> defines <code>def read(): return 1</code>, why does <code>Meter().read()</code> raise <code>TypeError: Meter.read() takes 0 positional arguments but 1 was given</code>?</p></li>
+<li><p><strong>Mutable Class Attribute Trap:</strong> What does <code>print(len(b.items))</code> output here, and why?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a><span class="kw">class</span> Bag:</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>    items <span class="op">=</span> []</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>    <span class="kw">def</span> add(<span class="va">self</span>, x):</span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a>        <span class="va">self</span>.items.append(x)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a>a, b <span class="op">=</span> Bag(), Bag()</span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a>a.add(<span class="st">"sample_1"</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a><span class="bu">print</span>(<span class="bu">len</span>(b.items))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Plain Class vs.&nbsp;<code>@dataclass</code> Equality:</strong> Given two instances <code>r1</code> and <code>r2</code> constructed with identical arguments <code>("P-01", 10.4)</code>, what does <code>r1 == r2</code> return for a plain <code>class</code> (without <code>__eq__</code>) versus a <code>@dataclass</code>?</p></li>
+<li><p><strong>Dunder <code>__len__</code> Protocol:</strong> You create a container <code>cohort = ClinicCohort("Dhaka")</code> storing <code>self.patients = [p1, p2, p3]</code>, but forget to implement <code>__len__</code>. What exact exception does <code>len(cohort)</code> raise?</p></li>
+<li><p><strong>Train/Test Data Leakage:</strong> Why is calling <code>scaler.fit(X_test)</code> inside your evaluation script a severe scientific bug, and what method should you call on <code>X_test</code> instead?</p></li>
+<li><p><strong>Trailing-Underscore Convention:</strong> In Scikit-Learn estimators like <code>ZScoreScaler</code>, what is the difference between a hyperparameter set in <code>__init__</code> (e.g., <code>self.clip</code>) and an attribute ending with <code>_</code> (e.g., <code>self.mean_</code>, <code>self.std_</code>)?</p></li>
+<li><p><strong>PyTorch <code>__call__</code> Delegation:</strong> Given <code>layer = LinearLayer(2.0, 5.0)</code>, why does <code>layer(3.0)</code> return <code>11.0</code>, and why should <code>__call__</code> call <code>self.forward(x)</code> rather than copy-pasting <code>self.weight * x + self.bias</code>?</p></li>
+<li><p><strong>Population vs.&nbsp;Sample Standard Deviation:</strong> For <code>[10.0, 12.0, 14.0, 16.0]</code>, the mean is <span class="math inline">\(\mu = 13.0\)</span> and squared deviations sum to <span class="math inline">\(20.0\)</span>. What is the <strong>population</strong> standard deviation <span class="math inline">\(\sigma\)</span> (dividing by <span class="math inline">\(N = 4\)</span>), and what is the <span class="math inline">\(z\)</span>-score of <span class="math inline">\(x = 13.0\)</span>?</p></li>
+<li><p><strong>Unfitted Guard:</strong> If <code>ZScoreScaler.__init__</code> sets <code>self.mean_ = None</code> and <code>self.std_ = None</code>, what happens if you forget the <code>if self.mean_ is None:</code> guard and immediately run <code>ZScoreScaler().transform([10.0])</code>?</p></li>
+<li><p><strong>Composition vs.&nbsp;Inheritance:</strong> Should <code>EpidemicRegistry</code> inherit from <code>MaternalPatient</code> (<code>class EpidemicRegistry(MaternalPatient):</code>) or <strong>compose</strong> <code>MaternalPatient</code> objects inside <code>self.patients</code>? Explain in one sentence.</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch12-exam" class="level2" data-number="12.7">
+<h2 data-number="12.7" class="anchored" data-anchor-id="sec-ch12-exam"><span class="header-section-number">12.7</span> Stage 7 — Chapter 12 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb</code>, implement all three classes, and run <code>tutor.check_exam("ch12", exam_submissions)</code> to earn your score out of 100 points.</p>
+<section id="exam-task-12.1-30-points-validated-maternalpatient" class="level3" data-number="12.7.1">
+<h3 data-number="12.7.1" class="anchored" data-anchor-id="exam-task-12.1-30-points-validated-maternalpatient"><span class="header-section-number">12.7.1</span> Exam Task 12.1 (30 Points): Validated <code>MaternalPatient</code></h3>
+<p>Build <code>MaternalPatient(patient_id, district, hb_g_dl)</code>:</p>
+<ul>
+<li>In <code>__init__</code>, validate that <code>2.0 &lt;= hb_g_dl &lt;= 25.0</code> (inclusive). Raise <code>ValueError</code> for any out-of-range value.</li>
+<li>Store <code>self.patient_id</code>, <code>self.district</code>, and <code>self.hb_g_dl</code>.</li>
+<li>Implement <code>.anemia_grade(self)</code> returning <code>"Severe"</code> (<code>&lt; 7.0</code>), <code>"Moderate"</code> (<code>&lt; 10.0</code>), <code>"Mild"</code> (<code>&lt; 11.0</code>), or <code>"Normal"</code> (<code>&gt;= 11.0</code>).</li>
+<li>Implement a custom <code>__repr__(self)</code> containing <code>'MaternalPatient'</code> and <code>self.patient_id</code>.</li>
+</ul>
+</section>
+<section id="exam-task-12.2-35-points-production-zscorescaler" class="level3" data-number="12.7.2">
+<h3 data-number="12.7.2" class="anchored" data-anchor-id="exam-task-12.2-35-points-production-zscorescaler"><span class="header-section-number">12.7.2</span> Exam Task 12.2 (35 Points): Production <code>ZScoreScaler</code></h3>
+<p>Build <code>ZScoreScaler</code> following the Scikit-Learn estimator pattern:</p>
+<ul>
+<li><code>__init__(self)</code> initializes <code>self.mean_ = None</code> and <code>self.std_ = None</code>.</li>
+<li><code>.fit(self, values)</code> computes and stores <code>self.mean_</code> and <strong>population</strong> standard deviation <code>self.std_</code> (dividing variance by <span class="math inline">\(N = \text{len}(\text{values})\)</span>), without mutating <code>values</code>, and returns <code>self</code>.</li>
+<li><code>.transform(self, values)</code> raises <code>RuntimeError</code> if called before <code>.fit()</code>, returns <code>[0.0 for _ in values]</code> when <code>self.std_ == 0</code>, and otherwise returns a <strong>new list</strong> with <code>round((x - self.mean_) / self.std_, 4)</code> without mutating <code>values</code>.</li>
+</ul>
+</section>
+<section id="exam-task-12.3-35-points-composed-epidemicregistry" class="level3" data-number="12.7.3">
+<h3 data-number="12.7.3" class="anchored" data-anchor-id="exam-task-12.3-35-points-composed-epidemicregistry"><span class="header-section-number">12.7.3</span> Exam Task 12.3 (35 Points): Composed <code>EpidemicRegistry</code></h3>
+<p>Build <code>EpidemicRegistry</code>, a typed composition container storing <code>MaternalPatient</code> objects:</p>
+<ul>
+<li><code>__init__(self)</code> initializes an instance-owned <code>self.patients = []</code>.</li>
+<li><code>__len__(self)</code> returns <code>len(self.patients)</code>.</li>
+<li><code>.add(self, patient)</code> raises <code>TypeError</code> if <code>not isinstance(patient, MaternalPatient)</code>, else appends <code>patient</code>.</li>
+<li><code>.anemia_prevalence_pct(self)</code> returns the percentage of enrolled patients whose <code>.anemia_grade() != "Normal"</code> rounded to <strong>1 decimal place</strong>, or <code>None</code> if empty.</li>
+<li><code>.count_by_district(self)</code> returns a <code>dict</code> mapping each district name to its patient count (<code>{}</code> if empty).</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch12-solutions" class="level2" data-number="12.8">
+<h2 data-number="12.8" class="anchored" data-anchor-id="sec-ch12-solutions"><span class="header-section-number">12.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="12.8.1">
+<h3 data-number="12.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">12.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li>Python automatically passes the instance (<code>Meter()</code>) as the first positional argument (<code>self</code>) to every bound method call; <code>def read():</code> accepted 0 parameters, causing <code>TypeError</code>.</li>
+<li>Prints <strong><code>1</code></strong> — <code>items = []</code> lives on the <code>Bag</code> class blueprint, so <code>a</code> and <code>b</code> share the exact same list! Moving <code>self.items = []</code> inside <code>__init__</code> fixes the leak.</li>
+<li>For a plain class, <code>r1 == r2</code> returns <strong><code>False</code></strong> (compares object identity <code>is</code>); for a <code>@dataclass</code>, <code>r1 == r2</code> returns <strong><code>True</code></strong> (compares field values).</li>
+<li><strong><code>TypeError: object of type 'ClinicCohort' has no len()</code></strong>.</li>
+<li>Calling <code>.fit(X_test)</code> leaks test-set distribution statistics (<span class="math inline">\(\mu_{\text{test}}, \sigma_{\text{test}}\)</span>) into model preprocessing, inflating evaluation metrics artificially. Always call <code>.fit(X_train)</code> once, then <code>.transform(X_test)</code>.</li>
+<li>Constructor hyperparameters are chosen by the researcher <em>before</em> seeing data; trailing-underscore attributes (<code>mean_</code>, <code>std_</code>) are <em>learned from data</em> during <code>.fit()</code>.</li>
+<li><code>layer(3.0)</code> invokes <code>LinearLayer.__call__(layer, 3.0)</code>, which calls <code>self.forward(3.0)</code> <span class="math inline">\(\rightarrow 2.0 \times 3.0 + 5.0 = 11.0\)</span>. Delegating prevents duplicated math and allows subclasses or frameworks (like PyTorch hooks) to wrap <code>forward</code> cleanly.</li>
+<li><span class="math inline">\(\sigma = \sqrt{20.0 / 4} = \sqrt{5.0} \approx 2.2361\)</span>, and <span class="math inline">\(z = (13.0 - 13.0) / \sigma = 0.0\)</span>.</li>
+<li>Computing <code>x - self.mean_</code> attempts <code>10.0 - None</code>, raising a confusing <strong><code>TypeError</code></strong> instead of a clear <code>RuntimeError</code>.</li>
+<li><strong>Compose</strong> <code>MaternalPatient</code> objects inside <code>self.patients</code>: a registry <em>has</em> patients (“has-a”), it <em>is not</em> a patient (“is-a”).</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="12.8.2">
+<h3 data-number="12.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">12.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a><span class="co"># To-Do 12.1</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a><span class="kw">class</span> PatientRecord:</span>
+<span id="cb18-5"><a href="#cb18-5" aria-label="5"></a>    <span class="co">"""Clinical anthropometric record for a single patient."""</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-label="6"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-label="7"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, patient_id, weight_kg, height_cm):</span>
+<span id="cb18-8"><a href="#cb18-8" aria-label="8"></a>        <span class="va">self</span>.patient_id <span class="op">=</span> patient_id</span>
+<span id="cb18-9"><a href="#cb18-9" aria-label="9"></a>        <span class="va">self</span>.weight_kg <span class="op">=</span> weight_kg</span>
+<span id="cb18-10"><a href="#cb18-10" aria-label="10"></a>        <span class="va">self</span>.height_cm <span class="op">=</span> height_cm</span>
+<span id="cb18-11"><a href="#cb18-11" aria-label="11"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-label="12"></a>    <span class="kw">def</span> bmi(<span class="va">self</span>):</span>
+<span id="cb18-13"><a href="#cb18-13" aria-label="13"></a>        height_m <span class="op">=</span> <span class="va">self</span>.height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-label="14"></a>        <span class="cf">return</span> <span class="bu">round</span>(<span class="va">self</span>.weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-label="15"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-label="16"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb18-17"><a href="#cb18-17" aria-label="17"></a>        <span class="cf">return</span> (</span>
+<span id="cb18-18"><a href="#cb18-18" aria-label="18"></a>            <span class="ss">f"PatientRecord(patient_id=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>patient_id<span class="sc">!r}</span><span class="ss">, "</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-label="19"></a>            <span class="ss">f"weight_kg=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>weight_kg<span class="sc">}</span><span class="ss">, height_cm=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>height_cm<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-label="20"></a>        )</span>
+<span id="cb18-21"><a href="#cb18-21" aria-label="21"></a></span>
+<span id="cb18-22"><a href="#cb18-22" aria-label="22"></a><span class="co"># To-Do 12.2</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-label="23"></a><span class="kw">class</span> ClinicCohort:</span>
+<span id="cb18-24"><a href="#cb18-24" aria-label="24"></a>    <span class="co">"""Container managing a cohort of patient records."""</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-label="25"></a></span>
+<span id="cb18-26"><a href="#cb18-26" aria-label="26"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, name):</span>
+<span id="cb18-27"><a href="#cb18-27" aria-label="27"></a>        <span class="va">self</span>.name <span class="op">=</span> name</span>
+<span id="cb18-28"><a href="#cb18-28" aria-label="28"></a>        <span class="va">self</span>.patients <span class="op">=</span> []</span>
+<span id="cb18-29"><a href="#cb18-29" aria-label="29"></a></span>
+<span id="cb18-30"><a href="#cb18-30" aria-label="30"></a>    <span class="kw">def</span> add_patient(<span class="va">self</span>, patient):</span>
+<span id="cb18-31"><a href="#cb18-31" aria-label="31"></a>        <span class="va">self</span>.patients.append(patient)</span>
+<span id="cb18-32"><a href="#cb18-32" aria-label="32"></a></span>
+<span id="cb18-33"><a href="#cb18-33" aria-label="33"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb18-34"><a href="#cb18-34" aria-label="34"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.patients)</span>
+<span id="cb18-35"><a href="#cb18-35" aria-label="35"></a></span>
+<span id="cb18-36"><a href="#cb18-36" aria-label="36"></a>    <span class="kw">def</span> mean_bmi(<span class="va">self</span>):</span>
+<span id="cb18-37"><a href="#cb18-37" aria-label="37"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="va">self</span>.patients:</span>
+<span id="cb18-38"><a href="#cb18-38" aria-label="38"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb18-39"><a href="#cb18-39" aria-label="39"></a>        total_bmi <span class="op">=</span> <span class="bu">sum</span>(p.bmi() <span class="cf">for</span> p <span class="kw">in</span> <span class="va">self</span>.patients)</span>
+<span id="cb18-40"><a href="#cb18-40" aria-label="40"></a>        <span class="cf">return</span> <span class="bu">round</span>(total_bmi <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.patients), <span class="dv">2</span>)</span>
+<span id="cb18-41"><a href="#cb18-41" aria-label="41"></a></span>
+<span id="cb18-42"><a href="#cb18-42" aria-label="42"></a><span class="co"># To-Do 12.3</span></span>
+<span id="cb18-43"><a href="#cb18-43" aria-label="43"></a><span class="at">@dataclass</span></span>
+<span id="cb18-44"><a href="#cb18-44" aria-label="44"></a><span class="kw">class</span> LabResult:</span>
+<span id="cb18-45"><a href="#cb18-45" aria-label="45"></a>    <span class="co">"""Structured clinical hemoglobin reading using @dataclass."""</span></span>
+<span id="cb18-46"><a href="#cb18-46" aria-label="46"></a></span>
+<span id="cb18-47"><a href="#cb18-47" aria-label="47"></a>    patient_id: <span class="bu">str</span></span>
+<span id="cb18-48"><a href="#cb18-48" aria-label="48"></a>    hb_g_dl: <span class="bu">float</span></span>
+<span id="cb18-49"><a href="#cb18-49" aria-label="49"></a></span>
+<span id="cb18-50"><a href="#cb18-50" aria-label="50"></a>    <span class="kw">def</span> is_anemic(<span class="va">self</span>):</span>
+<span id="cb18-51"><a href="#cb18-51" aria-label="51"></a>        <span class="cf">return</span> <span class="va">self</span>.hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span></span>
+<span id="cb18-52"><a href="#cb18-52" aria-label="52"></a></span>
+<span id="cb18-53"><a href="#cb18-53" aria-label="53"></a><span class="co"># To-Do 12.4</span></span>
+<span id="cb18-54"><a href="#cb18-54" aria-label="54"></a><span class="kw">class</span> MeanImputer:</span>
+<span id="cb18-55"><a href="#cb18-55" aria-label="55"></a>    <span class="co">"""Scikit-Learn style mean imputer skipping None and 999."""</span></span>
+<span id="cb18-56"><a href="#cb18-56" aria-label="56"></a></span>
+<span id="cb18-57"><a href="#cb18-57" aria-label="57"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb18-58"><a href="#cb18-58" aria-label="58"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb18-59"><a href="#cb18-59" aria-label="59"></a></span>
+<span id="cb18-60"><a href="#cb18-60" aria-label="60"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb18-61"><a href="#cb18-61" aria-label="61"></a>        valid <span class="op">=</span> [v <span class="cf">for</span> v <span class="kw">in</span> values <span class="cf">if</span> v <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> v <span class="op">!=</span> <span class="dv">999</span>]</span>
+<span id="cb18-62"><a href="#cb18-62" aria-label="62"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="bu">round</span>(<span class="bu">sum</span>(valid) <span class="op">/</span> <span class="bu">len</span>(valid), <span class="dv">2</span>)</span>
+<span id="cb18-63"><a href="#cb18-63" aria-label="63"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb18-64"><a href="#cb18-64" aria-label="64"></a></span>
+<span id="cb18-65"><a href="#cb18-65" aria-label="65"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, values):</span>
+<span id="cb18-66"><a href="#cb18-66" aria-label="66"></a>        <span class="cf">return</span> [</span>
+<span id="cb18-67"><a href="#cb18-67" aria-label="67"></a>            <span class="va">self</span>.mean_ <span class="cf">if</span> (v <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> v <span class="op">==</span> <span class="dv">999</span>) <span class="cf">else</span> v</span>
+<span id="cb18-68"><a href="#cb18-68" aria-label="68"></a>            <span class="cf">for</span> v <span class="kw">in</span> values</span>
+<span id="cb18-69"><a href="#cb18-69" aria-label="69"></a>        ]</span>
+<span id="cb18-70"><a href="#cb18-70" aria-label="70"></a></span>
+<span id="cb18-71"><a href="#cb18-71" aria-label="71"></a><span class="co"># To-Do 12.5</span></span>
+<span id="cb18-72"><a href="#cb18-72" aria-label="72"></a><span class="kw">class</span> MinMaxScaler:</span>
+<span id="cb18-73"><a href="#cb18-73" aria-label="73"></a>    <span class="co">"""Scikit-Learn style [0, 1] feature scaler with constant guard."""</span></span>
+<span id="cb18-74"><a href="#cb18-74" aria-label="74"></a></span>
+<span id="cb18-75"><a href="#cb18-75" aria-label="75"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb18-76"><a href="#cb18-76" aria-label="76"></a>        <span class="va">self</span>.min_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb18-77"><a href="#cb18-77" aria-label="77"></a>        <span class="va">self</span>.max_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb18-78"><a href="#cb18-78" aria-label="78"></a></span>
+<span id="cb18-79"><a href="#cb18-79" aria-label="79"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb18-80"><a href="#cb18-80" aria-label="80"></a>        <span class="va">self</span>.min_ <span class="op">=</span> <span class="bu">min</span>(values)</span>
+<span id="cb18-81"><a href="#cb18-81" aria-label="81"></a>        <span class="va">self</span>.max_ <span class="op">=</span> <span class="bu">max</span>(values)</span>
+<span id="cb18-82"><a href="#cb18-82" aria-label="82"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb18-83"><a href="#cb18-83" aria-label="83"></a></span>
+<span id="cb18-84"><a href="#cb18-84" aria-label="84"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, values):</span>
+<span id="cb18-85"><a href="#cb18-85" aria-label="85"></a>        span <span class="op">=</span> <span class="va">self</span>.max_ <span class="op">-</span> <span class="va">self</span>.min_</span>
+<span id="cb18-86"><a href="#cb18-86" aria-label="86"></a>        <span class="cf">if</span> span <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb18-87"><a href="#cb18-87" aria-label="87"></a>            <span class="cf">return</span> [<span class="fl">0.0</span> <span class="cf">for</span> _ <span class="kw">in</span> values]</span>
+<span id="cb18-88"><a href="#cb18-88" aria-label="88"></a>        <span class="cf">return</span> [<span class="bu">round</span>((x <span class="op">-</span> <span class="va">self</span>.min_) <span class="op">/</span> span, <span class="dv">4</span>) <span class="cf">for</span> x <span class="kw">in</span> values]</span>
+<span id="cb18-89"><a href="#cb18-89" aria-label="89"></a></span>
+<span id="cb18-90"><a href="#cb18-90" aria-label="90"></a><span class="co"># To-Do 12.6</span></span>
+<span id="cb18-91"><a href="#cb18-91" aria-label="91"></a><span class="kw">class</span> LinearLayer:</span>
+<span id="cb18-92"><a href="#cb18-92" aria-label="92"></a>    <span class="co">"""Mini PyTorch-style callable linear layer."""</span></span>
+<span id="cb18-93"><a href="#cb18-93" aria-label="93"></a></span>
+<span id="cb18-94"><a href="#cb18-94" aria-label="94"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, weight, bias):</span>
+<span id="cb18-95"><a href="#cb18-95" aria-label="95"></a>        <span class="va">self</span>.weight <span class="op">=</span> weight</span>
+<span id="cb18-96"><a href="#cb18-96" aria-label="96"></a>        <span class="va">self</span>.bias <span class="op">=</span> bias</span>
+<span id="cb18-97"><a href="#cb18-97" aria-label="97"></a></span>
+<span id="cb18-98"><a href="#cb18-98" aria-label="98"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb18-99"><a href="#cb18-99" aria-label="99"></a>        <span class="cf">return</span> <span class="va">self</span>.weight <span class="op">*</span> x <span class="op">+</span> <span class="va">self</span>.bias</span>
+<span id="cb18-100"><a href="#cb18-100" aria-label="100"></a></span>
+<span id="cb18-101"><a href="#cb18-101" aria-label="101"></a>    <span class="kw">def</span> <span class="fu">__call__</span>(<span class="va">self</span>, x):</span>
+<span id="cb18-102"><a href="#cb18-102" aria-label="102"></a>        <span class="cf">return</span> <span class="va">self</span>.forward(x)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-12-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="12.8.3">
+<h3 data-number="12.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-12-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">12.8.3</span> C. Annotated Solutions — Chapter 12 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="co"># Exam Task 12.1 (30 pts)</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a><span class="kw">class</span> MaternalPatient:</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>    <span class="co">"""Validated maternal hemoglobin record with WHO anemia grading."""</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, patient_id, district, hb_g_dl):</span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>        <span class="cf">if</span> <span class="kw">not</span> (<span class="fl">2.0</span> <span class="op">&lt;=</span> hb_g_dl <span class="op">&lt;=</span> <span class="fl">25.0</span>):</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>                <span class="ss">f"hb_g_dl must be in [2.0, 25.0], got </span><span class="sc">{</span>hb_g_dl<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>            )</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a>        <span class="va">self</span>.patient_id <span class="op">=</span> patient_id</span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a>        <span class="va">self</span>.district <span class="op">=</span> district</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a>        <span class="va">self</span>.hb_g_dl <span class="op">=</span> hb_g_dl</span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a></span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>    <span class="kw">def</span> anemia_grade(<span class="va">self</span>):</span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>        <span class="cf">if</span> <span class="va">self</span>.hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>            <span class="cf">return</span> <span class="st">"Severe"</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>        <span class="cf">if</span> <span class="va">self</span>.hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>            <span class="cf">return</span> <span class="st">"Moderate"</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a>        <span class="cf">if</span> <span class="va">self</span>.hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a>            <span class="cf">return</span> <span class="st">"Mild"</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a>        <span class="cf">return</span> <span class="st">"Normal"</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a></span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>):</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a>        <span class="cf">return</span> (</span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a>            <span class="ss">f"MaternalPatient(patient_id=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>patient_id<span class="sc">!r}</span><span class="ss">, "</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a>            <span class="ss">f"district=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>district<span class="sc">!r}</span><span class="ss">, hb_g_dl=</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>hb_g_dl<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a>        )</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a></span>
+<span id="cb19-29"><a href="#cb19-29" aria-label="29"></a><span class="co"># Exam Task 12.2 (35 pts)</span></span>
+<span id="cb19-30"><a href="#cb19-30" aria-label="30"></a><span class="kw">class</span> ZScoreScaler:</span>
+<span id="cb19-31"><a href="#cb19-31" aria-label="31"></a>    <span class="co">"""Standardizes features to z-scores using population mean &amp; std."""</span></span>
+<span id="cb19-32"><a href="#cb19-32" aria-label="32"></a></span>
+<span id="cb19-33"><a href="#cb19-33" aria-label="33"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb19-34"><a href="#cb19-34" aria-label="34"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb19-35"><a href="#cb19-35" aria-label="35"></a>        <span class="va">self</span>.std_ <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb19-36"><a href="#cb19-36" aria-label="36"></a></span>
+<span id="cb19-37"><a href="#cb19-37" aria-label="37"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, values):</span>
+<span id="cb19-38"><a href="#cb19-38" aria-label="38"></a>        mean <span class="op">=</span> <span class="bu">sum</span>(values) <span class="op">/</span> <span class="bu">len</span>(values)</span>
+<span id="cb19-39"><a href="#cb19-39" aria-label="39"></a>        var <span class="op">=</span> <span class="bu">sum</span>((x <span class="op">-</span> mean) <span class="op">**</span> <span class="dv">2</span> <span class="cf">for</span> x <span class="kw">in</span> values) <span class="op">/</span> <span class="bu">len</span>(values)</span>
+<span id="cb19-40"><a href="#cb19-40" aria-label="40"></a>        <span class="va">self</span>.mean_ <span class="op">=</span> mean</span>
+<span id="cb19-41"><a href="#cb19-41" aria-label="41"></a>        <span class="va">self</span>.std_ <span class="op">=</span> var <span class="op">**</span> <span class="fl">0.5</span></span>
+<span id="cb19-42"><a href="#cb19-42" aria-label="42"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb19-43"><a href="#cb19-43" aria-label="43"></a></span>
+<span id="cb19-44"><a href="#cb19-44" aria-label="44"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, values):</span>
+<span id="cb19-45"><a href="#cb19-45" aria-label="45"></a>        <span class="cf">if</span> <span class="va">self</span>.mean_ <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> <span class="va">self</span>.std_ <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb19-46"><a href="#cb19-46" aria-label="46"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"ZScoreScaler must be fitted first."</span>)</span>
+<span id="cb19-47"><a href="#cb19-47" aria-label="47"></a>        <span class="cf">if</span> <span class="va">self</span>.std_ <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb19-48"><a href="#cb19-48" aria-label="48"></a>            <span class="cf">return</span> [<span class="fl">0.0</span> <span class="cf">for</span> _ <span class="kw">in</span> values]</span>
+<span id="cb19-49"><a href="#cb19-49" aria-label="49"></a>        <span class="cf">return</span> [</span>
+<span id="cb19-50"><a href="#cb19-50" aria-label="50"></a>            <span class="bu">round</span>((x <span class="op">-</span> <span class="va">self</span>.mean_) <span class="op">/</span> <span class="va">self</span>.std_, <span class="dv">4</span>)</span>
+<span id="cb19-51"><a href="#cb19-51" aria-label="51"></a>            <span class="cf">for</span> x <span class="kw">in</span> values</span>
+<span id="cb19-52"><a href="#cb19-52" aria-label="52"></a>        ]</span>
+<span id="cb19-53"><a href="#cb19-53" aria-label="53"></a></span>
+<span id="cb19-54"><a href="#cb19-54" aria-label="54"></a><span class="co"># Exam Task 12.3 (35 pts)</span></span>
+<span id="cb19-55"><a href="#cb19-55" aria-label="55"></a><span class="kw">class</span> EpidemicRegistry:</span>
+<span id="cb19-56"><a href="#cb19-56" aria-label="56"></a>    <span class="co">"""Typed composition registry for MaternalPatient surveillance."""</span></span>
+<span id="cb19-57"><a href="#cb19-57" aria-label="57"></a></span>
+<span id="cb19-58"><a href="#cb19-58" aria-label="58"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb19-59"><a href="#cb19-59" aria-label="59"></a>        <span class="va">self</span>.patients <span class="op">=</span> []</span>
+<span id="cb19-60"><a href="#cb19-60" aria-label="60"></a></span>
+<span id="cb19-61"><a href="#cb19-61" aria-label="61"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb19-62"><a href="#cb19-62" aria-label="62"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.patients)</span>
+<span id="cb19-63"><a href="#cb19-63" aria-label="63"></a></span>
+<span id="cb19-64"><a href="#cb19-64" aria-label="64"></a>    <span class="kw">def</span> add(<span class="va">self</span>, patient):</span>
+<span id="cb19-65"><a href="#cb19-65" aria-label="65"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="bu">isinstance</span>(patient, MaternalPatient):</span>
+<span id="cb19-66"><a href="#cb19-66" aria-label="66"></a>            <span class="cf">raise</span> <span class="pp">TypeError</span>(<span class="st">"Expected a MaternalPatient instance."</span>)</span>
+<span id="cb19-67"><a href="#cb19-67" aria-label="67"></a>        <span class="va">self</span>.patients.append(patient)</span>
+<span id="cb19-68"><a href="#cb19-68" aria-label="68"></a></span>
+<span id="cb19-69"><a href="#cb19-69" aria-label="69"></a>    <span class="kw">def</span> anemia_prevalence_pct(<span class="va">self</span>):</span>
+<span id="cb19-70"><a href="#cb19-70" aria-label="70"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="va">self</span>.patients:</span>
+<span id="cb19-71"><a href="#cb19-71" aria-label="71"></a>            <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb19-72"><a href="#cb19-72" aria-label="72"></a>        anemic <span class="op">=</span> <span class="bu">sum</span>(</span>
+<span id="cb19-73"><a href="#cb19-73" aria-label="73"></a>            <span class="dv">1</span> <span class="cf">for</span> p <span class="kw">in</span> <span class="va">self</span>.patients <span class="cf">if</span> p.anemia_grade() <span class="op">!=</span> <span class="st">"Normal"</span></span>
+<span id="cb19-74"><a href="#cb19-74" aria-label="74"></a>        )</span>
+<span id="cb19-75"><a href="#cb19-75" aria-label="75"></a>        <span class="cf">return</span> <span class="bu">round</span>((anemic <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.patients)) <span class="op">*</span> <span class="dv">100</span>, <span class="dv">1</span>)</span>
+<span id="cb19-76"><a href="#cb19-76" aria-label="76"></a></span>
+<span id="cb19-77"><a href="#cb19-77" aria-label="77"></a>    <span class="kw">def</span> count_by_district(<span class="va">self</span>):</span>
+<span id="cb19-78"><a href="#cb19-78" aria-label="78"></a>        counts <span class="op">=</span> {}</span>
+<span id="cb19-79"><a href="#cb19-79" aria-label="79"></a>        <span class="cf">for</span> p <span class="kw">in</span> <span class="va">self</span>.patients:</span>
+<span id="cb19-80"><a href="#cb19-80" aria-label="80"></a>            counts[p.district] <span class="op">=</span> counts.get(p.district, <span class="dv">0</span>) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb19-81"><a href="#cb19-81" aria-label="81"></a>        <span class="cf">return</span> counts</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-12-failure-modes" class="level3" data-number="12.8.4">
+<h3 data-number="12.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-12-failure-modes"><span class="header-section-number">12.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 12 Failure Modes</h3>
+<ol type="1">
+<li><strong>Shared Mutable Class Attributes (<code>patients = []</code> Outside <code>__init__</code>):</strong> Declaring a list or dict at the class body level makes every instance silently share one memory container. Always create mutable state inside <code>__init__</code> (<code>self.patients = []</code>).</li>
+<li><strong>Re-Fitting Inside <code>.transform()</code> (Silent Data Leakage):</strong> Computing <code>min(values)</code>, <code>max(values)</code>, or <code>mean</code> inside <code>.transform()</code> instead of reusing <code>self.min_</code>, <code>self.max_</code>, or <code>self.mean_</code> breaks the fundamental train/test boundary in machine learning.</li>
+<li><strong>Forgetting <code>self.</code> When Reading or Writing Attributes:</strong> Writing <code>mean_ = sum(valid) / len(valid)</code> inside <code>.fit()</code> creates a temporary local variable that vanishes as soon as <code>.fit()</code> returns, leaving <code>self.mean_</code> permanently stuck at <code>None</code>!</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Up Next — Modules, Packages &amp; Reproducible Research Environments
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can now design clean, composable classes that mirror Scikit-Learn and PyTorch architectures. Putting 1,000 lines of classes inside a single notebook cell, however, quickly turns messy and hard to share with co-authors. In <strong>Chapter 13</strong>, you will organize your classes and functions into <strong>importable Python modules and packages</strong>, manage isolated virtual environments, and structure a publication-ready research repository.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="pagination-link" aria-label="Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="pagination-link" aria-label="Mastering Jupyter Notebooks &amp; Google Colab Engineering">
+        <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

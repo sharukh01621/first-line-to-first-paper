@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>19&nbsp; Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn) – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_04_data_science_math/ch20_biostatistics_inference.html" rel="next">
+<link href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch16_numpy_vectorization.html">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</a></li><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch19_visualization_storytelling.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch19-intuition" id="toc-sec-ch19-intuition" class="nav-link" data-scroll-target="#sec-ch19-intuition"><span class="header-section-number">19.1</span> Stage 1 — First-Principles Intuition: Exploratory Sketches vs.&nbsp;Publication Figures</a>
+  <ul class="collapse">
+  <li><a href="#why-the-object-oriented-api-fig-ax-beats-plt.plot..." id="toc-why-the-object-oriented-api-fig-ax-beats-plt.plot..." class="nav-link" data-scroll-target="#why-the-object-oriented-api-fig-ax-beats-plt.plot..."><span class="header-section-number">19.1.1</span> Why the Object-Oriented API (<code>fig, ax</code>) Beats <code>plt.plot(...)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch19-mental-model" id="toc-sec-ch19-mental-model" class="nav-link" data-scroll-target="#sec-ch19-mental-model"><span class="header-section-number">19.2</span> Stage 2 — Visual Mental Model: Matplotlib Object-Oriented Hierarchy</a></li>
+  <li><a href="#sec-ch19-walkthrough" id="toc-sec-ch19-walkthrough" class="nav-link" data-scroll-target="#sec-ch19-walkthrough"><span class="header-section-number">19.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch19-setup" id="toc-sec-ch19-setup" class="nav-link" data-scroll-target="#sec-ch19-setup"><span class="header-section-number">19.3.1</span> Setup &amp; Loading the Spine Datasets</a></li>
+  <li><a href="#sec-ch19-oo" id="toc-sec-ch19-oo" class="nav-link" data-scroll-target="#sec-ch19-oo"><span class="header-section-number">19.3.2</span> Matplotlib OO API, Clinical Cutoffs &amp; Annotations</a></li>
+  <li><a href="#sec-ch19-bar-scatter" id="toc-sec-ch19-bar-scatter" class="nav-link" data-scroll-target="#sec-ch19-bar-scatter"><span class="header-section-number">19.3.3</span> Okabe-Ito Palette: Sorted Horizontal Bars &amp; Grouped Scatter</a></li>
+  <li><a href="#sec-ch19-seasonality" id="toc-sec-ch19-seasonality" class="nav-link" data-scroll-target="#sec-ch19-seasonality"><span class="header-section-number">19.3.4</span> Time-Series Seasonality &amp; 4-Week Rolling Mean</a></li>
+  <li><a href="#sec-ch19-multipanel" id="toc-sec-ch19-multipanel" class="nav-link" data-scroll-target="#sec-ch19-multipanel"><span class="header-section-number">19.3.5</span> Multi-Panel Subplots (<code>1x2</code> MCH Wealth Equity)</a></li>
+  <li><a href="#sec-ch19-heatmap" id="toc-sec-ch19-heatmap" class="nav-link" data-scroll-target="#sec-ch19-heatmap"><span class="header-section-number">19.3.6</span> Seaborn Correlation Heatmap &amp; 300-DPI Dual Export</a></li>
+  <li><a href="#sec-ch19-errors" id="toc-sec-ch19-errors" class="nav-link" data-scroll-target="#sec-ch19-errors"><span class="header-section-number">19.3.7</span> Break It On Purpose! (Visualization Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch19-blueprint" id="toc-sec-ch19-blueprint" class="nav-link" data-scroll-target="#sec-ch19-blueprint"><span class="header-section-number">19.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">19.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">19.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch19-todos" id="toc-sec-ch19-todos" class="nav-link" data-scroll-target="#sec-ch19-todos"><span class="header-section-number">19.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch19-test" id="toc-sec-ch19-test" class="nav-link" data-scroll-target="#sec-ch19-test"><span class="header-section-number">19.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch19-exam" id="toc-sec-ch19-exam" class="nav-link" data-scroll-target="#sec-ch19-exam"><span class="header-section-number">19.7</span> Stage 7 — Chapter 19 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-19.1-35-points-build_mch_equity_panelmch_df" id="toc-exam-task-19.1-35-points-build_mch_equity_panelmch_df" class="nav-link" data-scroll-target="#exam-task-19.1-35-points-build_mch_equity_panelmch_df"><span class="header-section-number">19.7.1</span> Exam Task 19.1 (35 Points): <code>build_mch_equity_panel(mch_df)</code></a></li>
+  <li><a href="#exam-task-19.2-35-points-build_outbreak_dashboard_figureepi_df-district" id="toc-exam-task-19.2-35-points-build_outbreak_dashboard_figureepi_df-district" class="nav-link" data-scroll-target="#exam-task-19.2-35-points-build_outbreak_dashboard_figureepi_df-district"><span class="header-section-number">19.7.2</span> Exam Task 19.2 (35 Points): <code>build_outbreak_dashboard_figure(epi_df, district)</code></a></li>
+  <li><a href="#exam-task-19.3-30-points-export_figure_bundlefig-out_dir-stem-dpi300" id="toc-exam-task-19.3-30-points-export_figure_bundlefig-out_dir-stem-dpi300" class="nav-link" data-scroll-target="#exam-task-19.3-30-points-export_figure_bundlefig-out_dir-stem-dpi300"><span class="header-section-number">19.7.3</span> Exam Task 19.3 (30 Points): <code>export_figure_bundle(fig, out_dir, stem, dpi=300)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch19-solutions" id="toc-sec-ch19-solutions" class="nav-link" data-scroll-target="#sec-ch19-solutions"><span class="header-section-number">19.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">19.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">19.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-19-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-19-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-19-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">19.8.3</span> C. Annotated Solutions — Chapter 19 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-19-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-19-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-19-failure-modes"><span class="header-section-number">19.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 19 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch16_numpy_vectorization.html">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</a></li><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch19_visualization_storytelling.html"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch19" class="quarto-section-identifier"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Transform cleaned Pandas DataFrames into <strong>camera-ready scientific figures</strong> worthy of <em>The Lancet</em>, <em>BMJ Global Health</em>, or a top ML conference. Master Matplotlib’s Object-Oriented (<code>Figure</code> <span class="math inline">\(\rightarrow\)</span> <code>Axes</code> <span class="math inline">\(\rightarrow\)</span> Artists) architecture, colorblind-safe Okabe-Ito palettes, reference thresholds and annotations, multi-panel <code>subplots</code> grids, Seaborn statistical heatmaps, and automated 300-DPI PNG + vector PDF export pipelines with zero figure memory leaks.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb">ch19 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 19 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb">ch19 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 19 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb">ch19 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 19 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Build every chart with Matplotlib’s <strong>Object-Oriented API</strong> (<code>fig, ax = plt.subplots(...)</code>), returning <code>(fig, ax)</code> or <code>(fig, axes)</code> from reusable functions and closing figures cleanly with <code>plt.close(fig)</code> to prevent RAM leaks.</li>
+<li>Select honest, high-signal visual encodings—<strong>sorted horizontal bar charts</strong>, <strong>clinical cutoff histograms</strong>, <strong>grouped scatter plots</strong>, and <strong>rolling time-series trends</strong>—paired with the <strong>colorblind-safe Okabe-Ito palette</strong>.</li>
+<li>Compose multi-panel scientific figures (<code>1x2</code> equity panels and <code>2x1</code> <code>sharex=True</code> outbreak dashboards) with unified <code>fig.suptitle(...)</code> titles and clean <code>fig.tight_layout()</code> spacing.</li>
+<li>Render zero-centered, annotated <strong>Seaborn correlation heatmaps</strong> (<code>sns.heatmap(..., annot=True, center=0, ax=ax)</code>) embedded cleanly inside an OO Matplotlib <code>Axes</code>.</li>
+<li>Export publication-ready figure bundles simultaneously to <strong>300-DPI raster PNG</strong> and <strong>lossless vector PDF</strong> using <code>bbox_inches="tight"</code> inside isolated reproducible pipelines.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch19-intuition" class="level2" data-number="19.1">
+<h2 data-number="19.1" class="anchored" data-anchor-id="sec-ch19-intuition"><span class="header-section-number">19.1</span> Stage 1 — First-Principles Intuition: Exploratory Sketches vs.&nbsp;Publication Figures</h2>
+<p>In Chapters 16–18, you learned to vectorize math with NumPy, aggregate tables with Pandas, and scrub messy clinical surveys. Yet a journal reviewer rarely inspects your raw <code>.csv</code> file—the <strong>very first thing</strong> a reviewer, policymaker, or thesis examiner reads is <strong>Figure 1</strong>.</p>
+<p>There is a massive gap between an <em>exploratory sketch</em> (calling <code>plt.hist(x)</code> with default blue bars, missing units, and overlapping labels) and a <strong>publication-ready figure</strong>:</p>
+<ul>
+<li><strong>Every axis carries units:</strong> Writing <code>"Hemoglobin (g/dL)"</code> and <code>"Systolic BP (mmHg)"</code> eliminates ambiguity across international clinical readers.</li>
+<li><strong>Perceptual honesty comes first:</strong> Human eyes judge aligned <strong>position</strong> and <strong>length</strong> far more accurately than pie-chart angles or dual y-axis slopes. Sorting bar charts by magnitude and stacking related time series with <code>sharex=True</code> makes patterns effortless to verify.</li>
+<li><strong>Colorblind accessibility is mandatory:</strong> Roughly <span class="math inline">\(8\%\)</span> of men and <span class="math inline">\(0.5\%\)</span> of women experience red-green color-vision deficiency. Replacing default red/green contrasts with the <strong>Okabe-Ito palette</strong> (<code>#0072B2</code> blue, <code>#E69F00</code> orange, <code>#D55E00</code> vermilion, <code>#009E73</code> bluish green, <code>#56B4E9</code> sky blue) keeps figures legible in both color and grayscale print.</li>
+<li><strong>Reproducible figure functions beat throwaway cells:</strong> Wrapping each chart in a function that returns <code>(fig, ax)</code> lets you unit-test titles, thresholds, and artist counts—and regenerate every manuscript figure automatically when new survey waves arrive.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Canvas Frame (<code>Figure</code>), Drawing Panels (<code>Axes</code>) &amp; Ink (<code>Artists</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Think of Matplotlib as a <strong>medical journal page layout</strong>:</p>
+<ul>
+<li><strong><code>Figure</code> (<code>fig</code>):</strong> The entire blank journal page (e.g., <code>10.5 x 4.2</code> inches). It owns overall margins, <code>fig.suptitle(...)</code>, and the export printer (<code>fig.savefig(...)</code>).</li>
+<li><strong><code>Axes</code> (<code>ax</code> or <code>axes[i]</code>):</strong> An individual framed chart panel sitting on the page. Every axis label (<code>ax.set_xlabel</code>), panel title (<code>ax.set_title</code>), tick mark, spine, and legend lives on an <code>Axes</code>.</li>
+<li><strong>Artists (<code>patches</code>, <code>lines</code>, <code>collections</code>, <code>texts</code>):</strong> The actual ink drawn inside an <code>Axes</code>—histogram bars (<code>Rectangle</code> patches), trend lines (<code>Line2D</code>), scatter points (<code>PathCollection</code>), and heatmap annotations (<code>Text</code>).</li>
+</ul>
+</div>
+</div>
+<section id="why-the-object-oriented-api-fig-ax-beats-plt.plot..." class="level3" data-number="19.1.1">
+<h3 data-number="19.1.1" class="anchored" data-anchor-id="why-the-object-oriented-api-fig-ax-beats-plt.plot..."><span class="header-section-number">19.1.1</span> Why the Object-Oriented API (<code>fig, ax</code>) Beats <code>plt.plot(...)</code></h3>
+<p>Beginners often copy tutorials using <code>plt.plot(...)</code>, <code>plt.title(...)</code>, and <code>plt.xlabel(...)</code>. That <em>state-machine</em> interface secretly mutates whichever panel Matplotlib thinks is “currently active”—a recipe for chaos the moment you build a <code>1x2</code> or <code>2x1</code> multi-panel paper figure. By explicitly creating <code>fig, ax = plt.subplots(...)</code> and calling methods on <code>ax</code>, <strong>every line of code names the exact panel it modifies.</strong></p>
+<hr>
+</section>
+</section>
+<section id="sec-ch19-mental-model" class="level2" data-number="19.2">
+<h2 data-number="19.2" class="anchored" data-anchor-id="sec-ch19-mental-model"><span class="header-section-number">19.2</span> Stage 2 — Visual Mental Model: Matplotlib Object-Oriented Hierarchy</h2>
+<p>Trace how every Matplotlib and Seaborn visualization flows from a single <code>Figure</code> container down to <code>Axes</code> panels, visual Artists, and camera-ready file export:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 19 (Matplotlib Object-Oriented Hierarchy) illustrating Figure Canvas; fig = Figure figsize, suptitle, tight_layout; Axes Panels; axes[0] (Axes) set_title, set_xlabel, set_ylabel; axes[1] (Axes) sha...">flowchart TD
+    subgraph FigCanvas["Figure Canvas"]
+        F["fig = Figure&lt;br/&gt;figsize, suptitle, tight_layout"]
+    end
+    subgraph AxesPanels["Axes Panels"]
+        A0["axes[0] (Axes)&lt;br/&gt;set_title, set_xlabel, set_ylabel"]
+        A1["axes[1] (Axes)&lt;br/&gt;sharex=True, spines, legend"]
+    end
+    subgraph Artists["Visual Artists"]
+        P["Patches &amp; Bars&lt;br/&gt;ax.hist, ax.bar, ax.barh"]
+        L["Lines &amp; Cutoff&lt;br/&gt;ax.plot, ax.axvline"]
+        C["Collections&lt;br/&gt;ax.scatter, sns.heatmap"]
+    end
+    subgraph Export["Export Pipeline"]
+        E["fig.savefig(..., dpi=300, bbox_inches='tight')&lt;br/&gt;PNG (raster) + PDF (vector) -&gt; plt.close(fig)"]
+    end
+    F --&gt;|"plt.subplots()"| A0
+    F --&gt;|"plt.subplots()"| A1
+    A0 --&gt; P
+    A0 --&gt; L
+    A1 --&gt; C
+    F -. "camera-ready" .-&gt; E
+</pre>
+</div>
+<p></p><figcaption> Chapter 19 visual mental model: Matplotlib Object-Oriented Hierarchy</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice that <strong>Seaborn sits directly on top of this hierarchy</strong>: passing <code>ax=ax</code> into <code>sns.heatmap(..., ax=ax)</code> or <code>sns.scatterplot(..., ax=ax)</code> draws Seaborn’s statistical artists right into your chosen Matplotlib <code>Axes</code>, so you retain 100% control over titles, subplots, and 300-DPI exports.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>The Silent Figure Memory Leak in Batch Scripts
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Every call to <code>plt.subplots()</code> registers a live <code>Figure</code> inside Matplotlib’s global manager. If a loop generates 50 district reports without calling <code>plt.close(fig)</code> after <code>fig.savefig(...)</code>, all 50 figures stay pinned in RAM—triggering <code>RuntimeWarning: More than 20 figures have been opened</code> and eventually crashing Colab. Always pair every batch figure creation or automated test with <code>plt.close(fig)</code>!</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch19-walkthrough" class="level2" data-number="19.3">
+<h2 data-number="19.3" class="anchored" data-anchor-id="sec-ch19-walkthrough"><span class="header-section-number">19.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch19-setup" class="level3" data-number="19.3.1">
+<h3 data-number="19.3.1" class="anchored" data-anchor-id="sec-ch19-setup"><span class="header-section-number">19.3.1</span> Setup &amp; Loading the Spine Datasets</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>clinic <span class="op">=</span> tutor.load_data(<span class="st">"clinic_triage"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a>clinic[<span class="st">"bmi"</span>] <span class="op">=</span> clinic[<span class="st">"weight_kg"</span>] <span class="op">/</span> ((clinic[<span class="st">"height_cm"</span>] <span class="op">/</span> <span class="dv">100</span>) <span class="op">**</span> <span class="dv">2</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>mch <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>epi <span class="op">=</span> tutor.load_data(<span class="st">"epi_surveillance"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"clinic_triage:    "</span>, clinic.shape)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"mch_survey_sample:"</span>, mch.shape)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"epi_surveillance: "</span>, epi.shape)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>clinic_triage:     (120, 12)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>mch_survey_sample: (500, 12)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>epi_surveillance:  (416, 8)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch19-oo" class="level3" data-number="19.3.2">
+<h3 data-number="19.3.2" class="anchored" data-anchor-id="sec-ch19-oo"><span class="header-section-number">19.3.2</span> Matplotlib OO API, Clinical Cutoffs &amp; Annotations</h3>
+<p>Watch how <code>fig, ax = plt.subplots(...)</code> layers histogram bars, a WHO <span class="math inline">\(11.0\text{ g/dL}\)</span> dashed anemia cutoff, a callout arrow, and clean despined axes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>OKABE_ITO <span class="op">=</span> {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>    <span class="st">"blue"</span>: <span class="st">"#0072B2"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>    <span class="st">"orange"</span>: <span class="st">"#E69F00"</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>    <span class="st">"vermilion"</span>: <span class="st">"#D55E00"</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>    <span class="st">"green"</span>: <span class="st">"#009E73"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>    <span class="st">"sky"</span>: <span class="st">"#56B4E9"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>}</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.0</span>))</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>hb <span class="op">=</span> clinic[<span class="st">"hemoglobin_g_dl"</span>].dropna()</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>ax.hist(hb, bins<span class="op">=</span><span class="dv">16</span>, color<span class="op">=</span>OKABE_ITO[<span class="st">"blue"</span>], edgecolor<span class="op">=</span><span class="st">"white"</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>ax.axvline(</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>    <span class="fl">11.0</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>    color<span class="op">=</span>OKABE_ITO[<span class="st">"vermilion"</span>],</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>    linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>    linewidth<span class="op">=</span><span class="fl">2.0</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>    label<span class="op">=</span><span class="st">"WHO Cutoff (11.0 g/dL)"</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a>ax.annotate(</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a>    <span class="st">"Anemic tail (&lt;11.0)"</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a>    xy<span class="op">=</span>(<span class="fl">11.0</span>, <span class="dv">12</span>),</span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a>    xytext<span class="op">=</span>(<span class="fl">8.8</span>, <span class="dv">16</span>),</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a>    arrowprops<span class="op">=</span>{<span class="st">"arrowstyle"</span>: <span class="st">"-&gt;"</span>, <span class="st">"color"</span>: OKABE_ITO[<span class="st">"vermilion"</span>]},</span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a>    fontsize<span class="op">=</span><span class="dv">9</span>,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a>)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-label="26"></a>ax.set_title(<span class="st">"Clinic Triage Hemoglobin Distribution"</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-label="27"></a>ax.set_xlabel(<span class="st">"Hemoglobin (g/dL)"</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-label="28"></a>ax.set_ylabel(<span class="st">"Patient Count"</span>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-label="29"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-label="30"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-label="31"></a>ax.legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb3-32"><a href="#cb3-32" aria-label="32"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-label="33"></a><span class="bu">print</span>(<span class="st">"Patches:"</span>, <span class="bu">len</span>(ax.patches), <span class="st">"| Lines:"</span>, <span class="bu">len</span>(ax.lines))</span>
+<span id="cb3-34"><a href="#cb3-34" aria-label="34"></a><span class="bu">print</span>(<span class="st">"Title:  "</span>, ax.get_title())</span>
+<span id="cb3-35"><a href="#cb3-35" aria-label="35"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Patches: 16 | Lines: 1</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Title:   Clinic Triage Hemoglobin Distribution</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three publication habits are working together here:</p>
+<ul>
+<li><strong>Programmatic inspectability:</strong> <code>ax.patches</code> holds the 16 histogram bars and <code>ax.lines</code> holds the dashed cutoff line—the exact artists our automated checks verify!</li>
+<li><strong>Despining reduces chartjunk:</strong> Hiding the top and right box borders (<code>ax.spines["top"].set_visible(False)</code>) increases the data-ink ratio cleanly.</li>
+<li><strong>Explicit cleanup:</strong> Calling <code>plt.close(fig)</code> releases memory immediately once the figure is inspected or saved.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch19-bar-scatter" class="level3" data-number="19.3.3">
+<h3 data-number="19.3.3" class="anchored" data-anchor-id="sec-ch19-bar-scatter"><span class="header-section-number">19.3.3</span> Okabe-Ito Palette: Sorted Horizontal Bars &amp; Grouped Scatter</h3>
+<p>Always sort categorical bars by magnitude rather than alphabetically, and encode clinical triage severity with distinct Okabe-Ito hues:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>district_summary <span class="op">=</span> (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>    clinic.assign(is_anemic<span class="op">=</span>clinic[<span class="st">"hemoglobin_g_dl"</span>] <span class="op">&lt;</span> <span class="fl">11.0</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>    .groupby(<span class="st">"district"</span>, as_index<span class="op">=</span><span class="va">False</span>)[<span class="st">"is_anemic"</span>]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>    .mean()</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>    .rename(columns<span class="op">=</span>{<span class="st">"is_anemic"</span>: <span class="st">"anemia_pct"</span>})</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>district_summary[<span class="st">"anemia_pct"</span>] <span class="op">*=</span> <span class="dv">100</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>ordered <span class="op">=</span> district_summary.sort_values(<span class="st">"anemia_pct"</span>, ascending<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">3.8</span>))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>ax.barh(ordered[<span class="st">"district"</span>], ordered[<span class="st">"anemia_pct"</span>], color<span class="op">=</span><span class="st">"#009E73"</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>ax.set_title(<span class="st">"Anemia Prevalence by District (Sorted)"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>ax.set_xlabel(<span class="st">"Anemia Prevalence (%)"</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>ax.set_ylabel(<span class="st">"District"</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>top_row <span class="op">=</span> ordered.iloc[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a><span class="bu">print</span>(<span class="ss">f"Top district: </span><span class="sc">{</span>top_row[<span class="st">'district'</span>]<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>top_row[<span class="st">'anemia_pct'</span>]<span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>plt.close(fig)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.0</span>))</span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>priority_colors <span class="op">=</span> {<span class="st">"Routine"</span>: <span class="st">"#0072B2"</span>, <span class="st">"Moderate"</span>: <span class="st">"#D55E00"</span>}</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a><span class="cf">for</span> priority, sub <span class="kw">in</span> clinic.groupby(<span class="st">"triage_priority"</span>):</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a>    ax.scatter(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a>        sub[<span class="st">"bmi"</span>],</span>
+<span id="cb5-24"><a href="#cb5-24" aria-label="24"></a>        sub[<span class="st">"systolic_bp"</span>],</span>
+<span id="cb5-25"><a href="#cb5-25" aria-label="25"></a>        color<span class="op">=</span>priority_colors.get(priority, <span class="st">"#E69F00"</span>),</span>
+<span id="cb5-26"><a href="#cb5-26" aria-label="26"></a>        alpha<span class="op">=</span><span class="fl">0.8</span>,</span>
+<span id="cb5-27"><a href="#cb5-27" aria-label="27"></a>        label<span class="op">=</span>priority,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-label="28"></a>    )</span>
+<span id="cb5-29"><a href="#cb5-29" aria-label="29"></a>ax.set_title(<span class="st">"BMI vs. Systolic BP by Triage Priority"</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" aria-label="30"></a>ax.set_xlabel(<span class="st">"BMI (kg/m^2)"</span>)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-label="31"></a>ax.set_ylabel(<span class="st">"Systolic Blood Pressure (mmHg)"</span>)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-label="32"></a>ax.legend(title<span class="op">=</span><span class="st">"Triage Priority"</span>)</span>
+<span id="cb5-33"><a href="#cb5-33" aria-label="33"></a><span class="bu">print</span>(<span class="st">"Scatter groups plotted:"</span>, <span class="bu">len</span>(ax.collections))</span>
+<span id="cb5-34"><a href="#cb5-34" aria-label="34"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Top district: Rangpur (13.8%)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Scatter groups plotted: 2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice why we sorted <code>ascending=True</code> before calling <code>ax.barh(...)</code>: Matplotlib draws horizontal bars from <span class="math inline">\(y = 0\)</span> (bottom) up to <span class="math inline">\(y = N - 1\)</span> (top), so sorting ascending places <strong>Rangpur (13.8%)</strong> squarely at the top!</p>
+<hr>
+</section>
+<section id="sec-ch19-seasonality" class="level3" data-number="19.3.4">
+<h3 data-number="19.3.4" class="anchored" data-anchor-id="sec-ch19-seasonality"><span class="header-section-number">19.3.4</span> Time-Series Seasonality &amp; 4-Week Rolling Mean</h3>
+<p>Weekly epidemiological counts fluctuate noisily. Plotting the raw weekly curve semi-transparently (<code>alpha=0.65</code>) behind a bold 4-week rolling mean exposes monsoon outbreak peaks honestly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>dhaka <span class="op">=</span> (</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>    epi[epi[<span class="st">"district"</span>] <span class="op">==</span> <span class="st">"Dhaka"</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>    .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>x_weeks <span class="op">=</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="bu">len</span>(dhaka) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>roll_4w <span class="op">=</span> dhaka[<span class="st">"dengue_cases"</span>].rolling(<span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">7.2</span>, <span class="fl">3.8</span>))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>ax.plot(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>    x_weeks, dhaka[<span class="st">"dengue_cases"</span>], color<span class="op">=</span><span class="st">"#56B4E9"</span>, alpha<span class="op">=</span><span class="fl">0.65</span>,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>    label<span class="op">=</span><span class="st">"Weekly Cases"</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>ax.plot(</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>    x_weeks, roll_4w, color<span class="op">=</span><span class="st">"#D55E00"</span>, linewidth<span class="op">=</span><span class="fl">2.2</span>,</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>    label<span class="op">=</span><span class="st">"4-Week Rolling Mean"</span>,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>ax.set_title(<span class="st">"Dhaka Weekly Dengue Cases &amp; 4-Week Trend (2024-2025)"</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a>ax.set_xlabel(<span class="st">"Sequential Epidemiological Week"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a>ax.set_ylabel(<span class="st">"Reported Dengue Cases"</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>ax.legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a><span class="bu">print</span>(<span class="st">"Peak weekly Dhaka cases:"</span>, <span class="bu">int</span>(dhaka[<span class="st">"dengue_cases"</span>].<span class="bu">max</span>()))</span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a><span class="bu">print</span>(<span class="st">"Peak 4-week rolling mean:"</span>, <span class="bu">round</span>(<span class="bu">float</span>(roll_4w.<span class="bu">max</span>()), <span class="dv">1</span>))</span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Peak weekly Dhaka cases: 395</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>Peak 4-week rolling mean: 343.5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch19-multipanel" class="level3" data-number="19.3.5">
+<h3 data-number="19.3.5" class="anchored" data-anchor-id="sec-ch19-multipanel"><span class="header-section-number">19.3.5</span> Multi-Panel Subplots (<code>1x2</code> MCH Wealth Equity)</h3>
+<p>When comparing two public health indicators across the same socioeconomic gradient, side-by-side panels (<code>plt.subplots(1, 2, ...)</code>) with an explicit <code>quintile_order</code> reindex let readers scan disparities instantaneously:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>quintile_order <span class="op">=</span> [<span class="st">"Poorest"</span>, <span class="st">"Poorer"</span>, <span class="st">"Middle"</span>, <span class="st">"Richer"</span>, <span class="st">"Richest"</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>mch_eq <span class="op">=</span> (</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>    mch.groupby(<span class="st">"wealth_quintile"</span>)[[<span class="st">"child_stunted"</span>, <span class="st">"maternal_anemia"</span>]]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>    .mean()</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>    .reindex(quintile_order)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>    <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="fl">10.5</span>, <span class="fl">4.0</span>))</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>axes[<span class="dv">0</span>].bar(mch_eq.index, mch_eq[<span class="st">"child_stunted"</span>], color<span class="op">=</span><span class="st">"#0072B2"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Child Stunting Prevalence"</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="st">"Wealth Quintile"</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Prevalence (%)"</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>axes[<span class="dv">1</span>].bar(mch_eq.index, mch_eq[<span class="st">"maternal_anemia"</span>], color<span class="op">=</span><span class="st">"#D55E00"</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Maternal Anemia Prevalence"</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Wealth Quintile"</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Prevalence (%)"</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a>fig.suptitle(<span class="st">"MCH Health Inequities Across Wealth Quintiles"</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a>fig.tight_layout()</span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a><span class="bu">print</span>(<span class="st">"Poorest vs Richest stunting (%):"</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a><span class="bu">print</span>(</span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>    <span class="bu">round</span>(<span class="bu">float</span>(mch_eq.loc[<span class="st">"Poorest"</span>, <span class="st">"child_stunted"</span>]), <span class="dv">1</span>),</span>
+<span id="cb9-25"><a href="#cb9-25" aria-label="25"></a>    <span class="st">"vs"</span>,</span>
+<span id="cb9-26"><a href="#cb9-26" aria-label="26"></a>    <span class="bu">round</span>(<span class="bu">float</span>(mch_eq.loc[<span class="st">"Richest"</span>, <span class="st">"child_stunted"</span>]), <span class="dv">1</span>),</span>
+<span id="cb9-27"><a href="#cb9-27" aria-label="27"></a>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-label="28"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Poorest vs Richest stunting (%):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>28.0 vs 8.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Without <code>.reindex(quintile_order)</code>, Pandas sorts strings alphabetically (<code>Middle</code>, <code>Poorer</code>, <code>Poorest</code>, <code>Richer</code>, <code>Richest</code>), destroying the socioeconomic gradient!</p>
+<hr>
+</section>
+<section id="sec-ch19-heatmap" class="level3" data-number="19.3.6">
+<h3 data-number="19.3.6" class="anchored" data-anchor-id="sec-ch19-heatmap"><span class="header-section-number">19.3.6</span> Seaborn Correlation Heatmap &amp; 300-DPI Dual Export</h3>
+<p>For correlation matrices spanning <span class="math inline">\([-1, +1]\)</span>, always pair a <strong>diverging colormap</strong> (<code>"coolwarm"</code> or <code>"RdBu_r"</code>) with <code>center=0</code> and <code>annot=True</code>, then export both raster (300-DPI PNG) and vector (PDF) formats inside a temporary directory during testing:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>num_cols <span class="op">=</span> [<span class="st">"age_years"</span>, <span class="st">"bmi"</span>, <span class="st">"systolic_bp"</span>, <span class="st">"hemoglobin_g_dl"</span>]</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>corr_mat <span class="op">=</span> clinic[num_cols].corr()</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">5.8</span>, <span class="fl">4.6</span>))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>sns.heatmap(</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>    corr_mat, annot<span class="op">=</span><span class="va">True</span>, fmt<span class="op">=</span><span class="st">".2f"</span>, center<span class="op">=</span><span class="dv">0</span>, cmap<span class="op">=</span><span class="st">"coolwarm"</span>, ax<span class="op">=</span>ax</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>ax.set_title(<span class="st">"Clinic Triage Feature Correlation Matrix"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>    png_path <span class="op">=</span> Path(tmpdir) <span class="op">/</span> <span class="st">"corr_heatmap.png"</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    pdf_path <span class="op">=</span> Path(tmpdir) <span class="op">/</span> <span class="st">"corr_heatmap.pdf"</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>    fig.savefig(png_path, dpi<span class="op">=</span><span class="dv">300</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>    fig.savefig(pdf_path, dpi<span class="op">=</span><span class="dv">300</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>    <span class="bu">print</span>(<span class="st">"300-DPI PNG bytes:"</span>, png_path.stat().st_size)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a>    <span class="bu">print</span>(<span class="st">"Vector PDF bytes: "</span>, pdf_path.stat().st_size)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>300-DPI PNG bytes: 115944</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>Vector PDF bytes:  15605</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Format</th>
+<th style="text-align: left;">Best For</th>
+<th style="text-align: left;">Key <code>savefig</code> Flags</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>PNG (<code>dpi=300</code>)</strong></td>
+<td style="text-align: left;">Slides, Word docs, web previews, dense scatter plots</td>
+<td style="text-align: left;"><code>dpi=300, bbox_inches="tight"</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>PDF (vector)</strong></td>
+<td style="text-align: left;">LaTeX / Quarto journal manuscripts (infinite zoom)</td>
+<td style="text-align: left;"><code>bbox_inches="tight"</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="sec-ch19-errors" class="level3" data-number="19.3.7">
+<h3 data-number="19.3.7" class="anchored" data-anchor-id="sec-ch19-errors"><span class="header-section-number">19.3.7</span> Break It On Purpose! (Visualization Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — ValueError (Mismatched <code>x</code> and <code>y</code> Lengths)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a><span class="cf">try</span>:</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>    weeks <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>    cases <span class="op">=</span> [<span class="dv">18</span>, <span class="dv">29</span>, <span class="dv">44</span>]</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>    ax.plot(weeks, cases)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a><span class="cf">finally</span>:</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>    plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>ValueError: x and y must have same first dimension,</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>but have shapes (4,) and (3,)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>weeks</code> has 4 entries while <code>cases</code> has only 3 (often caused by dropping NaNs from <code>y</code> without aligning <code>x</code>, or slicing one series differently).<br>
+<strong>Fix:</strong> Filter and align a single DataFrame first (<code>sub = df.dropna(subset=["epi_week", "dengue_cases"])</code>), then plot <code>sub["epi_week"]</code> against <code>sub["dengue_cases"]</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — KeyError (Missing Column in DataFrame)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a><span class="cf">try</span>:</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>    ax.hist(clinic[<span class="st">"hb_g_dl"</span>])</span>
+<span id="cb15-4"><a href="#cb15-4" aria-label="4"></a><span class="cf">finally</span>:</span>
+<span id="cb15-5"><a href="#cb15-5" aria-label="5"></a>    plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>KeyError: 'hb_g_dl'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> The <code>clinic_triage</code> table names the column <code>"hemoglobin_g_dl"</code>, not <code>"hb_g_dl"</code>.<br>
+<strong>Fix:</strong> Print <code>list(clinic.columns)</code> before writing plotting code so column names match the DataFrame schema exactly.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (Invalid Colormap Name)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a><span class="cf">try</span>:</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>    sns.heatmap(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a>        corr_mat, cmap<span class="op">=</span>plt.get_cmap(<span class="st">"hospital_rainbow"</span>), ax<span class="op">=</span>ax</span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a>    )</span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a><span class="cf">finally</span>:</span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a>    plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: 'hospital_rainbow' is not a valid value for name.</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>Did you mean one of: 'gist_rainbow', 'gist_rainbow_r', 'rainbow'?</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>"hospital_rainbow"</code> is not a registered Matplotlib colormap (and rainbow colormaps distort perception anyway!).<br>
+<strong>Fix:</strong> Use perceptually uniform sequential palettes (<code>"viridis"</code>, <code>"cividis"</code>, <code>"crest"</code>) for ordered quantities, and zero-centered diverging palettes (<code>"coolwarm"</code>, <code>"RdBu_r"</code>, <code>"vlag"</code>) for signed correlations.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch19-blueprint" class="level2" data-number="19.4">
+<h2 data-number="19.4" class="anchored" data-anchor-id="sec-ch19-blueprint"><span class="header-section-number">19.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> An epidemiological surveillance team publishes a weekly dengue bulletin comparing dengue incidence against monsoon rainfall for any target district. They need a single reusable function that (1) builds a <code>2x1</code> shared-x figure (avoiding deceptive dual y-axes), (2) exports both a 300-DPI PNG and a vector PDF into any output folder, (3) closes the figure to guarantee zero memory leaks, and (4) returns the exported byte counts for automated CI verification.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="19.4.1">
+<h3 data-number="19.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">19.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Inputs &amp; Units:</strong></p>
+<ul>
+<li><code>epi_df</code>: Pandas DataFrame (<code>year</code>, <code>epi_week</code>, <code>district</code>, <code>dengue_cases</code> [count], <code>rainfall_mm</code> [mm]).</li>
+<li><code>district</code> (<code>str</code>), <code>out_dir</code> (<code>str | Path</code>), <code>dpi</code> (<code>int</code>, default <code>300</code>).</li>
+</ul></li>
+<li><p><strong>Edge Cases &amp; Traps:</strong></p>
+<ul>
+<li>Multi-year data: <code>epi_surveillance</code> spans 2024 and 2025 (52 weeks each), so plotting raw <code>epi_week</code> alone would fold 2025 back on top of 2024! Sort by <code>["year", "epi_week"]</code> and plot along sequential week index <code>range(1, len(sub) + 1)</code>.</li>
+<li>Uncreated output folders: call <code>Path(out_dir).mkdir(parents=True, exist_ok=True)</code>.</li>
+<li>Memory leaks &amp; stray test files: call <code>plt.close(fig)</code> immediately after saving, and run demos inside <code>tempfile.TemporaryDirectory()</code>.</li>
+</ul></li>
+<li><p><strong>Step-by-Step Algorithm:</strong></p>
+<ul>
+<li>Filter <code>epi_df</code> to <code>district</code>, sort by <code>["year", "epi_week"]</code>, compute 4-week rolling mean.</li>
+<li>Create <code>fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.2))</code>.</li>
+<li>Plot weekly cases + 4-week trend with legend on <code>axes[0]</code>; plot <code>rainfall_mm</code> bars on <code>axes[1]</code>; apply <code>fig.tight_layout()</code>.</li>
+<li>Export <code>&lt;district&gt;_outbreak.png</code> and <code>&lt;district&gt;_outbreak.pdf</code> at <code>dpi</code> with <code>bbox_inches="tight"</code>, close <code>fig</code>, and return byte sizes.</li>
+</ul></li>
+<li><p><strong>Verification Plan:</strong></p>
+<ul>
+<li>Confirm <code>png_bytes &gt; 0</code>, <code>pdf_bytes &gt; 0</code>, <code>len(plt.get_fignums()) == 0</code>, and zero files left behind after the <code>TemporaryDirectory</code> block exits.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="19.4.2">
+<h3 data-number="19.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">19.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="kw">def</span> generate_outbreak_report(epi_df, district, out_dir, dpi<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>    <span class="co">"""Build a 2x1 outbreak figure, export PNG+PDF, and close safely."""</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>    sub <span class="op">=</span> (</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>        epi_df[epi_df[<span class="st">"district"</span>] <span class="op">==</span> district]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>        .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>    )</span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>    x <span class="op">=</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="bu">len</span>(sub) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>    roll <span class="op">=</span> sub[<span class="st">"dengue_cases"</span>].rolling(<span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a>    fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, sharex<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="fl">8.0</span>, <span class="fl">5.2</span>))</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a>    axes[<span class="dv">0</span>].plot(x, sub[<span class="st">"dengue_cases"</span>], color<span class="op">=</span><span class="st">"#56B4E9"</span>, alpha<span class="op">=</span><span class="fl">0.6</span>,</span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a>                 label<span class="op">=</span><span class="st">"Weekly Cases"</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>    axes[<span class="dv">0</span>].plot(x, roll, color<span class="op">=</span><span class="st">"#D55E00"</span>, linewidth<span class="op">=</span><span class="fl">2.2</span>,</span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>                 label<span class="op">=</span><span class="st">"4-Week Rolling Mean"</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>    axes[<span class="dv">0</span>].set_title(<span class="ss">f"Dengue Surveillance &amp; Rainfall — </span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>    axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Dengue Cases"</span>)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>    axes[<span class="dv">0</span>].legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a></span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a>    axes[<span class="dv">1</span>].bar(x, sub[<span class="st">"rainfall_mm"</span>], color<span class="op">=</span><span class="st">"#0072B2"</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a>    axes[<span class="dv">1</span>].set_title(<span class="ss">f"Weekly Rainfall — </span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a>    axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Sequential Epidemiological Week"</span>)</span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>    axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Rainfall (mm)"</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a>    fig.tight_layout()</span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a></span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a>    out <span class="op">=</span> Path(out_dir)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a>    out.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a>    png_p <span class="op">=</span> out <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>district<span class="sc">.</span>lower()<span class="sc">}</span><span class="ss">_outbreak.png"</span></span>
+<span id="cb19-29"><a href="#cb19-29" aria-label="29"></a>    pdf_p <span class="op">=</span> out <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>district<span class="sc">.</span>lower()<span class="sc">}</span><span class="ss">_outbreak.pdf"</span></span>
+<span id="cb19-30"><a href="#cb19-30" aria-label="30"></a>    fig.savefig(png_p, dpi<span class="op">=</span>dpi, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb19-31"><a href="#cb19-31" aria-label="31"></a>    fig.savefig(pdf_p, dpi<span class="op">=</span>dpi, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb19-32"><a href="#cb19-32" aria-label="32"></a>    plt.close(fig)</span>
+<span id="cb19-33"><a href="#cb19-33" aria-label="33"></a>    <span class="cf">return</span> {</span>
+<span id="cb19-34"><a href="#cb19-34" aria-label="34"></a>        <span class="st">"png_bytes"</span>: <span class="bu">int</span>(png_p.stat().st_size),</span>
+<span id="cb19-35"><a href="#cb19-35" aria-label="35"></a>        <span class="st">"pdf_bytes"</span>: <span class="bu">int</span>(pdf_p.stat().st_size),</span>
+<span id="cb19-36"><a href="#cb19-36" aria-label="36"></a>    }</span>
+<span id="cb19-37"><a href="#cb19-37" aria-label="37"></a></span>
+<span id="cb19-38"><a href="#cb19-38" aria-label="38"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb19-39"><a href="#cb19-39" aria-label="39"></a>    report <span class="op">=</span> generate_outbreak_report(epi, <span class="st">"Dhaka"</span>, tmpdir, dpi<span class="op">=</span><span class="dv">300</span>)</span>
+<span id="cb19-40"><a href="#cb19-40" aria-label="40"></a>    <span class="bu">print</span>(<span class="st">"Exported Dhaka report bundle:"</span>, report)</span>
+<span id="cb19-41"><a href="#cb19-41" aria-label="41"></a></span>
+<span id="cb19-42"><a href="#cb19-42" aria-label="42"></a>plt.close(<span class="st">"all"</span>)</span>
+<span id="cb19-43"><a href="#cb19-43" aria-label="43"></a><span class="bu">print</span>(<span class="st">"Open Matplotlib figures remaining:"</span>, <span class="bu">len</span>(plt.get_fignums()))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>Exported Dhaka report bundle: {'png_bytes': 208349, 'pdf_bytes': 22965}</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>Open Matplotlib figures remaining: 0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch19-todos" class="level2" data-number="19.5">
+<h2 data-number="19.5" class="anchored" data-anchor-id="sec-ch19-todos"><span class="header-section-number">19.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six publication-ready visualization functions below. Pass each <strong>function name (without parentheses!)</strong> to <code>tutor.check(...)</code>—for example, <code>tutor.check("ch19_todo_01", plot_hb_distribution)</code>.</p>
+<ul>
+<li><strong>To-Do 19.1 (OO Histogram &amp; Clinical Cutoff — <code>plot_hb_distribution(df, cutoff=11.0)</code>):</strong> Create <code>fig, ax = plt.subplots(...)</code>, plot a histogram of <code>df["hemoglobin_g_dl"].dropna()</code>, add a vertical dashed cutoff line <code>ax.axvline(cutoff, linestyle="--", ...)</code>, set non-empty title and x/y labels, and return <code>(fig, ax)</code>.</li>
+<li><strong>To-Do 19.2 (Sorted Horizontal Bar Chart — <code>plot_district_anemia_bar(summary_df)</code>):</strong> Sort <code>summary_df</code> ascending by <code>anemia_pct</code> (without mutating input) so the highest-burden district sits at the top, plot via <code>ax.barh(...)</code>, set title and x/y labels, and return <code>(fig, ax)</code>.</li>
+<li><strong>To-Do 19.3 (Grouped Clinical Scatter — <code>plot_bmi_vs_sbp_scatter(df)</code>):</strong> Plot <code>bmi</code> (x) vs.&nbsp;<code>systolic_bp</code> (y) colored/grouped by <code>triage_priority</code>, add a legend, title, and x/y labels, and return <code>(fig, ax)</code>.</li>
+<li><strong>To-Do 19.4 (Surveillance Time-Series — <code>plot_dengue_seasonality(epi_df, district)</code>):</strong> Filter <code>epi_df</code> to <code>district</code>, sort chronologically, plot weekly <code>dengue_cases</code> plus a 4-week rolling mean line with legend, title, and x/y labels, and return <code>(fig, ax)</code>.</li>
+<li><strong>To-Do 19.5 (Seaborn Correlation Matrix — <code>plot_correlation_heatmap(df, cols)</code>):</strong> Plot <code>sns.heatmap(df[cols].corr(), annot=True, center=0, ax=ax)</code> with a non-empty title and return <code>(fig, ax)</code>.</li>
+<li><strong>To-Do 19.6 (300-DPI Publication Exporter — <code>save_publication_figure(fig, out_path, dpi=300)</code>):</strong> Save <code>fig</code> using <code>fig.savefig(out_path, dpi=dpi, bbox_inches="tight")</code> and return the saved file size in bytes as an <code>int</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch19-test" class="level2" data-number="19.6">
+<h2 data-number="19.6" class="anchored" data-anchor-id="sec-ch19-test"><span class="header-section-number">19.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Answer all 10 visualization architecture and diagnostic questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong>OO Hierarchy:</strong> In <code>fig, axes = plt.subplots(1, 2, figsize=(10, 4))</code>, which object owns <code>suptitle(...)</code> and <code>savefig(...)</code>, and which objects own <code>set_xlabel(...)</code> and <code>legend()</code>?</p></li>
+<li><p><strong>Horizontal Bar Sorting Trap:</strong> Suppose <code>summary_df</code> has Dhaka (<code>28.5%</code>), Sylhet (<code>41.2%</code>), and Rajshahi (<code>22.0%</code>). If you sort <strong>descending</strong> (<code>ascending=False</code>) before calling <code>ax.barh(...)</code>, which district appears at the very <strong>top</strong> of the chart, and why?</p></li>
+<li><p><strong>Colorblind Accessibility:</strong> Why should clinical manuscripts avoid encoding “Healthy vs.&nbsp;At-Risk” using only pure red (<code>#FF0000</code>) and pure green (<code>#00FF00</code>), and what palette solves this cleanly?</p></li>
+<li><p><strong>Why <code>sharex=True</code> Beats Dual Y-Axes:</strong> Explain in one sentence why stacking <code>dengue_cases</code> above <code>rainfall_mm</code> with <code>plt.subplots(2, 1, sharex=True)</code> is more scientifically honest than plotting both on a single panel with <code>ax.twinx()</code>.</p></li>
+<li><p><strong>Seaborn Heatmap Centering:</strong> Your correlation matrix values range from <code>+0.25</code> to <code>+1.00</code>. If you call <code>sns.heatmap(corr, cmap="coolwarm", annot=True)</code> <em>without</em> <code>center=0</code>, what color does a positive correlation of <code>+0.25</code> receive—and why is that misleading?</p></li>
+<li><p><strong>Multi-Year Seasonality Bug:</strong> <code>epi_surveillance</code> contains 52 weeks for <code>2024</code> and 52 weeks for <code>2025</code> per district. What visual artifact appears if you run <code>ax.plot(sub["epi_week"], sub["dengue_cases"])</code> directly without creating a sequential week index or splitting by year?</p></li>
+<li><p><strong>Raster vs.&nbsp;Vector Export:</strong> A journal requests 300-DPI PNG for online preview and PDF for print typesetting. What happens if you zoom <span class="math inline">\(600\%\)</span> into text labels on a <code>72</code>-DPI PNG compared to a vector PDF?</p></li>
+<li><p><strong>Clipped Labels on Export:</strong> Your figure looks fine inside Colab, yet the exported <code>.png</code> chops off half of the y-axis label and <code>fig.suptitle</code>. Which single keyword argument to <code>fig.savefig(...)</code> prevents this?</p></li>
+<li><p><strong>Memory Leak Prevention:</strong> A pipeline generates 80 district plots in a <code>for</code> loop using <code>fig, ax = plt.subplots()</code> and <code>fig.savefig(...)</code>, but forgets one cleanup call. Which exact function call frees each figure from Matplotlib’s registry?</p></li>
+<li><p><strong>Trace the Traceback:</strong> What exact exception is raised by each snippet below?</p>
+<ul>
+<li><ol type="a">
+<li><code>ax.plot([1, 2, 3, 4], [10, 20, 30])</code></li>
+</ol></li>
+<li><ol start="2" type="a">
+<li><code>ax.hist(clinic["hb_g_dl"])</code> when the column is named <code>"hemoglobin_g_dl"</code></li>
+</ol></li>
+</ul></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch19-exam" class="level2" data-number="19.7">
+<h2 data-number="19.7" class="anchored" data-anchor-id="sec-ch19-exam"><span class="header-section-number">19.7</span> Stage 7 — Chapter 19 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb</code>, implement all three publication visualization functions, and run <code>tutor.check_exam("ch19", exam_submissions)</code> to earn your score out of 100 points.</p>
+<section id="exam-task-19.1-35-points-build_mch_equity_panelmch_df" class="level3" data-number="19.7.1">
+<h3 data-number="19.7.1" class="anchored" data-anchor-id="exam-task-19.1-35-points-build_mch_equity_panelmch_df"><span class="header-section-number">19.7.1</span> Exam Task 19.1 (35 Points): <code>build_mch_equity_panel(mch_df)</code></h3>
+<p>Build a <code>1x2</code> side-by-side health equity panel from <code>mch_df</code>:</p>
+<ul>
+<li>Compute stunting prevalence (<code>child_stunted</code>) and maternal anemia prevalence (<code>maternal_anemia</code>) as <strong>percentages</strong> (<code>mean() * 100</code>) grouped by <code>wealth_quintile</code> in logical order <code>["Poorest", "Poorer", "Middle", "Richer", "Richest"]</code>.</li>
+<li>Create <code>fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.2))</code>.</li>
+<li>Plot stunting % on <code>axes[0]</code> and anemia % on <code>axes[1]</code>, with non-empty titles, x-labels, and y-labels on both panels.</li>
+<li>Add an overall super-title via <code>fig.suptitle(...)</code> and return <code>(fig, axes)</code> without mutating <code>mch_df</code>.</li>
+</ul>
+</section>
+<section id="exam-task-19.2-35-points-build_outbreak_dashboard_figureepi_df-district" class="level3" data-number="19.7.2">
+<h3 data-number="19.7.2" class="anchored" data-anchor-id="exam-task-19.2-35-points-build_outbreak_dashboard_figureepi_df-district"><span class="header-section-number">19.7.2</span> Exam Task 19.2 (35 Points): <code>build_outbreak_dashboard_figure(epi_df, district)</code></h3>
+<p>Build a <code>2x1</code> stacked outbreak surveillance dashboard for <code>district</code>:</p>
+<ul>
+<li>Filter <code>epi_df</code> to <code>district</code> and sort chronologically by <code>["year", "epi_week"]</code>.</li>
+<li>Create <code>fig, axes = plt.subplots(2, 1, sharex=True, figsize=(8.0, 5.5))</code>.</li>
+<li>Top panel (<code>axes[0]</code>): plot weekly <code>dengue_cases</code> + 4-week rolling mean line, with a legend, title, and y-label.</li>
+<li>Bottom panel (<code>axes[1]</code>): plot <code>rainfall_mm</code> as a bar chart (<code>axes[1].bar(...)</code>), with title, x-label, and y-label.</li>
+<li>Return <code>(fig, axes)</code> without mutating <code>epi_df</code>.</li>
+</ul>
+</section>
+<section id="exam-task-19.3-30-points-export_figure_bundlefig-out_dir-stem-dpi300" class="level3" data-number="19.7.3">
+<h3 data-number="19.7.3" class="anchored" data-anchor-id="exam-task-19.3-30-points-export_figure_bundlefig-out_dir-stem-dpi300"><span class="header-section-number">19.7.3</span> Exam Task 19.3 (30 Points): <code>export_figure_bundle(fig, out_dir, stem, dpi=300)</code></h3>
+<p>Build a camera-ready dual-format exporter:</p>
+<ul>
+<li>Ensure <code>out_dir</code> exists (<code>Path(out_dir).mkdir(parents=True, exist_ok=True)</code>).</li>
+<li>Export <code>&lt;stem&gt;.png</code> and <code>&lt;stem&gt;.pdf</code> inside <code>out_dir</code> at <code>dpi</code> with <code>bbox_inches="tight"</code>.</li>
+<li>Return <code>{"png": Path, "pdf": Path, "png_bytes": int, "pdf_bytes": int}</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch19-solutions" class="level2" data-number="19.8">
+<h2 data-number="19.8" class="anchored" data-anchor-id="sec-ch19-solutions"><span class="header-section-number">19.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="19.8.1">
+<h3 data-number="19.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">19.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>fig</code> (the <code>Figure</code>) owns <code>fig.suptitle(...)</code> and <code>fig.savefig(...)</code>; <code>axes[0]</code> and <code>axes[1]</code> (the <code>Axes</code> panels) own <code>set_xlabel(...)</code> and <code>legend()</code>.</li>
+<li><strong>Rajshahi (<code>22.0%</code>)</strong> appears at the top! Matplotlib plots horizontal bars bottom-to-top (<span class="math inline">\(y = 0, 1, 2\)</span>), so sorting descending puts the largest bar (<code>41.2%</code>) at <span class="math inline">\(y = 0\)</span> (the bottom). Always sort <code>ascending=True</code> for <code>ax.barh(...)</code>.</li>
+<li>Roughly <span class="math inline">\(8\%\)</span> of men have red-green color-vision deficiency, making pure red and green indistinguishable (and they collapse into identical gray in monochrome print). Use the <strong>Okabe-Ito</strong> colorblind-safe palette (<code>#0072B2</code>, <code>#D55E00</code>, <code>#009E73</code>, <code>#E69F00</code>).</li>
+<li>Dual y-axes (<code>twinx()</code>) let arbitrary axis limits manufacture fake intersections or exaggerate slopes, whereas a <code>2x1</code> <code>sharex=True</code> layout preserves honest independent scales while keeping epidemiological weeks aligned vertically.</li>
+<li>Without <code>center=0</code>, Seaborn stretches the full blue-to-red <code>"coolwarm"</code> range across <span class="math inline">\([+0.25, +1.00]\)</span>, painting the <em>positive</em> correlation <span class="math inline">\(+0.25\)</span> deep blue (making it look strongly negative!). Passing <code>center=0</code> locks <span class="math inline">\(0.0\)</span> to neutral white.</li>
+<li>A jagged “sawtooth” line jumps backwards from week 52 of 2024 to week 1 of 2025, overplotting both years on top of each other.</li>
+<li>At <span class="math inline">\(600\%\)</span> zoom, a <code>72</code>-DPI raster PNG becomes visibly pixelated/blurry, whereas a vector PDF stores mathematical paths and text glyphs that remain razor-sharp at any magnification.</li>
+<li><code>bbox_inches="tight"</code> inside <code>fig.savefig(...)</code>.</li>
+<li><code>plt.close(fig)</code> (or <code>plt.close("all")</code> at script teardown).</li>
+<li><ol type="a">
+<li><code>ValueError: x and y must have same first dimension, but have shapes (4,) and (3,)</code>; (b) <code>KeyError: 'hb_g_dl'</code>.</li>
+</ol></li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="19.8.2">
+<h3 data-number="19.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">19.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a><span class="co"># To-Do 19.1</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a><span class="kw">def</span> plot_hb_distribution(df, cutoff<span class="op">=</span><span class="fl">11.0</span>):</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    <span class="co">"""Plot hemoglobin histogram with a dashed WHO clinical cutoff."""</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.0</span>))</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    hb <span class="op">=</span> df[<span class="st">"hemoglobin_g_dl"</span>].dropna()</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    ax.hist(hb, bins<span class="op">=</span><span class="dv">15</span>, color<span class="op">=</span><span class="st">"#0072B2"</span>, edgecolor<span class="op">=</span><span class="st">"white"</span>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    ax.axvline(</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>        cutoff,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>        color<span class="op">=</span><span class="st">"#D55E00"</span>,</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>        linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>        linewidth<span class="op">=</span><span class="fl">2.0</span>,</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>        label<span class="op">=</span><span class="ss">f"Cutoff (</span><span class="sc">{</span>cutoff<span class="sc">}</span><span class="ss"> g/dL)"</span>,</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    )</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>    ax.set_title(<span class="st">"Patient Hemoglobin Distribution"</span>)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>    ax.set_xlabel(<span class="st">"Hemoglobin (g/dL)"</span>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>    ax.set_ylabel(<span class="st">"Patient Count"</span>)</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>    ax.legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    <span class="cf">return</span> fig, ax</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a></span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a><span class="co"># To-Do 19.2</span></span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a><span class="kw">def</span> plot_district_anemia_bar(summary_df):</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>    <span class="co">"""Plot sorted horizontal bar chart of district anemia prevalence."""</span></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    ordered <span class="op">=</span> summary_df.sort_values(<span class="st">"anemia_pct"</span>, ascending<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.0</span>))</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>    ax.barh(ordered[<span class="st">"district"</span>], ordered[<span class="st">"anemia_pct"</span>], color<span class="op">=</span><span class="st">"#009E73"</span>)</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    ax.set_title(<span class="st">"Anemia Prevalence by District"</span>)</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    ax.set_xlabel(<span class="st">"Anemia Prevalence (%)"</span>)</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    ax.set_ylabel(<span class="st">"District"</span>)</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    <span class="cf">return</span> fig, ax</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a><span class="co"># To-Do 19.3</span></span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a><span class="kw">def</span> plot_bmi_vs_sbp_scatter(df):</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    <span class="co">"""Plot BMI vs. systolic BP colored by triage_priority with legend."""</span></span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>    palette <span class="op">=</span> [<span class="st">"#0072B2"</span>, <span class="st">"#E69F00"</span>, <span class="st">"#D55E00"</span>, <span class="st">"#009E73"</span>]</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.2</span>))</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>    <span class="cf">for</span> idx, (priority, sub) <span class="kw">in</span> <span class="bu">enumerate</span>(df.groupby(<span class="st">"triage_priority"</span>)):</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>        ax.scatter(</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>            sub[<span class="st">"bmi"</span>],</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>            sub[<span class="st">"systolic_bp"</span>],</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>            color<span class="op">=</span>palette[idx <span class="op">%</span> <span class="bu">len</span>(palette)],</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>            alpha<span class="op">=</span><span class="fl">0.8</span>,</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>            label<span class="op">=</span>priority,</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        )</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>    ax.set_title(<span class="st">"BMI vs. Systolic BP by Triage Priority"</span>)</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>    ax.set_xlabel(<span class="st">"BMI (kg/m^2)"</span>)</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>    ax.set_ylabel(<span class="st">"Systolic BP (mmHg)"</span>)</span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>    ax.legend(title<span class="op">=</span><span class="st">"Triage Priority"</span>)</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a>    <span class="cf">return</span> fig, ax</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a></span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a><span class="co"># To-Do 19.4</span></span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a><span class="kw">def</span> plot_dengue_seasonality(epi_df, district):</span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a>    <span class="co">"""Plot weekly dengue cases and 4-week rolling mean for a district."""</span></span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>    sub <span class="op">=</span> (</span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>        epi_df[epi_df[<span class="st">"district"</span>] <span class="op">==</span> district]</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a>        .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a>    )</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>    x <span class="op">=</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="bu">len</span>(sub) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a>    roll <span class="op">=</span> sub[<span class="st">"dengue_cases"</span>].rolling(<span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">7.0</span>, <span class="fl">4.0</span>))</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>    ax.plot(</span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>        x, sub[<span class="st">"dengue_cases"</span>], color<span class="op">=</span><span class="st">"#56B4E9"</span>, alpha<span class="op">=</span><span class="fl">0.65</span>,</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>        label<span class="op">=</span><span class="st">"Weekly Cases"</span>,</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>    )</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a>    ax.plot(</span>
+<span id="cb21-70"><a href="#cb21-70" aria-label="70"></a>        x, roll, color<span class="op">=</span><span class="st">"#D55E00"</span>, linewidth<span class="op">=</span><span class="fl">2.2</span>,</span>
+<span id="cb21-71"><a href="#cb21-71" aria-label="71"></a>        label<span class="op">=</span><span class="st">"4-Week Rolling Mean"</span>,</span>
+<span id="cb21-72"><a href="#cb21-72" aria-label="72"></a>    )</span>
+<span id="cb21-73"><a href="#cb21-73" aria-label="73"></a>    ax.set_title(<span class="ss">f"Weekly Dengue Seasonality — </span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-74"><a href="#cb21-74" aria-label="74"></a>    ax.set_xlabel(<span class="st">"Sequential Epi Week"</span>)</span>
+<span id="cb21-75"><a href="#cb21-75" aria-label="75"></a>    ax.set_ylabel(<span class="st">"Dengue Cases"</span>)</span>
+<span id="cb21-76"><a href="#cb21-76" aria-label="76"></a>    ax.legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb21-77"><a href="#cb21-77" aria-label="77"></a>    <span class="cf">return</span> fig, ax</span>
+<span id="cb21-78"><a href="#cb21-78" aria-label="78"></a></span>
+<span id="cb21-79"><a href="#cb21-79" aria-label="79"></a><span class="co"># To-Do 19.5</span></span>
+<span id="cb21-80"><a href="#cb21-80" aria-label="80"></a><span class="kw">def</span> plot_correlation_heatmap(df, cols):</span>
+<span id="cb21-81"><a href="#cb21-81" aria-label="81"></a>    <span class="co">"""Plot a zero-centered annotated Seaborn correlation heatmap."""</span></span>
+<span id="cb21-82"><a href="#cb21-82" aria-label="82"></a>    corr <span class="op">=</span> df[cols].corr()</span>
+<span id="cb21-83"><a href="#cb21-83" aria-label="83"></a>    fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">5.8</span>, <span class="fl">4.8</span>))</span>
+<span id="cb21-84"><a href="#cb21-84" aria-label="84"></a>    sns.heatmap(</span>
+<span id="cb21-85"><a href="#cb21-85" aria-label="85"></a>        corr, annot<span class="op">=</span><span class="va">True</span>, fmt<span class="op">=</span><span class="st">".2f"</span>, center<span class="op">=</span><span class="dv">0</span>, cmap<span class="op">=</span><span class="st">"coolwarm"</span>, ax<span class="op">=</span>ax</span>
+<span id="cb21-86"><a href="#cb21-86" aria-label="86"></a>    )</span>
+<span id="cb21-87"><a href="#cb21-87" aria-label="87"></a>    ax.set_title(<span class="st">"Feature Correlation Heatmap"</span>)</span>
+<span id="cb21-88"><a href="#cb21-88" aria-label="88"></a>    <span class="cf">return</span> fig, ax</span>
+<span id="cb21-89"><a href="#cb21-89" aria-label="89"></a></span>
+<span id="cb21-90"><a href="#cb21-90" aria-label="90"></a><span class="co"># To-Do 19.6</span></span>
+<span id="cb21-91"><a href="#cb21-91" aria-label="91"></a><span class="kw">def</span> save_publication_figure(fig, out_path, dpi<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb21-92"><a href="#cb21-92" aria-label="92"></a>    <span class="co">"""Save a Matplotlib figure tightly at target DPI and return bytes."""</span></span>
+<span id="cb21-93"><a href="#cb21-93" aria-label="93"></a>    path <span class="op">=</span> Path(out_path)</span>
+<span id="cb21-94"><a href="#cb21-94" aria-label="94"></a>    path.parent.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb21-95"><a href="#cb21-95" aria-label="95"></a>    fig.savefig(path, dpi<span class="op">=</span>dpi, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb21-96"><a href="#cb21-96" aria-label="96"></a>    <span class="cf">return</span> <span class="bu">int</span>(path.stat().st_size)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-19-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="19.8.3">
+<h3 data-number="19.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-19-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">19.8.3</span> C. Annotated Solutions — Chapter 19 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 19.1 (35 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a><span class="kw">def</span> build_mch_equity_panel(mch_df):</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>    <span class="co">"""Build a 1x2 MCH stunting &amp; anemia equity figure by wealth."""</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>    order <span class="op">=</span> [<span class="st">"Poorest"</span>, <span class="st">"Poorer"</span>, <span class="st">"Middle"</span>, <span class="st">"Richer"</span>, <span class="st">"Richest"</span>]</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>    cols <span class="op">=</span> [<span class="st">"child_stunted"</span>, <span class="st">"maternal_anemia"</span>]</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    summary <span class="op">=</span> (</span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>        mch_df.groupby(<span class="st">"wealth_quintile"</span>)[cols]</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>        .mean()</span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a>        .reindex(order)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a>        <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a>    )</span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>    fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="fl">10.5</span>, <span class="fl">4.2</span>))</span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>    axes[<span class="dv">0</span>].bar(summary.index, summary[<span class="st">"child_stunted"</span>], color<span class="op">=</span><span class="st">"#0072B2"</span>)</span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>    axes[<span class="dv">0</span>].set_title(<span class="st">"Child Stunting by Wealth Quintile"</span>)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>    axes[<span class="dv">0</span>].set_xlabel(<span class="st">"Wealth Quintile"</span>)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>    axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Stunting Prevalence (%)"</span>)</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a></span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a>    axes[<span class="dv">1</span>].bar(summary.index, summary[<span class="st">"maternal_anemia"</span>], color<span class="op">=</span><span class="st">"#D55E00"</span>)</span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a>    axes[<span class="dv">1</span>].set_title(<span class="st">"Maternal Anemia by Wealth Quintile"</span>)</span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a>    axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Wealth Quintile"</span>)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>    axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Anemia Prevalence (%)"</span>)</span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a></span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>    fig.suptitle(<span class="st">"Maternal &amp; Child Health Equity Across Wealth Quintiles"</span>)</span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>    fig.tight_layout()</span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>    <span class="cf">return</span> fig, axes</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a></span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a><span class="co"># Exam Task 19.2 (35 pts)</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a><span class="kw">def</span> build_outbreak_dashboard_figure(epi_df, district):</span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>    <span class="co">"""Build a 2x1 shared-x dengue incidence and rainfall dashboard."""</span></span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>    sub <span class="op">=</span> (</span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>        epi_df[epi_df[<span class="st">"district"</span>] <span class="op">==</span> district]</span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>        .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-34"><a href="#cb22-34" aria-label="34"></a>    )</span>
+<span id="cb22-35"><a href="#cb22-35" aria-label="35"></a>    x <span class="op">=</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="bu">len</span>(sub) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb22-36"><a href="#cb22-36" aria-label="36"></a>    roll <span class="op">=</span> sub[<span class="st">"dengue_cases"</span>].rolling(<span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb22-37"><a href="#cb22-37" aria-label="37"></a></span>
+<span id="cb22-38"><a href="#cb22-38" aria-label="38"></a>    fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, sharex<span class="op">=</span><span class="va">True</span>, figsize<span class="op">=</span>(<span class="fl">8.0</span>, <span class="fl">5.5</span>))</span>
+<span id="cb22-39"><a href="#cb22-39" aria-label="39"></a>    axes[<span class="dv">0</span>].plot(</span>
+<span id="cb22-40"><a href="#cb22-40" aria-label="40"></a>        x, sub[<span class="st">"dengue_cases"</span>], color<span class="op">=</span><span class="st">"#56B4E9"</span>, alpha<span class="op">=</span><span class="fl">0.65</span>,</span>
+<span id="cb22-41"><a href="#cb22-41" aria-label="41"></a>        label<span class="op">=</span><span class="st">"Weekly Cases"</span>,</span>
+<span id="cb22-42"><a href="#cb22-42" aria-label="42"></a>    )</span>
+<span id="cb22-43"><a href="#cb22-43" aria-label="43"></a>    axes[<span class="dv">0</span>].plot(</span>
+<span id="cb22-44"><a href="#cb22-44" aria-label="44"></a>        x, roll, color<span class="op">=</span><span class="st">"#D55E00"</span>, linewidth<span class="op">=</span><span class="fl">2.2</span>,</span>
+<span id="cb22-45"><a href="#cb22-45" aria-label="45"></a>        label<span class="op">=</span><span class="st">"4-Week Rolling Mean"</span>,</span>
+<span id="cb22-46"><a href="#cb22-46" aria-label="46"></a>    )</span>
+<span id="cb22-47"><a href="#cb22-47" aria-label="47"></a>    axes[<span class="dv">0</span>].set_title(<span class="ss">f"Weekly Dengue Incidence — </span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb22-48"><a href="#cb22-48" aria-label="48"></a>    axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Dengue Cases"</span>)</span>
+<span id="cb22-49"><a href="#cb22-49" aria-label="49"></a>    axes[<span class="dv">0</span>].legend(frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb22-50"><a href="#cb22-50" aria-label="50"></a></span>
+<span id="cb22-51"><a href="#cb22-51" aria-label="51"></a>    axes[<span class="dv">1</span>].bar(x, sub[<span class="st">"rainfall_mm"</span>], color<span class="op">=</span><span class="st">"#0072B2"</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb22-52"><a href="#cb22-52" aria-label="52"></a>    axes[<span class="dv">1</span>].set_title(<span class="ss">f"Weekly Monsoon Rainfall — </span><span class="sc">{</span>district<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb22-53"><a href="#cb22-53" aria-label="53"></a>    axes[<span class="dv">1</span>].set_xlabel(<span class="st">"Sequential Epi Week"</span>)</span>
+<span id="cb22-54"><a href="#cb22-54" aria-label="54"></a>    axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Rainfall (mm)"</span>)</span>
+<span id="cb22-55"><a href="#cb22-55" aria-label="55"></a>    fig.tight_layout()</span>
+<span id="cb22-56"><a href="#cb22-56" aria-label="56"></a>    <span class="cf">return</span> fig, axes</span>
+<span id="cb22-57"><a href="#cb22-57" aria-label="57"></a></span>
+<span id="cb22-58"><a href="#cb22-58" aria-label="58"></a><span class="co"># Exam Task 19.3 (30 pts)</span></span>
+<span id="cb22-59"><a href="#cb22-59" aria-label="59"></a><span class="kw">def</span> export_figure_bundle(fig, out_dir, stem, dpi<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb22-60"><a href="#cb22-60" aria-label="60"></a>    <span class="co">"""Export tight PNG + PDF figure bundle and return path/byte map."""</span></span>
+<span id="cb22-61"><a href="#cb22-61" aria-label="61"></a>    out <span class="op">=</span> Path(out_dir)</span>
+<span id="cb22-62"><a href="#cb22-62" aria-label="62"></a>    out.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-63"><a href="#cb22-63" aria-label="63"></a>    png_path <span class="op">=</span> out <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>stem<span class="sc">}</span><span class="ss">.png"</span></span>
+<span id="cb22-64"><a href="#cb22-64" aria-label="64"></a>    pdf_path <span class="op">=</span> out <span class="op">/</span> <span class="ss">f"</span><span class="sc">{</span>stem<span class="sc">}</span><span class="ss">.pdf"</span></span>
+<span id="cb22-65"><a href="#cb22-65" aria-label="65"></a>    fig.savefig(png_path, dpi<span class="op">=</span>dpi, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb22-66"><a href="#cb22-66" aria-label="66"></a>    fig.savefig(pdf_path, dpi<span class="op">=</span>dpi, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb22-67"><a href="#cb22-67" aria-label="67"></a>    <span class="cf">return</span> {</span>
+<span id="cb22-68"><a href="#cb22-68" aria-label="68"></a>        <span class="st">"png"</span>: png_path,</span>
+<span id="cb22-69"><a href="#cb22-69" aria-label="69"></a>        <span class="st">"pdf"</span>: pdf_path,</span>
+<span id="cb22-70"><a href="#cb22-70" aria-label="70"></a>        <span class="st">"png_bytes"</span>: <span class="bu">int</span>(png_path.stat().st_size),</span>
+<span id="cb22-71"><a href="#cb22-71" aria-label="71"></a>        <span class="st">"pdf_bytes"</span>: <span class="bu">int</span>(pdf_path.stat().st_size),</span>
+<span id="cb22-72"><a href="#cb22-72" aria-label="72"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-19-failure-modes" class="level3" data-number="19.8.4">
+<h3 data-number="19.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-19-failure-modes"><span class="header-section-number">19.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 19 Failure Modes</h3>
+<ol type="1">
+<li><strong>Forgetting <code>return fig, ax</code> (Calling <code>plt.show()</code> Instead):</strong> Plotting functions that only display to screen return <code>None</code>, breaking automated grading, multi-figure pipelines, and reproducible export scripts. Always return <code>(fig, ax)</code> or <code>(fig, axes)</code> and let the caller decide whether to display, inspect, save, or close the figure.</li>
+<li><strong>Plotting Proportions (<code>0.28</code>) Instead of Percentages (<code>28.0%</code>) or Alphabetical Quintiles:</strong> <code>groupby("wealth_quintile").mean()</code> sorts <code>"Middle"</code> before <code>"Poorest"</code> and returns <code>0..1</code> fractions. Reindexing explicitly (<code>["Poorest", ..., "Richest"]</code>) and multiplying by <code>100</code> ensures the chart matches its <code>%</code> axis label and domain order.</li>
+<li><strong>Leaving Unclosed Figures or Stray Export Artifacts Behind:</strong> Forgetting <code>plt.close(fig)</code> inside loops leaks memory across dozens of charts, while writing test PNGs straight into your Git workspace pollutes commits. Always export demos inside <code>tempfile.TemporaryDirectory()</code> and close every figure explicitly.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Up Next — Biostatistics, Probability Distributions &amp; Hypothesis Testing
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Your visual intuition is now sharp—you can inspect distributions, spot wealth gradients, and export publication-grade multi-panel figures automatically. Visual differences alone, however, never tell a peer reviewer whether a gap between Poorest (<span class="math inline">\(28.0\%\)</span>) and Richest (<span class="math inline">\(8.0\%\)</span>) households could arise by sampling chance. In <strong>Chapter 20</strong>, you will pair these exact figures with <strong>probability distributions, confidence intervals, <span class="math inline">\(p\)</span>-values, <span class="math inline">\(t\)</span>-tests, chi-square tests, and effect sizes</strong> to close out Part IV!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="pagination-link" aria-label="Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="pagination-link" aria-label="Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python">
+        <span class="nav-page-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

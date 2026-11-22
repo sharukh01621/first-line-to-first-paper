@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>15&nbsp; Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_04_data_science_math/ch16_numpy_vectorization.html" rel="next">
+<link href="../part_03_engineering_workflow/ch14_vscode_packages.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch15_git_clean_code.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch15-intuition" id="toc-sec-ch15-intuition" class="nav-link" data-scroll-target="#sec-ch15-intuition"><span class="header-section-number">15.1</span> Stage 1 — First-Principles Intuition: Why <code>analysis_FINAL_v3_fixed.py</code> Fails Peer Review</a></li>
+  <li><a href="#sec-ch15-mental-model" id="toc-sec-ch15-mental-model" class="nav-link" data-scroll-target="#sec-ch15-mental-model"><span class="header-section-number">15.2</span> Stage 2 — Visual Mental Model: Git’s 3-Zone &amp; Remote Workflow</a></li>
+  <li><a href="#sec-ch15-walkthrough" id="toc-sec-ch15-walkthrough" class="nav-link" data-scroll-target="#sec-ch15-walkthrough"><span class="header-section-number">15.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch15-git-hygiene" id="toc-sec-ch15-git-hygiene" class="nav-link" data-scroll-target="#sec-ch15-git-hygiene"><span class="header-section-number">15.3.1</span> Everyday Git Workflow, <code>.gitignore</code> Auditing &amp; Secret Scanning</a></li>
+  <li><a href="#sec-ch15-clean-code" id="toc-sec-ch15-clean-code" class="nav-link" data-scroll-target="#sec-ch15-clean-code"><span class="header-section-number">15.3.2</span> Clean Code (PEP 8 / Ruff), Type Hints, and <code>TypedDict</code> Contracts</a></li>
+  <li><a href="#sec-ch15-logging" id="toc-sec-ch15-logging" class="nav-link" data-scroll-target="#sec-ch15-logging"><span class="header-section-number">15.3.3</span> Structured <code>logging</code> vs.&nbsp;<code>print()</code> (With Clean Handler Teardown)</a></li>
+  <li><a href="#sec-ch15-provenance" id="toc-sec-ch15-provenance" class="nav-link" data-scroll-target="#sec-ch15-provenance"><span class="header-section-number">15.3.4</span> Cryptographic Dataset Provenance (<code>hashlib.sha256</code>) &amp; Research Templates</a></li>
+  <li><a href="#sec-ch15-errors" id="toc-sec-ch15-errors" class="nav-link" data-scroll-target="#sec-ch15-errors"><span class="header-section-number">15.3.5</span> Break It On Purpose! (Provenance &amp; Logging Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch15-blueprint" id="toc-sec-ch15-blueprint" class="nav-link" data-scroll-target="#sec-ch15-blueprint"><span class="header-section-number">15.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">15.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">15.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch15-todos" id="toc-sec-ch15-todos" class="nav-link" data-scroll-target="#sec-ch15-todos"><span class="header-section-number">15.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch15-test" id="toc-sec-ch15-test" class="nav-link" data-scroll-target="#sec-ch15-test"><span class="header-section-number">15.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch15-exam" id="toc-sec-ch15-exam" class="nav-link" data-scroll-target="#sec-ch15-exam"><span class="header-section-number">15.7</span> Stage 7 — Part III Capstone Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-15.1-30-points-pre-push-repository-hygiene-auditor" id="toc-exam-task-15.1-30-points-pre-push-repository-hygiene-auditor" class="nav-link" data-scroll-target="#exam-task-15.1-30-points-pre-push-repository-hygiene-auditor"><span class="header-section-number">15.7.1</span> Exam Task 15.1 (30 Points): Pre-Push Repository Hygiene Auditor</a></li>
+  <li><a href="#exam-task-15.2-35-points-cryptographic-dataset-provenance-verifier" id="toc-exam-task-15.2-35-points-cryptographic-dataset-provenance-verifier" class="nav-link" data-scroll-target="#exam-task-15.2-35-points-cryptographic-dataset-provenance-verifier"><span class="header-section-number">15.7.2</span> Exam Task 15.2 (35 Points): Cryptographic Dataset Provenance Verifier</a></li>
+  <li><a href="#exam-task-15.3-35-points-logged-provenance-tracked-cleaning-pipeline" id="toc-exam-task-15.3-35-points-logged-provenance-tracked-cleaning-pipeline" class="nav-link" data-scroll-target="#exam-task-15.3-35-points-logged-provenance-tracked-cleaning-pipeline"><span class="header-section-number">15.7.3</span> Exam Task 15.3 (35 Points): Logged, Provenance-Tracked Cleaning Pipeline</a></li>
+  </ul></li>
+  <li><a href="#sec-ch15-solutions" id="toc-sec-ch15-solutions" class="nav-link" data-scroll-target="#sec-ch15-solutions"><span class="header-section-number">15.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">15.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">15.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-part-iii-capstone-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-part-iii-capstone-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-part-iii-capstone-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">15.8.3</span> C. Annotated Solutions — Part III Capstone Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-15-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-15-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-15-failure-modes"><span class="header-section-number">15.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 15 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch12_oop_for_ml.html">Software Engineering for Data Scientists</a></li><li class="breadcrumb-item"><a href="../part_03_engineering_workflow/ch15_git_clean_code.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch15" class="quarto-section-identifier"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission (Part III Capstone):</strong> Transform personal analysis scripts into auditable, peer-review-ready scientific software. Master Git’s three-zone architecture and feature branching, automated <code>.gitignore</code> and secret-leak guards, PEP 8 / Ruff code hygiene, Python type hints (<code>TypedDict</code>, <code>Optional</code>), structured <code>logging</code> with leak-proof <code>FileHandler</code> cleanup, cryptographic SHA-256 dataset provenance manifests, and standardized Cookiecutter research templates.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb">ch15 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 15 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb">ch15 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 15 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb">ch15 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 15 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this Part III Capstone chapter, you will be able to:</p>
+<ol type="1">
+<li>Navigate Git’s three local zones (Working Directory, Staging Area, Local Repository) and collaborate safely via branches, clean commit subjects, and GitHub Pull Requests.</li>
+<li>Audit <code>.gitignore</code> rules programmatically with <code>fnmatch</code> and detect leaked credentials (<code>ghp_</code>, <code>AIza</code>, <code>sk-</code>, <code>API_KEY=</code>, <code>PASSWORD=</code>) before a commit ever leaves your laptop.</li>
+<li>Enforce readable, self-documenting research code using PEP 8, Ruff linting/formatting, Python type annotations, and <code>TypedDict</code> return contracts.</li>
+<li>Replace ephemeral <code>print()</code> statements with severity-leveled <code>logging</code> pipelines whose <code>FileHandler</code> resources always detach and close inside <code>finally:</code> blocks.</li>
+<li>Fingerprint raw clinical CSV and JSON datasets with <code>hashlib.sha256()</code> to build and verify cryptographic provenance manifests that detect even a single-byte edit.</li>
+<li>Organize multi-month studies inside a clean Cookiecutter research repository template and pass a 100-point Part III Capstone Engineering Exam.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch15-intuition" class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="sec-ch15-intuition"><span class="header-section-number">15.1</span> Stage 1 — First-Principles Intuition: Why <code>analysis_FINAL_v3_fixed.py</code> Fails Peer Review</h2>
+<p>Six months after submitting a manuscript, Reviewer #2 asks a routine question: <em>“Table 2 reports a mean maternal hemoglobin of <span class="math inline">\(11.15\text{ g/dL}\)</span> across <span class="math inline">\(N = 412\)</span> mothers, yet your supplementary file has <span class="math inline">\(415\)</span> rows—which three records were dropped, and which version of the cleaning script generated Figure 1?”</em></p>
+<p>If your research folder contains <code>clean_v1.py</code>, <code>clean_v2_new.py</code>, and <code>clean_FINAL_really.py</code> alongside an unlogged overwrite of <code>raw_data.csv</code>, answering Reviewer #2 becomes a forensic nightmare. Professional scientific engineering eliminates this guesswork with four interlocking pillars:</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Audited Clinical Trial Lab Notebook
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Think of a reproducible research repository like a regulated clinical trial binder:</p>
+<ol type="1">
+<li><strong>Tamper-Evident History (Git &amp; GitHub):</strong> Every edit is recorded as an immutable, cryptographically chained commit with a concise subject line, author, and timestamp—never overwritten by <code>v2_final</code> filenames.</li>
+<li><strong>Confidentiality Wall (<code>.gitignore</code> &amp; Secret Scanners):</strong> Raw patient registries (<code>*.csv</code>) and credentials (<code>.env</code>, API tokens) stay strictly off GitHub while code, tests, and tiny provenance manifests are shared openly.</li>
+<li><strong>Typed, Self-Explaining Contracts (PEP 8, Ruff &amp; Type Hints):</strong> Consistent formatting and explicit types (<code>list[float]</code>, <code>Optional[float]</code>, <code>TypedDict</code>) turn silent runtime surprises into immediate editor warnings.</li>
+<li><strong>Chain of Custody (<code>logging</code> &amp; SHA-256 Fingerprints):</strong> Every pipeline run records its exact input file’s 64-character SHA-256 hash and logs every skipped sentinel row (<code>INFO</code> / <code>WARNING</code>) to disk.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch15-mental-model" class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="sec-ch15-mental-model"><span class="header-section-number">15.2</span> Stage 2 — Visual Mental Model: Git’s 3-Zone &amp; Remote Workflow</h2>
+<p>Before memorizing commands, lock in the four physical spaces where your research code lives and the exact commands that move snapshots between them:</p>
+<div class="cell" data-fig-width="5.4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Two-tier flowchart showing Working Dir git add to Staging Area git commit to Local Repo pushing to GitHub Remote and pulling back">flowchart TD
+    subgraph Local["Local Machine"]
+        direction LR
+        W["1. Working Dir&lt;br/&gt;Edit scripts &amp;&lt;br/&gt;notebooks"] --&gt;|"git add"| S["2. Staging Area&lt;br/&gt;Next snapshot&lt;br/&gt;(Index)"]
+        S --&gt;|"git commit"| L["3. Local Repo&lt;br/&gt;Commit history&lt;br/&gt;(.git/ SHA-1)"]
+    end
+    subgraph Remote["Shared Origin"]
+        direction LR
+        R["4. GitHub Remote&lt;br/&gt;Shared origin, Pull Requests &amp; Peer Review"]
+    end
+    Local --&gt;|"git push"| Remote
+    Remote -. "git pull" .-&gt; Local
+</pre>
+</div>
+<p></p><figcaption> Git three-zone local workflow and GitHub remote synchronization cycle</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Understanding those four zones explains almost every Git command you will ever run:</p>
+<ul>
+<li><strong><code>git add &lt;file&gt;</code></strong> copies <em>selected</em> changes from your <strong>Working Directory</strong> into the <strong>Staging Area</strong>, letting you bundle related edits into one atomic commit while leaving half-finished experiments unstaged.</li>
+<li><strong><code>git commit -m "..."</code></strong> seals the Staging Area into a permanent, content-addressed snapshot inside <code>.git/</code> on your local machine—no internet connection required.</li>
+<li><strong><code>git switch -c feat/hb-audit</code></strong> creates an isolated feature branch so <code>main</code> always stays clean and paper-ready until your Pull Request passes review and <code>pytest</code>.</li>
+<li><strong><code>.gitignore</code> + Pre-Commit Guard:</strong> Anything matching <code>.gitignore</code> never enters the Staging Area in the first place, keeping raw clinical files and <code>.env</code> secrets safely local.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch15-walkthrough" class="level2" data-number="15.3">
+<h2 data-number="15.3" class="anchored" data-anchor-id="sec-ch15-walkthrough"><span class="header-section-number">15.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch15-git-hygiene" class="level3" data-number="15.3.1">
+<h3 data-number="15.3.1" class="anchored" data-anchor-id="sec-ch15-git-hygiene"><span class="header-section-number">15.3.1</span> Everyday Git Workflow, <code>.gitignore</code> Auditing &amp; Secret Scanning</h3>
+<p>In your local terminal (outside Colab), a clean feature-branch research cycle uses just seven core commands:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="fu">git</span> status                               <span class="co"># Inspect working tree &amp; stage</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="fu">git</span> switch <span class="at">-c</span> feat/add-sha256-manifest   <span class="co"># Isolate new work on a branch</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="fu">git</span> add src/provenance.py tests/         <span class="co"># Stage only reviewed code</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="fu">git</span> diff <span class="at">--staged</span>                        <span class="co"># Audit exact lines before commit</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add SHA-256 manifest builder for cohort CSVs"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="fu">git</span> log <span class="at">--oneline</span> <span class="at">-n</span> 5                   <span class="co"># Verify concise commit history</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="fu">git</span> push <span class="at">-u</span> origin feat/add-sha256-manifest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the commit subject rule enforced by professional teams: keep the first line imperative, concise (<span class="math inline">\(5 \le \text{len} \le 72\)</span> characters), and free of a trailing period so <code>git log --oneline</code> and GitHub Pull Request headers never truncate awkwardly.</p>
+<p>Now let’s audit <code>.gitignore</code> coverage with Python’s standard-library <code>fnmatch</code> and scan a configuration snippet for leaked credentials—run this cell verbatim in <code>01_walkthrough.ipynb</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a><span class="im">import</span> fnmatch</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>gitignore_text <span class="op">=</span> (</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>    <span class="st">"# Never commit raw clinical data or secrets</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>    <span class="st">"*.csv</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a>    <span class="st">".env</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a>    <span class="st">"*.log</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-label="8"></a>    <span class="st">"__pycache__/*</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-label="9"></a>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-label="10"></a>staged_candidates <span class="op">=</span> [</span>
+<span id="cb2-11"><a href="#cb2-11" aria-label="11"></a>    <span class="st">"README.md"</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-label="12"></a>    <span class="st">"src/clean_cohort.py"</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-label="13"></a>    <span class="st">"raw_mch_2026.csv"</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-label="14"></a>    <span class="st">".env"</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-label="15"></a>    <span class="st">"run.log"</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-label="16"></a>]</span>
+<span id="cb2-17"><a href="#cb2-17" aria-label="17"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-label="18"></a>patterns <span class="op">=</span> [</span>
+<span id="cb2-19"><a href="#cb2-19" aria-label="19"></a>    line.strip()</span>
+<span id="cb2-20"><a href="#cb2-20" aria-label="20"></a>    <span class="cf">for</span> line <span class="kw">in</span> gitignore_text.splitlines()</span>
+<span id="cb2-21"><a href="#cb2-21" aria-label="21"></a>    <span class="cf">if</span> line.strip() <span class="kw">and</span> <span class="kw">not</span> line.strip().startswith(<span class="st">"#"</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-label="22"></a>]</span>
+<span id="cb2-23"><a href="#cb2-23" aria-label="23"></a>tracked <span class="op">=</span> <span class="bu">sorted</span>(</span>
+<span id="cb2-24"><a href="#cb2-24" aria-label="24"></a>    fname <span class="cf">for</span> fname <span class="kw">in</span> staged_candidates</span>
+<span id="cb2-25"><a href="#cb2-25" aria-label="25"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="bu">any</span>(fnmatch.fnmatch(fname, pat) <span class="cf">for</span> pat <span class="kw">in</span> patterns)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-label="26"></a>)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-label="27"></a><span class="bu">print</span>(<span class="st">"Active .gitignore patterns:"</span>, patterns)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-label="28"></a><span class="bu">print</span>(<span class="st">"Safe to track in Git:"</span>, tracked)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-label="29"></a></span>
+<span id="cb2-30"><a href="#cb2-30" aria-label="30"></a>config_sample <span class="op">=</span> (</span>
+<span id="cb2-31"><a href="#cb2-31" aria-label="31"></a>    <span class="st">"STUDY_ID = 'MCH-BD-2026'</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-label="32"></a>    <span class="st">"TOKEN = 'ghp_exampleLeak999'</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-label="33"></a>    <span class="st">"API_KEY=demo_secret_token</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-label="34"></a>)</span>
+<span id="cb2-35"><a href="#cb2-35" aria-label="35"></a>secret_tags <span class="op">=</span> (<span class="st">"ghp_"</span>, <span class="st">"AIza"</span>, <span class="st">"sk-"</span>, <span class="st">"API_KEY="</span>, <span class="st">"PASSWORD="</span>)</span>
+<span id="cb2-36"><a href="#cb2-36" aria-label="36"></a>flagged_lines <span class="op">=</span> [</span>
+<span id="cb2-37"><a href="#cb2-37" aria-label="37"></a>    idx <span class="cf">for</span> idx, ln <span class="kw">in</span> <span class="bu">enumerate</span>(config_sample.splitlines(), start<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-label="38"></a>    <span class="cf">if</span> <span class="bu">any</span>(tag <span class="kw">in</span> ln <span class="cf">for</span> tag <span class="kw">in</span> secret_tags)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-label="39"></a>]</span>
+<span id="cb2-40"><a href="#cb2-40" aria-label="40"></a><span class="bu">print</span>(<span class="st">"Flagged secret lines (1-based):"</span>, flagged_lines)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>Active .gitignore patterns: ['*.csv', '.env', '*.log', '__pycache__/*']</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>Safe to track in Git: ['README.md', 'src/clean_cohort.py']</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>Flagged secret lines (1-based): [2, 3]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Key mechanics to inspect closely:</p>
+<ul>
+<li><strong>Skipping Comments &amp; Blank Lines:</strong> Lines starting with <code>#</code> are documentation inside <code>.gitignore</code>; failing to skip them would mistakenly treat <code># *.py</code> as an ignore rule.</li>
+<li><strong>Negating <code>any(...)</code>:</strong> <code>not any(fnmatch.fnmatch(fname, pat) ...)</code> returns the <strong>unignored</strong> files—the exact files Git is allowed to commit.</li>
+<li><strong>1-Based Line Numbers:</strong> <code>enumerate(..., start=1)</code> aligns flagged secret line numbers directly with VS Code, Vim, and GitHub diff line numbers.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch15-clean-code" class="level3" data-number="15.3.2">
+<h3 data-number="15.3.2" class="anchored" data-anchor-id="sec-ch15-clean-code"><span class="header-section-number">15.3.2</span> Clean Code (PEP 8 / Ruff), Type Hints, and <code>TypedDict</code> Contracts</h3>
+<p>Clean research code follows <strong>PEP 8</strong> conventions—<code>snake_case</code> function/variable names, <code>PascalCase</code> class names, <code>UPPER_CASE</code> constants, 4-space indentation, short readable lines, and one clear responsibility per function. Modern Python teams enforce these rules automatically in milliseconds with <strong>Ruff</strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a><span class="ex">ruff</span> check src/ tests/     <span class="co"># Flag unused imports, bugs &amp; PEP 8 violations</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a><span class="ex">ruff</span> format src/ tests/    <span class="co"># Auto-format code to consistent style</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Pairing Ruff with <strong>Python type hints</strong> (<code>list[float]</code>, <code>Optional[float]</code>, and <code>TypedDict</code>) documents the exact shape of every input and output without changing runtime speed:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="im">from</span> typing <span class="im">import</span> Optional, TypedDict</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a><span class="kw">class</span> CohortSummary(TypedDict):</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>    site: <span class="bu">str</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>    valid_n: <span class="bu">int</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>    mean_hb: Optional[<span class="bu">float</span>]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a><span class="kw">def</span> summarize_site_hb(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>    site: <span class="bu">str</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>    readings: <span class="bu">list</span>[<span class="bu">float</span>],</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>) <span class="op">-&gt;</span> CohortSummary:</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>    <span class="co">"""Return a typed hemoglobin summary for one clinic site."""</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>    clean <span class="op">=</span> [val <span class="cf">for</span> val <span class="kw">in</span> readings <span class="cf">if</span> <span class="fl">3.0</span> <span class="op">&lt;=</span> val <span class="op">&lt;=</span> <span class="fl">22.0</span>]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>    mean_val: Optional[<span class="bu">float</span>] <span class="op">=</span> (</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>        <span class="bu">round</span>(<span class="bu">sum</span>(clean) <span class="op">/</span> <span class="bu">len</span>(clean), <span class="dv">2</span>) <span class="cf">if</span> clean <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>    )</span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>    <span class="cf">return</span> {</span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>        <span class="st">"site"</span>: site.strip().title(),</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>        <span class="st">"valid_n"</span>: <span class="bu">len</span>(clean),</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a>        <span class="st">"mean_hb"</span>: mean_val,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a>    }</span>
+<span id="cb5-24"><a href="#cb5-24" aria-label="24"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-label="25"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-label="26"></a>dhaka_report <span class="op">=</span> summarize_site_hb(<span class="st">"  dhaka "</span>, [<span class="fl">10.4</span>, <span class="fl">999.0</span>, <span class="fl">11.6</span>])</span>
+<span id="cb5-27"><a href="#cb5-27" aria-label="27"></a>empty_report <span class="op">=</span> summarize_site_hb(<span class="st">"sylhet"</span>, [<span class="fl">999.0</span>])</span>
+<span id="cb5-28"><a href="#cb5-28" aria-label="28"></a><span class="bu">print</span>(<span class="st">"Dhaka summary:"</span>, dhaka_report)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-label="29"></a><span class="bu">print</span>(<span class="st">"Empty summary:"</span>, empty_report)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Dhaka summary: {'site': 'Dhaka', 'valid_n': 2, 'mean_hb': 11.0}</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Empty summary: {'site': 'Sylhet', 'valid_n': 0, 'mean_hb': None}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice how <code>Optional[float]</code> explicitly warns every collaborator (and static type checkers like <code>mypy</code> or <code>pyright</code>) that <code>mean_hb</code> can be <code>None</code> when a cohort has zero valid rows—preventing downstream <code>TypeError</code> crashes before the pipeline ever runs.</p>
+<hr>
+</section>
+<section id="sec-ch15-logging" class="level3" data-number="15.3.3">
+<h3 data-number="15.3.3" class="anchored" data-anchor-id="sec-ch15-logging"><span class="header-section-number">15.3.3</span> Structured <code>logging</code> vs.&nbsp;<code>print()</code> (With Clean Handler Teardown)</h3>
+<p><code>print()</code> is handy for quick interactive exploration, but it vanishes from terminal scrollback, has no severity levels (<code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>, <code>CRITICAL</code>), and cannot be routed cleanly to an audit log file. Python’s standard-library <code>logging</code> module solves all three problems:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="im">import</span> logging</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>    log_path <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"cohort_run.log"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>    logger <span class="op">=</span> logging.getLogger(<span class="st">"ch15_walkthrough_demo"</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    logger.setLevel(logging.INFO)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>    logger.propagate <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>    handler <span class="op">=</span> logging.FileHandler(log_path, mode<span class="op">=</span><span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>    fmt <span class="op">=</span> logging.Formatter(<span class="st">"[</span><span class="sc">%(levelname)s</span><span class="st">] </span><span class="sc">%(message)s</span><span class="st">"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>    handler.setFormatter(fmt)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>    logger.addHandler(handler)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>    <span class="cf">try</span>:</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>        logger.info(<span class="st">"Pipeline started for Dhaka ANC cohort"</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>        logger.warning(<span class="st">"Row 4: skipped sentinel hb_g_dl='999'"</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a>        logger.info(<span class="st">"Pipeline completed: 2 valid, 1 skipped"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a>    <span class="cf">finally</span>:</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>        logger.removeHandler(handler)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a>        handler.close()</span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>    <span class="bu">print</span>(log_path.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>).strip())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>[INFO] Pipeline started for Dhaka ANC cohort</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>[WARNING] Row 4: skipped sentinel hb_g_dl='999'</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>[INFO] Pipeline completed: 2 valid, 1 skipped</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Mandatory Logging Habit — Always Detach &amp; Close FileHandlers!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Because <code>logging.getLogger(name)</code> returns the <strong>same singleton logger object</strong> across repeated function calls in a notebook or test suite, forgetting <code>logger.removeHandler(handler)</code> causes every future call to write duplicate lines, and forgetting <code>handler.close()</code> leaks open file handles that block <code>tempfile.TemporaryDirectory()</code> cleanup on Windows. Wrapping teardown in <code>finally:</code> guarantees spotless cleanup every single time.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch15-provenance" class="level3" data-number="15.3.4">
+<h3 data-number="15.3.4" class="anchored" data-anchor-id="sec-ch15-provenance"><span class="header-section-number">15.3.4</span> Cryptographic Dataset Provenance (<code>hashlib.sha256</code>) &amp; Research Templates</h3>
+<p>Because raw clinical CSV files stay out of Git (<code>.gitignore</code>), how do you prove six months later that <code>data/raw/mch_v1.csv</code> was never accidentally edited in Excel? You compute its <strong>SHA-256 cryptographic digest</strong>—a deterministic 64-character hexadecimal fingerprint where flipping even a single digit changes roughly half of the output bits (the <em>avalanche effect</em>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="im">import</span> hashlib</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="kw">def</span> sha256_file(filepath: Path) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>    <span class="co">"""Compute lowercase 64-char SHA-256 hex digest in 64 KB chunks."""</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>    hasher <span class="op">=</span> hashlib.sha256()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>    <span class="cf">with</span> <span class="bu">open</span>(filepath, <span class="st">"rb"</span>) <span class="im">as</span> f:</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>        <span class="cf">while</span> chunk <span class="op">:=</span> f.read(<span class="dv">65536</span>):</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>            hasher.update(chunk)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>    <span class="cf">return</span> hasher.hexdigest()</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a>    raw_csv <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"mch_v1.csv"</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>    raw_csv.write_text(<span class="st">"id,hb_g_dl</span><span class="ch">\n</span><span class="st">P1,10.8</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>    digest_v1 <span class="op">=</span> sha256_file(raw_csv)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a>    <span class="co"># Flip a single digit (10.8 -&gt; 10.9) to demonstrate avalanche effect</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a>    raw_csv.write_text(<span class="st">"id,hb_g_dl</span><span class="ch">\n</span><span class="st">P1,10.9</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a>    digest_v2 <span class="op">=</span> sha256_file(raw_csv)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>    <span class="bu">print</span>(<span class="st">"Digest v1 (first 16):"</span>, digest_v1[:<span class="dv">16</span>], <span class="st">"len="</span>, <span class="bu">len</span>(digest_v1))</span>
+<span id="cb9-25"><a href="#cb9-25" aria-label="25"></a>    <span class="bu">print</span>(<span class="st">"Digest v2 (first 16):"</span>, digest_v2[:<span class="dv">16</span>], <span class="st">"len="</span>, <span class="bu">len</span>(digest_v2))</span>
+<span id="cb9-26"><a href="#cb9-26" aria-label="26"></a>    <span class="bu">print</span>(<span class="st">"Identical files?:"</span>, digest_v1 <span class="op">==</span> digest_v2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Digest v1 (first 16): b89b84008541b87d len= 64</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Digest v2 (first 16): 8137e0963620b790 len= 64</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Identical files?: False</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Combine Git, <code>.gitignore</code>, type-checked <code>src/</code> modules, <code>tests/</code>, and a tiny committed <code>data/manifest.json</code> inside a standardized <strong>Cookiecutter Data Science</strong> research project layout:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>mch_anemia_study/</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>├── .gitignore              # Blocks data/raw/*.csv, .env, *.log, cache</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>├── README.md               # Study overview, setup &amp; reproduction steps</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>├── pyproject.toml          # Dependencies, Ruff &amp; pytest configuration</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>├── data/</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>│   ├── manifest.json       # Committed SHA-256 fingerprints (no PHI!)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>│   ├── raw/                # Read-only source CSVs (gitignored)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>│   └── processed/          # Regenerable clean cohorts (gitignored)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>├── notebooks/              # Numbered exploratory notebooks (01_eda.ipynb)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>├── src/</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>│   └── mch_study/          # Reusable, type-hinted Python modules</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>├── tests/                  # Automated pytest suite (Chapter 10)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>└── reports/                # Figures &amp; manuscript tables</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch15-errors" class="level3" data-number="15.3.5">
+<h3 data-number="15.3.5" class="anchored" data-anchor-id="sec-ch15-errors"><span class="header-section-number">15.3.5</span> Break It On Purpose! (Provenance &amp; Logging Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — FileNotFoundError Hashing a Missing Dataset
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a><span class="im">import</span> hashlib</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a><span class="im">import</span> tempfile</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-label="5"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb12-6"><a href="#cb12-6" aria-label="6"></a>    missing_csv <span class="op">=</span> Path(tmp) <span class="op">/</span> <span class="st">"missing_cohort.csv"</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-label="7"></a>    <span class="cf">with</span> <span class="bu">open</span>(missing_csv, <span class="st">"rb"</span>) <span class="im">as</span> f:</span>
+<span id="cb12-8"><a href="#cb12-8" aria-label="8"></a>        digest <span class="op">=</span> hashlib.sha256(f.read()).hexdigest()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>FileNotFoundError: [Errno 2] No such file or directory:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>'.../missing_cohort.csv'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Calling <code>open(path, "rb")</code> or <code>path.read_bytes()</code> assumes the dataset exists on disk. In a provenance verifier, a deleted file should be reported cleanly as <code>"missing"</code> rather than crashing the audit script.<br>
+<strong>Fix:</strong> Guard with <code>if not fpath.is_file():</code> before attempting to read bytes or compute a digest.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — TypeError Passing str Instead of bytes to hashlib.sha256
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a><span class="im">import</span> hashlib</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>csv_text <span class="op">=</span> <span class="st">"patient_id,hb_g_dl</span><span class="ch">\n</span><span class="st">P01,11.2</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a>digest <span class="op">=</span> hashlib.sha256(csv_text).hexdigest()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>TypeError: Strings must be encoded before hashing</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Cryptographic hashes operate on raw <strong>bytes</strong>, never Unicode <code>str</code> objects (because the same characters can be encoded differently in UTF-8 vs.&nbsp;UTF-16). Passing a text string—or opening a file in text mode <code>"r"</code> instead of <code>"rb"</code>—immediately triggers <code>TypeError</code>.<br>
+<strong>Fix:</strong> Open files in binary mode (<code>"rb"</code>) or call <code>csv_text.encode("utf-8")</code> before passing data into <code>hashlib.sha256(...)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError on Invalid Logging Level String
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a><span class="im">import</span> logging</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>bad_logger <span class="op">=</span> logging.getLogger(<span class="st">"ch15_bad_level_demo"</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a>bad_logger.setLevel(<span class="st">"URGENT"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>ValueError: Unknown level: 'URGENT'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Python’s <code>logging</code> module recognizes only the standard severity names (<code>"DEBUG"</code>, <code>"INFO"</code>, <code>"WARNING"</code>, <code>"ERROR"</code>, <code>"CRITICAL"</code>) or their integer constants. Passing a custom string like <code>"URGENT"</code> or a lowercase string like <code>"info"</code> directly to <code>setLevel(...)</code> raises <code>ValueError</code>.<br>
+<strong>Fix:</strong> Normalize input with <code>.strip().upper()</code> and validate it against the five standard level names before logging.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch15-blueprint" class="level2" data-number="15.4">
+<h2 data-number="15.4" class="anchored" data-anchor-id="sec-ch15-blueprint"><span class="header-section-number">15.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Before tagging <code>v1.0.0</code> on GitHub for manuscript submission, your PI wants a single automated gatekeeper function <code>prepare_release_bundle(repo_dir, log_path)</code> that: (1) hashes every <code>.csv</code> and <code>.json</code> file inside <code>repo_dir / "data"</code> into <code>repo_dir / "manifest.json"</code>, (2) scans all <code>.py</code> scripts inside <code>repo_dir / "src"</code> for leaked secret prefixes, (3) writes an <code>INFO</code>/<code>WARNING</code> audit log to <code>log_path</code> with clean handler teardown, and (4) returns a typed <code>ReleaseAudit</code> dictionary indicating whether the bundle is <code>release_ready</code>.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="15.4.1">
+<h3 data-number="15.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">15.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Input &amp; Output Contract:</strong>
+<ul>
+<li>Inputs: <code>repo_dir: Path</code> (containing <code>data/</code> and <code>src/</code>) and <code>log_path: Path</code>.</li>
+<li>Side effects: Indented <code>manifest.json</code> written inside <code>repo_dir</code>; audit log written cleanly to <code>log_path</code>.</li>
+<li>Return value: <code>ReleaseAudit</code> (<code>TypedDict</code>) with <code>data_files</code>, <code>manifest_path</code>, <code>secret_leaks</code>, and <code>release_ready</code>.</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Never leave the <code>FileHandler</code> attached or open—place <code>logger.removeHandler(handler)</code> and <code>handler.close()</code> inside <code>finally:</code>.</li>
+<li>Sort <code>data/</code> entries by filename so <code>manifest.json</code> diffs stay deterministic in Git.</li>
+<li>Check <code>p.is_file()</code> before reading bytes so subdirectories never raise <code>IsADirectoryError</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Configure an isolated logger (<code>propagate = False</code>) with a UTF-8 <code>FileHandler</code>.</li>
+<li>Inside <code>try:</code>, hash all regular <code>.csv</code>/<code>.json</code> files in <code>repo_dir / "data"</code> into <code>manifest</code>.</li>
+<li>Scan every <code>*.py</code> file in <code>repo_dir / "src"</code> line by line (1-based) for the five secret tokens; log a <code>WARNING</code> for every leak.</li>
+<li>Write <code>manifest.json</code> with <code>indent=2</code>, compute <code>ready = len(manifest) &gt; 0 and leaks == 0</code>, and log final status.</li>
+<li>Detach and close the handler in <code>finally:</code>, then return the typed <code>ReleaseAudit</code> dict.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li>1 CSV file in <code>data/</code> + 1 clean Python script in <code>src/</code> <span class="math inline">\(\rightarrow\)</span> <code>data_files = 1</code>, <code>secret_leaks = 0</code>, <code>release_ready = True</code>, and 2 <code>INFO</code> log lines.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="15.4.2">
+<h3 data-number="15.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">15.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a><span class="im">import</span> hashlib</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a><span class="im">import</span> json</span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a><span class="im">import</span> logging</span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb18-5"><a href="#cb18-5" aria-label="5"></a><span class="im">import</span> tempfile</span>
+<span id="cb18-6"><a href="#cb18-6" aria-label="6"></a><span class="im">from</span> typing <span class="im">import</span> TypedDict</span>
+<span id="cb18-7"><a href="#cb18-7" aria-label="7"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-label="8"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-label="9"></a><span class="kw">class</span> ReleaseAudit(TypedDict):</span>
+<span id="cb18-10"><a href="#cb18-10" aria-label="10"></a>    data_files: <span class="bu">int</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-label="11"></a>    manifest_path: <span class="bu">str</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-label="12"></a>    secret_leaks: <span class="bu">int</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-label="13"></a>    release_ready: <span class="bu">bool</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-label="14"></a></span>
+<span id="cb18-15"><a href="#cb18-15" aria-label="15"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-label="16"></a><span class="kw">def</span> prepare_release_bundle(</span>
+<span id="cb18-17"><a href="#cb18-17" aria-label="17"></a>    repo_dir: Path,</span>
+<span id="cb18-18"><a href="#cb18-18" aria-label="18"></a>    log_path: Path,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-label="19"></a>) <span class="op">-&gt;</span> ReleaseAudit:</span>
+<span id="cb18-20"><a href="#cb18-20" aria-label="20"></a>    <span class="co">"""Build a SHA-256 manifest, scan src/ for secrets, and log audit."""</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-label="21"></a>    logger <span class="op">=</span> logging.getLogger(<span class="st">"ch15_release_gate"</span>)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-label="22"></a>    logger.setLevel(logging.INFO)</span>
+<span id="cb18-23"><a href="#cb18-23" aria-label="23"></a>    logger.propagate <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-label="24"></a>    handler <span class="op">=</span> logging.FileHandler(log_path, mode<span class="op">=</span><span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb18-25"><a href="#cb18-25" aria-label="25"></a>    handler.setFormatter(logging.Formatter(<span class="st">"[</span><span class="sc">%(levelname)s</span><span class="st">] </span><span class="sc">%(message)s</span><span class="st">"</span>))</span>
+<span id="cb18-26"><a href="#cb18-26" aria-label="26"></a>    logger.addHandler(handler)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-label="27"></a></span>
+<span id="cb18-28"><a href="#cb18-28" aria-label="28"></a>    secret_tags <span class="op">=</span> (<span class="st">"ghp_"</span>, <span class="st">"AIza"</span>, <span class="st">"sk-"</span>, <span class="st">"API_KEY="</span>, <span class="st">"PASSWORD="</span>)</span>
+<span id="cb18-29"><a href="#cb18-29" aria-label="29"></a>    manifest: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">object</span>]] <span class="op">=</span> {}</span>
+<span id="cb18-30"><a href="#cb18-30" aria-label="30"></a>    leaks <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb18-31"><a href="#cb18-31" aria-label="31"></a></span>
+<span id="cb18-32"><a href="#cb18-32" aria-label="32"></a>    <span class="cf">try</span>:</span>
+<span id="cb18-33"><a href="#cb18-33" aria-label="33"></a>        data_dir <span class="op">=</span> repo_dir <span class="op">/</span> <span class="st">"data"</span></span>
+<span id="cb18-34"><a href="#cb18-34" aria-label="34"></a>        <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">sorted</span>(data_dir.iterdir(), key<span class="op">=</span><span class="kw">lambda</span> x: x.name):</span>
+<span id="cb18-35"><a href="#cb18-35" aria-label="35"></a>            <span class="cf">if</span> p.is_file() <span class="kw">and</span> p.suffix.lower() <span class="kw">in</span> {<span class="st">".csv"</span>, <span class="st">".json"</span>}:</span>
+<span id="cb18-36"><a href="#cb18-36" aria-label="36"></a>                digest <span class="op">=</span> hashlib.sha256(p.read_bytes()).hexdigest()</span>
+<span id="cb18-37"><a href="#cb18-37" aria-label="37"></a>                manifest[p.name] <span class="op">=</span> {</span>
+<span id="cb18-38"><a href="#cb18-38" aria-label="38"></a>                    <span class="st">"bytes"</span>: p.stat().st_size,</span>
+<span id="cb18-39"><a href="#cb18-39" aria-label="39"></a>                    <span class="st">"sha256"</span>: digest,</span>
+<span id="cb18-40"><a href="#cb18-40" aria-label="40"></a>                }</span>
+<span id="cb18-41"><a href="#cb18-41" aria-label="41"></a>        logger.info(<span class="st">"Hashed </span><span class="sc">%d</span><span class="st"> dataset file(s)"</span>, <span class="bu">len</span>(manifest))</span>
+<span id="cb18-42"><a href="#cb18-42" aria-label="42"></a></span>
+<span id="cb18-43"><a href="#cb18-43" aria-label="43"></a>        src_dir <span class="op">=</span> repo_dir <span class="op">/</span> <span class="st">"src"</span></span>
+<span id="cb18-44"><a href="#cb18-44" aria-label="44"></a>        <span class="cf">for</span> py_file <span class="kw">in</span> <span class="bu">sorted</span>(src_dir.glob(<span class="st">"*.py"</span>)):</span>
+<span id="cb18-45"><a href="#cb18-45" aria-label="45"></a>            text <span class="op">=</span> py_file.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb18-46"><a href="#cb18-46" aria-label="46"></a>            <span class="cf">for</span> ln_no, line <span class="kw">in</span> <span class="bu">enumerate</span>(text.splitlines(), start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb18-47"><a href="#cb18-47" aria-label="47"></a>                <span class="cf">if</span> <span class="bu">any</span>(tag <span class="kw">in</span> line <span class="cf">for</span> tag <span class="kw">in</span> secret_tags):</span>
+<span id="cb18-48"><a href="#cb18-48" aria-label="48"></a>                    leaks <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb18-49"><a href="#cb18-49" aria-label="49"></a>                    logger.warning(</span>
+<span id="cb18-50"><a href="#cb18-50" aria-label="50"></a>                        <span class="st">"Leak in </span><span class="sc">%s</span><span class="st"> line </span><span class="sc">%d</span><span class="st">"</span>, py_file.name, ln_no</span>
+<span id="cb18-51"><a href="#cb18-51" aria-label="51"></a>                    )</span>
+<span id="cb18-52"><a href="#cb18-52" aria-label="52"></a></span>
+<span id="cb18-53"><a href="#cb18-53" aria-label="53"></a>        manifest_file <span class="op">=</span> repo_dir <span class="op">/</span> <span class="st">"manifest.json"</span></span>
+<span id="cb18-54"><a href="#cb18-54" aria-label="54"></a>        <span class="cf">with</span> <span class="bu">open</span>(manifest_file, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb18-55"><a href="#cb18-55" aria-label="55"></a>            json.dump(manifest, out_f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb18-56"><a href="#cb18-56" aria-label="56"></a></span>
+<span id="cb18-57"><a href="#cb18-57" aria-label="57"></a>        ready <span class="op">=</span> <span class="bu">len</span>(manifest) <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> leaks <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb18-58"><a href="#cb18-58" aria-label="58"></a>        logger.info(<span class="st">"Release ready: </span><span class="sc">%s</span><span class="st">"</span>, ready)</span>
+<span id="cb18-59"><a href="#cb18-59" aria-label="59"></a>    <span class="cf">finally</span>:</span>
+<span id="cb18-60"><a href="#cb18-60" aria-label="60"></a>        logger.removeHandler(handler)</span>
+<span id="cb18-61"><a href="#cb18-61" aria-label="61"></a>        handler.close()</span>
+<span id="cb18-62"><a href="#cb18-62" aria-label="62"></a></span>
+<span id="cb18-63"><a href="#cb18-63" aria-label="63"></a>    <span class="cf">return</span> {</span>
+<span id="cb18-64"><a href="#cb18-64" aria-label="64"></a>        <span class="st">"data_files"</span>: <span class="bu">len</span>(manifest),</span>
+<span id="cb18-65"><a href="#cb18-65" aria-label="65"></a>        <span class="st">"manifest_path"</span>: manifest_file.name,</span>
+<span id="cb18-66"><a href="#cb18-66" aria-label="66"></a>        <span class="st">"secret_leaks"</span>: leaks,</span>
+<span id="cb18-67"><a href="#cb18-67" aria-label="67"></a>        <span class="st">"release_ready"</span>: ready,</span>
+<span id="cb18-68"><a href="#cb18-68" aria-label="68"></a>    }</span>
+<span id="cb18-69"><a href="#cb18-69" aria-label="69"></a></span>
+<span id="cb18-70"><a href="#cb18-70" aria-label="70"></a></span>
+<span id="cb18-71"><a href="#cb18-71" aria-label="71"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmp:</span>
+<span id="cb18-72"><a href="#cb18-72" aria-label="72"></a>    repo <span class="op">=</span> Path(tmp)</span>
+<span id="cb18-73"><a href="#cb18-73" aria-label="73"></a>    (repo <span class="op">/</span> <span class="st">"data"</span>).mkdir()</span>
+<span id="cb18-74"><a href="#cb18-74" aria-label="74"></a>    (repo <span class="op">/</span> <span class="st">"src"</span>).mkdir()</span>
+<span id="cb18-75"><a href="#cb18-75" aria-label="75"></a>    (repo <span class="op">/</span> <span class="st">"data"</span> <span class="op">/</span> <span class="st">"mch_clean.csv"</span>).write_text(</span>
+<span id="cb18-76"><a href="#cb18-76" aria-label="76"></a>        <span class="st">"id,hb_g_dl</span><span class="ch">\n</span><span class="st">P1,11.4</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span></span>
+<span id="cb18-77"><a href="#cb18-77" aria-label="77"></a>    )</span>
+<span id="cb18-78"><a href="#cb18-78" aria-label="78"></a>    (repo <span class="op">/</span> <span class="st">"src"</span> <span class="op">/</span> <span class="st">"analyze.py"</span>).write_text(</span>
+<span id="cb18-79"><a href="#cb18-79" aria-label="79"></a>        <span class="st">"STUDY = 'MCH-BD-2026'</span><span class="ch">\n</span><span class="st">"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span></span>
+<span id="cb18-80"><a href="#cb18-80" aria-label="80"></a>    )</span>
+<span id="cb18-81"><a href="#cb18-81" aria-label="81"></a>    audit_log <span class="op">=</span> repo <span class="op">/</span> <span class="st">"release_audit.log"</span></span>
+<span id="cb18-82"><a href="#cb18-82" aria-label="82"></a>    result <span class="op">=</span> prepare_release_bundle(repo, audit_log)</span>
+<span id="cb18-83"><a href="#cb18-83" aria-label="83"></a>    <span class="bu">print</span>(<span class="st">"Audit Result:</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> json.dumps(result, indent<span class="op">=</span><span class="dv">2</span>))</span>
+<span id="cb18-84"><a href="#cb18-84" aria-label="84"></a>    <span class="bu">print</span>(<span class="st">"Audit Log:</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> audit_log.read_text(encoding<span class="op">=</span><span class="st">"utf-8"</span>).strip())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>Audit Result:</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>{</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>  "data_files": 1,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>  "manifest_path": "manifest.json",</span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>  "secret_leaks": 0,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>  "release_ready": true</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>}</span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>Audit Log:</span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>[INFO] Hashed 1 dataset file(s)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a>[INFO] Release ready: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch15-todos" class="level2" data-number="15.5">
+<h2 data-number="15.5" class="anchored" data-anchor-id="sec-ch15-todos"><span class="header-section-number">15.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six reproducible-engineering functions below:</p>
+<ul>
+<li><strong>To-Do 15.1 (<code>.gitignore</code> Auditing — <code>check_gitignore_coverage(gitignore_text, filenames)</code>):</strong> Parse non-blank, non-<code>#</code> patterns from <code>gitignore_text</code>, match with <code>fnmatch.fnmatch</code>, and return a <strong>sorted</strong> list of <strong>UNIGNORED</strong> filenames.</li>
+<li><strong>To-Do 15.2 (Commit Hygiene — <code>validate_commit_message(message)</code>):</strong> Inspect only the first subject line (non-empty, <span class="math inline">\(5 \le \text{len} \le 72\)</span>, no trailing <code>"."</code>) and return <code>(is_valid: bool, reason: str)</code>.</li>
+<li><strong>To-Do 15.3 (Secret Scanner — <code>scan_for_leaked_secrets(text)</code>):</strong> Scan lines 1-indexed for case-sensitive tokens <code>ghp_</code>, <code>AIza</code>, <code>sk-</code>, <code>API_KEY=</code>, and <code>PASSWORD=</code>, returning a sorted list of unique 1-based matching line numbers.</li>
+<li><strong>To-Do 15.4 (Structured Logging — <code>write_structured_log(log_path, level, message)</code>):</strong> Append a formatted <code>"[LEVEL] message"</code> UTF-8 log line with uppercase level and properly closed/detached file handler.</li>
+<li><strong>To-Do 15.5 (Cryptographic Hashing — <code>compute_file_sha256(filepath)</code>):</strong> Stream binary bytes (<code>"rb"</code>) into <code>hashlib.sha256()</code> and return the lowercase 64-character hex digest.</li>
+<li><strong>To-Do 15.6 (Dataset Manifest — <code>build_dataset_manifest(data_dir)</code>):</strong> Scan regular <code>.csv</code> and <code>.json</code> files in <code>data_dir</code> sorted by name, returning <code>filename -&gt; {"bytes": int, "sha256": str}</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch15-test" class="level2" data-number="15.6">
+<h2 data-number="15.6" class="anchored" data-anchor-id="sec-ch15-test"><span class="header-section-number">15.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Test your Part III engineering intuition on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Git 3-Zone Mechanics:</strong> You edited <code>clean.py</code> and <code>notes.txt</code>, ran <code>git add clean.py</code>, and then ran <code>git commit -m "Fix sentinel filter"</code>. Which file is included in the new commit, and where do the edits to <code>notes.txt</code> remain?</li>
+<li><strong>Branch Isolation:</strong> Why should you run <code>git switch -c feat/anemia-model</code> instead of committing experimental model changes directly onto <code>main</code>?</li>
+<li><strong><code>.gitignore</code> Comment Trap:</strong> A <code>.gitignore</code> contains <code># *.py</code> on line 1 and <code>*.csv</code> on line 2. Should <code>analysis.py</code> be returned by <code>check_gitignore_coverage</code> as unignored? Why?</li>
+<li><strong>Multi-Line Commit Subjects:</strong> A commit message has a 30-character first line (no period), a blank line, and a 120-character second paragraph ending with a period. Should <code>validate_commit_message</code> return <code>True</code> or <code>False</code>?</li>
+<li><strong>Case-Sensitive Secret Scanning:</strong> Why does <code>scan_for_leaked_secrets</code> match <code>API_KEY=abc</code> and <code>ghp_xyz</code>, yet ignore <code>api_key=placeholder</code>?</li>
+<li><strong>Runtime Type Hints:</strong> What happens when Python executes <code>def mean_hb(vals: list[float]) -&gt; float:</code> and a caller passes a <code>tuple</code> of floats at runtime? Do Python type hints automatically raise <code>TypeError</code>?</li>
+<li><strong>Duplicate Log Lines Bug:</strong> You write a helper function that creates <code>handler = logging.FileHandler(path)</code> and calls <code>logger.addHandler(handler)</code> on every invocation without calling <code>logger.removeHandler(handler)</code>. After calling the function 3 times, how many total lines appear in the log file (<span class="math inline">\(1 + 2 + 3\)</span>)?</li>
+<li><strong>Binary Mode for Hashing:</strong> Why does <code>hashlib.sha256(open(path, "r").read())</code> raise <code>TypeError</code> even on a valid UTF-8 <code>.csv</code> file?</li>
+<li><strong>SHA-256 Avalanche Property:</strong> A <span class="math inline">\(10\text{ MB}\)</span> clinical CSV has one value changed from <code>10.8</code> to <code>10.9</code>. How much of its 64-character SHA-256 digest changes, and why is that useful for data provenance?</li>
+<li><strong>Manifest vs.&nbsp;Raw Data in Git:</strong> Why do reproducible research templates put <code>data/raw/*.csv</code> inside <code>.gitignore</code> while committing <code>data/manifest.json</code> directly into Git?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch15-exam" class="level2" data-number="15.7">
+<h2 data-number="15.7" class="anchored" data-anchor-id="sec-ch15-exam"><span class="header-section-number">15.7</span> Stage 7 — Part III Capstone Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb</code>, complete all three capstone engineering tasks, and run <code>tutor.check_exam("ch15", exam_submissions)</code> to earn your Part III Capstone score out of 100 points.</p>
+<section id="exam-task-15.1-30-points-pre-push-repository-hygiene-auditor" class="level3" data-number="15.7.1">
+<h3 data-number="15.7.1" class="anchored" data-anchor-id="exam-task-15.1-30-points-pre-push-repository-hygiene-auditor"><span class="header-section-number">15.7.1</span> Exam Task 15.1 (30 Points): Pre-Push Repository Hygiene Auditor</h3>
+<p>Write <code>audit_repo_hygiene(repo_dir)</code> to inspect a research repository directory before pushing to GitHub:</p>
+<ul>
+<li>Check four boolean conditions on <code>Path(repo_dir)</code>:
+<ul>
+<li><code>has_readme</code>: <code>README.md</code> exists as a regular file.</li>
+<li><code>has_gitignore</code>: <code>.gitignore</code> exists as a regular file.</li>
+<li><code>has_env_leak</code>: <code>.env</code> exists as a regular file.</li>
+<li><code>has_checkpoints</code>: <code>.ipynb_checkpoints</code> exists as a directory.</li>
+</ul></li>
+<li>Compute <code>ready_to_push = has_readme and has_gitignore and not has_env_leak and not has_checkpoints</code>.</li>
+<li>Return a dictionary containing all five boolean keys.</li>
+</ul>
+</section>
+<section id="exam-task-15.2-35-points-cryptographic-dataset-provenance-verifier" class="level3" data-number="15.7.2">
+<h3 data-number="15.7.2" class="anchored" data-anchor-id="exam-task-15.2-35-points-cryptographic-dataset-provenance-verifier"><span class="header-section-number">15.7.2</span> Exam Task 15.2 (35 Points): Cryptographic Dataset Provenance Verifier</h3>
+<p>Write <code>verify_data_provenance(data_dir, manifest_dict)</code> to verify datasets on disk against a saved manifest (<code>filename -&gt; {"bytes": int, "sha256": str}</code>):</p>
+<ul>
+<li>Iterate over <code>sorted(manifest_dict)</code> so all output lists stay alphabetically sorted.</li>
+<li>If <code>Path(data_dir) / fname</code> does not exist as a file, record <code>fname</code> in <code>"missing"</code>.</li>
+<li>Otherwise recompute its SHA-256 hex digest and place <code>fname</code> into <code>"matched"</code> (if equal to <code>manifest_dict[fname]["sha256"]</code>) or <code>"modified"</code> (if different).</li>
+<li>Return <code>{"matched": ..., "modified": ..., "missing": ..., "all_verified": bool}</code> where <code>all_verified</code> is <code>True</code> iff both <code>"modified"</code> and <code>"missing"</code> are empty.</li>
+</ul>
+</section>
+<section id="exam-task-15.3-35-points-logged-provenance-tracked-cleaning-pipeline" class="level3" data-number="15.7.3">
+<h3 data-number="15.7.3" class="anchored" data-anchor-id="exam-task-15.3-35-points-logged-provenance-tracked-cleaning-pipeline"><span class="header-section-number">15.7.3</span> Exam Task 15.3 (35 Points): Logged, Provenance-Tracked Cleaning Pipeline</h3>
+<p>Write <code>run_logged_cleaning_pipeline(in_csv, out_json, log_path)</code> combining CSV cleaning, SHA-256 provenance, structured logging, and indented JSON export:</p>
+<ul>
+<li>Compute the lowercase 64-character SHA-256 hex digest of <code>in_csv</code>.</li>
+<li>Read <code>in_csv</code> with <code>csv.DictReader</code> expecting column <code>hb_g_dl</code>; skip <code>""</code>, <code>"N/A"</code>, and <code>"999"</code> while counting <code>rejected_count</code> and emitting <code>WARNING</code> log lines to <code>log_path</code>, and collect valid <code>float</code> values.</li>
+<li>Emit <code>INFO</code> log lines for pipeline start and completion, and guarantee <code>FileHandler</code> detachment and closure in a <code>finally:</code> block.</li>
+<li>Compute <code>mean_hb</code> rounded to 2 decimal places (or <code>None</code> if <code>valid_count == 0</code>).</li>
+<li>Write indented UTF-8 JSON (<code>indent=2</code>) with keys <code>{"source_sha256", "valid_count", "rejected_count", "mean_hb"}</code> to <code>out_json</code> and return that dictionary.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch15-solutions" class="level2" data-number="15.8">
+<h2 data-number="15.8" class="anchored" data-anchor-id="sec-ch15-solutions"><span class="header-section-number">15.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="15.8.1">
+<h3 data-number="15.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">15.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li>Only <strong><code>clean.py</code></strong> is recorded in the commit; the edits to <code>notes.txt</code> remain safely in the <strong>Working Directory</strong> (unstaged).</li>
+<li>Feature branches keep <code>main</code> always clean, tested, and ready to reproduce published tables while you iterate safely—and let collaborators review changes via a Pull Request before merging.</li>
+<li><strong>Yes</strong>, <code>analysis.py</code> is returned as unignored because lines beginning with <code>#</code> are comments in <code>.gitignore</code>, not active ignore patterns.</li>
+<li><strong><code>True</code></strong>—commit subject validation checks <em>only</em> the first subject line, allowing longer explanatory paragraphs and punctuation in the commit body.</li>
+<li>Real provider prefixes and environment variable keys (<code>ghp_</code>, <code>AIza</code>, <code>sk-</code>, <code>API_KEY=</code>, <code>PASSWORD=</code>) are case-sensitive; matching case-sensitively avoids false alarms on ordinary lowercase variable names or prose comments.</li>
+<li><strong>No</strong>—Python executes the function normally without raising <code>TypeError</code> because type hints are metadata checked by static tools (<code>mypy</code>, <code>pyright</code>, IDE linters), not enforced at runtime.</li>
+<li><strong><span class="math inline">\(1 + 2 + 3 = 6\)</span> total lines!</strong> Call 1 attaches handler #1 (1 line), call 2 attaches handler #2 (writes 2 lines), and call 3 attaches handler #3 (writes 3 lines). Always call <code>logger.removeHandler(handler)</code> and <code>handler.close()</code> in <code>finally:</code>.</li>
+<li><code>open(path, "r").read()</code> returns a decoded Unicode <strong><code>str</code></strong>, whereas <code>hashlib.sha256()</code> strictly requires raw <strong><code>bytes</code></strong> (from binary mode <code>"rb"</code>).</li>
+<li>Roughly <strong>half of all 64 hex characters change completely</strong> (producing a totally unrecognizable digest), so any silent spreadsheet edit, truncated download, or version mix-up is detected with near-certainty.</li>
+<li>Raw <code>.csv</code> files may be huge or contain restricted patient/field data that must never be uploaded to public GitHub, whereas <code>data/manifest.json</code> is tiny, contains zero patient records, and cryptographically locks the exact dataset version required to reproduce the paper.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="15.8.2">
+<h3 data-number="15.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">15.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a><span class="im">import</span> fnmatch</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a><span class="im">import</span> hashlib</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a><span class="im">import</span> logging</span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb20-5"><a href="#cb20-5" aria-label="5"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-label="6"></a><span class="co"># To-Do 15.1</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-label="7"></a><span class="kw">def</span> check_gitignore_coverage(gitignore_text, filenames):</span>
+<span id="cb20-8"><a href="#cb20-8" aria-label="8"></a>    <span class="co">"""Return sorted list of filenames NOT matched by .gitignore."""</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-label="9"></a>    patterns <span class="op">=</span> [</span>
+<span id="cb20-10"><a href="#cb20-10" aria-label="10"></a>        line.strip()</span>
+<span id="cb20-11"><a href="#cb20-11" aria-label="11"></a>        <span class="cf">for</span> line <span class="kw">in</span> gitignore_text.splitlines()</span>
+<span id="cb20-12"><a href="#cb20-12" aria-label="12"></a>        <span class="cf">if</span> line.strip() <span class="kw">and</span> <span class="kw">not</span> line.strip().startswith(<span class="st">"#"</span>)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-label="13"></a>    ]</span>
+<span id="cb20-14"><a href="#cb20-14" aria-label="14"></a>    unignored <span class="op">=</span> [</span>
+<span id="cb20-15"><a href="#cb20-15" aria-label="15"></a>        fname <span class="cf">for</span> fname <span class="kw">in</span> filenames</span>
+<span id="cb20-16"><a href="#cb20-16" aria-label="16"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="bu">any</span>(fnmatch.fnmatch(fname, pat) <span class="cf">for</span> pat <span class="kw">in</span> patterns)</span>
+<span id="cb20-17"><a href="#cb20-17" aria-label="17"></a>    ]</span>
+<span id="cb20-18"><a href="#cb20-18" aria-label="18"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(unignored)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-label="19"></a></span>
+<span id="cb20-20"><a href="#cb20-20" aria-label="20"></a><span class="co"># To-Do 15.2</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-label="21"></a><span class="kw">def</span> validate_commit_message(message):</span>
+<span id="cb20-22"><a href="#cb20-22" aria-label="22"></a>    <span class="co">"""Validate first commit subject line; return (is_valid, reason)."""</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-label="23"></a>    lines <span class="op">=</span> message.splitlines()</span>
+<span id="cb20-24"><a href="#cb20-24" aria-label="24"></a>    subject <span class="op">=</span> lines[<span class="dv">0</span>].strip() <span class="cf">if</span> lines <span class="cf">else</span> <span class="st">""</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-label="25"></a>    <span class="cf">if</span> <span class="kw">not</span> subject:</span>
+<span id="cb20-26"><a href="#cb20-26" aria-label="26"></a>        <span class="cf">return</span> (<span class="va">False</span>, <span class="st">"Subject line cannot be empty"</span>)</span>
+<span id="cb20-27"><a href="#cb20-27" aria-label="27"></a>    <span class="cf">if</span> <span class="bu">len</span>(subject) <span class="op">&lt;</span> <span class="dv">5</span>:</span>
+<span id="cb20-28"><a href="#cb20-28" aria-label="28"></a>        <span class="cf">return</span> (<span class="va">False</span>, <span class="st">"Subject line must be at least 5 characters"</span>)</span>
+<span id="cb20-29"><a href="#cb20-29" aria-label="29"></a>    <span class="cf">if</span> <span class="bu">len</span>(subject) <span class="op">&gt;</span> <span class="dv">72</span>:</span>
+<span id="cb20-30"><a href="#cb20-30" aria-label="30"></a>        <span class="cf">return</span> (<span class="va">False</span>, <span class="st">"Subject line must be at most 72 characters"</span>)</span>
+<span id="cb20-31"><a href="#cb20-31" aria-label="31"></a>    <span class="cf">if</span> subject.endswith(<span class="st">"."</span>):</span>
+<span id="cb20-32"><a href="#cb20-32" aria-label="32"></a>        <span class="cf">return</span> (<span class="va">False</span>, <span class="st">"Subject line should not end with a period"</span>)</span>
+<span id="cb20-33"><a href="#cb20-33" aria-label="33"></a>    <span class="cf">return</span> (<span class="va">True</span>, <span class="st">"Valid commit subject"</span>)</span>
+<span id="cb20-34"><a href="#cb20-34" aria-label="34"></a></span>
+<span id="cb20-35"><a href="#cb20-35" aria-label="35"></a><span class="co"># To-Do 15.3</span></span>
+<span id="cb20-36"><a href="#cb20-36" aria-label="36"></a><span class="kw">def</span> scan_for_leaked_secrets(text):</span>
+<span id="cb20-37"><a href="#cb20-37" aria-label="37"></a>    <span class="co">"""Return 1-based line numbers containing sensitive secret tokens."""</span></span>
+<span id="cb20-38"><a href="#cb20-38" aria-label="38"></a>    patterns <span class="op">=</span> (<span class="st">"ghp_"</span>, <span class="st">"AIza"</span>, <span class="st">"sk-"</span>, <span class="st">"API_KEY="</span>, <span class="st">"PASSWORD="</span>)</span>
+<span id="cb20-39"><a href="#cb20-39" aria-label="39"></a>    <span class="cf">return</span> [</span>
+<span id="cb20-40"><a href="#cb20-40" aria-label="40"></a>        line_no</span>
+<span id="cb20-41"><a href="#cb20-41" aria-label="41"></a>        <span class="cf">for</span> line_no, line <span class="kw">in</span> <span class="bu">enumerate</span>(text.splitlines(), start<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb20-42"><a href="#cb20-42" aria-label="42"></a>        <span class="cf">if</span> <span class="bu">any</span>(pat <span class="kw">in</span> line <span class="cf">for</span> pat <span class="kw">in</span> patterns)</span>
+<span id="cb20-43"><a href="#cb20-43" aria-label="43"></a>    ]</span>
+<span id="cb20-44"><a href="#cb20-44" aria-label="44"></a></span>
+<span id="cb20-45"><a href="#cb20-45" aria-label="45"></a><span class="co"># To-Do 15.4</span></span>
+<span id="cb20-46"><a href="#cb20-46" aria-label="46"></a>_LOG_LEVELS <span class="op">=</span> {</span>
+<span id="cb20-47"><a href="#cb20-47" aria-label="47"></a>    <span class="st">"DEBUG"</span>: logging.DEBUG,</span>
+<span id="cb20-48"><a href="#cb20-48" aria-label="48"></a>    <span class="st">"INFO"</span>: logging.INFO,</span>
+<span id="cb20-49"><a href="#cb20-49" aria-label="49"></a>    <span class="st">"WARNING"</span>: logging.WARNING,</span>
+<span id="cb20-50"><a href="#cb20-50" aria-label="50"></a>    <span class="st">"ERROR"</span>: logging.ERROR,</span>
+<span id="cb20-51"><a href="#cb20-51" aria-label="51"></a>    <span class="st">"CRITICAL"</span>: logging.CRITICAL,</span>
+<span id="cb20-52"><a href="#cb20-52" aria-label="52"></a>}</span>
+<span id="cb20-53"><a href="#cb20-53" aria-label="53"></a></span>
+<span id="cb20-54"><a href="#cb20-54" aria-label="54"></a><span class="kw">def</span> write_structured_log(log_path, level, message):</span>
+<span id="cb20-55"><a href="#cb20-55" aria-label="55"></a>    <span class="co">"""Append '[LEVEL] message' to log_path via a closed FileHandler."""</span></span>
+<span id="cb20-56"><a href="#cb20-56" aria-label="56"></a>    level_name <span class="op">=</span> level.strip().upper()</span>
+<span id="cb20-57"><a href="#cb20-57" aria-label="57"></a>    <span class="cf">if</span> level_name <span class="kw">not</span> <span class="kw">in</span> _LOG_LEVELS:</span>
+<span id="cb20-58"><a href="#cb20-58" aria-label="58"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f"Unknown log level: </span><span class="sc">{</span>level<span class="sc">!r}</span><span class="ss">"</span>)</span>
+<span id="cb20-59"><a href="#cb20-59" aria-label="59"></a>    logger <span class="op">=</span> logging.getLogger(<span class="st">"ch15_todo_logger"</span>)</span>
+<span id="cb20-60"><a href="#cb20-60" aria-label="60"></a>    logger.setLevel(logging.DEBUG)</span>
+<span id="cb20-61"><a href="#cb20-61" aria-label="61"></a>    logger.propagate <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb20-62"><a href="#cb20-62" aria-label="62"></a>    handler <span class="op">=</span> logging.FileHandler(log_path, mode<span class="op">=</span><span class="st">"a"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb20-63"><a href="#cb20-63" aria-label="63"></a>    handler.setFormatter(logging.Formatter(<span class="st">"[</span><span class="sc">%(levelname)s</span><span class="st">] </span><span class="sc">%(message)s</span><span class="st">"</span>))</span>
+<span id="cb20-64"><a href="#cb20-64" aria-label="64"></a>    logger.addHandler(handler)</span>
+<span id="cb20-65"><a href="#cb20-65" aria-label="65"></a>    <span class="cf">try</span>:</span>
+<span id="cb20-66"><a href="#cb20-66" aria-label="66"></a>        logger.log(_LOG_LEVELS[level_name], message)</span>
+<span id="cb20-67"><a href="#cb20-67" aria-label="67"></a>    <span class="cf">finally</span>:</span>
+<span id="cb20-68"><a href="#cb20-68" aria-label="68"></a>        logger.removeHandler(handler)</span>
+<span id="cb20-69"><a href="#cb20-69" aria-label="69"></a>        handler.close()</span>
+<span id="cb20-70"><a href="#cb20-70" aria-label="70"></a></span>
+<span id="cb20-71"><a href="#cb20-71" aria-label="71"></a><span class="co"># To-Do 15.5</span></span>
+<span id="cb20-72"><a href="#cb20-72" aria-label="72"></a><span class="kw">def</span> compute_file_sha256(filepath):</span>
+<span id="cb20-73"><a href="#cb20-73" aria-label="73"></a>    <span class="co">"""Return lowercase 64-char SHA-256 hex digest of filepath."""</span></span>
+<span id="cb20-74"><a href="#cb20-74" aria-label="74"></a>    hasher <span class="op">=</span> hashlib.sha256()</span>
+<span id="cb20-75"><a href="#cb20-75" aria-label="75"></a>    <span class="cf">with</span> <span class="bu">open</span>(filepath, <span class="st">"rb"</span>) <span class="im">as</span> f:</span>
+<span id="cb20-76"><a href="#cb20-76" aria-label="76"></a>        <span class="cf">while</span> chunk <span class="op">:=</span> f.read(<span class="dv">65536</span>):</span>
+<span id="cb20-77"><a href="#cb20-77" aria-label="77"></a>            hasher.update(chunk)</span>
+<span id="cb20-78"><a href="#cb20-78" aria-label="78"></a>    <span class="cf">return</span> hasher.hexdigest()</span>
+<span id="cb20-79"><a href="#cb20-79" aria-label="79"></a></span>
+<span id="cb20-80"><a href="#cb20-80" aria-label="80"></a><span class="co"># To-Do 15.6</span></span>
+<span id="cb20-81"><a href="#cb20-81" aria-label="81"></a><span class="kw">def</span> build_dataset_manifest(data_dir):</span>
+<span id="cb20-82"><a href="#cb20-82" aria-label="82"></a>    <span class="co">"""Map sorted .csv/.json filenames to byte size and SHA-256."""</span></span>
+<span id="cb20-83"><a href="#cb20-83" aria-label="83"></a>    manifest <span class="op">=</span> {}</span>
+<span id="cb20-84"><a href="#cb20-84" aria-label="84"></a>    <span class="cf">for</span> p <span class="kw">in</span> <span class="bu">sorted</span>(Path(data_dir).iterdir(), key<span class="op">=</span><span class="kw">lambda</span> x: x.name):</span>
+<span id="cb20-85"><a href="#cb20-85" aria-label="85"></a>        <span class="cf">if</span> p.is_file() <span class="kw">and</span> p.suffix.lower() <span class="kw">in</span> {<span class="st">".csv"</span>, <span class="st">".json"</span>}:</span>
+<span id="cb20-86"><a href="#cb20-86" aria-label="86"></a>            digest <span class="op">=</span> hashlib.sha256(p.read_bytes()).hexdigest()</span>
+<span id="cb20-87"><a href="#cb20-87" aria-label="87"></a>            manifest[p.name] <span class="op">=</span> {</span>
+<span id="cb20-88"><a href="#cb20-88" aria-label="88"></a>                <span class="st">"bytes"</span>: p.stat().st_size,</span>
+<span id="cb20-89"><a href="#cb20-89" aria-label="89"></a>                <span class="st">"sha256"</span>: digest,</span>
+<span id="cb20-90"><a href="#cb20-90" aria-label="90"></a>            }</span>
+<span id="cb20-91"><a href="#cb20-91" aria-label="91"></a>    <span class="cf">return</span> manifest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-part-iii-capstone-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="15.8.3">
+<h3 data-number="15.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-part-iii-capstone-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">15.8.3</span> C. Annotated Solutions — Part III Capstone Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="im">import</span> hashlib</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a><span class="im">import</span> json</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a><span class="im">import</span> logging</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a><span class="co"># Exam Task 15.1 (30 pts)</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a><span class="kw">def</span> audit_repo_hygiene(repo_dir):</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    <span class="co">"""Inspect repo_dir for docs, .gitignore, .env leaks &amp; checkpoints."""</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    root <span class="op">=</span> Path(repo_dir)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    has_readme <span class="op">=</span> (root <span class="op">/</span> <span class="st">"README.md"</span>).is_file()</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    has_gitignore <span class="op">=</span> (root <span class="op">/</span> <span class="st">".gitignore"</span>).is_file()</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    has_env_leak <span class="op">=</span> (root <span class="op">/</span> <span class="st">".env"</span>).is_file()</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>    has_checkpoints <span class="op">=</span> (root <span class="op">/</span> <span class="st">".ipynb_checkpoints"</span>).is_dir()</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>    ready_to_push <span class="op">=</span> (</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>        has_readme</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>        <span class="kw">and</span> has_gitignore</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>        <span class="kw">and</span> <span class="kw">not</span> has_env_leak</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>        <span class="kw">and</span> <span class="kw">not</span> has_checkpoints</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>    )</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>        <span class="st">"has_readme"</span>: has_readme,</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>        <span class="st">"has_gitignore"</span>: has_gitignore,</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        <span class="st">"has_env_leak"</span>: has_env_leak,</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>        <span class="st">"has_checkpoints"</span>: has_checkpoints,</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>        <span class="st">"ready_to_push"</span>: ready_to_push,</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    }</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a></span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a><span class="co"># Exam Task 15.2 (35 pts)</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a><span class="kw">def</span> verify_data_provenance(data_dir, manifest_dict):</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    <span class="co">"""Verify data_dir files against manifest_dict SHA-256 digests."""</span></span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    root <span class="op">=</span> Path(data_dir)</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    matched <span class="op">=</span> []</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>    modified <span class="op">=</span> []</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>    missing <span class="op">=</span> []</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>    <span class="cf">for</span> fname <span class="kw">in</span> <span class="bu">sorted</span>(manifest_dict):</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>        fpath <span class="op">=</span> root <span class="op">/</span> fname</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>        <span class="cf">if</span> <span class="kw">not</span> fpath.is_file():</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>            missing.append(fname)</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>            <span class="cf">continue</span></span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>        actual_sha <span class="op">=</span> hashlib.sha256(fpath.read_bytes()).hexdigest()</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>        <span class="cf">if</span> actual_sha <span class="op">==</span> manifest_dict[fname][<span class="st">"sha256"</span>]:</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>            matched.append(fname)</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>        <span class="cf">else</span>:</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>            modified.append(fname)</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        <span class="st">"matched"</span>: matched,</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>        <span class="st">"modified"</span>: modified,</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>        <span class="st">"missing"</span>: missing,</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>        <span class="st">"all_verified"</span>: <span class="bu">len</span>(modified) <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> <span class="bu">len</span>(missing) <span class="op">==</span> <span class="dv">0</span>,</span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>    }</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a></span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a><span class="co"># Exam Task 15.3 (35 pts)</span></span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a><span class="kw">def</span> run_logged_cleaning_pipeline(in_csv, out_json, log_path):</span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>    <span class="co">"""Hash, clean, log, and summarize hb_g_dl CSV to indented JSON."""</span></span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a>    src_sha <span class="op">=</span> hashlib.sha256(Path(in_csv).read_bytes()).hexdigest()</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>    logger <span class="op">=</span> logging.getLogger(<span class="st">"ch15_capstone_pipeline"</span>)</span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>    logger.setLevel(logging.INFO)</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a>    logger.propagate <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>    handler <span class="op">=</span> logging.FileHandler(log_path, mode<span class="op">=</span><span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>)</span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a>    handler.setFormatter(logging.Formatter(<span class="st">"[</span><span class="sc">%(levelname)s</span><span class="st">] </span><span class="sc">%(message)s</span><span class="st">"</span>))</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>    logger.addHandler(handler)</span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a></span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>    valid_vals <span class="op">=</span> []</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>    rejected <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>    <span class="cf">try</span>:</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>        logger.info(<span class="st">"Pipeline started (sha256=</span><span class="sc">%s</span><span class="st">)"</span>, src_sha)</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>        <span class="cf">with</span> <span class="bu">open</span>(in_csv, <span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> in_f:</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a>            <span class="cf">for</span> row_num, row <span class="kw">in</span> <span class="bu">enumerate</span>(csv.DictReader(in_f), start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb21-70"><a href="#cb21-70" aria-label="70"></a>                raw <span class="op">=</span> row[<span class="st">"hb_g_dl"</span>].strip()</span>
+<span id="cb21-71"><a href="#cb21-71" aria-label="71"></a>                <span class="cf">if</span> raw <span class="kw">in</span> (<span class="st">""</span>, <span class="st">"N/A"</span>, <span class="st">"999"</span>):</span>
+<span id="cb21-72"><a href="#cb21-72" aria-label="72"></a>                    rejected <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb21-73"><a href="#cb21-73" aria-label="73"></a>                    logger.warning(<span class="st">"Row </span><span class="sc">%d</span><span class="st"> rejected: </span><span class="sc">%r</span><span class="st">"</span>, row_num, raw)</span>
+<span id="cb21-74"><a href="#cb21-74" aria-label="74"></a>                <span class="cf">else</span>:</span>
+<span id="cb21-75"><a href="#cb21-75" aria-label="75"></a>                    valid_vals.append(<span class="bu">float</span>(raw))</span>
+<span id="cb21-76"><a href="#cb21-76" aria-label="76"></a></span>
+<span id="cb21-77"><a href="#cb21-77" aria-label="77"></a>        mean_hb <span class="op">=</span> (</span>
+<span id="cb21-78"><a href="#cb21-78" aria-label="78"></a>            <span class="bu">round</span>(<span class="bu">sum</span>(valid_vals) <span class="op">/</span> <span class="bu">len</span>(valid_vals), <span class="dv">2</span>)</span>
+<span id="cb21-79"><a href="#cb21-79" aria-label="79"></a>            <span class="cf">if</span> valid_vals</span>
+<span id="cb21-80"><a href="#cb21-80" aria-label="80"></a>            <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb21-81"><a href="#cb21-81" aria-label="81"></a>        )</span>
+<span id="cb21-82"><a href="#cb21-82" aria-label="82"></a>        summary <span class="op">=</span> {</span>
+<span id="cb21-83"><a href="#cb21-83" aria-label="83"></a>            <span class="st">"source_sha256"</span>: src_sha,</span>
+<span id="cb21-84"><a href="#cb21-84" aria-label="84"></a>            <span class="st">"valid_count"</span>: <span class="bu">len</span>(valid_vals),</span>
+<span id="cb21-85"><a href="#cb21-85" aria-label="85"></a>            <span class="st">"rejected_count"</span>: rejected,</span>
+<span id="cb21-86"><a href="#cb21-86" aria-label="86"></a>            <span class="st">"mean_hb"</span>: mean_hb,</span>
+<span id="cb21-87"><a href="#cb21-87" aria-label="87"></a>        }</span>
+<span id="cb21-88"><a href="#cb21-88" aria-label="88"></a>        logger.info(</span>
+<span id="cb21-89"><a href="#cb21-89" aria-label="89"></a>            <span class="st">"Pipeline finished: valid=</span><span class="sc">%d</span><span class="st">, rejected=</span><span class="sc">%d</span><span class="st">"</span>,</span>
+<span id="cb21-90"><a href="#cb21-90" aria-label="90"></a>            <span class="bu">len</span>(valid_vals),</span>
+<span id="cb21-91"><a href="#cb21-91" aria-label="91"></a>            rejected,</span>
+<span id="cb21-92"><a href="#cb21-92" aria-label="92"></a>        )</span>
+<span id="cb21-93"><a href="#cb21-93" aria-label="93"></a>    <span class="cf">finally</span>:</span>
+<span id="cb21-94"><a href="#cb21-94" aria-label="94"></a>        logger.removeHandler(handler)</span>
+<span id="cb21-95"><a href="#cb21-95" aria-label="95"></a>        handler.close()</span>
+<span id="cb21-96"><a href="#cb21-96" aria-label="96"></a></span>
+<span id="cb21-97"><a href="#cb21-97" aria-label="97"></a>    <span class="cf">with</span> <span class="bu">open</span>(out_json, <span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> out_f:</span>
+<span id="cb21-98"><a href="#cb21-98" aria-label="98"></a>        json.dump(summary, out_f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb21-99"><a href="#cb21-99" aria-label="99"></a>    <span class="cf">return</span> summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-15-failure-modes" class="level3" data-number="15.8.4">
+<h3 data-number="15.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-15-failure-modes"><span class="header-section-number">15.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 15 Failure Modes</h3>
+<ol type="1">
+<li><strong>Leaking <code>logging.FileHandler</code> Across Calls:</strong> Adding a <code>FileHandler</code> to a named logger without <code>logger.removeHandler(handler)</code> and <code>handler.close()</code> inside a <code>finally:</code> block silently duplicates every subsequent log message and can lock <code>tempfile.TemporaryDirectory()</code> folders on cleanup.</li>
+<li><strong>Hashing Text Mode Instead of Binary Mode (<code>"r"</code> vs.&nbsp;<code>"rb"</code>):</strong> Passing decoded strings into <code>hashlib.sha256()</code> triggers <code>TypeError: Strings must be encoded before hashing</code> (or <code>UnicodeDecodeError</code> on binary assets). Always read raw bytes via <code>open(path, "rb")</code> or <code>Path(path).read_bytes()</code>.</li>
+<li><strong>Forgetting Existence &amp; Negation Guards:</strong> Returning matched files instead of unignored files in <code>.gitignore</code> audits, or hashing a missing manifest entry without checking <code>fpath.is_file()</code> first, flips security checks upside down or crashes mid-audit with <code>FileNotFoundError</code>.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Part III Milestone Unlocked — Ready for Scientific Computing &amp; Biostatistics!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Congratulations on completing <strong>Part III (Software Engineering &amp; Reproducible Research Workflow)</strong>! You now command the full modern Python engineering toolkit—modules, environments, object-oriented design, Git &amp; GitHub version control, type hints, structured logging, and cryptographic dataset provenance. In <strong>Part IV</strong>, you will put these reproducible templates to work at scale with <strong>NumPy</strong>, <strong>Pandas</strong>, <strong>publication-grade data visualization</strong>, and <strong>biostatistical inference</strong>.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="pagination-link" aria-label="Professional Engineering with VS Code, Virtual Environments, Modules, and Packages">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="pagination-link" aria-label="NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action">
+        <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

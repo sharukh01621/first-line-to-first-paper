@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>28&nbsp; PyTorch Core — Tensors, Autograd, nn.Module, Datasets, and Training Loops – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" rel="next">
+<link href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</a></li><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch28-intuition" id="toc-sec-ch28-intuition" class="nav-link" data-scroll-target="#sec-ch28-intuition"><span class="header-section-number">28.1</span> Stage 1 — First-Principles Intuition: Why PyTorch Replaces Hand-Coded Gradients</a></li>
+  <li><a href="#sec-ch28-mental-model" id="toc-sec-ch28-mental-model" class="nav-link" data-scroll-target="#sec-ch28-mental-model"><span class="header-section-number">28.2</span> Stage 2 — Visual Mental Model: Data Pipeline, Autograd DAG &amp; 5-Step Loop</a></li>
+  <li><a href="#sec-ch28-walkthrough" id="toc-sec-ch28-walkthrough" class="nav-link" data-scroll-target="#sec-ch28-walkthrough"><span class="header-section-number">28.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch28-setup" id="toc-sec-ch28-setup" class="nav-link" data-scroll-target="#sec-ch28-setup"><span class="header-section-number">28.3.1</span> Setup: Device Portability Helper &amp; Cleaning <code>mch_survey_sample</code></a></li>
+  <li><a href="#sec-ch28-tensors" id="toc-sec-ch28-tensors" class="nav-link" data-scroll-target="#sec-ch28-tensors"><span class="header-section-number">28.3.2</span> Tensors vs.&nbsp;NumPy, <code>float32</code>, Aliasing &amp; Device Portability</a></li>
+  <li><a href="#sec-ch28-autograd" id="toc-sec-ch28-autograd" class="nav-link" data-scroll-target="#sec-ch28-autograd"><span class="header-section-number">28.3.3</span> Dynamic Autograd Graph &amp; the <code>.grad.zero_()</code> Accumulation Trap</a></li>
+  <li><a href="#sec-ch28-dataset" id="toc-sec-ch28-dataset" class="nav-link" data-scroll-target="#sec-ch28-dataset"><span class="header-section-number">28.3.4</span> Custom <code>Dataset</code> &amp; Mini-Batch <code>DataLoader</code> on <code>mch_survey_sample</code></a></li>
+  <li><a href="#sec-ch28-module" id="toc-sec-ch28-module" class="nav-link" data-scroll-target="#sec-ch28-module"><span class="header-section-number">28.3.5</span> Defining <code>nn.Module</code> (<code>ClinicalRiskMLP</code>) &amp; Pairing Raw Logits with <code>BCEWithLogitsLoss</code></a></li>
+  <li><a href="#sec-ch28-trainloop" id="toc-sec-ch28-trainloop" class="nav-link" data-scroll-target="#sec-ch28-trainloop"><span class="header-section-number">28.3.6</span> The Canonical 5-Step PyTorch Training Loop</a></li>
+  <li><a href="#sec-ch28-checkpoint" id="toc-sec-ch28-checkpoint" class="nav-link" data-scroll-target="#sec-ch28-checkpoint"><span class="header-section-number">28.3.7</span> Inference Mode (<code>eval()</code> + <code>torch.no_grad()</code>) &amp; Safe <code>state_dict</code> Checkpointing</a></li>
+  <li><a href="#sec-ch28-errors" id="toc-sec-ch28-errors" class="nav-link" data-scroll-target="#sec-ch28-errors"><span class="header-section-number">28.3.8</span> Break It On Purpose! (PyTorch Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch28-blueprint" id="toc-sec-ch28-blueprint" class="nav-link" data-scroll-target="#sec-ch28-blueprint"><span class="header-section-number">28.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">28.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">28.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch28-todos" id="toc-sec-ch28-todos" class="nav-link" data-scroll-target="#sec-ch28-todos"><span class="header-section-number">28.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch28-test" id="toc-sec-ch28-test" class="nav-link" data-scroll-target="#sec-ch28-test"><span class="header-section-number">28.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch28-exam" id="toc-sec-ch28-exam" class="nav-link" data-scroll-target="#sec-ch28-exam"><span class="header-section-number">28.7</span> Stage 7 — Chapter 28 Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-28.1-30-points-count_model_parametersmodel" id="toc-exam-task-28.1-30-points-count_model_parametersmodel" class="nav-link" data-scroll-target="#exam-task-28.1-30-points-count_model_parametersmodel"><span class="header-section-number">28.7.1</span> Exam Task 28.1 (30 Points): <code>count_model_parameters(model)</code></a></li>
+  <li><a href="#exam-task-28.2-35-points-train_pytorch_tabular_modelx_train-y_train-x_val-y_val-hidden_dim16-epochs40-lr0.02-batch_size32-seed42" id="toc-exam-task-28.2-35-points-train_pytorch_tabular_modelx_train-y_train-x_val-y_val-hidden_dim16-epochs40-lr0.02-batch_size32-seed42" class="nav-link" data-scroll-target="#exam-task-28.2-35-points-train_pytorch_tabular_modelx_train-y_train-x_val-y_val-hidden_dim16-epochs40-lr0.02-batch_size32-seed42"><span class="header-section-number">28.7.2</span> Exam Task 28.2 (35 Points): <code>train_pytorch_tabular_model(X_train, y_train, X_val, y_val, hidden_dim=16, epochs=40, lr=0.02, batch_size=32, seed=42)</code></a></li>
+  <li><a href="#exam-task-28.3-35-points-save_and_verify_state_dictmodel-fresh_model-x_sample-ckpt_path" id="toc-exam-task-28.3-35-points-save_and_verify_state_dictmodel-fresh_model-x_sample-ckpt_path" class="nav-link" data-scroll-target="#exam-task-28.3-35-points-save_and_verify_state_dictmodel-fresh_model-x_sample-ckpt_path"><span class="header-section-number">28.7.3</span> Exam Task 28.3 (35 Points): <code>save_and_verify_state_dict(model, fresh_model, X_sample, ckpt_path)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch28-solutions" id="toc-sec-ch28-solutions" class="nav-link" data-scroll-target="#sec-ch28-solutions"><span class="header-section-number">28.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">28.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">28.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-28-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-28-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-28-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">28.8.3</span> C. Annotated Solutions — Chapter 28 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-28-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-28-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-28-failure-modes"><span class="header-section-number">28.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 28 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</a></li><li class="breadcrumb-item"><a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch28" class="quarto-section-identifier"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Build an airtight engineering command of <strong>PyTorch’s core deep-learning engine</strong> from raw tensors to reproducible, checkpointed neural networks. Working on Bangladesh maternal and child health records (<code>mch_survey_sample</code>), you will master <strong><code>torch.float32</code> memory safety and device portability</strong>, trace <strong>reverse-mode automatic differentiation (<code>autograd</code>)</strong> and its gradient-accumulation trap, author custom <strong><code>Dataset</code>/<code>DataLoader</code></strong> pipelines and raw-logit <strong><code>nn.Module</code></strong> architectures paired with <strong><code>BCEWithLogitsLoss</code></strong>, execute the <strong>canonical 5-step training loop</strong>, enforce <strong><code>eval()</code> + <code>torch.no_grad()</code></strong> inference discipline, and persist portable <strong><code>state_dict</code></strong> checkpoints safely with <code>weights_only=True</code>.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb">ch28 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 28 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb">ch28 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 28 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb">ch28 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 28 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Convert NumPy arrays into detached <strong><code>torch.float32</code> copies</strong> without hidden memory aliasing (<code>torch.tensor</code> vs.&nbsp;<code>torch.from_numpy</code>), and write device-agnostic code (<code>cuda</code>, <code>mps</code>, <code>cpu</code>) via a clean <code>get_device()</code> helper.</li>
+<li>Trace PyTorch’s dynamic <strong>autograd computation graph</strong> (<code>requires_grad=True</code>, <code>.grad_fn</code>, <code>.backward()</code>), explain why gradients accumulate by default, and prevent silent corruption with <code>zero_grad()</code>.</li>
+<li>Subclass <strong><code>torch.utils.data.Dataset</code></strong> (<code>__init__</code>, <code>__len__</code>, <code>__getitem__</code>) and wrap it in a mini-batch <strong><code>DataLoader</code></strong> with <code>(batch, 1)</code> binary target alignment and leak-free feature scaling.</li>
+<li>Author modular <strong><code>nn.Module</code></strong> networks (<code>Linear -&gt; ReLU -&gt; Linear</code>) that output <strong>raw logits</strong> paired with <strong><code>nn.BCEWithLogitsLoss()</code></strong>, avoiding the double-sigmoid trap, and audit trainable vs.&nbsp;frozen parameter counts.</li>
+<li>Implement the <strong>canonical 5-step PyTorch training loop</strong> (<code>zero_grad</code> <span class="math inline">\(\rightarrow\)</span> <code>forward</code> <span class="math inline">\(\rightarrow\)</span> <code>loss</code> <span class="math inline">\(\rightarrow\)</span> <code>backward</code> <span class="math inline">\(\rightarrow\)</span> <code>step</code>) with sample-weighted epoch averaging and deterministic CPU seeding.</li>
+<li>Switch cleanly to inference mode using <strong>both <code>model.eval()</code> and <code>with torch.no_grad():</code></strong>, and save/reload portable <strong><code>model.state_dict()</code></strong> checkpoints safely via <code>torch.load(..., weights_only=True)</code>.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch28-intuition" class="level2" data-number="28.1">
+<h2 data-number="28.1" class="anchored" data-anchor-id="sec-ch28-intuition"><span class="header-section-number">28.1</span> Stage 1 — First-Principles Intuition: Why PyTorch Replaces Hand-Coded Gradients</h2>
+<p>In Chapter 27, deriving chain-rule gradients by hand for a two-layer MLP revealed how neural networks learn—and also showed how fragile manual backpropagation becomes the moment you add a residual skip connection, dropout mask, or third hidden layer. <strong>PyTorch</strong> automates that entire calculus engine while keeping Python completely interactive and debuggable.</p>
+<p>Five mental models unlock 95% of everyday PyTorch engineering:</p>
+<ul>
+<li><strong>Tensors Are Hardware-Portable, Autograd-Aware Arrays:</strong> Like NumPy <code>ndarray</code>s, PyTorch tensors store contiguous multi-dimensional numbers—but PyTorch layers default to <strong><code>torch.float32</code></strong> (half the memory and far faster on GPUs than NumPy’s <code>float64</code>), can migrate cleanly across <code>cpu</code>, <code>cuda</code>, and Apple <code>mps</code> via <code>.to(device)</code>, and can record every arithmetic operation for differentiation.</li>
+<li><strong>Define-by-Run Autograd Graphs:</strong> Whenever an operation touches a tensor with <code>requires_grad=True</code>, PyTorch builds a fresh <strong>Directed Acyclic Graph (DAG)</strong> on the fly. Calling <code>loss.backward()</code> traverses that DAG in reverse using the chain rule, stores gradients inside each leaf tensor’s <code>.grad</code> attribute, and immediately frees intermediate activations to save memory.</li>
+<li><strong>Gradients Accumulate by Design:</strong> PyTorch <em>adds</em> new gradients onto existing <code>.grad</code> buffers (<code>+=</code>) rather than overwriting them—which enables multi-step gradient accumulation for giant batches, but silently doubles or corrupts updates if you forget <code>optimizer.zero_grad()</code>!</li>
+<li><strong>Raw Logits + <code>BCEWithLogitsLoss</code> Beat <code>Sigmoid + BCELoss</code>:</strong> Returning raw unbounded logits <span class="math inline">\(z \in (-\infty, +\infty)\)</span> from <code>nn.Module.forward()</code> lets <code>BCEWithLogitsLoss</code> fuse sigmoid and binary cross-entropy using the log-sum-exp identity, avoiding floating-point underflow (<span class="math inline">\(\ln(0)\)</span>) while keeping gradients crisp.</li>
+<li><strong><code>model.eval()</code> and <code>torch.no_grad()</code> Solve Two Different Problems:</strong> <code>model.eval()</code> changes <em>layer behavior</em> (turning off Dropout noise and freezing BatchNorm running statistics), whereas <code>with torch.no_grad():</code> turns off <em>autograd graph construction</em> (cutting validation memory and speeding up inference). Always pair both!</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The 5-Step Heartbeat of Every PyTorch Training Loop
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Whether you train a 97-parameter tabular MLP or a 7-billion-parameter transformer, every single mini-batch repeats the exact same five lines:</p>
+<ol type="1">
+<li><strong><code>optimizer.zero_grad()</code></strong> — wipe stale gradients from the previous batch.</li>
+<li><strong><code>logits = model(xb)</code></strong> — run the forward pass and record the dynamic graph.</li>
+<li><strong><code>loss = criterion(logits, yb)</code></strong> — compute the scalar objective.</li>
+<li><strong><code>loss.backward()</code></strong> — differentiate the graph in reverse to populate <code>.grad</code>.</li>
+<li><strong><code>optimizer.step()</code></strong> — update every parameter with <code>requires_grad=True</code>.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch28-mental-model" class="level2" data-number="28.2">
+<h2 data-number="28.2" class="anchored" data-anchor-id="sec-ch28-mental-model"><span class="header-section-number">28.2</span> Stage 2 — Visual Mental Model: Data Pipeline, Autograd DAG &amp; 5-Step Loop</h2>
+<p>Follow this architecture whenever you wire a tabular clinical cohort into a reproducible PyTorch training and checkpointing workflow:</p>
+<div class="cell" data-fig-width="5.4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 28 (Data Pipeline, Autograd DAG &amp; 5-Step Loop) illustrating 1. Data Pipeline; Dataset (float32) X: (n,p), y: (n,1); DataLoader Mini-Batch (xb, yb); 2. Forward Graph; 1. zero_grad() Clear Stale Grad...">flowchart TD
+    subgraph Data["1. Data Pipeline"]
+        direction LR
+        D1["Dataset (float32)&lt;br/&gt;X: (n,p), y: (n,1)"]
+        D2["DataLoader&lt;br/&gt;Mini-Batch (xb, yb)"]
+        D1 --&gt; D2
+    end
+    subgraph Forward["2. Forward Graph"]
+        direction LR
+        F1["1. zero_grad()&lt;br/&gt;Clear Stale Grads"]
+        F2["2. model(xb)&lt;br/&gt;Raw Logits (b,1)"]
+        F3["3. BCEWithLogits&lt;br/&gt;Build Autograd DAG"]
+        F1 --&gt; F2 --&gt; F3
+    end
+    subgraph Backward["3. Backprop &amp; Eval"]
+        direction LR
+        B1["4. loss.backward()&lt;br/&gt;Compute dL/dW"]
+        B2["5. optimizer.step()&lt;br/&gt;Update Weights"]
+        B3["eval() + no_grad()&lt;br/&gt;Save state_dict()"]
+        B1 --&gt; B2 --&gt; B3
+    end
+    Data --&gt; Forward
+    Forward --&gt; Backward
+</pre>
+</div>
+<p></p><figcaption> Chapter 28 visual mental model: Data Pipeline, Autograd DAG &amp; 5-Step Loop</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the strict separation of concerns across all three tiers: <strong>Data</strong> converts cleaned, leak-free scaled NumPy matrices into <code>float32</code> mini-batches (<code>(batch, p)</code> and <code>(batch, 1)</code>), <strong>Forward</strong> clears old gradients and constructs the dynamic computation graph through raw logits, and <strong>Backprop &amp; Eval</strong> updates parameters before validating gradient-free and saving portable <code>state_dict</code> weights.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Watch Out for the <code>torch.from_numpy()</code> Aliasing Trap!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Calling <code>torch.from_numpy(arr)</code> (or <code>torch.as_tensor(arr, dtype=torch.float32)</code> when <code>arr</code> is already <code>np.float32</code>) creates a tensor that <strong>shares the exact same CPU memory buffer</strong> as <code>arr</code>. Mutating the NumPy array later silently overwrites your PyTorch training tensor! Use <code>torch.tensor(arr, dtype=torch.float32)</code> whenever you want a guaranteed, safe copy.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch28-walkthrough" class="level2" data-number="28.3">
+<h2 data-number="28.3" class="anchored" data-anchor-id="sec-ch28-walkthrough"><span class="header-section-number">28.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch28-setup" class="level3" data-number="28.3.1">
+<h3 data-number="28.3.1" class="anchored" data-anchor-id="sec-ch28-setup"><span class="header-section-number">28.3.1</span> Setup: Device Portability Helper &amp; Cleaning <code>mch_survey_sample</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> os</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">import</span> torch</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> roc_auc_score</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader, Dataset</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a><span class="kw">def</span> get_device():</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>    <span class="cf">if</span> torch.cuda.is_available():</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>        <span class="cf">return</span> torch.device(<span class="st">"cuda"</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>    <span class="cf">if</span> <span class="bu">hasattr</span>(torch.backends, <span class="st">"mps"</span>) <span class="kw">and</span> torch.backends.mps.is_available():</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>        <span class="cf">return</span> torch.device(<span class="st">"mps"</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a>    <span class="cf">return</span> torch.device(<span class="st">"cpu"</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>device <span class="op">=</span> get_device()</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb1-26"><a href="#cb1-26" aria-label="26"></a>    mch[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb1-27"><a href="#cb1-27" aria-label="27"></a>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-label="28"></a>mch[<span class="st">"anc_visits"</span>] <span class="op">=</span> mch[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-label="29"></a>mch[<span class="st">"is_urban"</span>] <span class="op">=</span> (mch[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-label="30"></a>wealth_map <span class="op">=</span> {</span>
+<span id="cb1-31"><a href="#cb1-31" aria-label="31"></a>    <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-label="32"></a>    <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-label="33"></a>}</span>
+<span id="cb1-34"><a href="#cb1-34" aria-label="34"></a>mch[<span class="st">"wealth_num"</span>] <span class="op">=</span> mch[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(wealth_map)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-label="35"></a>feat_cols <span class="op">=</span> [</span>
+<span id="cb1-36"><a href="#cb1-36" aria-label="36"></a>    <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>, <span class="st">"is_urban"</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-label="37"></a>]</span>
+<span id="cb1-38"><a href="#cb1-38" aria-label="38"></a>clean <span class="op">=</span> mch[[<span class="st">"maternal_anemia"</span>, <span class="st">"child_stunted"</span>] <span class="op">+</span> feat_cols].dropna()</span>
+<span id="cb1-39"><a href="#cb1-39" aria-label="39"></a><span class="bu">print</span>(<span class="ss">f"PyTorch: </span><span class="sc">{</span>torch<span class="sc">.</span>__version__<span class="sc">}</span><span class="ss"> | Active device: </span><span class="sc">{</span>device<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-label="40"></a><span class="bu">print</span>(<span class="ss">f"Complete MCH rows: </span><span class="sc">{</span><span class="bu">len</span>(clean)<span class="sc">}</span><span class="ss"> | Features: </span><span class="sc">{</span><span class="bu">len</span>(feat_cols)<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>PyTorch: 2.15.0+cpu | Active device: cpu</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Complete MCH rows: 492 | Features: 4</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Writing <code>get_device()</code> once at the top of every notebook ensures identical code runs seamlessly on an NVIDIA Colab GPU (<code>cuda</code>), Apple Silicon laptop (<code>mps</code>), or deterministic CPU container (<code>cpu</code>). Setting <code>torch.manual_seed(42)</code> locks initial weights and <code>DataLoader</code> shuffling for reproducible science.</p>
+<hr>
+</section>
+<section id="sec-ch28-tensors" class="level3" data-number="28.3.2">
+<h3 data-number="28.3.2" class="anchored" data-anchor-id="sec-ch28-tensors"><span class="header-section-number">28.3.2</span> Tensors vs.&nbsp;NumPy, <code>float32</code>, Aliasing &amp; Device Portability</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="co"># NumPy defaults to float64; PyTorch layers expect float32</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>arr_f64 <span class="op">=</span> np.array([[<span class="fl">24.0</span>, <span class="fl">4.0</span>], [<span class="fl">31.0</span>, <span class="fl">2.0</span>]])</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>arr_f32 <span class="op">=</span> arr_f64.astype(np.float32)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>t_alias <span class="op">=</span> torch.from_numpy(arr_f32)            <span class="co"># shares memory!</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>t_copy <span class="op">=</span> torch.tensor(arr_f32, dtype<span class="op">=</span>torch.float32)  <span class="co"># safe copy</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>arr_f32[<span class="dv">0</span>, <span class="dv">0</span>] <span class="op">=</span> <span class="fl">999.0</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a><span class="bu">print</span>(<span class="ss">f"NumPy default dtype: </span><span class="sc">{</span>arr_f64<span class="sc">.</span>dtype<span class="sc">}</span><span class="ss"> | PyTorch: </span><span class="sc">{</span>t_copy<span class="sc">.</span>dtype<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"from_numpy (aliased) [0,0]: </span><span class="sc">{</span>t_alias[<span class="dv">0</span>, <span class="dv">0</span>]<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss">"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"torch.tensor (safe)  [0,0]: </span><span class="sc">{</span>t_copy[<span class="dv">0</span>, <span class="dv">0</span>]<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss">"</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>t_dev <span class="op">=</span> t_copy.to(device)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a><span class="bu">print</span>(<span class="ss">f"Shape: </span><span class="sc">{</span><span class="bu">tuple</span>(t_dev.shape)<span class="sc">}</span><span class="ss"> | Device: </span><span class="sc">{</span>t_dev<span class="sc">.</span>device<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>NumPy default dtype: float64 | PyTorch: torch.float32</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>from_numpy (aliased) [0,0]: 999.0</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>torch.tensor (safe)  [0,0]: 24.0</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>Shape: (2, 2) | Device: cpu</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at lines 2 and 3 of the output:</p>
+<ul>
+<li>Changing <code>arr_f32[0, 0] = 999.0</code> <em>after</em> calling <code>torch.from_numpy(arr_f32)</code> silently mutated <code>t_alias[0, 0]</code> to <strong><code>999.0</code></strong> because both objects point to the same underlying RAM!</li>
+<li>By contrast, <code>torch.tensor(arr_f32, dtype=torch.float32)</code> allocated an independent <code>float32</code> copy, preserving <strong><code>24.0</code></strong> untouched.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-autograd" class="level3" data-number="28.3.3">
+<h3 data-number="28.3.3" class="anchored" data-anchor-id="sec-ch28-autograd"><span class="header-section-number">28.3.3</span> Dynamic Autograd Graph &amp; the <code>.grad.zero_()</code> Accumulation Trap</h3>
+<p>Consider the scalar quadratic function <span class="math inline">\(y(x) = 3x^2 - 4x + 5\)</span>, whose analytical derivative is <span class="math inline">\(\frac{dy}{dx} = 6x - 4\)</span>. At <span class="math inline">\(x = 2.0\)</span>, exact calculus gives <span class="math inline">\(y = 9.0\)</span> and <span class="math inline">\(\frac{dy}{dx} = 8.0\)</span>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># y = 3x^2 - 4x + 5  =&gt;  dy/dx = 6x - 4  (at x=2: y=9, dy/dx=8)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>x <span class="op">=</span> torch.tensor(<span class="fl">2.0</span>, requires_grad<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>y <span class="op">=</span> <span class="fl">3.0</span> <span class="op">*</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="fl">4.0</span> <span class="op">*</span> x <span class="op">+</span> <span class="fl">5.0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a><span class="bu">print</span>(<span class="ss">f"Forward y=</span><span class="sc">{</span>y<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss"> | grad_fn=</span><span class="sc">{</span><span class="bu">type</span>(y.grad_fn)<span class="sc">.</span><span class="va">__name__</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>y.backward()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a><span class="bu">print</span>(<span class="ss">f"After 1st backward()       -&gt; x.grad = </span><span class="sc">{</span>x<span class="sc">.</span>grad<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss">"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a><span class="co"># Trap: PyTorch ACCUMULATES gradients unless you zero them!</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>y2 <span class="op">=</span> <span class="fl">3.0</span> <span class="op">*</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="fl">4.0</span> <span class="op">*</span> x <span class="op">+</span> <span class="fl">5.0</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>y2.backward()</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a><span class="bu">print</span>(<span class="ss">f"After 2nd (NO zero_grad!)  -&gt; x.grad = </span><span class="sc">{</span>x<span class="sc">.</span>grad<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss">"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>x.grad.zero_()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>y3 <span class="op">=</span> <span class="fl">3.0</span> <span class="op">*</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="fl">4.0</span> <span class="op">*</span> x <span class="op">+</span> <span class="fl">5.0</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>y3.backward()</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a><span class="bu">print</span>(<span class="ss">f"After x.grad.zero_() + 3rd -&gt; x.grad = </span><span class="sc">{</span>x<span class="sc">.</span>grad<span class="sc">.</span>item()<span class="sc">:.1f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Forward y=9.0 | grad_fn=AddBackward0</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>After 1st backward()       -&gt; x.grad = 8.0</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>After 2nd (NO zero_grad!)  -&gt; x.grad = 16.0</span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>After x.grad.zero_() + 3rd -&gt; x.grad = 8.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Three crucial autograd lessons live in those four lines:</p>
+<ul>
+<li><strong><code>y.grad_fn = AddBackward0</code>:</strong> Every computed tensor remembers the backward operator that created it, forming a chain back to leaf <code>x</code>.</li>
+<li><strong>Silent accumulation (<code>8.0 -&gt; 16.0</code>):</strong> Calling <code>y2.backward()</code> without resetting <code>x.grad</code> <em>added</em> <code>8.0</code> on top of the old <code>8.0</code>! In a training loop, forgetting <code>optimizer.zero_grad()</code> turns every mini-batch gradient into a snowballing sum of all previous batches.</li>
+<li><strong>In-place underscore convention (<code>zero_()</code>):</strong> Trailing underscores in PyTorch (<code>zero_()</code>, <code>add_()</code>, <code>fill_()</code>) mutate tensors in place; resetting <code>x.grad.zero_()</code> restores the exact derivative <strong><code>8.0</code></strong>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-dataset" class="level3" data-number="28.3.4">
+<h3 data-number="28.3.4" class="anchored" data-anchor-id="sec-ch28-dataset"><span class="header-section-number">28.3.4</span> Custom <code>Dataset</code> &amp; Mini-Batch <code>DataLoader</code> on <code>mch_survey_sample</code></h3>
+<p>Before constructing tensors, split <code>mch_survey_sample</code> stratified 75/25 on <code>child_stunted</code> and fit <code>StandardScaler</code> <strong>strictly on <code>X_train</code></strong> (preventing validation leakage!), then package both splits into a reusable <code>Dataset</code> and <code>DataLoader</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>X_all <span class="op">=</span> clean[feat_cols].to_numpy(dtype<span class="op">=</span>np.float32)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>y_all <span class="op">=</span> clean[<span class="st">"child_stunted"</span>].to_numpy(dtype<span class="op">=</span>np.float32)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>X_tr, X_va, y_tr, y_va <span class="op">=</span> train_test_split(</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    X_all, y_all, test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>y_all, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a><span class="co"># Fit StandardScaler strictly on X_train to prevent leakage</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>X_tr_s <span class="op">=</span> scaler.fit_transform(X_tr)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>X_va_s <span class="op">=</span> scaler.transform(X_va)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a><span class="kw">class</span> ClinicalTabularDataset(Dataset):</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, X, y):</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>        <span class="va">self</span>.X <span class="op">=</span> torch.tensor(X, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>        <span class="va">self</span>.y <span class="op">=</span> torch.tensor(y, dtype<span class="op">=</span>torch.float32).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.X)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, idx):</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>        <span class="cf">return</span> <span class="va">self</span>.X[idx], <span class="va">self</span>.y[idx]</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>train_ds <span class="op">=</span> ClinicalTabularDataset(X_tr_s, y_tr)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-label="25"></a>val_ds <span class="op">=</span> ClinicalTabularDataset(X_va_s, y_va)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-label="26"></a>train_loader <span class="op">=</span> DataLoader(train_ds, batch_size<span class="op">=</span><span class="dv">32</span>, shuffle<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-label="27"></a>val_loader <span class="op">=</span> DataLoader(val_ds, batch_size<span class="op">=</span><span class="dv">32</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-label="28"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-label="29"></a>xb, yb <span class="op">=</span> <span class="bu">next</span>(<span class="bu">iter</span>(train_loader))</span>
+<span id="cb7-30"><a href="#cb7-30" aria-label="30"></a><span class="bu">print</span>(<span class="ss">f"Train n=</span><span class="sc">{</span><span class="bu">len</span>(train_ds)<span class="sc">}</span><span class="ss"> | Val n=</span><span class="sc">{</span><span class="bu">len</span>(val_ds)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-label="31"></a><span class="bu">print</span>(</span>
+<span id="cb7-32"><a href="#cb7-32" aria-label="32"></a>    <span class="ss">f"First batch X: </span><span class="sc">{</span><span class="bu">tuple</span>(xb.shape)<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>xb<span class="sc">.</span>dtype<span class="sc">}</span><span class="ss">) | "</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-label="33"></a>    <span class="ss">f"y: </span><span class="sc">{</span><span class="bu">tuple</span>(yb.shape)<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>yb<span class="sc">.</span>dtype<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-label="34"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Train n=369 | Val n=123</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>First batch X: (32, 4) (torch.float32) | y: (32, 1) (torch.float32)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice two subtle best practices:</p>
+<ul>
+<li><strong><code>.reshape(-1, 1)</code> on <code>self.y</code>:</strong> Storing targets as 2D <code>(n, 1)</code> rather than 1D <code>(n,)</code> ensures every mini-batch <code>yb</code> has shape <code>(32, 1)</code>, matching the <code>(32, 1)</code> logits returned by <code>nn.Linear(..., 1)</code> with zero broadcasting surprises!</li>
+<li><strong><code>shuffle=True</code> for training, <code>shuffle=False</code> for validation:</strong> Shuffling training batches breaks sample-order correlations every epoch, while keeping validation unshuffled preserves deterministic row alignment for diagnostics and auditing.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-module" class="level3" data-number="28.3.5">
+<h3 data-number="28.3.5" class="anchored" data-anchor-id="sec-ch28-module"><span class="header-section-number">28.3.5</span> Defining <code>nn.Module</code> (<code>ClinicalRiskMLP</code>) &amp; Pairing Raw Logits with <code>BCEWithLogitsLoss</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="kw">class</span> ClinicalRiskMLP(nn.Module):</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_dim, hidden_dim<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>        <span class="va">self</span>.net <span class="op">=</span> nn.Sequential(</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>            nn.Linear(in_dim, hidden_dim),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>            nn.ReLU(),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>            nn.Linear(hidden_dim, <span class="dv">1</span>),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>        )</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>        <span class="co"># Return raw logits — NO sigmoid! BCEWithLogitsLoss fuses it.</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>        <span class="cf">return</span> <span class="va">self</span>.net(x)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>model <span class="op">=</span> ClinicalRiskMLP(in_dim<span class="op">=</span><span class="dv">4</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>).to(device)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a>n_params <span class="op">=</span> <span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters())</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>logits_0 <span class="op">=</span> model(xb.to(device))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>criterion <span class="op">=</span> nn.BCEWithLogitsLoss()</span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a>init_loss <span class="op">=</span> criterion(logits_0, yb.to(device)).item()</span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a><span class="bu">print</span>(<span class="ss">f"Total trainable parameters: </span><span class="sc">{</span>n_params<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a><span class="bu">print</span>(</span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a>    <span class="ss">f"Logits shape: </span><span class="sc">{</span><span class="bu">tuple</span>(logits_0.shape)<span class="sc">}</span><span class="ss"> | "</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a>    <span class="ss">f"Initial batch BCE loss: </span><span class="sc">{</span>init_loss<span class="sc">:.5f}</span><span class="ss">"</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Total trainable parameters: 97</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Logits shape: (32, 1) | Initial batch BCE loss: 0.77285</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Check the parameter arithmetic by hand:</p>
+<ul>
+<li>Layer 1 (<code>nn.Linear(4, 16)</code>): <span class="math inline">\(4 \times 16 = 64\)</span> weights <span class="math inline">\(+ 16\)</span> biases <span class="math inline">\(= \mathbf{80}\)</span> parameters.</li>
+<li>Activation (<code>nn.ReLU()</code>): <span class="math inline">\(\mathbf{0}\)</span> parameters.</li>
+<li>Layer 2 (<code>nn.Linear(16, 1)</code>): <span class="math inline">\(16 \times 1 = 16\)</span> weights <span class="math inline">\(+ 1\)</span> bias <span class="math inline">\(= \mathbf{17}\)</span> parameters.</li>
+<li>Total: <span class="math inline">\(80 + 17 = \mathbf{97}\)</span> trainable scalar parameters! Calling <code>super().__init__()</code> inside <code>__init__</code> is mandatory so <code>nn.Module</code> registers every sub-layer’s parameters into <code>model.parameters()</code> and <code>model.state_dict()</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-trainloop" class="level3" data-number="28.3.6">
+<h3 data-number="28.3.6" class="anchored" data-anchor-id="sec-ch28-trainloop"><span class="header-section-number">28.3.6</span> The Canonical 5-Step PyTorch Training Loop</h3>
+<p>Now wire <code>ClinicalRiskMLP</code>, <code>BCEWithLogitsLoss</code>, and <code>Adam(lr=0.02)</code> together over 30 epochs, monitoring both sample-weighted training loss and validation ROC-AUC:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>model <span class="op">=</span> ClinicalRiskMLP(in_dim<span class="op">=</span><span class="dv">4</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>).to(device)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>criterion <span class="op">=</span> nn.BCEWithLogitsLoss()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>optimizer <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span><span class="fl">0.02</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a><span class="cf">for</span> epoch <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">31</span>):</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>    model.train()</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>    tr_sum, tr_n <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>    <span class="cf">for</span> xb, yb <span class="kw">in</span> train_loader:</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>        xb, yb <span class="op">=</span> xb.to(device), yb.to(device)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>        optimizer.zero_grad()          <span class="co"># 1. Clear stale gradients</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>        logits <span class="op">=</span> model(xb)             <span class="co"># 2. Forward pass (raw logits)</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>        loss <span class="op">=</span> criterion(logits, yb)   <span class="co"># 3. Compute scalar BCE loss</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>        loss.backward()                <span class="co"># 4. Backprop via autograd</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>        optimizer.step()               <span class="co"># 5. Update weights</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a>        tr_sum <span class="op">+=</span> loss.item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a>        tr_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>    tr_loss <span class="op">=</span> tr_sum <span class="op">/</span> tr_n</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a>    <span class="cf">if</span> epoch <span class="kw">in</span> (<span class="dv">1</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">30</span>):</span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a>        model.<span class="bu">eval</span>()</span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a>        va_sum, va_n, p_list, y_list <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span>, [], []</span>
+<span id="cb11-23"><a href="#cb11-23" aria-label="23"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb11-24"><a href="#cb11-24" aria-label="24"></a>            <span class="cf">for</span> xb, yb <span class="kw">in</span> val_loader:</span>
+<span id="cb11-25"><a href="#cb11-25" aria-label="25"></a>                xb, yb <span class="op">=</span> xb.to(device), yb.to(device)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-label="26"></a>                lg <span class="op">=</span> model(xb)</span>
+<span id="cb11-27"><a href="#cb11-27" aria-label="27"></a>                va_sum <span class="op">+=</span> criterion(lg, yb).item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-label="28"></a>                va_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb11-29"><a href="#cb11-29" aria-label="29"></a>                p_list.append(torch.sigmoid(lg).cpu().numpy().ravel())</span>
+<span id="cb11-30"><a href="#cb11-30" aria-label="30"></a>                y_list.append(yb.cpu().numpy().ravel())</span>
+<span id="cb11-31"><a href="#cb11-31" aria-label="31"></a>        auc <span class="op">=</span> roc_auc_score(</span>
+<span id="cb11-32"><a href="#cb11-32" aria-label="32"></a>            np.concatenate(y_list), np.concatenate(p_list)</span>
+<span id="cb11-33"><a href="#cb11-33" aria-label="33"></a>        )</span>
+<span id="cb11-34"><a href="#cb11-34" aria-label="34"></a>        <span class="bu">print</span>(</span>
+<span id="cb11-35"><a href="#cb11-35" aria-label="35"></a>            <span class="ss">f"Epoch </span><span class="sc">{</span>epoch<span class="sc">:2d}</span><span class="ss"> | train_loss=</span><span class="sc">{</span>tr_loss<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-label="36"></a>            <span class="ss">f"val_loss=</span><span class="sc">{</span>va_sum <span class="op">/</span> va_n<span class="sc">:.4f}</span><span class="ss"> | val_auc=</span><span class="sc">{</span>auc<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-label="37"></a>        )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>Epoch  1 | train_loss=0.5409 | val_loss=0.3655 | val_auc=0.7861</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>Epoch 10 | train_loss=0.3614 | val_loss=0.3325 | val_auc=0.7905</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>Epoch 20 | train_loss=0.3560 | val_loss=0.3326 | val_auc=0.7861</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>Epoch 30 | train_loss=0.3547 | val_loss=0.3364 | val_auc=0.7811</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read those four epochs like an experienced deep-learning researcher:</p>
+<ul>
+<li>Training loss drops cleanly from <strong><code>0.5409</code> to <code>0.3547</code></strong>, while validation ROC-AUC reaches <strong><code>0.7905</code></strong> at Epoch 10—edging past Chapter 23’s linear logistic regression (<code>0.7772</code>) on the exact same 4 non-leaking features!</li>
+<li>Notice also how after Epoch 10, <code>train_loss</code> keeps drifting downward (<code>0.3614 -&gt; 0.3547</code>) while <code>val_loss</code> ticks slightly upward (<code>0.3325 -&gt; 0.3364</code>). That gentle divergence is early overfitting—precisely why Chapter 29 introduces dropout, weight decay, learning-rate schedules, and early stopping!</li>
+<li>Multiplying <code>loss.item() * len(xb)</code> and dividing by <code>tr_n</code> computes the <strong>exact sample-weighted epoch mean</strong>, even though the final mini-batch of 369 rows contains only <code>369 % 32 = 17</code> samples!</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-checkpoint" class="level3" data-number="28.3.7">
+<h3 data-number="28.3.7" class="anchored" data-anchor-id="sec-ch28-checkpoint"><span class="header-section-number">28.3.7</span> Inference Mode (<code>eval()</code> + <code>torch.no_grad()</code>) &amp; Safe <code>state_dict</code> Checkpointing</h3>
+<p>Never save a whole PyTorch model object via <code>torch.save(model, path)</code>—Python pickle couples the file to your exact class path and creates arbitrary-code-execution risks. Instead, persist only <strong><code>model.state_dict()</code></strong> and reload with <strong><code>weights_only=True</code></strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>X_sample <span class="op">=</span> torch.tensor(X_va_s[:<span class="dv">8</span>], dtype<span class="op">=</span>torch.float32).to(device)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>    ckpt_path <span class="op">=</span> os.path.join(tmpdir, <span class="st">"stunting_mlp.pt"</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>    torch.save(model.state_dict(), ckpt_path)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>    file_bytes <span class="op">=</span> os.path.getsize(ckpt_path)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>    reloaded <span class="op">=</span> ClinicalRiskMLP(in_dim<span class="op">=</span><span class="dv">4</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>).to(device)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>    state <span class="op">=</span> torch.load(</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>        ckpt_path, map_location<span class="op">=</span>device, weights_only<span class="op">=</span><span class="va">True</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>    )</span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a>    reloaded.load_state_dict(state)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb13-14"><a href="#cb13-14" aria-label="14"></a>    reloaded.<span class="bu">eval</span>()</span>
+<span id="cb13-15"><a href="#cb13-15" aria-label="15"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb13-16"><a href="#cb13-16" aria-label="16"></a>        p_orig <span class="op">=</span> torch.sigmoid(model(X_sample))</span>
+<span id="cb13-17"><a href="#cb13-17" aria-label="17"></a>        p_load <span class="op">=</span> torch.sigmoid(reloaded(X_sample))</span>
+<span id="cb13-18"><a href="#cb13-18" aria-label="18"></a>    exact <span class="op">=</span> <span class="bu">bool</span>(torch.allclose(p_orig, p_load, atol<span class="op">=</span><span class="fl">1e-6</span>))</span>
+<span id="cb13-19"><a href="#cb13-19" aria-label="19"></a>    <span class="bu">print</span>(<span class="ss">f"Checkpoint size: </span><span class="sc">{</span>file_bytes<span class="sc">}</span><span class="ss"> bytes | Match: </span><span class="sc">{</span>exact<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-label="20"></a>    <span class="bu">print</span>(<span class="ss">f"First 4 probs: </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(p_load.cpu().numpy().ravel()[:<span class="dv">4</span>], <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>Checkpoint size: 2959 bytes | Match: True</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>First 4 probs: [0.1303 0.244  0.3101 0.0673]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Wrapping temporary checkpoint experiments inside <code>with tempfile.TemporaryDirectory() as tmpdir:</code> guarantees zero stray <code>.pt</code> artifacts pollute your repository, while <code>map_location=device</code> and <code>weights_only=True</code> make your checkpoint portable across CPU/GPU machines and safe in PyTorch 2.x!</p>
+<hr>
+</section>
+<section id="sec-ch28-errors" class="level3" data-number="28.3.8">
+<h3 data-number="28.3.8" class="anchored" data-anchor-id="sec-ch28-errors"><span class="header-section-number">28.3.8</span> Break It On Purpose! (PyTorch Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — RuntimeError (Float64 Input into Float32 <code>nn.Linear</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>layer <span class="op">=</span> nn.Linear(<span class="dv">4</span>, <span class="dv">1</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>x_double <span class="op">=</span> torch.tensor([[<span class="fl">1.0</span>, <span class="fl">2.0</span>, <span class="fl">3.0</span>, <span class="fl">4.0</span>]], dtype<span class="op">=</span>torch.float64)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>layer(x_double)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>RuntimeError: mat1 and mat2 must have the same dtype,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>but got Double and Float</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> NumPy arrays default to <code>float64</code> (<code>Double</code>), whereas PyTorch layers initialize weights in <code>torch.float32</code> (<code>Float</code>). Converting a NumPy matrix via <code>torch.from_numpy(arr)</code> without casting triggers this exact crash on the first forward pass.<br>
+<strong>Fix:</strong> Always convert features and binary targets with <code>torch.tensor(arr, dtype=torch.float32)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — RuntimeError (Feature Dimension Mismatch in <code>nn.Linear</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>layer4 <span class="op">=</span> nn.Linear(<span class="dv">4</span>, <span class="dv">16</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>x_wrong <span class="op">=</span> torch.randn(<span class="dv">8</span>, <span class="dv">3</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>layer4(x_wrong)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>RuntimeError: addmm: mat1 and mat2 shapes cannot be multiplied</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>(8x3 and 4x16)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Matrix multiplication <code>X @ W^T + b</code> requires <code>X.shape[-1] == layer.in_features</code>. Here the batch has <code>3</code> columns while <code>layer4</code> expects <code>4</code>.<br>
+<strong>Fix:</strong> Inspect <code>X.shape</code> before model instantiation and pass <code>in_dim=X_train.shape[1]</code> programmatically instead of hardcoding magic integers.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — RuntimeError (Double <code>.backward()</code> on a Freed Graph)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>w <span class="op">=</span> torch.tensor(<span class="fl">3.0</span>, requires_grad<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>loss <span class="op">=</span> (w <span class="op">-</span> <span class="fl">1.0</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>loss.backward()</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>loss.backward()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>RuntimeError: Trying to backward through the graph a second time</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>(or directly access saved tensors after they have already been freed).</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>Specify retain_graph=True if you need to backward through the graph</span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a>a second time...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> To keep GPU/CPU memory low, PyTorch frees intermediate autograd buffers immediately after <code>loss.backward()</code> completes. Calling <code>.backward()</code> again on the <em>same</em> <code>loss</code> tensor—or reusing a cached tensor from a previous epoch without <code>.detach()</code>—hits this error.<br>
+<strong>Fix:</strong> Recompute the forward pass inside each training step (one fresh graph per <code>.backward()</code>), or detach logged scalars with <code>.item()</code> / <code>.detach()</code>. Only pass <code>retain_graph=True</code> for specialized multi-loss research algorithms.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch28-blueprint" class="level2" data-number="28.4">
+<h2 data-number="28.4" class="anchored" data-anchor-id="sec-ch28-blueprint"><span class="header-section-number">28.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Your health-analytics lab wants a single reproducible pipeline <code>train_and_checkpoint_mch_mlp(raw_df, target="child_stunted", epochs=30, seed=42)</code> that cleans <code>mch_survey_sample</code> without mutating it, applies leak-free <code>StandardScaler</code> inside a stratified 75/25 split, trains <code>ClinicalRiskMLP</code> with <code>DataLoader</code> + <code>BCEWithLogitsLoss</code> + <code>Adam</code>, evaluates validation loss and ROC-AUC under <code>eval()</code> + <code>torch.no_grad()</code>, verifies a <code>state_dict</code> checkpoint round-trip in <code>TemporaryDirectory()</code>, and returns a structured audit dictionary.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="28.4.1">
+<h3 data-number="28.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">28.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Deterministic Seed &amp; Leak-Free Hygiene:</strong></p>
+<ul>
+<li>Call <code>torch.manual_seed(seed)</code> at entry and work strictly on <code>df = raw_df.copy()</code>.</li>
+<li>Clean <code>residence</code> casing, replace <code>anc_visits == 999</code> with <code>np.nan</code>, derive <code>is_urban</code> and <code>wealth_num</code>, drop missing rows across the 4 non-leaking features plus <code>target</code>, and split stratified 75/25.</li>
+<li>Fit <code>StandardScaler()</code> strictly on <code>X_tr</code>, transform <code>X_va</code>, and wrap both in <code>ClinicalTabularDataset</code> + <code>DataLoader(batch_size=32)</code>.</li>
+</ul></li>
+<li><p><strong>5-Step Training &amp; Gradient-Free Evaluation:</strong></p>
+<ul>
+<li>Train <code>ClinicalRiskMLP(in_dim=4, hidden_dim=16)</code> for <code>epochs</code> epochs with <code>BCEWithLogitsLoss()</code> and <code>Adam(lr=0.02)</code>.</li>
+<li>Switch to <code>net.eval()</code> + <code>with torch.no_grad():</code> to compute sample-weighted <code>val_loss</code> and <code>val_auc</code> from <code>torch.sigmoid(logits)</code>.</li>
+</ul></li>
+<li><p><strong>Safe Checkpointing Verification:</strong></p>
+<ul>
+<li>Inside <code>with tempfile.TemporaryDirectory() as tmpdir:</code>, save <code>net.state_dict()</code>, reload into a fresh <code>ClinicalRiskMLP(4, 16)</code> via <code>torch.load(p, weights_only=True)</code>, switch both to <code>.eval()</code>, and assert <code>torch.allclose(net(x0), fresh(x0), atol=1e-6)</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="28.4.2">
+<h3 data-number="28.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">28.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="kw">def</span> train_and_checkpoint_mch_mlp(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>    raw_df, target<span class="op">=</span><span class="st">"child_stunted"</span>, epochs<span class="op">=</span><span class="dv">30</span>, seed<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>):</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    <span class="co">"""Leak-free PyTorch MLP training + weights_only checkpoint audit."""</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a>    torch.manual_seed(seed)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    df <span class="op">=</span> raw_df.copy()</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> df[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    df[<span class="st">"anc_visits"</span>] <span class="op">=</span> df[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    df[<span class="st">"is_urban"</span>] <span class="op">=</span> (df[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    w_map <span class="op">=</span> {</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>        <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>,</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>        <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    }</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>    df[<span class="st">"wealth_num"</span>] <span class="op">=</span> df[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(w_map)</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>    cols <span class="op">=</span> [<span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>, <span class="st">"is_urban"</span>]</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>    sub <span class="op">=</span> df[[target] <span class="op">+</span> cols].dropna()</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    X_tr, X_va, y_tr, y_va <span class="op">=</span> train_test_split(</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>        sub[cols].to_numpy(dtype<span class="op">=</span>np.float32),</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>        sub[target].to_numpy(dtype<span class="op">=</span>np.float32),</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>        test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>sub[target], random_state<span class="op">=</span>seed,</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>    )</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    sc <span class="op">=</span> StandardScaler()</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    tr_ld <span class="op">=</span> DataLoader(</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        ClinicalTabularDataset(sc.fit_transform(X_tr), y_tr),</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>        batch_size<span class="op">=</span><span class="dv">32</span>, shuffle<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>    )</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    va_ld <span class="op">=</span> DataLoader(</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>        ClinicalTabularDataset(sc.transform(X_va), y_va),</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>        batch_size<span class="op">=</span><span class="dv">32</span>, shuffle<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    )</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    net <span class="op">=</span> ClinicalRiskMLP(in_dim<span class="op">=</span><span class="dv">4</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>)</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    crit <span class="op">=</span> nn.BCEWithLogitsLoss()</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    opt <span class="op">=</span> torch.optim.Adam(net.parameters(), lr<span class="op">=</span><span class="fl">0.02</span>)</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>        net.train()</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>        <span class="cf">for</span> xb, yb <span class="kw">in</span> tr_ld:</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>            opt.zero_grad()</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>            loss <span class="op">=</span> crit(net(xb), yb)</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>            loss.backward()</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>            opt.step()</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>    net.<span class="bu">eval</span>()</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>    va_sum, va_n, ps, ys <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span>, [], []</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>        <span class="cf">for</span> xb, yb <span class="kw">in</span> va_ld:</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>            lg <span class="op">=</span> net(xb)</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>            va_sum <span class="op">+=</span> crit(lg, yb).item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>            va_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>            ps.append(torch.sigmoid(lg).numpy().ravel())</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>            ys.append(yb.numpy().ravel())</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>    auc <span class="op">=</span> <span class="bu">round</span>(</span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>        <span class="bu">float</span>(roc_auc_score(np.concatenate(ys), np.concatenate(ps))), <span class="dv">4</span></span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a>    )</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>    <span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a>        p <span class="op">=</span> os.path.join(tmpdir, <span class="ss">f"</span><span class="sc">{</span>target<span class="sc">}</span><span class="ss">.pt"</span>)</span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>        torch.save(net.state_dict(), p)</span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a>        fresh <span class="op">=</span> ClinicalRiskMLP(in_dim<span class="op">=</span><span class="dv">4</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>)</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>        fresh.load_state_dict(torch.load(p, weights_only<span class="op">=</span><span class="va">True</span>))</span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>        fresh.<span class="bu">eval</span>()</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a>        x0 <span class="op">=</span> torch.tensor(sc.transform(X_va[:<span class="dv">8</span>]), dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a>            ok <span class="op">=</span> <span class="bu">bool</span>(torch.allclose(net(x0), fresh(x0), atol<span class="op">=</span><span class="fl">1e-6</span>))</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>        ckpt_bytes <span class="op">=</span> <span class="bu">int</span>(os.path.getsize(p))</span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>        <span class="st">"val_loss"</span>: <span class="bu">round</span>(va_sum <span class="op">/</span> va_n, <span class="dv">4</span>),</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>        <span class="st">"val_auc"</span>: auc,</span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>        <span class="st">"ckpt_bytes"</span>: ckpt_bytes,</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>        <span class="st">"ckpt_match"</span>: ok,</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>    }</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a></span>
+<span id="cb21-70"><a href="#cb21-70" aria-label="70"></a><span class="cf">for</span> label, col <span class="kw">in</span> [</span>
+<span id="cb21-71"><a href="#cb21-71" aria-label="71"></a>    (<span class="st">"Stunting"</span>, <span class="st">"child_stunted"</span>),</span>
+<span id="cb21-72"><a href="#cb21-72" aria-label="72"></a>    (<span class="st">"Anemia"</span>, <span class="st">"maternal_anemia"</span>),</span>
+<span id="cb21-73"><a href="#cb21-73" aria-label="73"></a>]:</span>
+<span id="cb21-74"><a href="#cb21-74" aria-label="74"></a>    rep <span class="op">=</span> train_and_checkpoint_mch_mlp(mch_raw, target<span class="op">=</span>col)</span>
+<span id="cb21-75"><a href="#cb21-75" aria-label="75"></a>    <span class="bu">print</span>(</span>
+<span id="cb21-76"><a href="#cb21-76" aria-label="76"></a>        <span class="ss">f"</span><span class="sc">{</span>label<span class="sc">:8s}</span><span class="ss"> | val_loss=</span><span class="sc">{</span>rep[<span class="st">'val_loss'</span>]<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb21-77"><a href="#cb21-77" aria-label="77"></a>        <span class="ss">f"val_auc=</span><span class="sc">{</span>rep[<span class="st">'val_auc'</span>]<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb21-78"><a href="#cb21-78" aria-label="78"></a>        <span class="ss">f"ckpt=</span><span class="sc">{</span>rep[<span class="st">'ckpt_bytes'</span>]<span class="sc">}</span><span class="ss">B (match=</span><span class="sc">{</span>rep[<span class="st">'ckpt_match'</span>]<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb21-79"><a href="#cb21-79" aria-label="79"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a>Stunting | val_loss=0.3360 | val_auc=0.7811 | ckpt=2969B (match=True)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>Anemia   | val_loss=0.6295 | val_auc=0.6179 | ckpt=2989B (match=True)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch28-todos" class="level2" data-number="28.5">
+<h2 data-number="28.5" class="anchored" data-anchor-id="sec-ch28-todos"><span class="header-section-number">28.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six PyTorch core functions and classes below. Pass each <strong>function or class name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 28.1 (<code>numpy_to_float_tensor(arr)</code>):</strong> Return a detached <code>torch.float32</code> tensor copy (<code>torch.tensor(arr, dtype=torch.float32)</code>) that does <strong>not</strong> share memory with or mutate the input NumPy array.</li>
+<li><strong>To-Do 28.2 (<code>autograd_quadratic_grad(x_val)</code>):</strong> Create <code>x = torch.tensor(float(x_val), requires_grad=True)</code>, evaluate <span class="math inline">\(y = 3x^2 - 4x + 5\)</span>, call <code>y.backward()</code>, and return <code>(round(y.item(), 4), round(x.grad.item(), 4))</code>.</li>
+<li><strong>To-Do 28.3 (<code>ClinicalTabularDataset</code>):</strong> Subclass <code>torch.utils.data.Dataset</code> storing <code>float32</code> <code>X</code> <code>(n, p)</code> and <code>y</code> <code>(n, 1)</code> tensors, with <code>__len__</code> and <code>__getitem__(idx)</code> returning <code>(self.X[idx], self.y[idx])</code>.</li>
+<li><strong>To-Do 28.4 (<code>ClinicalRiskMLP</code>):</strong> Subclass <code>nn.Module</code> with <code>__init__(self, in_dim, hidden_dim=16)</code> stacking <code>Linear(in_dim, hidden_dim) -&gt; ReLU -&gt; Linear(hidden_dim, 1)</code>, and <code>forward(x)</code> returning raw logits of shape <code>(batch, 1)</code> (NO sigmoid!).</li>
+<li><strong>To-Do 28.5 (<code>train_one_epoch(model, loader, optimizer, criterion)</code>):</strong> Switch to <code>model.train()</code>, execute the 5-step training loop on every batch, and return the mean float loss rounded to <strong>5 decimals</strong>.</li>
+<li><strong>To-Do 28.6 (<code>evaluate_binary_logits(model, loader)</code>):</strong> Switch to <code>model.eval()</code>, evaluate inside <code>with torch.no_grad():</code> with <code>BCEWithLogitsLoss()</code>, convert logits via <code>torch.sigmoid</code>, and return <code>{"loss": round5, "roc_auc": round4, "accuracy": round4}</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch28-test" class="level2" data-number="28.6">
+<h2 data-number="28.6" class="anchored" data-anchor-id="sec-ch28-test"><span class="header-section-number">28.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 PyTorch tensor, autograd, and training-loop reasoning questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Memory Aliasing Trace:</strong> You run <code>a = np.array([1.0, 2.0], dtype=np.float32)</code>, <code>t1 = torch.from_numpy(a)</code>, <code>t2 = torch.tensor(a, dtype=torch.float32)</code>, and then <code>a[0] = 50.0</code>. What are <code>t1[0].item()</code> and <code>t2[0].item()</code>?</li>
+<li><strong>Hand-Differentiation Check:</strong> For <span class="math inline">\(y = 3x^2 - 4x + 5\)</span> evaluated at <span class="math inline">\(x = -1.5\)</span>, what exact values does <code>autograd_quadratic_grad(-1.5)</code> return for <code>(y, dy/dx)</code>?</li>
+<li><strong>Gradient Accumulation Bug:</strong> Suppose <code>x = torch.tensor(1.0, requires_grad=True)</code>. In a <code>for</code> loop of 3 iterations, you compute <code>y = 2.0 * x**2</code> and call <code>y.backward()</code> <strong>without</strong> calling <code>x.grad.zero_()</code>. What is <code>x.grad.item()</code> after iteration 3?</li>
+<li><strong>Parameter Count by Hand:</strong> Compute the exact total number of scalar parameters in <code>ClinicalRiskMLP(in_dim=6, hidden_dim=10)</code> (<code>Linear(6, 10) -&gt; ReLU -&gt; Linear(10, 1)</code>).</li>
+<li><strong>Double-Sigmoid Hazard:</strong> Why does adding <code>nn.Sigmoid()</code> at the end of <code>ClinicalRiskMLP.forward()</code> break training when paired with <code>nn.BCEWithLogitsLoss()</code>?</li>
+<li><strong>Target Shape Alignment:</strong> A mini-batch of logits from <code>ClinicalRiskMLP</code> has shape <code>(32, 1)</code>. Why do we reshape <code>self.y</code> to <code>(n, 1)</code> inside <code>ClinicalTabularDataset</code> instead of leaving it as 1D <code>(n,)</code>?</li>
+<li><strong><code>model.eval()</code> vs.&nbsp;<code>torch.no_grad()</code>:</strong> A teammate wraps validation in <code>with torch.no_grad():</code> but forgets <code>model.eval()</code> on a network containing <code>nn.Dropout(0.5)</code>. Why do validation metrics still jitter randomly from run to run?</li>
+<li><strong>Memory Leak in Loss Logging:</strong> Why should you accumulate <code>total_loss += loss.item() * len(xb)</code> instead of <code>total_loss += loss * len(xb)</code> across thousands of batches?</li>
+<li><strong>Uneven Final Mini-Batch:</strong> A dataset has <code>369</code> training samples and <code>batch_size=32</code> (<code>drop_last=False</code>). How many batches does <code>DataLoader</code> yield per epoch, what is the size of the final batch, and why is sample-weighted loss more accurate than plain batch averaging?</li>
+<li><strong>Safe Checkpointing in PyTorch 2.x:</strong> Give two reasons why <code>torch.save(model.state_dict(), path)</code> + <code>torch.load(path, weights_only=True)</code> is strongly preferred over <code>torch.save(model, path)</code>.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch28-exam" class="level2" data-number="28.7">
+<h2 data-number="28.7" class="anchored" data-anchor-id="sec-ch28-exam"><span class="header-section-number">28.7</span> Stage 7 — Chapter 28 Coding Exam (100 Points)</h2>
+<p>Open <code>part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch28", exam_submissions)</code> to earn your Chapter 28 Exam score out of 100 points.</p>
+<section id="exam-task-28.1-30-points-count_model_parametersmodel" class="level3" data-number="28.7.1">
+<h3 data-number="28.7.1" class="anchored" data-anchor-id="exam-task-28.1-30-points-count_model_parametersmodel"><span class="header-section-number">28.7.1</span> Exam Task 28.1 (30 Points): <code>count_model_parameters(model)</code></h3>
+<p>Inspect <code>model.parameters()</code> without modifying any <code>requires_grad</code> flags:</p>
+<ul>
+<li>Count total scalar elements (<code>p.numel()</code>), split into <code>trainable_params</code> (<code>p.requires_grad == True</code>) and <code>frozen_params</code> (<code>p.requires_grad == False</code>), satisfying <code>total_params == trainable_params + frozen_params</code>.</li>
+<li>Return <code>{"total_params": int, "trainable_params": int, "frozen_params": int}</code>.</li>
+</ul>
+</section>
+<section id="exam-task-28.2-35-points-train_pytorch_tabular_modelx_train-y_train-x_val-y_val-hidden_dim16-epochs40-lr0.02-batch_size32-seed42" class="level3" data-number="28.7.2">
+<h3 data-number="28.7.2" class="anchored" data-anchor-id="exam-task-28.2-35-points-train_pytorch_tabular_modelx_train-y_train-x_val-y_val-hidden_dim16-epochs40-lr0.02-batch_size32-seed42"><span class="header-section-number">28.7.2</span> Exam Task 28.2 (35 Points): <code>train_pytorch_tabular_model(X_train, y_train, X_val, y_val, hidden_dim=16, epochs=40, lr=0.02, batch_size=32, seed=42)</code></h3>
+<p>Build a deterministic end-to-end PyTorch tabular binary classifier:</p>
+<ul>
+<li>Call <code>torch.manual_seed(seed)</code>, wrap <code>X_train</code>/<code>y_train</code> and <code>X_val</code>/<code>y_val</code> into <code>float32</code> tensors (<code>y</code> shaped <code>(n, 1)</code>) and <code>DataLoader</code>s (<code>batch_size=batch_size</code>, <code>shuffle=True</code> for train, <code>False</code> for val).</li>
+<li>Train a 2-layer ReLU MLP (<code>Linear(in_dim, hidden_dim) -&gt; ReLU -&gt; Linear(hidden_dim, 1)</code>) using <code>BCEWithLogitsLoss()</code> and <code>Adam(lr=lr)</code> for <code>epochs</code> epochs, recording <code>train_losses</code> and <code>val_losses</code> every epoch.</li>
+<li>Evaluate final validation ROC-AUC (<code>val_auc</code>, rounded to 4 decimals) under <code>model.eval()</code> + <code>torch.no_grad()</code>, and return <code>{"train_losses": list, "val_losses": list, "val_auc": round4, "model": trained_model}</code> achieving <code>val_auc &gt;= 0.85</code> on a synthetic clinical cohort.</li>
+</ul>
+</section>
+<section id="exam-task-28.3-35-points-save_and_verify_state_dictmodel-fresh_model-x_sample-ckpt_path" class="level3" data-number="28.7.3">
+<h3 data-number="28.7.3" class="anchored" data-anchor-id="exam-task-28.3-35-points-save_and_verify_state_dictmodel-fresh_model-x_sample-ckpt_path"><span class="header-section-number">28.7.3</span> Exam Task 28.3 (35 Points): <code>save_and_verify_state_dict(model, fresh_model, X_sample, ckpt_path)</code></h3>
+<p>Persist and verify model weights safely in PyTorch 2.x:</p>
+<ul>
+<li>Save <code>model.state_dict()</code> to <code>ckpt_path</code> via <code>torch.save(...)</code> and reload into <code>fresh_model</code> via <code>fresh_model.load_state_dict(torch.load(ckpt_path, weights_only=True))</code>.</li>
+<li>Set <strong>both</strong> <code>model.eval()</code> and <code>fresh_model.eval()</code> (critical when Dropout or BatchNorm is present!), run both on <code>X_sample</code> under <code>with torch.no_grad():</code>, and verify <code>torch.allclose(preds_orig, preds_reloaded, atol=1e-6)</code>.</li>
+<li>Return <code>{"file_bytes": int, "predictions_match": bool}</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch28-solutions" class="level2" data-number="28.8">
+<h2 data-number="28.8" class="anchored" data-anchor-id="sec-ch28-solutions"><span class="header-section-number">28.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="28.8.1">
+<h3 data-number="28.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">28.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>t1[0].item()</code> is <strong><code>50.0</code></strong> (because <code>torch.from_numpy</code> shares memory with <code>float32</code> NumPy arrays), whereas <code>t2[0].item()</code> remains <strong><code>1.0</code></strong> (because <code>torch.tensor</code> copies the buffer).</li>
+<li><span class="math inline">\(y(-1.5) = 3(2.25) - 4(-1.5) + 5 = 6.75 + 6.0 + 5.0 = \mathbf{17.75}\)</span>; <span class="math inline">\(\frac{dy}{dx}(-1.5) = 6(-1.5) - 4 = \mathbf{-13.0}\)</span>. Returns <strong><code>(17.75, -13.0)</code></strong>.</li>
+<li>Each backward pass computes <span class="math inline">\(\frac{dy}{dx} = 4x = 4.0\)</span> and <em>adds</em> it onto <code>x.grad</code>. After 3 unzeroed iterations, <code>x.grad.item()</code> <span class="math inline">\(= 4.0 + 4.0 + 4.0 = \mathbf{12.0}\)</span>.</li>
+<li>Layer 1: <span class="math inline">\(6 \times 10 + 10 = 70\)</span>; ReLU: <span class="math inline">\(0\)</span>; Layer 2: <span class="math inline">\(10 \times 1 + 1 = 11\)</span>; Total <span class="math inline">\(= 70 + 11 = \mathbf{81}\)</span> parameters.</li>
+<li><code>BCEWithLogitsLoss</code> applies sigmoid internally; adding <code>nn.Sigmoid()</code> in <code>forward()</code> applies sigmoid <em>twice</em> (<span class="math inline">\(\sigma(\sigma(z)) \in (0.50, 0.731)\)</span>), making probabilities below <code>0.50</code> impossible and crushing gradients!</li>
+<li><code>BCEWithLogitsLoss</code> expects predictions and targets to share exact shape <code>(batch, 1)</code>. Leaving <code>y</code> as 1D <code>(32,)</code> raises a shape-mismatch <code>ValueError</code> (or causes unintended <code>(32, 32)</code> outer broadcasting in some tensor operations).</li>
+<li><code>torch.no_grad()</code> only disables autograd tracking; it does <strong>not</strong> disable <code>Dropout</code> randomness! You must call <code>model.eval()</code> to turn off Dropout and freeze BatchNorm statistics.</li>
+<li>Adding the live tensor <code>loss</code> retains a pointer to every batch’s entire autograd computation graph in Python RAM/VRAM until the epoch finishes (classic OOM memory leak!). Calling <code>loss.item()</code> extracts a plain Python <code>float</code> and lets PyTorch free the graph immediately.</li>
+<li><code>ceil(369 / 32) = 12</code> batches: eleven batches of <code>32</code> (<code>352</code> samples) plus one final batch of <strong><code>17</code></strong> samples. Plain batch averaging gives those 17 patients the same weight as 32 patients, whereas sample-weighted averaging computes the exact per-patient mean loss.</li>
+<li>Saving <code>state_dict()</code> decouples learned weights from Python class/module file paths (so refactoring code never breaks old checkpoints) and lets <code>torch.load(..., weights_only=True)</code> load pure tensors without executing arbitrary untrusted pickle code.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="28.8.2">
+<h3 data-number="28.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">28.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a><span class="im">import</span> torch</span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> roc_auc_score</span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader, Dataset</span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a><span class="co"># To-Do 28.1</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a><span class="kw">def</span> numpy_to_float_tensor(arr):</span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a>    <span class="co">"""Return a detached torch.float32 copy with no shared memory."""</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a>    <span class="cf">return</span> torch.tensor(arr, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a><span class="co"># To-Do 28.2</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a><span class="kw">def</span> autograd_quadratic_grad(x_val):</span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a>    <span class="co">"""Compute y = 3x^2 - 4x + 5 and dy/dx via PyTorch autograd."""</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a>    x <span class="op">=</span> torch.tensor(<span class="bu">float</span>(x_val), requires_grad<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a>    y <span class="op">=</span> <span class="fl">3.0</span> <span class="op">*</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">-</span> <span class="fl">4.0</span> <span class="op">*</span> x <span class="op">+</span> <span class="fl">5.0</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a>    y.backward()</span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a>    <span class="cf">return</span> (<span class="bu">round</span>(y.item(), <span class="dv">4</span>), <span class="bu">round</span>(x.grad.item(), <span class="dv">4</span>))</span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a></span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a><span class="co"># To-Do 28.3</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a><span class="kw">class</span> ClinicalTabularDataset(Dataset):</span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a>    <span class="co">"""PyTorch Dataset storing float32 tabular X (n, p) and y (n, 1)."""</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, X, y):</span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>        <span class="va">self</span>.X <span class="op">=</span> torch.tensor(X, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a>        <span class="va">self</span>.y <span class="op">=</span> torch.tensor(y, dtype<span class="op">=</span>torch.float32).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a></span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.X)</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a></span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, idx):</span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a>        <span class="cf">return</span> <span class="va">self</span>.X[idx], <span class="va">self</span>.y[idx]</span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a></span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a><span class="co"># To-Do 28.4</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a><span class="kw">class</span> ClinicalRiskMLP(nn.Module):</span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a>    <span class="co">"""Two-layer ReLU MLP outputting raw binary logits (batch, 1)."""</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a></span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, in_dim, hidden_dim<span class="op">=</span><span class="dv">16</span>):</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>        <span class="va">self</span>.net <span class="op">=</span> nn.Sequential(</span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a>            nn.Linear(in_dim, hidden_dim),</span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a>            nn.ReLU(),</span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a>            nn.Linear(hidden_dim, <span class="dv">1</span>),</span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a>        )</span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a></span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x):</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>        <span class="cf">return</span> <span class="va">self</span>.net(x)</span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a></span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a><span class="co"># To-Do 28.5</span></span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a><span class="kw">def</span> train_one_epoch(model, loader, optimizer, criterion):</span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a>    <span class="co">"""Run one canonical 5-step training epoch and return mean loss."""</span></span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a>    model.train()</span>
+<span id="cb23-53"><a href="#cb23-53" aria-label="53"></a>    total_loss, total_n <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span></span>
+<span id="cb23-54"><a href="#cb23-54" aria-label="54"></a>    <span class="cf">for</span> xb, yb <span class="kw">in</span> loader:</span>
+<span id="cb23-55"><a href="#cb23-55" aria-label="55"></a>        optimizer.zero_grad()</span>
+<span id="cb23-56"><a href="#cb23-56" aria-label="56"></a>        logits <span class="op">=</span> model(xb)</span>
+<span id="cb23-57"><a href="#cb23-57" aria-label="57"></a>        loss <span class="op">=</span> criterion(logits, yb)</span>
+<span id="cb23-58"><a href="#cb23-58" aria-label="58"></a>        loss.backward()</span>
+<span id="cb23-59"><a href="#cb23-59" aria-label="59"></a>        optimizer.step()</span>
+<span id="cb23-60"><a href="#cb23-60" aria-label="60"></a>        total_loss <span class="op">+=</span> loss.item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb23-61"><a href="#cb23-61" aria-label="61"></a>        total_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb23-62"><a href="#cb23-62" aria-label="62"></a>    <span class="cf">return</span> <span class="bu">round</span>(total_loss <span class="op">/</span> total_n, <span class="dv">5</span>)</span>
+<span id="cb23-63"><a href="#cb23-63" aria-label="63"></a></span>
+<span id="cb23-64"><a href="#cb23-64" aria-label="64"></a><span class="co"># To-Do 28.6</span></span>
+<span id="cb23-65"><a href="#cb23-65" aria-label="65"></a><span class="kw">def</span> evaluate_binary_logits(model, loader):</span>
+<span id="cb23-66"><a href="#cb23-66" aria-label="66"></a>    <span class="co">"""Evaluate raw-logit binary classifier under eval() + no_grad()."""</span></span>
+<span id="cb23-67"><a href="#cb23-67" aria-label="67"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb23-68"><a href="#cb23-68" aria-label="68"></a>    criterion <span class="op">=</span> nn.BCEWithLogitsLoss()</span>
+<span id="cb23-69"><a href="#cb23-69" aria-label="69"></a>    total_loss, total_n <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span></span>
+<span id="cb23-70"><a href="#cb23-70" aria-label="70"></a>    probs_list, y_list <span class="op">=</span> [], []</span>
+<span id="cb23-71"><a href="#cb23-71" aria-label="71"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb23-72"><a href="#cb23-72" aria-label="72"></a>        <span class="cf">for</span> xb, yb <span class="kw">in</span> loader:</span>
+<span id="cb23-73"><a href="#cb23-73" aria-label="73"></a>            logits <span class="op">=</span> model(xb)</span>
+<span id="cb23-74"><a href="#cb23-74" aria-label="74"></a>            total_loss <span class="op">+=</span> criterion(logits, yb).item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb23-75"><a href="#cb23-75" aria-label="75"></a>            total_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb23-76"><a href="#cb23-76" aria-label="76"></a>            probs_list.append(torch.sigmoid(logits).cpu().numpy().ravel())</span>
+<span id="cb23-77"><a href="#cb23-77" aria-label="77"></a>            y_list.append(yb.cpu().numpy().ravel())</span>
+<span id="cb23-78"><a href="#cb23-78" aria-label="78"></a>    probs <span class="op">=</span> np.concatenate(probs_list)</span>
+<span id="cb23-79"><a href="#cb23-79" aria-label="79"></a>    y_true <span class="op">=</span> np.concatenate(y_list).astype(<span class="bu">int</span>)</span>
+<span id="cb23-80"><a href="#cb23-80" aria-label="80"></a>    preds <span class="op">=</span> (probs <span class="op">&gt;=</span> <span class="fl">0.5</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb23-81"><a href="#cb23-81" aria-label="81"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-82"><a href="#cb23-82" aria-label="82"></a>        <span class="st">"loss"</span>: <span class="bu">round</span>(total_loss <span class="op">/</span> total_n, <span class="dv">5</span>),</span>
+<span id="cb23-83"><a href="#cb23-83" aria-label="83"></a>        <span class="st">"roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_true, probs)), <span class="dv">4</span>),</span>
+<span id="cb23-84"><a href="#cb23-84" aria-label="84"></a>        <span class="st">"accuracy"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(preds <span class="op">==</span> y_true)), <span class="dv">4</span>),</span>
+<span id="cb23-85"><a href="#cb23-85" aria-label="85"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-28-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="28.8.3">
+<h3 data-number="28.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-28-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">28.8.3</span> C. Annotated Solutions — Chapter 28 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a><span class="im">import</span> os</span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> TensorDataset</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a><span class="co"># Exam Task 28.1 (30 pts)</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a><span class="kw">def</span> count_model_parameters(model):</span>
+<span id="cb24-6"><a href="#cb24-6" aria-label="6"></a>    <span class="co">"""Count total, trainable, and frozen scalar parameters in model."""</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-label="7"></a>    total <span class="op">=</span> <span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters())</span>
+<span id="cb24-8"><a href="#cb24-8" aria-label="8"></a>    trainable <span class="op">=</span> <span class="bu">sum</span>(</span>
+<span id="cb24-9"><a href="#cb24-9" aria-label="9"></a>        p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters() <span class="cf">if</span> p.requires_grad</span>
+<span id="cb24-10"><a href="#cb24-10" aria-label="10"></a>    )</span>
+<span id="cb24-11"><a href="#cb24-11" aria-label="11"></a>    frozen <span class="op">=</span> total <span class="op">-</span> trainable</span>
+<span id="cb24-12"><a href="#cb24-12" aria-label="12"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-13"><a href="#cb24-13" aria-label="13"></a>        <span class="st">"total_params"</span>: <span class="bu">int</span>(total),</span>
+<span id="cb24-14"><a href="#cb24-14" aria-label="14"></a>        <span class="st">"trainable_params"</span>: <span class="bu">int</span>(trainable),</span>
+<span id="cb24-15"><a href="#cb24-15" aria-label="15"></a>        <span class="st">"frozen_params"</span>: <span class="bu">int</span>(frozen),</span>
+<span id="cb24-16"><a href="#cb24-16" aria-label="16"></a>    }</span>
+<span id="cb24-17"><a href="#cb24-17" aria-label="17"></a></span>
+<span id="cb24-18"><a href="#cb24-18" aria-label="18"></a><span class="co"># Exam Task 28.2 (35 pts)</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-label="19"></a><span class="kw">def</span> train_pytorch_tabular_model(</span>
+<span id="cb24-20"><a href="#cb24-20" aria-label="20"></a>    X_train, y_train, X_val, y_val,</span>
+<span id="cb24-21"><a href="#cb24-21" aria-label="21"></a>    hidden_dim<span class="op">=</span><span class="dv">16</span>, epochs<span class="op">=</span><span class="dv">40</span>, lr<span class="op">=</span><span class="fl">0.02</span>, batch_size<span class="op">=</span><span class="dv">32</span>, seed<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb24-22"><a href="#cb24-22" aria-label="22"></a>):</span>
+<span id="cb24-23"><a href="#cb24-23" aria-label="23"></a>    <span class="co">"""Train a 2-layer ReLU MLP with DataLoader, Adam &amp; BCEWithLogits."""</span></span>
+<span id="cb24-24"><a href="#cb24-24" aria-label="24"></a>    torch.manual_seed(seed)</span>
+<span id="cb24-25"><a href="#cb24-25" aria-label="25"></a>    X_tr_t <span class="op">=</span> torch.tensor(X_train, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb24-26"><a href="#cb24-26" aria-label="26"></a>    y_tr_t <span class="op">=</span> torch.tensor(y_train, dtype<span class="op">=</span>torch.float32).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb24-27"><a href="#cb24-27" aria-label="27"></a>    X_va_t <span class="op">=</span> torch.tensor(X_val, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb24-28"><a href="#cb24-28" aria-label="28"></a>    y_va_t <span class="op">=</span> torch.tensor(y_val, dtype<span class="op">=</span>torch.float32).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb24-29"><a href="#cb24-29" aria-label="29"></a></span>
+<span id="cb24-30"><a href="#cb24-30" aria-label="30"></a>    tr_loader <span class="op">=</span> DataLoader(</span>
+<span id="cb24-31"><a href="#cb24-31" aria-label="31"></a>        TensorDataset(X_tr_t, y_tr_t), batch_size<span class="op">=</span>batch_size, shuffle<span class="op">=</span><span class="va">True</span></span>
+<span id="cb24-32"><a href="#cb24-32" aria-label="32"></a>    )</span>
+<span id="cb24-33"><a href="#cb24-33" aria-label="33"></a>    va_loader <span class="op">=</span> DataLoader(</span>
+<span id="cb24-34"><a href="#cb24-34" aria-label="34"></a>        TensorDataset(X_va_t, y_va_t), batch_size<span class="op">=</span>batch_size, shuffle<span class="op">=</span><span class="va">False</span></span>
+<span id="cb24-35"><a href="#cb24-35" aria-label="35"></a>    )</span>
+<span id="cb24-36"><a href="#cb24-36" aria-label="36"></a></span>
+<span id="cb24-37"><a href="#cb24-37" aria-label="37"></a>    model <span class="op">=</span> nn.Sequential(</span>
+<span id="cb24-38"><a href="#cb24-38" aria-label="38"></a>        nn.Linear(X_tr_t.shape[<span class="dv">1</span>], hidden_dim),</span>
+<span id="cb24-39"><a href="#cb24-39" aria-label="39"></a>        nn.ReLU(),</span>
+<span id="cb24-40"><a href="#cb24-40" aria-label="40"></a>        nn.Linear(hidden_dim, <span class="dv">1</span>),</span>
+<span id="cb24-41"><a href="#cb24-41" aria-label="41"></a>    )</span>
+<span id="cb24-42"><a href="#cb24-42" aria-label="42"></a>    criterion <span class="op">=</span> nn.BCEWithLogitsLoss()</span>
+<span id="cb24-43"><a href="#cb24-43" aria-label="43"></a>    optimizer <span class="op">=</span> torch.optim.Adam(model.parameters(), lr<span class="op">=</span>lr)</span>
+<span id="cb24-44"><a href="#cb24-44" aria-label="44"></a>    train_losses, val_losses <span class="op">=</span> [], []</span>
+<span id="cb24-45"><a href="#cb24-45" aria-label="45"></a></span>
+<span id="cb24-46"><a href="#cb24-46" aria-label="46"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb24-47"><a href="#cb24-47" aria-label="47"></a>        model.train()</span>
+<span id="cb24-48"><a href="#cb24-48" aria-label="48"></a>        tr_sum, tr_n <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span></span>
+<span id="cb24-49"><a href="#cb24-49" aria-label="49"></a>        <span class="cf">for</span> xb, yb <span class="kw">in</span> tr_loader:</span>
+<span id="cb24-50"><a href="#cb24-50" aria-label="50"></a>            optimizer.zero_grad()</span>
+<span id="cb24-51"><a href="#cb24-51" aria-label="51"></a>            loss <span class="op">=</span> criterion(model(xb), yb)</span>
+<span id="cb24-52"><a href="#cb24-52" aria-label="52"></a>            loss.backward()</span>
+<span id="cb24-53"><a href="#cb24-53" aria-label="53"></a>            optimizer.step()</span>
+<span id="cb24-54"><a href="#cb24-54" aria-label="54"></a>            tr_sum <span class="op">+=</span> loss.item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb24-55"><a href="#cb24-55" aria-label="55"></a>            tr_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb24-56"><a href="#cb24-56" aria-label="56"></a>        train_losses.append(<span class="bu">round</span>(tr_sum <span class="op">/</span> tr_n, <span class="dv">5</span>))</span>
+<span id="cb24-57"><a href="#cb24-57" aria-label="57"></a></span>
+<span id="cb24-58"><a href="#cb24-58" aria-label="58"></a>        model.<span class="bu">eval</span>()</span>
+<span id="cb24-59"><a href="#cb24-59" aria-label="59"></a>        va_sum, va_n <span class="op">=</span> <span class="fl">0.0</span>, <span class="dv">0</span></span>
+<span id="cb24-60"><a href="#cb24-60" aria-label="60"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb24-61"><a href="#cb24-61" aria-label="61"></a>            <span class="cf">for</span> xb, yb <span class="kw">in</span> va_loader:</span>
+<span id="cb24-62"><a href="#cb24-62" aria-label="62"></a>                va_sum <span class="op">+=</span> criterion(model(xb), yb).item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb24-63"><a href="#cb24-63" aria-label="63"></a>                va_n <span class="op">+=</span> <span class="bu">len</span>(xb)</span>
+<span id="cb24-64"><a href="#cb24-64" aria-label="64"></a>        val_losses.append(<span class="bu">round</span>(va_sum <span class="op">/</span> va_n, <span class="dv">5</span>))</span>
+<span id="cb24-65"><a href="#cb24-65" aria-label="65"></a></span>
+<span id="cb24-66"><a href="#cb24-66" aria-label="66"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb24-67"><a href="#cb24-67" aria-label="67"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb24-68"><a href="#cb24-68" aria-label="68"></a>        probs <span class="op">=</span> torch.sigmoid(model(X_va_t)).cpu().numpy().ravel()</span>
+<span id="cb24-69"><a href="#cb24-69" aria-label="69"></a>    val_auc <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_val, probs)), <span class="dv">4</span>)</span>
+<span id="cb24-70"><a href="#cb24-70" aria-label="70"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-71"><a href="#cb24-71" aria-label="71"></a>        <span class="st">"train_losses"</span>: train_losses,</span>
+<span id="cb24-72"><a href="#cb24-72" aria-label="72"></a>        <span class="st">"val_losses"</span>: val_losses,</span>
+<span id="cb24-73"><a href="#cb24-73" aria-label="73"></a>        <span class="st">"val_auc"</span>: val_auc,</span>
+<span id="cb24-74"><a href="#cb24-74" aria-label="74"></a>        <span class="st">"model"</span>: model,</span>
+<span id="cb24-75"><a href="#cb24-75" aria-label="75"></a>    }</span>
+<span id="cb24-76"><a href="#cb24-76" aria-label="76"></a></span>
+<span id="cb24-77"><a href="#cb24-77" aria-label="77"></a><span class="co"># Exam Task 28.3 (35 pts)</span></span>
+<span id="cb24-78"><a href="#cb24-78" aria-label="78"></a><span class="kw">def</span> save_and_verify_state_dict(model, fresh_model, X_sample, ckpt_path):</span>
+<span id="cb24-79"><a href="#cb24-79" aria-label="79"></a>    <span class="co">"""Save model.state_dict(), reload with weights_only=True &amp; verify."""</span></span>
+<span id="cb24-80"><a href="#cb24-80" aria-label="80"></a>    torch.save(model.state_dict(), ckpt_path)</span>
+<span id="cb24-81"><a href="#cb24-81" aria-label="81"></a>    state <span class="op">=</span> torch.load(ckpt_path, weights_only<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb24-82"><a href="#cb24-82" aria-label="82"></a>    fresh_model.load_state_dict(state)</span>
+<span id="cb24-83"><a href="#cb24-83" aria-label="83"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb24-84"><a href="#cb24-84" aria-label="84"></a>    fresh_model.<span class="bu">eval</span>()</span>
+<span id="cb24-85"><a href="#cb24-85" aria-label="85"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb24-86"><a href="#cb24-86" aria-label="86"></a>        preds_orig <span class="op">=</span> model(X_sample)</span>
+<span id="cb24-87"><a href="#cb24-87" aria-label="87"></a>        preds_reloaded <span class="op">=</span> fresh_model(X_sample)</span>
+<span id="cb24-88"><a href="#cb24-88" aria-label="88"></a>    match <span class="op">=</span> <span class="bu">bool</span>(torch.allclose(preds_orig, preds_reloaded, atol<span class="op">=</span><span class="fl">1e-6</span>))</span>
+<span id="cb24-89"><a href="#cb24-89" aria-label="89"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-90"><a href="#cb24-90" aria-label="90"></a>        <span class="st">"file_bytes"</span>: <span class="bu">int</span>(os.path.getsize(ckpt_path)),</span>
+<span id="cb24-91"><a href="#cb24-91" aria-label="91"></a>        <span class="st">"predictions_match"</span>: match,</span>
+<span id="cb24-92"><a href="#cb24-92" aria-label="92"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-28-failure-modes" class="level3" data-number="28.8.4">
+<h3 data-number="28.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-28-failure-modes"><span class="header-section-number">28.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 28 Failure Modes</h3>
+<ol type="1">
+<li><strong>Forgetting <code>optimizer.zero_grad()</code> Inside the Batch Loop:</strong> Because PyTorch accumulates gradients (<code>+=</code>) by default, omitting <code>optimizer.zero_grad()</code> causes stale batch gradients to stack up across steps—exploding or stalling updates even when your model architecture and loss function are 100% correct.</li>
+<li><strong>Double-Sigmoid (<code>nn.Sigmoid</code> + <code>BCEWithLogitsLoss</code>) or Float64 Dtype Crashes:</strong> Putting <code>nn.Sigmoid()</code> inside <code>forward()</code> while training with <code>BCEWithLogitsLoss()</code> traps outputs in <code>(0.5, 0.73)</code>, while feeding default NumPy <code>float64</code> arrays into <code>nn.Linear</code> raises <code>RuntimeError: expected Double and Float</code>. Always cast inputs to <code>torch.float32</code> and emit raw logits.</li>
+<li><strong>Omitting <code>model.eval()</code> During Validation or Checkpoint Verification:</strong> Running under <code>torch.no_grad()</code> alone leaves <code>nn.Dropout</code> active, injecting random noise into validation AUC and breaking <code>torch.allclose</code> checkpoint equivalence checks. Always pair <code>model.eval()</code> with <code>with torch.no_grad():</code> and reload <code>state_dict</code> with <code>weights_only=True</code>.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Bridge to Chapter 29 — Training Deep Networks: Optimization, Regularization &amp; Diagnostics
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You now command PyTorch’s complete core engine—<code>float32</code> tensors, autograd, custom <code>Dataset</code>/<code>DataLoader</code>, <code>nn.Module</code>, the 5-step training loop, and safe <code>state_dict</code> checkpointing. In Chapter 29, you will diagnose why deep networks overfit or stall, and master <strong>SGD + Momentum vs.&nbsp;AdamW</strong>, <strong>learning-rate schedules</strong>, <strong>BatchNorm/LayerNorm</strong>, <strong>Dropout &amp; Weight Decay</strong>, <strong>gradient clipping</strong>, and <strong>early stopping with best-checkpoint restoration</strong>!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="pagination-link" aria-label="Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="pagination-link" aria-label="Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping">
+        <span class="nav-page-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

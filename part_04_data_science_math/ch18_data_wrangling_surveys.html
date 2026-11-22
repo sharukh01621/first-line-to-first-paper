@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>18&nbsp; Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_04_data_science_math/ch19_visualization_storytelling.html" rel="next">
+<link href="../part_04_data_science_math/ch17_pandas_foundations.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch16_numpy_vectorization.html">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</a></li><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch18-intuition" id="toc-sec-ch18-intuition" class="nav-link" data-scroll-target="#sec-ch18-intuition"><span class="header-section-number">18.1</span> Stage 1 — First-Principles Intuition: Why Real Research Data Breaks Clean Code</a>
+  <ul class="collapse">
+  <li><a href="#missing-data-mechanisms-mcar-mar-and-mnar" id="toc-missing-data-mechanisms-mcar-mar-and-mnar" class="nav-link" data-scroll-target="#missing-data-mechanisms-mcar-mar-and-mnar"><span class="header-section-number">18.1.1</span> Missing-Data Mechanisms: MCAR, MAR, and MNAR</a></li>
+  </ul></li>
+  <li><a href="#sec-ch18-mental-model" id="toc-sec-ch18-mental-model" class="nav-link" data-scroll-target="#sec-ch18-mental-model"><span class="header-section-number">18.2</span> Stage 2 — Visual Mental Model: Safe Merge &amp; Split-Apply-Combine Pipeline</a></li>
+  <li><a href="#sec-ch18-walkthrough" id="toc-sec-ch18-walkthrough" class="nav-link" data-scroll-target="#sec-ch18-walkthrough"><span class="header-section-number">18.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch18-load" id="toc-sec-ch18-load" class="nav-link" data-scroll-target="#sec-ch18-load"><span class="header-section-number">18.3.1</span> Step 0 — Loading Bundled Research Datasets</a></li>
+  <li><a href="#sec-ch18-clean" id="toc-sec-ch18-clean" class="nav-link" data-scroll-target="#sec-ch18-clean"><span class="header-section-number">18.3.2</span> Missingness Audit &amp; Cleaning Dirty Surveys</a></li>
+  <li><a href="#sec-ch18-impute" id="toc-sec-ch18-impute" class="nav-link" data-scroll-target="#sec-ch18-impute"><span class="header-section-number">18.3.3</span> Group-Median Imputation with <code>.groupby(...).transform("median")</code></a></li>
+  <li><a href="#sec-ch18-merge" id="toc-sec-ch18-merge" class="nav-link" data-scroll-target="#sec-ch18-merge"><span class="header-section-number">18.3.4</span> Safe Relational Joins with <code>pd.merge(..., validate="one_to_one")</code></a></li>
+  <li><a href="#sec-ch18-groupby" id="toc-sec-ch18-groupby" class="nav-link" data-scroll-target="#sec-ch18-groupby"><span class="header-section-number">18.3.5</span> Split-Apply-Combine with Named <code>.agg()</code></a></li>
+  <li><a href="#sec-ch18-timeseries" id="toc-sec-ch18-timeseries" class="nav-link" data-scroll-target="#sec-ch18-timeseries"><span class="header-section-number">18.3.6</span> Panel Time Series: Per-District Lags &amp; Rolling Windows</a></li>
+  <li><a href="#sec-ch18-errors" id="toc-sec-ch18-errors" class="nav-link" data-scroll-target="#sec-ch18-errors"><span class="header-section-number">18.3.7</span> Break It On Purpose! (Wrangling Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch18-blueprint" id="toc-sec-ch18-blueprint" class="nav-link" data-scroll-target="#sec-ch18-blueprint"><span class="header-section-number">18.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">18.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">18.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch18-todos" id="toc-sec-ch18-todos" class="nav-link" data-scroll-target="#sec-ch18-todos"><span class="header-section-number">18.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch18-test" id="toc-sec-ch18-test" class="nav-link" data-scroll-target="#sec-ch18-test"><span class="header-section-number">18.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch18-exam" id="toc-sec-ch18-exam" class="nav-link" data-scroll-target="#sec-ch18-exam"><span class="header-section-number">18.7</span> Stage 7 — Chapter 18 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-18.1-30-points-build_clean_dhs_analytic_tablemch_df" id="toc-exam-task-18.1-30-points-build_clean_dhs_analytic_tablemch_df" class="nav-link" data-scroll-target="#exam-task-18.1-30-points-build_clean_dhs_analytic_tablemch_df"><span class="header-section-number">18.7.1</span> Exam Task 18.1 (30 Points): <code>build_clean_dhs_analytic_table(mch_df)</code></a></li>
+  <li><a href="#exam-task-18.2-35-points-equity_gap_by_residence_wealthclean_mch_df" id="toc-exam-task-18.2-35-points-equity_gap_by_residence_wealthclean_mch_df" class="nav-link" data-scroll-target="#exam-task-18.2-35-points-equity_gap_by_residence_wealthclean_mch_df"><span class="header-section-number">18.7.2</span> Exam Task 18.2 (35 Points): <code>equity_gap_by_residence_wealth(clean_mch_df)</code></a></li>
+  <li><a href="#exam-task-18.3-35-points-prepare_epi_time_featuresepi_df" id="toc-exam-task-18.3-35-points-prepare_epi_time_featuresepi_df" class="nav-link" data-scroll-target="#exam-task-18.3-35-points-prepare_epi_time_featuresepi_df"><span class="header-section-number">18.7.3</span> Exam Task 18.3 (35 Points): <code>prepare_epi_time_features(epi_df)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch18-solutions" id="toc-sec-ch18-solutions" class="nav-link" data-scroll-target="#sec-ch18-solutions"><span class="header-section-number">18.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">18.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">18.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-18-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-18-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-18-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">18.8.3</span> C. Annotated Solutions — Chapter 18 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-18-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-18-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-18-failure-modes"><span class="header-section-number">18.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 18 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch16_numpy_vectorization.html">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</a></li><li class="breadcrumb-item"><a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch18" class="quarto-section-identifier"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Bridge the gap between clean textbook tables and real-world research datasets. Master <strong>missing-data diagnostics (MCAR / MAR / MNAR)</strong>, <strong>dirty DHS survey cleaning</strong> (sentinels like <code>999</code>, casing typos like <code>"rural"</code>/<code>"Rural"</code>, and safe numeric coercion), <strong>guarded relational joins</strong> (<code>pd.merge(..., validate="one_to_one")</code>), <strong>Split-Apply-Combine named <code>.agg()</code></strong>, and <strong>leak-free panel time-series features</strong> (<code>shift</code> and <code>rolling</code> per district)—all written in modern, non-mutating <strong>Pandas 3.x Copy-on-Write</strong> style.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb">ch18 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 18 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb">ch18 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 18 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb">ch18 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 18 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Distinguish <strong>MCAR</strong>, <strong>MAR</strong>, and <strong>MNAR</strong> missingness mechanisms and build deterministic column-level missingness audit tables before and after cleaning.</li>
+<li>Clean dirty household surveys in pure <strong>Pandas 3.x</strong> style—copying inputs explicitly, normalizing inconsistent string casing (<code>.str.strip().str.title()</code>), neutralizing DHS sentinel codes (<code>999</code> <span class="math inline">\(\rightarrow\)</span> <code>NaN</code>), and coercing mixed-type columns safely with <code>pd.to_numeric(..., errors="coerce")</code>.</li>
+<li>Impute missing measurements per stratum using <code>.groupby(...).transform("median")</code> without mutating raw DataFrames or collapsing group differences.</li>
+<li>Join relational patient and laboratory tables with <code>pd.merge(..., how="left", validate="one_to_one")</code> so duplicate keys raise <code>MergeError</code> immediately instead of silently exploding row counts.</li>
+<li>Produce publication-ready <strong>Table 1</strong> health-equity summaries using <strong>Split-Apply-Combine</strong> named <code>.agg()</code> and engineer <strong>zero-leakage</strong> panel time-series features (1-week lags and rolling means) strictly within each district.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch18-intuition" class="level2" data-number="18.1">
+<h2 data-number="18.1" class="anchored" data-anchor-id="sec-ch18-intuition"><span class="header-section-number">18.1</span> Stage 1 — First-Principles Intuition: Why Real Research Data Breaks Clean Code</h2>
+<p>In <strong>Chapter 17</strong>, you learned Pandas fundamentals on tidy DataFrames. Real public health surveys (like the Demographic and Health Surveys, <strong>DHS</strong>) and weekly epidemiological surveillance feeds rarely arrive tidy:</p>
+<ul>
+<li><strong>Hidden Sentinel Codes:</strong> Survey interviewers record <code>"Don't know"</code> as <code>999</code>, <code>99</code>, or <code>-99</code>. If you compute <code>mch["anc_visits"].mean()</code> without neutralizing <code>999</code> first, just <strong>8 sentinel rows</strong> out of 500 inflate average antenatal care visits from <strong><span class="math inline">\(3.77\)</span></strong> to an absurd <strong><span class="math inline">\(19.7\)</span></strong>!</li>
+<li><strong>Dirty Categorical Strings:</strong> Field enumerators type <code>"Rural"</code>, <code>"rural"</code>, <code>" rural "</code>, and <code>"URBAN"</code>. Left unnormalized, <code>.groupby("residence")</code> splits one stratum into four fragmented rows and corrupts every downstream summary.</li>
+<li><strong>Silent Row Explosions in Joins:</strong> Joining a 500-patient registry to a lab table that accidentally contains two hemoglobin tests for one patient quietly turns 500 rows into 501+—double-counting that patient in every prevalence estimate.</li>
+<li><strong>Cross-District Time-Series Leakage:</strong> Computing <code>.shift(1)</code> or <code>.rolling(4).mean()</code> on a stacked multi-district table lets Chattogram’s December dengue surge bleed directly into Dhaka’s Week 1 feature!</li>
+</ul>
+<section id="missing-data-mechanisms-mcar-mar-and-mnar" class="level3" data-number="18.1.1">
+<h3 data-number="18.1.1" class="anchored" data-anchor-id="missing-data-mechanisms-mcar-mar-and-mnar"><span class="header-section-number">18.1.1</span> Missing-Data Mechanisms: MCAR, MAR, and MNAR</h3>
+<p>Before dropping or imputing a single <code>NaN</code>, ask <em>why</em> the value is missing:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mechanism</th>
+<th style="text-align: left;">Meaning</th>
+<th style="text-align: left;">Public Health Example</th>
+<th style="text-align: left;">Safe Wrangling Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>MCAR</strong></td>
+<td style="text-align: left;">Missing Completely At Random</td>
+<td style="text-align: left;">Lab vial dropped on floor</td>
+<td style="text-align: left;">Complete-case or simple imputation is unbiased</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>MAR</strong></td>
+<td style="text-align: left;">Missing At Random (given observed strata)</td>
+<td style="text-align: left;">Rural clinics have more missing Hb tests than urban clinics</td>
+<td style="text-align: left;">Impute within observed strata (e.g., per-<code>residence</code> median)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>MNAR</strong></td>
+<td style="text-align: left;">Missing Not At Random (depends on unobserved value itself)</td>
+<td style="text-align: left;">Severely ill patients skip follow-up weigh-ins</td>
+<td style="text-align: left;">Do <em>not</em> blindly impute; flag missingness and run sensitivity analysis</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Pandas 3.x Copy-on-Write Rule — Pure Functions Only!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Starting in <strong>Pandas 3.x</strong>, Copy-on-Write is enforced globally: chained assignments like <code>df["anc_visits"][mask] = np.nan</code> fail or behave unpredictably, and <code>inplace=True</code> is discouraged because it returns <code>None</code> and obscures state mutations. Adopt one clean habit for every wrangling function you write:</p>
+<ul>
+<li>Start with <code>out = df.copy()</code>.</li>
+<li>Transform columns with direct assignment: <code>out["col"] = ...</code>.</li>
+<li>End with <code>return out</code>, leaving the caller’s raw DataFrame untouched.</li>
+</ul>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch18-mental-model" class="level2" data-number="18.2">
+<h2 data-number="18.2" class="anchored" data-anchor-id="sec-ch18-mental-model"><span class="header-section-number">18.2</span> Stage 2 — Visual Mental Model: Safe Merge &amp; Split-Apply-Combine Pipeline</h2>
+<p>Trace the exact order of operations that protects research tables from sentinel distortion, join row explosions, and cross-group leakage:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 18 (Safe Merge &amp; Split-Apply-Combine Pipeline) illustrating 1. Clean &amp; Audit; Raw Survey Copy strip/title, 999->NaN to_numeric coerce; Group Impute groupby.transform per-stratum median; 2. Safe Mer...">flowchart TD
+    subgraph Intake["1. Clean &amp; Audit"]
+        R1["Raw Survey Copy&lt;br/&gt;strip/title, 999-&gt;NaN&lt;br/&gt;to_numeric coerce"]
+        R2["Group Impute&lt;br/&gt;groupby.transform&lt;br/&gt;per-stratum median"]
+    end
+    subgraph Guard["2. Safe Merge"]
+        M1["pd.merge Left Join&lt;br/&gt;validate=one_to_one"]
+        M2["Duplicate Key?&lt;br/&gt;Raise MergeError"]
+    end
+    subgraph SAC["3. Group &amp; Agg"]
+        S1["Split by Stratum&lt;br/&gt;or District Panel"]
+        S2["Apply Named .agg()&lt;br/&gt;or Per-Group shift/roll"]
+        S3["Combine Tidy Table&lt;br/&gt;Zero Boundary Leakage"]
+    end
+    R1 --&gt; R2 --&gt; M1
+    M1 -. "fail fast" .-&gt; M2
+    M1 --&gt; S1 --&gt; S2 --&gt; S3
+</pre>
+</div>
+<p></p><figcaption> Chapter 18 visual mental model: Safe Merge &amp; Split-Apply-Combine Pipeline</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice why <strong>stage order is non-negotiable</strong>:</p>
+<ul>
+<li>You <strong>must</strong> normalize <code>"rural"</code> <span class="math inline">\(\rightarrow\)</span> <code>"Rural"</code> <em>before</em> grouping to compute per-residence medians, otherwise lowercase rows form their own tiny broken group.</li>
+<li>You <strong>must</strong> replace <code>999</code> <span class="math inline">\(\rightarrow\)</span> <code>NaN</code> <em>before</em> evaluating thresholds like <code>anc_visits &gt;= 4</code>, otherwise <code>999 &gt;= 4</code> falsely evaluates to <code>True</code>!</li>
+<li>You <strong>must</strong> sort by <code>["district", "year", "epi_week"]</code> and scope <code>.shift()</code> / <code>.rolling()</code> <em>inside</em> <code>.groupby("district")</code> so every district starts cleanly on Week 1.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch18-walkthrough" class="level2" data-number="18.3">
+<h2 data-number="18.3" class="anchored" data-anchor-id="sec-ch18-walkthrough"><span class="header-section-number">18.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb</code> in Google Colab and run every cell alongside the dissections below using our real bundled <code>mch_survey_sample</code> and <code>epi_surveillance</code> datasets.</p>
+<section id="sec-ch18-load" class="level3" data-number="18.3.1">
+<h3 data-number="18.3.1" class="anchored" data-anchor-id="sec-ch18-load"><span class="header-section-number">18.3.1</span> Step 0 — Loading Bundled Research Datasets</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>epi_raw <span class="op">=</span> tutor.load_data(<span class="st">"epi_surveillance"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="bu">print</span>(<span class="st">"MCH survey shape:"</span>, mch_raw.shape)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="bu">print</span>(<span class="st">"Epi panel shape: "</span>, epi_raw.shape)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>MCH survey shape: (500, 12)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Epi panel shape:  (416, 8)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sec-ch18-clean" class="level3" data-number="18.3.2">
+<h3 data-number="18.3.2" class="anchored" data-anchor-id="sec-ch18-clean"><span class="header-section-number">18.3.2</span> Missingness Audit &amp; Cleaning Dirty Surveys</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="co"># 1. Audit explicit NaNs BEFORE sentinel cleaning</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>raw_counts <span class="op">=</span> mch_raw.isna().<span class="bu">sum</span>().astype(<span class="bu">int</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>raw_pct <span class="op">=</span> (raw_counts <span class="op">/</span> <span class="bu">len</span>(mch_raw) <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>raw_audit <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>    {<span class="st">"missing_count"</span>: raw_counts, <span class="st">"missing_pct"</span>: raw_pct}</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>).sort_values(<span class="st">"missing_pct"</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Explicit NaNs before cleaning:"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a><span class="bu">print</span>(raw_audit.head(<span class="dv">3</span>))</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a><span class="co"># 2. Inspect dirty casing and hidden DHS sentinel 999</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>raw_res <span class="op">=</span> mch_raw[<span class="st">"residence"</span>].value_counts().to_dict()</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>raw_anc_mean <span class="op">=</span> <span class="bu">round</span>(mch_raw[<span class="st">"anc_visits"</span>].mean(), <span class="dv">2</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Raw residence counts:"</span>, raw_res)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"Raw anc_visits mean (with 999!):"</span>, raw_anc_mean)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a><span class="co"># 3. Non-mutating Pandas 3.x cleaning copy</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> mch[<span class="st">"residence"</span>].<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a>mch[<span class="st">"anc_visits"</span>] <span class="op">=</span> mch[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a>mch[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> pd.to_numeric(</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a>    mch[<span class="st">"maternal_hb_g_dl"</span>], errors<span class="op">=</span><span class="st">"coerce"</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a><span class="bu">print</span>(<span class="st">"Clean residence counts:"</span>, mch[<span class="st">"residence"</span>].value_counts().to_dict())</span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a><span class="bu">print</span>(<span class="st">"Clean anc_visits NaNs: "</span>, <span class="bu">int</span>(mch[<span class="st">"anc_visits"</span>].isna().<span class="bu">sum</span>()))</span>
+<span id="cb3-26"><a href="#cb3-26" aria-label="26"></a><span class="bu">print</span>(<span class="st">"Clean anc_visits mean: "</span>, <span class="bu">round</span>(mch[<span class="st">"anc_visits"</span>].mean(), <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Explicit NaNs before cleaning:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>                  missing_count  missing_pct</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>maternal_hb_g_dl             22          4.4</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>household_id                  0          0.0</span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a>division                      0          0.0</span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a>Raw residence counts: {'Rural': 345, 'Urban': 140, 'rural': 11, 'urban': 4}</span>
+<span id="cb4-8"><a href="#cb4-8" aria-label="8"></a>Raw anc_visits mean (with 999!): 19.7</span>
+<span id="cb4-9"><a href="#cb4-9" aria-label="9"></a>Clean residence counts: {'Rural': 356, 'Urban': 144}</span>
+<span id="cb4-10"><a href="#cb4-10" aria-label="10"></a>Clean anc_visits NaNs:  8</span>
+<span id="cb4-11"><a href="#cb4-11" aria-label="11"></a>Clean anc_visits mean:  3.77</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at that dramatic difference: <code>anc_visits</code> initially showed <code>0</code> explicit <code>NaN</code> values, yet hiding inside those 500 rows were <strong>8 sentinel <code>999</code> codes</strong> that inflated the mean from <strong><span class="math inline">\(3.77\)</span></strong> to <strong><span class="math inline">\(19.7\)</span></strong>! Meanwhile, <code>.str.strip().str.title()</code> merged the 11 <code>"rural"</code> and 4 <code>"urban"</code> typos cleanly into <code>Rural</code> (356) and <code>Urban</code> (144).</p>
+<hr>
+</section>
+<section id="sec-ch18-impute" class="level3" data-number="18.3.3">
+<h3 data-number="18.3.3" class="anchored" data-anchor-id="sec-ch18-impute"><span class="header-section-number">18.3.3</span> Group-Median Imputation with <code>.groupby(...).transform("median")</code></h3>
+<p>Because hemoglobin missingness differs across strata (16 Rural vs.&nbsp;6 Urban missing readings, with medians <span class="math inline">\(11.4\)</span> vs.&nbsp;<span class="math inline">\(11.6\text{ g/dL}\)</span>), imputing by <strong>per-residence median</strong> respects MAR structure better than plugging in one global average:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Check missing Hb by residence (MAR diagnostic) and group medians</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>hb_na_by_res <span class="op">=</span> mch.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>].<span class="bu">apply</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>    <span class="kw">lambda</span> s: <span class="bu">int</span>(s.isna().<span class="bu">sum</span>())</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>hb_med_by_res <span class="op">=</span> mch.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>].median()</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Missing Hb by residence:"</span>, hb_na_by_res.to_dict())</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Median Hb by residence: "</span>, hb_med_by_res.to_dict())</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a><span class="co"># Impute missing Hb with per-residence median (non-mutating copy)</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>mch_imp <span class="op">=</span> mch.copy()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>group_medians <span class="op">=</span> (</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>    mch_imp.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>]</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>    .transform(<span class="st">"median"</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>mch_imp[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> mch_imp[<span class="st">"maternal_hb_g_dl"</span>].fillna(</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>    group_medians</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>post_means <span class="op">=</span> (</span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>    mch_imp.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>]</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>    .mean().<span class="bu">round</span>(<span class="dv">2</span>).to_dict()</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a><span class="bu">print</span>(<span class="st">"Remaining Hb NaNs:"</span>, <span class="bu">int</span>(mch_imp[<span class="st">"maternal_hb_g_dl"</span>].isna().<span class="bu">sum</span>()))</span>
+<span id="cb5-24"><a href="#cb5-24" aria-label="24"></a><span class="bu">print</span>(<span class="st">"Post-imputation means:"</span>, post_means)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Missing Hb by residence: {'Rural': 16, 'Urban': 6}</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Median Hb by residence:  {'Rural': 11.4, 'Urban': 11.6}</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>Remaining Hb NaNs: 0</span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>Post-imputation means: {'Rural': 11.41, 'Urban': 11.6}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Why <code>.transform("median")</code> instead of <code>.median()</code>? <code>.groupby("residence")["maternal_hb_g_dl"].median()</code> collapses the table to <strong>2 rows</strong> (<code>Rural</code>, <code>Urban</code>), whereas <code>.transform("median")</code> broadcasts each group’s median back onto all <strong>500 rows</strong> with exact index alignment so <code>.fillna(group_medians)</code> fills every missing entry cleanly in one vectorized pass.</p>
+<hr>
+</section>
+<section id="sec-ch18-merge" class="level3" data-number="18.3.4">
+<h3 data-number="18.3.4" class="anchored" data-anchor-id="sec-ch18-merge"><span class="header-section-number">18.3.4</span> Safe Relational Joins with <code>pd.merge(..., validate="one_to_one")</code></h3>
+<p>When linking a patient intake table to a separate laboratory table, always specify both <code>how=</code> (usually <code>"left"</code> to retain your full cohort) and <code>validate=</code> to enforce key uniqueness:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>patients <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>    {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>        <span class="st">"patient_id"</span>: [<span class="st">"P-101"</span>, <span class="st">"P-102"</span>, <span class="st">"P-103"</span>, <span class="st">"P-104"</span>],</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>        <span class="st">"residence"</span>: [<span class="st">"Rural"</span>, <span class="st">"Urban"</span>, <span class="st">"Rural"</span>, <span class="st">"Urban"</span>],</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>    }</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>labs <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    {</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>        <span class="st">"patient_id"</span>: [<span class="st">"P-101"</span>, <span class="st">"P-102"</span>, <span class="st">"P-104"</span>, <span class="st">"P-999"</span>],</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>        <span class="st">"ferritin_ng_ml"</span>: [<span class="fl">18.5</span>, <span class="fl">42.0</span>, <span class="fl">31.2</span>, <span class="fl">25.0</span>],</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>    }</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>joined <span class="op">=</span> pd.merge(</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>    patients, labs, on<span class="op">=</span><span class="st">"patient_id"</span>, how<span class="op">=</span><span class="st">"left"</span>, validate<span class="op">=</span><span class="st">"one_to_one"</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a><span class="bu">print</span>(joined.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>patient_id residence  ferritin_ng_ml</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>     P-101     Rural            18.5</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>     P-102     Urban            42.0</span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a>     P-103     Rural             NaN</span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>     P-104     Urban            31.2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice two critical guarantees here:</p>
+<ul>
+<li>Unmatched patient <code>P-103</code> stays in the cohort with <code>NaN</code> for <code>ferritin_ng_ml</code> (unlike <code>how="inner"</code>, which would silently drop her).</li>
+<li>Orphan lab record <code>P-999</code> is excluded (unlike <code>how="outer"</code>, which would inject an unenrolled person).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch18-groupby" class="level3" data-number="18.3.5">
+<h3 data-number="18.3.5" class="anchored" data-anchor-id="sec-ch18-groupby"><span class="header-section-number">18.3.5</span> Split-Apply-Combine with Named <code>.agg()</code></h3>
+<p>Named aggregation (<code>new_col=("source_col", "func")</code>) produces clean, flat-column summary tables in a single readable expression:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>wealth_tbl <span class="op">=</span> mch_imp.groupby(<span class="st">"wealth_quintile"</span>).agg(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>    n_households<span class="op">=</span>(<span class="st">"household_id"</span>, <span class="st">"count"</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>    stunting_pct<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>    anemia_pct<span class="op">=</span>(<span class="st">"maternal_anemia"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>    mean_anc<span class="op">=</span>(<span class="st">"anc_visits"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>wealth_tbl[<span class="st">"stunting_pct"</span>] <span class="op">=</span> (wealth_tbl[<span class="st">"stunting_pct"</span>] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>wealth_tbl[<span class="st">"anemia_pct"</span>] <span class="op">=</span> (wealth_tbl[<span class="st">"anemia_pct"</span>] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>wealth_tbl[<span class="st">"mean_anc"</span>] <span class="op">=</span> wealth_tbl[<span class="st">"mean_anc"</span>].<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>order <span class="op">=</span> [<span class="st">"Poorest"</span>, <span class="st">"Poorer"</span>, <span class="st">"Middle"</span>, <span class="st">"Richer"</span>, <span class="st">"Richest"</span>]</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a><span class="bu">print</span>(wealth_tbl.reindex(order))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>                 n_households  stunting_pct  anemia_pct  mean_anc</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>wealth_quintile                                                  </span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Poorest                   107          28.0        48.6      2.46</span>
+<span id="cb10-4"><a href="#cb10-4" aria-label="4"></a>Poorer                    116          19.8        37.1      3.14</span>
+<span id="cb10-5"><a href="#cb10-5" aria-label="5"></a>Middle                     99           5.1        38.4      4.11</span>
+<span id="cb10-6"><a href="#cb10-6" aria-label="6"></a>Richer                     91           5.5        31.9      4.37</span>
+<span id="cb10-7"><a href="#cb10-7" aria-label="7"></a>Richest                    87           8.0        19.5      5.20</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Because <code>child_stunted</code> and <code>maternal_anemia</code> are binary <code>0/1</code> indicators, taking <code>.mean() * 100</code> directly yields prevalence percentages—revealing a stark socioeconomic gradient from <strong><span class="math inline">\(28.0\%\)</span></strong> stunting and <strong><span class="math inline">\(48.6\%\)</span></strong> anemia in the <code>Poorest</code> quintile down to <strong><span class="math inline">\(8.0\%\)</span></strong> and <strong><span class="math inline">\(19.5\%\)</span></strong> in the <code>Richest</code> quintile!</p>
+<hr>
+</section>
+<section id="sec-ch18-timeseries" class="level3" data-number="18.3.6">
+<h3 data-number="18.3.6" class="anchored" data-anchor-id="sec-ch18-timeseries"><span class="header-section-number">18.3.6</span> Panel Time Series: Per-District Lags &amp; Rolling Windows</h3>
+<p>Epidemiological surveillance data (<code>epi_surveillance</code>) is a <strong>panel dataset</strong>: multiple districts tracked repeatedly across weeks and years. Always sort by <code>["district", "year", "epi_week"]</code> first, then run <code>.shift(1)</code> and <code>.rolling(...)</code> strictly <em>inside</em> <code>.groupby("district")</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>epi <span class="op">=</span> epi_raw.sort_values([<span class="st">"district"</span>, <span class="st">"year"</span>, <span class="st">"epi_week"</span>]).copy()</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>epi[<span class="st">"prev_week_cases"</span>] <span class="op">=</span> epi.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>].shift(<span class="dv">1</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>epi[<span class="st">"rolling_4w"</span>] <span class="op">=</span> (</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>    epi.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>    .transform(<span class="kw">lambda</span> s: s.rolling(window<span class="op">=</span><span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean())</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>    .<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>cols <span class="op">=</span> [<span class="st">"district"</span>, <span class="st">"year"</span>, <span class="st">"epi_week"</span>, <span class="st">"dengue_cases"</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>        <span class="st">"prev_week_cases"</span>, <span class="st">"rolling_4w"</span>]</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>dhaka_top <span class="op">=</span> epi[epi[<span class="st">"district"</span>] <span class="op">==</span> <span class="st">"Dhaka"</span>][cols].head(<span class="dv">5</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>ctg_top <span class="op">=</span> epi[epi[<span class="st">"district"</span>] <span class="op">==</span> <span class="st">"Chattogram"</span>][cols].head(<span class="dv">3</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"Dhaka first 5 weeks:"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a><span class="bu">print</span>(dhaka_top.to_string(index<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Chattogram first 3 weeks (zero leakage from Dhaka!):"</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a><span class="bu">print</span>(ctg_top.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>Dhaka first 5 weeks:</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>district  year  epi_week  dengue_cases  prev_week_cases  rolling_4w</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>   Dhaka  2024         1            21              NaN       21.00</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>   Dhaka  2024         2            32             21.0       26.50</span>
+<span id="cb12-5"><a href="#cb12-5" aria-label="5"></a>   Dhaka  2024         3            42             32.0       31.67</span>
+<span id="cb12-6"><a href="#cb12-6" aria-label="6"></a>   Dhaka  2024         4            45             42.0       35.00</span>
+<span id="cb12-7"><a href="#cb12-7" aria-label="7"></a>   Dhaka  2024         5            23             45.0       35.50</span>
+<span id="cb12-8"><a href="#cb12-8" aria-label="8"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-label="9"></a>Chattogram first 3 weeks (zero leakage from Dhaka!):</span>
+<span id="cb12-10"><a href="#cb12-10" aria-label="10"></a>  district  year  epi_week  dengue_cases  prev_week_cases  rolling_4w</span>
+<span id="cb12-11"><a href="#cb12-11" aria-label="11"></a>Chattogram  2024         1            34              NaN       34.00</span>
+<span id="cb12-12"><a href="#cb12-12" aria-label="12"></a>Chattogram  2024         2            15             34.0       24.50</span>
+<span id="cb12-13"><a href="#cb12-13" aria-label="13"></a>Chattogram  2024         3            28             15.0       25.67</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at Chattogram 2024 Week 1: <code>prev_week_cases</code> is <code>NaN</code> and <code>rolling_4w</code> is <code>34.00</code> (its own Week 1 count, thanks to <code>min_periods=1</code>). Zero cases leaked across the district boundary!</p>
+<hr>
+</section>
+<section id="sec-ch18-errors" class="level3" data-number="18.3.7">
+<h3 data-number="18.3.7" class="anchored" data-anchor-id="sec-ch18-errors"><span class="header-section-number">18.3.7</span> Break It On Purpose! (Wrangling Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — pd.errors.MergeError (Duplicate Keys Caught!)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>dup_labs <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>    {</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>        <span class="st">"patient_id"</span>: [<span class="st">"P-101"</span>, <span class="st">"P-101"</span>, <span class="st">"P-102"</span>],</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>        <span class="st">"ferritin_ng_ml"</span>: [<span class="fl">18.5</span>, <span class="fl">22.0</span>, <span class="fl">42.0</span>],</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>    }</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a>)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>pd.merge(</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>    patients, dup_labs, on<span class="op">=</span><span class="st">"patient_id"</span>, how<span class="op">=</span><span class="st">"left"</span>, validate<span class="op">=</span><span class="st">"one_to_one"</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>pandas.errors.MergeError: Merge keys are not unique in right dataset;</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>not a one-to-one merge</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>dup_labs</code> has two rows for <code>"P-101"</code>. Without <code>validate="one_to_one"</code>, Pandas would silently duplicate <code>"P-101"</code> in the merged table!<br>
+<strong>Fix:</strong> Deduplicate or aggregate <code>dup_labs</code> per <code>patient_id</code> (e.g., taking the latest or mean lab value) <em>before</em> merging.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — KeyError (Missing Join Key)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>misnamed_labs <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>    {<span class="st">"household_id"</span>: [<span class="st">"P-101"</span>, <span class="st">"P-102"</span>], <span class="st">"hb_g_dl"</span>: [<span class="fl">11.4</span>, <span class="fl">10.2</span>]}</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-label="4"></a>pd.merge(patients, misnamed_labs, on<span class="op">=</span><span class="st">"patient_id"</span>, how<span class="op">=</span><span class="st">"left"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>KeyError: 'patient_id'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>patients</code> uses <code>"patient_id"</code> while <code>misnamed_labs</code> uses <code>"household_id"</code>, so <code>on="patient_id"</code> cannot find the join column on the right table.<br>
+<strong>Fix:</strong> Either rename the column first (<code>misnamed_labs.rename(columns={"household_id": "patient_id"})</code>) or pass explicit <code>left_on="patient_id", right_on="household_id"</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (.astype(float) on Dirty Text)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>dirty_hb <span class="op">=</span> pd.Series([<span class="st">"11.2"</span>, <span class="st">"N/A"</span>, <span class="st">"9.8"</span>])</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>dirty_hb.astype(<span class="bu">float</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: could not convert string to float: 'N/A'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Strict <code>.astype(float)</code> crashes on the very first non-numeric token (<code>"N/A"</code>, <code>"."</code>, <code>""</code>, or <code>"missing"</code>), which are ubiquitous in CSV exports from clinic spreadsheets.<br>
+<strong>Fix:</strong> Always cast messy numeric columns with <code>pd.to_numeric(series, errors="coerce")</code> so valid numbers become floats and unparseable tokens cleanly become <code>NaN</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch18-blueprint" class="level2" data-number="18.4">
+<h2 data-number="18.4" class="anchored" data-anchor-id="sec-ch18-blueprint"><span class="header-section-number">18.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A Ministry of Health policy brief needs an automated, reproducible function <code>build_equity_brief(raw_mch)</code> that takes a raw DHS maternal-child survey, cleans all dirty casing and sentinel codes, imputes missing maternal hemoglobin by residence median, derives WHO’s <strong>4+ antenatal care visits (<code>anc_4plus</code>)</strong> indicator, and outputs a flat, sorted <code>residence</code> <span class="math inline">\(\times\)</span> <code>wealth_quintile</code> equity table without mutating <code>raw_mch</code>.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="18.4.1">
+<h3 data-number="18.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">18.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Non-Mutating Cleaning Sequence (Strict Order):</strong></p>
+<ul>
+<li>Copy <code>raw_mch</code> (<code>df = raw_mch.copy()</code>).</li>
+<li>Normalize <code>residence</code> with <code>.str.strip().str.title()</code> <em>first</em>.</li>
+<li>Neutralize sentinel <code>anc_visits == 999</code> <span class="math inline">\(\rightarrow\)</span> <code>np.nan</code> <em>before</em> thresholding.</li>
+<li>Coerce <code>maternal_hb_g_dl</code> via <code>pd.to_numeric(..., errors="coerce")</code> and impute missing values with per-<code>residence</code> median via <code>.groupby("residence")["maternal_hb_g_dl"].transform("median")</code>.</li>
+<li>Derive <code>anc_4plus = (df["anc_visits"] &gt;= 4).fillna(False).astype(bool)</code>.</li>
+</ul></li>
+<li><p><strong>Stratified Aggregation Contract:</strong></p>
+<ul>
+<li>Group with <code>groupby(["residence", "wealth_quintile"], as_index=False)</code> so stratification keys stay flat columns.</li>
+<li>Compute <code>n_households</code>, <code>stunting_pct</code>, <code>anemia_pct</code>, and <code>anc4_pct</code> (each percentage scaled by <span class="math inline">\(100\)</span> and rounded to 1 decimal place).</li>
+<li>Sort deterministically by <code>["residence", "wealth_quintile"]</code> and reset the index.</li>
+</ul></li>
+<li><p><strong>Verification Plan:</strong></p>
+<ul>
+<li>Check <code>Rural</code> + <code>Poorest</code> vs.&nbsp;<code>Urban</code> + <code>Richest</code>: <code>anc4_pct</code> should rise sharply with both wealth and urbanicity, and <code>raw_mch["anc_visits"]</code> must still contain its original 8 sentinel <code>999</code> entries untouched.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="18.4.2">
+<h3 data-number="18.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">18.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="kw">def</span> build_equity_brief(raw_mch):</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>    <span class="co">"""Clean DHS survey and summarize residence x wealth equity gaps."""</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>    df <span class="op">=</span> raw_mch.copy()</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> df[<span class="st">"residence"</span>].<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb19-5"><a href="#cb19-5" aria-label="5"></a>    df[<span class="st">"anc_visits"</span>] <span class="op">=</span> df[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-label="6"></a>    df[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> pd.to_numeric(</span>
+<span id="cb19-7"><a href="#cb19-7" aria-label="7"></a>        df[<span class="st">"maternal_hb_g_dl"</span>], errors<span class="op">=</span><span class="st">"coerce"</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-label="8"></a>    )</span>
+<span id="cb19-9"><a href="#cb19-9" aria-label="9"></a>    med <span class="op">=</span> df.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>].transform(<span class="st">"median"</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-label="10"></a>    df[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> df[<span class="st">"maternal_hb_g_dl"</span>].fillna(med)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-label="11"></a>    df[<span class="st">"anc_4plus"</span>] <span class="op">=</span> (df[<span class="st">"anc_visits"</span>] <span class="op">&gt;=</span> <span class="dv">4</span>).fillna(<span class="va">False</span>).astype(<span class="bu">bool</span>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-label="12"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-label="13"></a>    brief <span class="op">=</span> df.groupby(</span>
+<span id="cb19-14"><a href="#cb19-14" aria-label="14"></a>        [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>], as_index<span class="op">=</span><span class="va">False</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-label="15"></a>    ).agg(</span>
+<span id="cb19-16"><a href="#cb19-16" aria-label="16"></a>        n_households<span class="op">=</span>(<span class="st">"household_id"</span>, <span class="st">"count"</span>),</span>
+<span id="cb19-17"><a href="#cb19-17" aria-label="17"></a>        stunting_pct<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb19-18"><a href="#cb19-18" aria-label="18"></a>        anemia_pct<span class="op">=</span>(<span class="st">"maternal_anemia"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb19-19"><a href="#cb19-19" aria-label="19"></a>        anc4_pct<span class="op">=</span>(<span class="st">"anc_4plus"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb19-20"><a href="#cb19-20" aria-label="20"></a>    )</span>
+<span id="cb19-21"><a href="#cb19-21" aria-label="21"></a>    <span class="cf">for</span> col <span class="kw">in</span> (<span class="st">"stunting_pct"</span>, <span class="st">"anemia_pct"</span>, <span class="st">"anc4_pct"</span>):</span>
+<span id="cb19-22"><a href="#cb19-22" aria-label="22"></a>        brief[col] <span class="op">=</span> (brief[col] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb19-23"><a href="#cb19-23" aria-label="23"></a>    <span class="cf">return</span> brief.sort_values([<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]).reset_index(</span>
+<span id="cb19-24"><a href="#cb19-24" aria-label="24"></a>        drop<span class="op">=</span><span class="va">True</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-label="25"></a>    )</span>
+<span id="cb19-26"><a href="#cb19-26" aria-label="26"></a></span>
+<span id="cb19-27"><a href="#cb19-27" aria-label="27"></a>equity_brief <span class="op">=</span> build_equity_brief(mch_raw)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-label="28"></a><span class="bu">print</span>(equity_brief.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>residence wealth_quintile  n_households  stunting_pct  anemia_pct  anc4_pct</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>    Rural          Middle            71           4.2        43.7      60.6</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>    Rural          Poorer            86          22.1        33.7      37.2</span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a>    Rural         Poorest            91          31.9        48.4      20.9</span>
+<span id="cb20-5"><a href="#cb20-5" aria-label="5"></a>    Rural          Richer            56           5.4        33.9      58.9</span>
+<span id="cb20-6"><a href="#cb20-6" aria-label="6"></a>    Rural         Richest            52           5.8        19.2      76.9</span>
+<span id="cb20-7"><a href="#cb20-7" aria-label="7"></a>    Urban          Middle            28           7.1        25.0      89.3</span>
+<span id="cb20-8"><a href="#cb20-8" aria-label="8"></a>    Urban          Poorer            30          13.3        46.7      63.3</span>
+<span id="cb20-9"><a href="#cb20-9" aria-label="9"></a>    Urban         Poorest            16           6.2        50.0      50.0</span>
+<span id="cb20-10"><a href="#cb20-10" aria-label="10"></a>    Urban          Richer            35           5.7        28.6      77.1</span>
+<span id="cb20-11"><a href="#cb20-11" aria-label="11"></a>    Urban         Richest            35          11.4        20.0      88.6</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at that single table—ready for a <em>Lancet Global Health</em> policy brief: only <strong><span class="math inline">\(20.9\%\)</span></strong> of mothers in <code>Rural</code> + <code>Poorest</code> households achieve 4+ ANC visits (with <strong><span class="math inline">\(31.9\%\)</span></strong> child stunting), compared to <strong><span class="math inline">\(88.6\%\)</span></strong> ANC4+ coverage in <code>Urban</code> + <code>Richest</code> households!</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch18-todos" class="level2" data-number="18.5">
+<h2 data-number="18.5" class="anchored" data-anchor-id="sec-ch18-todos"><span class="header-section-number">18.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six pure Pandas 3.x functions below. Pass each <strong>function name (without parentheses!)</strong> to <code>tutor.check(...)</code>—for example, <code>tutor.check("ch18_todo_01", clean_mch_survey)</code>.</p>
+<ul>
+<li><strong>To-Do 18.1 (Dirty Survey Cleaning — <code>clean_mch_survey(df)</code>):</strong> Return a non-mutating copy normalizing <code>residence</code> with <code>.str.strip().str.title()</code>, converting <code>anc_visits == 999</code> to <code>np.nan</code>, and casting <code>maternal_hb_g_dl</code> via <code>pd.to_numeric(..., errors="coerce")</code>.</li>
+<li><strong>To-Do 18.2 (Missingness Audit — <code>audit_missingness_table(df)</code>):</strong> Return a DataFrame indexed by column name with integer <code>missing_count</code> and float <code>missing_pct</code> (rounded to 2 decimals), sorted by <code>missing_pct</code> descending then column name ascending.</li>
+<li><strong>To-Do 18.3 (Group-Median Imputation — <code>impute_group_median(df, value_col, group_col)</code>):</strong> Return a non-mutating copy filling <code>NaN</code> entries in <code>value_col</code> using per-<code>group_col</code> medians via <code>.groupby(group_col)[value_col].transform("median")</code>.</li>
+<li><strong>To-Do 18.4 (Safe Relational Merge — <code>safe_merge_patient_labs(patients_df, labs_df)</code>):</strong> Return <code>pd.merge(patients_df, labs_df, on="patient_id", how="left", validate="one_to_one")</code> so unmatched patients stay with <code>NaN</code> and duplicate keys raise <code>pd.errors.MergeError</code>.</li>
+<li><strong>To-Do 18.5 (Split-Apply-Combine — <code>groupby_wealth_outcomes(mch_df)</code>):</strong> Use named <code>.agg()</code> per <code>wealth_quintile</code> (kept as index) returning <code>n_households</code>, <code>stunting_pct</code> (<code>mean * 100</code>, 1 dec), <code>anemia_pct</code> (<code>mean * 100</code>, 1 dec), and <code>mean_anc</code> (2 dec).</li>
+<li><strong>To-Do 18.6 (Panel Rolling Average — <code>add_rolling_dengue_avg(epi_df, window=4)</code>):</strong> Return a non-mutating copy sorted by <code>["district", "year", "epi_week"]</code> with column <code>rolling_dengue</code> equal to the per-district rolling mean (<code>window=window</code>, <code>min_periods=1</code>, rounded to 2 decimals).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch18-test" class="level2" data-number="18.6">
+<h2 data-number="18.6" class="anchored" data-anchor-id="sec-ch18-test"><span class="header-section-number">18.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Trace every wrangling question carefully on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>MCAR vs.&nbsp;MAR vs.&nbsp;MNAR:</strong> In a maternal nutrition survey, rural clinics have <span class="math inline">\(12\%\)</span> missing hemoglobin tests because of rural reagent stockouts while urban clinics have <span class="math inline">\(2\%\)</span> missing. Assuming missingness depends only on observed <code>residence</code> (not on a mother’s true anemia severity), which missing-data mechanism is this?</li>
+<li><strong>Sentinel Order-of-Operations Bug:</strong> Suppose a row has <code>anc_visits = 999</code> (DHS <code>"Don't know"</code>). If you run <code>df["anc_4plus"] = df["anc_visits"] &gt;= 4</code> <em>before</em> replacing <code>999</code> with <code>np.nan</code>, what boolean value does <code>anc_4plus</code> wrongly receive?</li>
+<li><strong>Pandas 3.x Copy-on-Write Purity:</strong> Why should a wrangling function write <code>out = df.copy(); out["x"] = out["x"].fillna(0); return out</code> instead of <code>df["x"].fillna(0, inplace=True)</code>?</li>
+<li><strong>Strict Cast vs.&nbsp;Safe Coercion:</strong> What happens if you run <code>pd.Series(["10.5", "N/A", "12.0"]).astype(float)</code> versus <code>pd.to_numeric(pd.Series(["10.5", "N/A", "12.0"]), errors="coerce")</code>?</li>
+<li><strong><code>.transform("median")</code> vs.&nbsp;<code>.median()</code>:</strong> On a 500-row DataFrame with 2 residence categories (<code>Rural</code>, <code>Urban</code>), what is the <strong>length</strong> of <code>df.groupby("residence")["maternal_hb_g_dl"].median()</code> versus <code>df.groupby("residence")["maternal_hb_g_dl"].transform("median")</code>?</li>
+<li><strong>Row-Explosion Arithmetic:</strong> <code>patients</code> has 4 unique IDs (<code>P1..P4</code>). <code>labs</code> has 5 rows where <code>P1</code> appears <strong>twice</strong> and <code>P2..P4</code> appear once each. How many rows does <code>pd.merge(patients, labs, on="patient_id", how="left")</code> return <em>without</em> <code>validate</code>, and what happens <em>with</em> <code>validate="one_to_one"</code>?</li>
+<li><strong>Left Join vs.&nbsp;Inner Join Cohort Bias:</strong> In <code>patients</code> (4 patients) left-joined to <code>labs</code> (3 matching patients plus 1 orphan lab <code>P99</code>), why does <code>how="inner"</code> distort cohort denominators while <code>how="left"</code> preserves them?</li>
+<li><strong><code>as_index=False</code> in Multi-Key GroupBy:</strong> What structural difference appears in the returned DataFrame when you pass <code>as_index=False</code> to <code>df.groupby(["residence", "wealth_quintile"], as_index=False).agg(...)</code>?</li>
+<li><strong>Cross-District Lag Leakage:</strong> A sorted DataFrame has Chattogram Weeks 1–52 followed immediately by Dhaka Weeks 1–52. If Chattogram Week 52 had <code>85</code> dengue cases and you accidentally run <code>df["dengue_cases"].shift(1)</code> <em>without</em> <code>.groupby("district")</code>, what value lands in Dhaka Week 1’s <code>prev_week_cases</code>?</li>
+<li><strong>Rolling Window <code>min_periods=1</code>:</strong> For a single district whose first three weekly dengue counts are <code>[20, 40, 60]</code>, what are the first three values of <code>.rolling(window=4, min_periods=1).mean()</code> versus <code>.rolling(window=4).mean()</code> (default <code>min_periods=4</code>)?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch18-exam" class="level2" data-number="18.7">
+<h2 data-number="18.7" class="anchored" data-anchor-id="sec-ch18-exam"><span class="header-section-number">18.7</span> Stage 7 — Chapter 18 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch18", exam_submissions)</code> to earn your score out of 100 points.</p>
+<section id="exam-task-18.1-30-points-build_clean_dhs_analytic_tablemch_df" class="level3" data-number="18.7.1">
+<h3 data-number="18.7.1" class="anchored" data-anchor-id="exam-task-18.1-30-points-build_clean_dhs_analytic_tablemch_df"><span class="header-section-number">18.7.1</span> Exam Task 18.1 (30 Points): <code>build_clean_dhs_analytic_table(mch_df)</code></h3>
+<p>Build a non-mutating DHS cleaning function <code>build_clean_dhs_analytic_table(mch_df)</code>:</p>
+<ul>
+<li>Copy <code>mch_df</code> without mutating the caller’s DataFrame.</li>
+<li>Normalize <code>residence</code> with <code>.str.strip().str.title()</code>.</li>
+<li>Replace <code>anc_visits == 999</code> with <code>np.nan</code>.</li>
+<li>Convert <code>maternal_hb_g_dl</code> to numeric (<code>pd.to_numeric(..., errors="coerce")</code>) and impute missing <code>maternal_hb_g_dl</code> using the per-<code>residence</code> median (computed <em>after</em> normalizing <code>residence</code>!).</li>
+<li>Add boolean column <code>anc_4plus = (out["anc_visits"] &gt;= 4).fillna(False).astype(bool)</code> (guaranteeing <code>False</code> for <code>NaN</code> / former <code>999</code>).</li>
+</ul>
+</section>
+<section id="exam-task-18.2-35-points-equity_gap_by_residence_wealthclean_mch_df" class="level3" data-number="18.7.2">
+<h3 data-number="18.7.2" class="anchored" data-anchor-id="exam-task-18.2-35-points-equity_gap_by_residence_wealthclean_mch_df"><span class="header-section-number">18.7.2</span> Exam Task 18.2 (35 Points): <code>equity_gap_by_residence_wealth(clean_mch_df)</code></h3>
+<p>Build <code>equity_gap_by_residence_wealth(clean_mch_df)</code>:</p>
+<ul>
+<li>Group with <code>groupby(["residence", "wealth_quintile"], as_index=False)</code>.</li>
+<li>Compute <code>n_households</code> (row count), <code>stunting_pct</code> (<code>child_stunted</code> mean <span class="math inline">\(\times 100\)</span>), <code>anemia_pct</code> (<code>maternal_anemia</code> mean <span class="math inline">\(\times 100\)</span>), and <code>anc4_pct</code> (<code>anc_4plus</code> mean <span class="math inline">\(\times 100\)</span>), each percentage rounded to <strong>1 decimal place</strong>.</li>
+<li>Sort ascending by <code>["residence", "wealth_quintile"]</code> and return without mutating <code>clean_mch_df</code>.</li>
+</ul>
+</section>
+<section id="exam-task-18.3-35-points-prepare_epi_time_featuresepi_df" class="level3" data-number="18.7.3">
+<h3 data-number="18.7.3" class="anchored" data-anchor-id="exam-task-18.3-35-points-prepare_epi_time_featuresepi_df"><span class="header-section-number">18.7.3</span> Exam Task 18.3 (35 Points): <code>prepare_epi_time_features(epi_df)</code></h3>
+<p>Build <code>prepare_epi_time_features(epi_df)</code>:</p>
+<ul>
+<li>Return a non-mutating copy sorted by <code>["district", "year", "epi_week"]</code>.</li>
+<li>Add <code>incidence_per_100k</code>: <code>(dengue_cases / population) * 100_000</code>, rounded to <strong>2 decimal places</strong>.</li>
+<li>Add <code>prev_week_cases</code>: per-district 1-week lag (<code>groupby("district")["dengue_cases"].shift(1)</code>) with zero leakage across district boundaries.</li>
+<li>Add <code>rolling_4w_cases</code>: per-district 4-week rolling mean (<code>window=4</code>, <code>min_periods=1</code>, rounded to <strong>2 decimal places</strong>) with zero leakage across district boundaries.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch18-solutions" class="level2" data-number="18.8">
+<h2 data-number="18.8" class="anchored" data-anchor-id="sec-ch18-solutions"><span class="header-section-number">18.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="18.8.1">
+<h3 data-number="18.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">18.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><strong>MAR (Missing At Random):</strong> Missingness depends on an <em>observed</em> variable (<code>residence</code>), not on the unobserved hemoglobin value itself—making per-<code>residence</code> median imputation principled.</li>
+<li><strong><code>True</code>!</strong> Because <span class="math inline">\(999 \ge 4\)</span>, computing <code>anc_4plus</code> before replacing <code>999</code> with <code>np.nan</code> falsely classifies unknown antenatal history as meeting the WHO 4+ visit target.</li>
+<li>Creating <code>out = df.copy()</code> and using direct assignment (<code>out["x"] = ...</code>) respects Pandas 3.x Copy-on-Write, preserves the caller’s raw data for auditability, and avoids <code>inplace=True</code> returning <code>None</code>.</li>
+<li><code>.astype(float)</code> raises <strong><code>ValueError: could not convert string to float: 'N/A'</code></strong>, whereas <code>pd.to_numeric(..., errors="coerce")</code> returns <code>Series([10.5, NaN, 12.0], dtype=float64)</code>.</li>
+<li><code>.median()</code> returns length <strong><code>2</code></strong> (one scalar per group); <code>.transform("median")</code> returns length <strong><code>500</code></strong> (one group median aligned to every original row index).</li>
+<li>Without <code>validate</code>, Pandas silently returns <strong><code>5</code> rows</strong> (duplicating <code>P1</code>!); with <code>validate="one_to_one"</code>, Pandas immediately raises <strong><code>pd.errors.MergeError</code></strong>.</li>
+<li><code>how="inner"</code> silently drops patients who lack a lab test, shrinking the cohort denominator and biasing prevalence estimates toward tested patients; <code>how="left"</code> keeps every enrolled patient (marking missing labs as <code>NaN</code>) while excluding orphan lab <code>P99</code>.</li>
+<li>With <code>as_index=False</code>, <code>residence</code> and <code>wealth_quintile</code> remain <strong>regular flat columns</strong> instead of becoming a two-level <code>MultiIndex</code>.</li>
+<li><strong><code>85.0</code></strong> (Chattogram’s final week leaks into Dhaka’s Week 1!). Grouping by <code>"district"</code> first ensures Dhaka’s Week 1 receives <code>NaN</code>.</li>
+<li>With <code>min_periods=1</code>: <strong><code>[20.0, 30.0, 40.0]</code></strong>; with default <code>min_periods=4</code>: <strong><code>[NaN, NaN, NaN]</code></strong> because fewer than 4 observations are available in Weeks 1–3.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="18.8.2">
+<h3 data-number="18.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">18.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a><span class="co"># To-Do 18.1</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a><span class="kw">def</span> clean_mch_survey(df):</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    <span class="co">"""Return a cleaned copy of a dirty DHS/MCH household survey."""</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    out <span class="op">=</span> df.copy()</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    out[<span class="st">"residence"</span>] <span class="op">=</span> out[<span class="st">"residence"</span>].<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    out[<span class="st">"anc_visits"</span>] <span class="op">=</span> out[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    out[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> pd.to_numeric(</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>        out[<span class="st">"maternal_hb_g_dl"</span>], errors<span class="op">=</span><span class="st">"coerce"</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    )</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    <span class="cf">return</span> out</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a></span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a><span class="co"># To-Do 18.2</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a><span class="kw">def</span> audit_missingness_table(df):</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    <span class="co">"""Return column-level missing counts and percentages sorted neatly."""</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>    counts <span class="op">=</span> df.isna().<span class="bu">sum</span>().astype(<span class="bu">int</span>)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>    pcts <span class="op">=</span> (counts <span class="op">/</span> <span class="bu">len</span>(df) <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>    audit <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>        {<span class="st">"missing_count"</span>: counts, <span class="st">"missing_pct"</span>: pcts}</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    )</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    <span class="cf">return</span> audit.sort_index().sort_values(</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        <span class="st">"missing_pct"</span>, ascending<span class="op">=</span><span class="va">False</span>, kind<span class="op">=</span><span class="st">"mergesort"</span></span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>    )</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a><span class="co"># To-Do 18.3</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a><span class="kw">def</span> impute_group_median(df, value_col, group_col):</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>    <span class="co">"""Fill NaNs in value_col using per-group medians without mutation."""</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    out <span class="op">=</span> df.copy()</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>    medians <span class="op">=</span> out.groupby(group_col)[value_col].transform(<span class="st">"median"</span>)</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    out[value_col] <span class="op">=</span> out[value_col].fillna(medians)</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    <span class="cf">return</span> out</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a><span class="co"># To-Do 18.4</span></span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a><span class="kw">def</span> safe_merge_patient_labs(patients_df, labs_df):</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    <span class="co">"""Left-join patients to labs with strict 1-to-1 key validation."""</span></span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>    <span class="cf">return</span> pd.merge(</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>        patients_df,</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>        labs_df,</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>        on<span class="op">=</span><span class="st">"patient_id"</span>,</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>        how<span class="op">=</span><span class="st">"left"</span>,</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>        validate<span class="op">=</span><span class="st">"one_to_one"</span>,</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>    )</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a></span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a><span class="co"># To-Do 18.5</span></span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a><span class="kw">def</span> groupby_wealth_outcomes(mch_df):</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>    <span class="co">"""Aggregate stunting, anemia, and ANC outcomes by wealth quintile."""</span></span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>    out <span class="op">=</span> mch_df.groupby(<span class="st">"wealth_quintile"</span>).agg(</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>        n_households<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"size"</span>),</span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>        stunting_pct<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a>        anemia_pct<span class="op">=</span>(<span class="st">"maternal_anemia"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>        mean_anc<span class="op">=</span>(<span class="st">"anc_visits"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a>    )</span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>    out[<span class="st">"stunting_pct"</span>] <span class="op">=</span> (out[<span class="st">"stunting_pct"</span>] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a>    out[<span class="st">"anemia_pct"</span>] <span class="op">=</span> (out[<span class="st">"anemia_pct"</span>] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>    out[<span class="st">"mean_anc"</span>] <span class="op">=</span> out[<span class="st">"mean_anc"</span>].<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>    <span class="cf">return</span> out</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a></span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a><span class="co"># To-Do 18.6</span></span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a><span class="kw">def</span> add_rolling_dengue_avg(epi_df, window<span class="op">=</span><span class="dv">4</span>):</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>    <span class="co">"""Add per-district rolling dengue mean without boundary leakage."""</span></span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a>    out <span class="op">=</span> epi_df.sort_values([<span class="st">"district"</span>, <span class="st">"year"</span>, <span class="st">"epi_week"</span>]).copy()</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>    out[<span class="st">"rolling_dengue"</span>] <span class="op">=</span> (</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>        out.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>]</span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>        .transform(<span class="kw">lambda</span> s: s.rolling(window<span class="op">=</span>window, min_periods<span class="op">=</span><span class="dv">1</span>).mean())</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>        .<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>    )</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a>    <span class="cf">return</span> out</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-18-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="18.8.3">
+<h3 data-number="18.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-18-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">18.8.3</span> C. Annotated Solutions — Chapter 18 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 18.1 (30 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a><span class="kw">def</span> build_clean_dhs_analytic_table(mch_df):</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>    <span class="co">"""Clean DHS survey, impute Hb by residence, and flag anc_4plus."""</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>    out <span class="op">=</span> mch_df.copy()</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>    out[<span class="st">"residence"</span>] <span class="op">=</span> out[<span class="st">"residence"</span>].<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    out[<span class="st">"anc_visits"</span>] <span class="op">=</span> out[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>    out[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> pd.to_numeric(</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>        out[<span class="st">"maternal_hb_g_dl"</span>], errors<span class="op">=</span><span class="st">"coerce"</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a>    )</span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a>    medians <span class="op">=</span> out.groupby(<span class="st">"residence"</span>)[<span class="st">"maternal_hb_g_dl"</span>].transform(</span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a>        <span class="st">"median"</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>    )</span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>    out[<span class="st">"maternal_hb_g_dl"</span>] <span class="op">=</span> out[<span class="st">"maternal_hb_g_dl"</span>].fillna(medians)</span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>    out[<span class="st">"anc_4plus"</span>] <span class="op">=</span> (</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>        (out[<span class="st">"anc_visits"</span>] <span class="op">&gt;=</span> <span class="dv">4</span>).fillna(<span class="va">False</span>).astype(<span class="bu">bool</span>)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>    )</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a>    <span class="cf">return</span> out</span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a></span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a><span class="co"># Exam Task 18.2 (35 pts)</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a><span class="kw">def</span> equity_gap_by_residence_wealth(clean_mch_df):</span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>    <span class="co">"""Stratify stunting, anemia, and ANC4+ by residence and wealth."""</span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a>    out <span class="op">=</span> clean_mch_df.groupby(</span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>        [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>], as_index<span class="op">=</span><span class="va">False</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>    ).agg(</span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>        n_households<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"size"</span>),</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>        stunting_pct<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>        anemia_pct<span class="op">=</span>(<span class="st">"maternal_anemia"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>        anc4_pct<span class="op">=</span>(<span class="st">"anc_4plus"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>    )</span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>    <span class="cf">for</span> col <span class="kw">in</span> (<span class="st">"stunting_pct"</span>, <span class="st">"anemia_pct"</span>, <span class="st">"anc4_pct"</span>):</span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>        out[col] <span class="op">=</span> (out[col] <span class="op">*</span> <span class="dv">100</span>).<span class="bu">round</span>(<span class="dv">1</span>)</span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>    <span class="cf">return</span> out.sort_values(</span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>        [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]</span>
+<span id="cb22-34"><a href="#cb22-34" aria-label="34"></a>    ).reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb22-35"><a href="#cb22-35" aria-label="35"></a></span>
+<span id="cb22-36"><a href="#cb22-36" aria-label="36"></a><span class="co"># Exam Task 18.3 (35 pts)</span></span>
+<span id="cb22-37"><a href="#cb22-37" aria-label="37"></a><span class="kw">def</span> prepare_epi_time_features(epi_df):</span>
+<span id="cb22-38"><a href="#cb22-38" aria-label="38"></a>    <span class="co">"""Engineer incidence, 1-week lag, and 4-week rolling dengue mean."""</span></span>
+<span id="cb22-39"><a href="#cb22-39" aria-label="39"></a>    out <span class="op">=</span> epi_df.sort_values([<span class="st">"district"</span>, <span class="st">"year"</span>, <span class="st">"epi_week"</span>]).copy()</span>
+<span id="cb22-40"><a href="#cb22-40" aria-label="40"></a>    out[<span class="st">"incidence_per_100k"</span>] <span class="op">=</span> (</span>
+<span id="cb22-41"><a href="#cb22-41" aria-label="41"></a>        out[<span class="st">"dengue_cases"</span>] <span class="op">/</span> out[<span class="st">"population"</span>] <span class="op">*</span> <span class="dv">100_000</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-label="42"></a>    ).<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb22-43"><a href="#cb22-43" aria-label="43"></a>    out[<span class="st">"prev_week_cases"</span>] <span class="op">=</span> (</span>
+<span id="cb22-44"><a href="#cb22-44" aria-label="44"></a>        out.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>].shift(<span class="dv">1</span>)</span>
+<span id="cb22-45"><a href="#cb22-45" aria-label="45"></a>    )</span>
+<span id="cb22-46"><a href="#cb22-46" aria-label="46"></a>    out[<span class="st">"rolling_4w_cases"</span>] <span class="op">=</span> (</span>
+<span id="cb22-47"><a href="#cb22-47" aria-label="47"></a>        out.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>]</span>
+<span id="cb22-48"><a href="#cb22-48" aria-label="48"></a>        .transform(<span class="kw">lambda</span> s: s.rolling(window<span class="op">=</span><span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean())</span>
+<span id="cb22-49"><a href="#cb22-49" aria-label="49"></a>        .<span class="bu">round</span>(<span class="dv">2</span>)</span>
+<span id="cb22-50"><a href="#cb22-50" aria-label="50"></a>    )</span>
+<span id="cb22-51"><a href="#cb22-51" aria-label="51"></a>    <span class="cf">return</span> out</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-18-failure-modes" class="level3" data-number="18.8.4">
+<h3 data-number="18.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-18-failure-modes"><span class="header-section-number">18.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 18 Failure Modes</h3>
+<ol type="1">
+<li><strong>Wrong Cleaning Order (<code>999 &gt;= 4</code> &amp; Unnormalized Group Imputation):</strong> Thresholding <code>anc_visits &gt;= 4</code> before neutralizing <code>999</code> inflates ANC4+ coverage, and imputing hemoglobin before normalizing <code>"rural"</code> to <code>"Rural"</code> splits rural respondents across separate medians. Always follow: <strong>Normalize categories <span class="math inline">\(\rightarrow\)</span> Neutralize sentinels <span class="math inline">\(\rightarrow\)</span> Coerce &amp; Impute <span class="math inline">\(\rightarrow\)</span> Derive indicators.</strong></li>
+<li><strong>Unvalidated Merges (Silent Row Explosion):</strong> Calling <code>pd.merge(patients, labs, on="patient_id", how="left")</code> without <code>validate="one_to_one"</code> lets duplicate lab keys silently inflate sample sizes and double-count sick patients.</li>
+<li><strong>Global Lags/Rolling Windows on Panel Data:</strong> Calling <code>.shift(1)</code> or <code>.rolling(4).mean()</code> directly on a multi-district DataFrame leaks one district’s final weeks into the next district’s Week 1. Always sort by <code>[entity, time]</code> and scope window operators inside <code>.groupby(entity)</code>.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Up Next — Exploratory Data Analysis &amp; Publication-Quality Visualization
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Your DHS maternal-child tables and weekly dengue panels are now clean, validated, and leak-free. Numbers in a printed table tell half the story—peer reviewers expect clear, colorblind-safe figures that surface disparities and epidemic waves at a glance. In <strong>Chapter 19</strong>, you will turn these exact wrangled DataFrames into <strong>publication-grade Matplotlib and Seaborn visualizations</strong>.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="pagination-link" aria-label="Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="pagination-link" aria-label="Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)">
+        <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>26&nbsp; Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" rel="next">
+<link href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch26-intuition" id="toc-sec-ch26-intuition" class="nav-link" data-scroll-target="#sec-ch26-intuition"><span class="header-section-number">26.1</span> Stage 1 — First-Principles Intuition: Why Notebooks Break in Peer Review and Production</a></li>
+  <li><a href="#sec-ch26-mental-model" id="toc-sec-ch26-mental-model" class="nav-link" data-scroll-target="#sec-ch26-mental-model"><span class="header-section-number">26.2</span> Stage 2 — Visual Mental Model: ColumnTransformer Pipeline &amp; Nested Cross-Validation</a></li>
+  <li><a href="#sec-ch26-walkthrough" id="toc-sec-ch26-walkthrough" class="nav-link" data-scroll-target="#sec-ch26-walkthrough"><span class="header-section-number">26.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch26-setup" id="toc-sec-ch26-setup" class="nav-link" data-scroll-target="#sec-ch26-setup"><span class="header-section-number">26.3.1</span> Setup: Loading Survey &amp; Epidemiological Surveillance Data</a></li>
+  <li><a href="#sec-ch26-sentinel" id="toc-sec-ch26-sentinel" class="nav-link" data-scroll-target="#sec-ch26-sentinel"><span class="header-section-number">26.3.2</span> Custom Scikit-Learn Transformer (<code>SentinelToNaNTransformer</code>)</a></li>
+  <li><a href="#sec-ch26-pipeline" id="toc-sec-ch26-pipeline" class="nav-link" data-scroll-target="#sec-ch26-pipeline"><span class="header-section-number">26.3.3</span> Leak-Free <code>ColumnTransformer</code> + <code>Pipeline</code> for Mixed Clinical Data</a></li>
+  <li><a href="#sec-ch26-cv-splitters" id="toc-sec-ch26-cv-splitters" class="nav-link" data-scroll-target="#sec-ch26-cv-splitters"><span class="header-section-number">26.3.4</span> Matching CV Splitters to Study Design (<code>StratifiedKFold</code>, <code>GroupKFold</code>, <code>TimeSeriesSplit</code>)</a></li>
+  <li><a href="#sec-ch26-nested-cv" id="toc-sec-ch26-nested-cv" class="nav-link" data-scroll-target="#sec-ch26-nested-cv"><span class="header-section-number">26.3.5</span> Eliminating Tuning Optimism Bias With True Nested Cross-Validation</a></li>
+  <li><a href="#sec-ch26-tuning" id="toc-sec-ch26-tuning" class="nav-link" data-scroll-target="#sec-ch26-tuning"><span class="header-section-number">26.3.6</span> Efficient Hyperparameter Search (<code>RandomizedSearchCV</code> &amp; Optuna Concepts)</a></li>
+  <li><a href="#sec-ch26-joblib" id="toc-sec-ch26-joblib" class="nav-link" data-scroll-target="#sec-ch26-joblib"><span class="header-section-number">26.3.7</span> Reproducible Serialization With <code>joblib</code> Inside <code>tempfile.TemporaryDirectory()</code></a></li>
+  <li><a href="#sec-ch26-errors" id="toc-sec-ch26-errors" class="nav-link" data-scroll-target="#sec-ch26-errors"><span class="header-section-number">26.3.8</span> Break It On Purpose! (Production ML Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch26-blueprint" id="toc-sec-ch26-blueprint" class="nav-link" data-scroll-target="#sec-ch26-blueprint"><span class="header-section-number">26.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">26.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">26.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch26-todos" id="toc-sec-ch26-todos" class="nav-link" data-scroll-target="#sec-ch26-todos"><span class="header-section-number">26.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch26-test" id="toc-sec-ch26-test" class="nav-link" data-scroll-target="#sec-ch26-test"><span class="header-section-number">26.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch26-exam" id="toc-sec-ch26-exam" class="nav-link" data-scroll-target="#sec-ch26-exam"><span class="header-section-number">26.7</span> Stage 7 — Chapter 26 Part V Capstone Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-26.1-30-points-build_dhs_end_to_end_pipelinenum_cols-cat_cols-model" id="toc-exam-task-26.1-30-points-build_dhs_end_to_end_pipelinenum_cols-cat_cols-model" class="nav-link" data-scroll-target="#exam-task-26.1-30-points-build_dhs_end_to_end_pipelinenum_cols-cat_cols-model"><span class="header-section-number">26.7.1</span> Exam Task 26.1 (30 Points): <code>build_dhs_end_to_end_pipeline(num_cols, cat_cols, model)</code></a></li>
+  <li><a href="#exam-task-26.2-35-points-run_nested_cv_auditpipe-param_grid-x-y-outer_splits4-inner_splits3-seed42" id="toc-exam-task-26.2-35-points-run_nested_cv_auditpipe-param_grid-x-y-outer_splits4-inner_splits3-seed42" class="nav-link" data-scroll-target="#exam-task-26.2-35-points-run_nested_cv_auditpipe-param_grid-x-y-outer_splits4-inner_splits3-seed42"><span class="header-section-number">26.7.2</span> Exam Task 26.2 (35 Points): <code>run_nested_cv_audit(pipe, param_grid, X, y, outer_splits=4, inner_splits=3, seed=42)</code></a></li>
+  <li><a href="#exam-task-26.3-35-points-benchmark_part5_capstonemch_df-seed42" id="toc-exam-task-26.3-35-points-benchmark_part5_capstonemch_df-seed42" class="nav-link" data-scroll-target="#exam-task-26.3-35-points-benchmark_part5_capstonemch_df-seed42"><span class="header-section-number">26.7.3</span> Exam Task 26.3 (35 Points): <code>benchmark_part5_capstone(mch_df, seed=42)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch26-solutions" id="toc-sec-ch26-solutions" class="nav-link" data-scroll-target="#sec-ch26-solutions"><span class="header-section-number">26.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">26.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">26.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-part-v-capstone-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-part-v-capstone-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-part-v-capstone-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">26.8.3</span> C. Annotated Solutions — Part V Capstone Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-26-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-26-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-26-failure-modes"><span class="header-section-number">26.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 26 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch26" class="quarto-section-identifier"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Complete <strong>Part V (Classical Machine Learning with Scikit-Learn)</strong> by engineering publication-grade, leak-free machine learning workflows from raw survey tables to serialized production artifacts. Using <code>mch_survey_sample</code> and <code>epi_surveillance</code>, you will build custom Scikit-Learn transformers, mix numeric and categorical preprocessing inside <code>ColumnTransformer</code> + <code>Pipeline</code>, match cross-validation splitters (<code>StratifiedKFold</code>, <code>GroupKFold</code>, <code>TimeSeriesSplit</code>) to study design, eliminate tuning optimism bias via <strong>Nested Cross-Validation</strong>, explore efficient hyperparameter search (<code>GridSearchCV</code>, <code>RandomizedSearchCV</code>, and Bayesian/Optuna concepts), and package verified models with <code>joblib</code>.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb">ch26 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 26 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb">ch26 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 26 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb">ch26 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 26 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Author a Scikit-Learn compliant custom transformer (<code>BaseEstimator</code>, <code>TransformerMixin</code>) that safely replaces field-survey sentinel codes (such as <code>anc_visits == 999</code>) with <code>np.nan</code> on both DataFrames and NumPy arrays without mutating caller data.</li>
+<li>Assemble a single leak-free <code>ColumnTransformer</code> + <code>Pipeline</code> that routes mixed numeric and categorical features through imputation, scaling, and <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code> cleanly inside every cross-validation fold.</li>
+<li>Match the cross-validation splitter to your study’s statistical structure—<strong><code>StratifiedKFold</code></strong> for i.i.d. imbalanced cohorts, <strong><code>GroupKFold</code></strong> for clustered DHS surveys or multi-center hospitals, and <strong><code>TimeSeriesSplit</code></strong> for chronological epidemic forecasting.</li>
+<li>Distinguish flat <code>GridSearchCV</code> from true <strong>Nested Cross-Validation</strong>, quantifying and eliminating hyperparameter-selection optimism bias in peer-reviewed ML manuscripts.</li>
+<li>Compare <strong>Grid Search</strong>, <strong>Randomized Search</strong> (<code>RandomizedSearchCV</code>), and <strong>Bayesian/TPE Optimization (Optuna)</strong> using double-underscore (<code>step__param</code>) pipeline parameter notation.</li>
+<li>Serialize and verify complete fitted <code>Pipeline</code> objects via <code>joblib.dump</code> / <code>joblib.load</code> inside isolated temporary directories so preprocessing and model weights never drift apart in deployment.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch26-intuition" class="level2" data-number="26.1">
+<h2 data-number="26.1" class="anchored" data-anchor-id="sec-ch26-intuition"><span class="header-section-number">26.1</span> Stage 1 — First-Principles Intuition: Why Notebooks Break in Peer Review and Production</h2>
+<p>Across Chapters 21–25, you trained linear models, regularized regressions, decision trees, random forests, gradient boosting ensembles, clustering algorithms, and explainability audits. Yet <strong>more than half of published clinical ML papers suffer from subtle methodological leakage</strong> that silently inflates reported ROC-AUC before the model ever touches a new clinic.</p>
+<p>Four production engineering failures account for nearly every collapse between a promising Jupyter experiment and real-world deployment:</p>
+<ul>
+<li><strong>Preprocessing Leakage Across Folds:</strong> Imputing missing hemoglobin with the <em>entire</em> dataset’s median or fitting <code>StandardScaler</code> before <code>train_test_split</code> leaks test-set distribution statistics into training. Wrapping every preprocessing step inside a Scikit-Learn <code>Pipeline</code> guarantees that medians, means, and category vocabularies are learned <em>exclusively</em> on each training fold.</li>
+<li><strong>Wrong Cross-Validation Splitter for the Study Design:</strong> Randomly splitting households from the same Bangladesh DHS primary sampling unit (<code>cluster_id</code>) lets a model memorize village-level wealth patterns instead of generalizing to unseen communities (<code>GroupKFold</code>). Likewise, randomly shuffling weekly dengue surveillance rows lets a model peek at next week’s monsoon outbreak to predict last week (<code>TimeSeriesSplit</code>).</li>
+<li><strong>Tuning Optimism Bias (Reporting <code>GridSearchCV.best_score_</code>):</strong> When you evaluate 20 hyperparameter combinations via 5-fold CV and publish the highest CV score as your model’s generalization performance, you have overfitted the validation folds! <strong>Nested Cross-Validation</strong> separates hyperparameter selection (<em>inner loop</em>) from unbiased performance estimation (<em>outer loop</em>).</li>
+<li><strong>Training–Serving Skew (Saving Bare Models Without Preprocessing):</strong> Saving only a trained <code>LogisticRegression</code> object while keeping sentinel-<code>999</code> cleanup, median imputation, and one-hot encoding scattered across notebook cells guarantees silent bugs in production. Serializing the <strong>entire fitted <code>Pipeline</code></strong> with <code>joblib</code> locks preprocessing and model weights into one atomic artifact.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — One Pipeline, Two Nested Loops, One Artifact
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Think of a production ML workflow as three nested protective shells:</p>
+<ol type="1">
+<li><strong>Inner Shell (<code>ColumnTransformer</code> + <code>Pipeline</code>):</strong> Turns messy raw clinical rows (containing <code>999</code>, <code>NaN</code>, and unseen districts) into clean numeric tensors with zero leakage.</li>
+<li><strong>Middle Shell (Study-Matched CV &amp; Nested CV):</strong> Evaluates the <em>entire</em> tuning procedure on held-out clusters, future epi-weeks, or untouched outer folds so reported ROC-AUC / RMSE is reviewer-proof.</li>
+<li><strong>Outer Shell (<code>joblib</code> Serialization):</strong> Packages the refitted winning <code>Pipeline</code> into a single reproducible file verified for bit-exact prediction parity.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch26-mental-model" class="level2" data-number="26.2">
+<h2 data-number="26.2" class="anchored" data-anchor-id="sec-ch26-mental-model"><span class="header-section-number">26.2</span> Stage 2 — Visual Mental Model: ColumnTransformer Pipeline &amp; Nested Cross-Validation</h2>
+<p>Study this end-to-end architecture before writing code—every component in Stage 3 through Stage 7 maps directly onto a box in this diagram:</p>
+<div class="cell" data-fig-width="5.4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 26 (ColumnTransformer Pipeline &amp; Nested Cross-Validation) illustrating Raw Survey Data; mch_survey_sample 999 Sentinels, NaN, Mixed Types; Nested CV Audit; Outer Split (K=4 / GroupKFold) Hold Out U...">flowchart TD
+    subgraph RawData["Raw Survey Data"]
+        D0["mch_survey_sample&lt;br/&gt;999 Sentinels, NaN, Mixed Types"]
+    end
+    subgraph NestedCV["Nested CV Audit"]
+        O1["Outer Split (K=4 / GroupKFold)&lt;br/&gt;Hold Out Untouched Test Fold"]
+        I1["Inner GridSearchCV (K=3)&lt;br/&gt;Tune model__C / max_depth"]
+        O2["Score best_estimator_&lt;br/&gt;Unbiased Outer AUC +/- SD"]
+    end
+    subgraph PipeBox["Leak-Free Pipeline"]
+        P0["ColumnTransformer ('prep')"]
+        N1["Numeric Branch&lt;br/&gt;Sentinel -&gt; Median -&gt; Scale"]
+        C1["Categorical Branch&lt;br/&gt;MostFreq -&gt; OneHot(ignore)"]
+        M1["Estimator Step&lt;br/&gt;('model', LR / RF / HGB)"]
+        P0 --&gt; N1
+        P0 --&gt; C1
+        N1 --&gt; M1
+        C1 --&gt; M1
+    end
+    subgraph Artifact["Deployment"]
+        J1["Refit Best Pipeline on Train&lt;br/&gt;joblib.dump -&gt; Parity Check"]
+    end
+    D0 --&gt; O1
+    O1 --&gt;|"Outer Train"| I1
+    I1 --&gt;|"Fits Inside Fold"| P0
+    M1 --&gt;|"Inner Winner"| O2
+    O1 -.-&gt;|"Outer Test Only"| O2
+    O2 --&gt; J1
+</pre>
+</div>
+<p></p><figcaption> Chapter 26 visual mental model: ColumnTransformer Pipeline &amp; Nested Cross-Validation</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Look carefully at the dashed arrow from <strong>Outer Split</strong> to <strong>Unbiased Outer AUC</strong>: the outer test fold <strong>never</strong> enters <code>SimpleImputer</code>, <code>StandardScaler</code>, <code>OneHotEncoder</code>, or <code>GridSearchCV</code> hyperparameter selection. Only after the inner loop chooses the winning configuration does <code>best_estimator_</code> score the untouched outer test fold.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Two Silent Scikit-Learn Traps to Watch For
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><strong>Unseen Test Categories:</strong> <code>OneHotEncoder</code> defaults to <code>handle_unknown="error"</code>, which crashes inference the instant a new district or clinic tier appears at test time. Always set <code>handle_unknown="ignore"</code> and <code>sparse_output=False</code> (required by dense-input models like <code>HistGradientBoostingClassifier</code>).</li>
+<li><strong>Pipeline Parameter Naming:</strong> Inside a <code>Pipeline([("prep", prep), ("model", clf)])</code>, hyperparameters for <code>GridSearchCV</code> MUST use double-underscore prefixes (<code>"model__C"</code>, <code>"prep__num__imputer__strategy"</code>). Passing bare <code>"C"</code> raises <code>ValueError: Invalid parameter 'C'</code>.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch26-walkthrough" class="level2" data-number="26.3">
+<h2 data-number="26.3" class="anchored" data-anchor-id="sec-ch26-walkthrough"><span class="header-section-number">26.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_05_classical_ml/ch26_pipelines_nested_cv/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch26-setup" class="level3" data-number="26.3.1">
+<h3 data-number="26.3.1" class="anchored" data-anchor-id="sec-ch26-setup"><span class="header-section-number">26.3.1</span> Setup: Loading Survey &amp; Epidemiological Surveillance Data</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> tempfile</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> joblib</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">from</span> sklearn.base <span class="im">import</span> BaseEstimator, TransformerMixin</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression, Ridge</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> roc_auc_score</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> (</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a>    GridSearchCV,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>    GroupKFold,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>    RandomizedSearchCV,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>    StratifiedKFold,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>    TimeSeriesSplit,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a>    cross_val_score,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder, StandardScaler</span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a>epi_raw <span class="op">=</span> tutor.load_data(<span class="st">"epi_surveillance"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-label="26"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb1-27"><a href="#cb1-27" aria-label="27"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb1-28"><a href="#cb1-28" aria-label="28"></a>    mch[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb1-29"><a href="#cb1-29" aria-label="29"></a>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-label="30"></a><span class="bu">print</span>(<span class="st">"Loaded mch_survey_sample:"</span>, mch.shape,</span>
+<span id="cb1-31"><a href="#cb1-31" aria-label="31"></a>      <span class="st">"| clusters:"</span>, mch[<span class="st">"cluster_id"</span>].nunique())</span>
+<span id="cb1-32"><a href="#cb1-32" aria-label="32"></a><span class="bu">print</span>(<span class="st">"Loaded epi_surveillance:"</span>, epi_raw.shape,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-label="33"></a>      <span class="st">"| districts:"</span>, epi_raw[<span class="st">"district"</span>].nunique())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Loaded mch_survey_sample: (500, 12) | clusters: 50</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Loaded epi_surveillance: (416, 8) | districts: 4</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice the two complementary clinical structures: <code>mch_survey_sample</code> contains <strong>500 households nested inside 50 survey clusters (<code>cluster_id</code>)</strong> with 8 sentinel <code>anc_visits == 999</code> values and 22 missing <code>maternal_hb_g_dl</code> values, while <code>epi_surveillance</code> contains <strong>416 weekly dengue and respiratory counts across 4 Bangladesh districts</strong> over 2024–2025.</p>
+<hr>
+</section>
+<section id="sec-ch26-sentinel" class="level3" data-number="26.3.2">
+<h3 data-number="26.3.2" class="anchored" data-anchor-id="sec-ch26-sentinel"><span class="header-section-number">26.3.2</span> Custom Scikit-Learn Transformer (<code>SentinelToNaNTransformer</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="kw">class</span> SentinelToNaNTransformer(BaseEstimator, TransformerMixin):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>    <span class="co">"""Replace a survey sentinel code (e.g., 999) with np.nan."""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, sentinel<span class="op">=</span><span class="dv">999</span>):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>        <span class="va">self</span>.sentinel <span class="op">=</span> sentinel</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X, y<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, X):</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(X, pd.DataFrame):</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>            <span class="cf">return</span> X.copy().replace(<span class="va">self</span>.sentinel, np.nan)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a>        arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>).copy()</span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>        arr[arr <span class="op">==</span> <span class="va">self</span>.sentinel] <span class="op">=</span> np.nan</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>        <span class="cf">return</span> arr</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>raw_anc <span class="op">=</span> mch_raw[[<span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>]].copy()</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>tr <span class="op">=</span> SentinelToNaNTransformer(sentinel<span class="op">=</span><span class="dv">999</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a>clean_anc <span class="op">=</span> tr.fit_transform(raw_anc)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a><span class="bu">print</span>(<span class="st">"Raw anc_visits max:"</span>, raw_anc[<span class="st">"anc_visits"</span>].<span class="bu">max</span>(),</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a>      <span class="st">"| 999 count:"</span>, <span class="bu">int</span>((raw_anc[<span class="st">"anc_visits"</span>] <span class="op">==</span> <span class="dv">999</span>).<span class="bu">sum</span>()))</span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a><span class="bu">print</span>(<span class="st">"Transformed anc_visits max:"</span>, clean_anc[<span class="st">"anc_visits"</span>].<span class="bu">max</span>(),</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a>      <span class="st">"| NaN count:"</span>, <span class="bu">int</span>(clean_anc[<span class="st">"anc_visits"</span>].isna().<span class="bu">sum</span>()))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a><span class="bu">print</span>(<span class="st">"Original raw_anc mutated?:"</span>,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a>      <span class="bu">bool</span>((raw_anc[<span class="st">"anc_visits"</span>] <span class="op">==</span> <span class="dv">999</span>).<span class="bu">sum</span>() <span class="op">!=</span> <span class="dv">8</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Raw anc_visits max: 999 | 999 count: 8</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Transformed anc_visits max: 10.0 | NaN count: 8</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>Original raw_anc mutated?: False</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Why does inheriting from <code>(BaseEstimator, TransformerMixin)</code> matter so much?</p>
+<ul>
+<li><code>BaseEstimator</code> automatically supplies <code>.get_params()</code> and <code>.set_params()</code>, letting <code>sklearn.base.clone()</code> and <code>GridSearchCV</code> clone your custom transformer inside every CV fold—provided <code>__init__</code> assigns <code>self.sentinel = sentinel</code> without altering it.</li>
+<li><code>TransformerMixin</code> automatically supplies <code>.fit_transform(X, y)</code> by chaining <code>.fit(X, y)</code> (which returns <code>self</code>) and <code>.transform(X)</code>.</li>
+<li>Branching cleanly on <code>isinstance(X, pd.DataFrame)</code> vs.&nbsp;<code>np.asarray(X, dtype=float).copy()</code> prevents both caller mutation and integer-array <code>NaN</code> assignment crashes.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch26-pipeline" class="level3" data-number="26.3.3">
+<h3 data-number="26.3.3" class="anchored" data-anchor-id="sec-ch26-pipeline"><span class="header-section-number">26.3.3</span> Leak-Free <code>ColumnTransformer</code> + <code>Pipeline</code> for Mixed Clinical Data</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>num_cols <span class="op">=</span> [<span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>cat_cols <span class="op">=</span> [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>X <span class="op">=</span> mch[num_cols <span class="op">+</span> cat_cols]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>y <span class="op">=</span> mch[<span class="st">"child_stunted"</span>]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>groups <span class="op">=</span> mch[<span class="st">"cluster_id"</span>]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>num_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>    (<span class="st">"sentinel"</span>, SentinelToNaNTransformer(<span class="dv">999</span>)),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>    (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>])</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>cat_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>    (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a>    (<span class="st">"encoder"</span>, OneHotEncoder(</span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>        handle_unknown<span class="op">=</span><span class="st">"ignore"</span>, sparse_output<span class="op">=</span><span class="va">False</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>    )),</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>])</span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>prep <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>    (<span class="st">"num"</span>, num_pipe, num_cols),</span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>    (<span class="st">"cat"</span>, cat_pipe, cat_cols),</span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a>])</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a>pipe_lr <span class="op">=</span> Pipeline([</span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a>    (<span class="st">"prep"</span>, prep),</span>
+<span id="cb5-24"><a href="#cb5-24" aria-label="24"></a>    (<span class="st">"model"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb5-25"><a href="#cb5-25" aria-label="25"></a>])</span>
+<span id="cb5-26"><a href="#cb5-26" aria-label="26"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-label="27"></a>Z_demo <span class="op">=</span> prep.fit_transform(X)</span>
+<span id="cb5-28"><a href="#cb5-28" aria-label="28"></a><span class="bu">print</span>(<span class="st">"Prepared matrix shape:"</span>, Z_demo.shape,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-label="29"></a>      <span class="st">"| any NaN?:"</span>, <span class="bu">bool</span>(np.isnan(Z_demo).<span class="bu">any</span>()))</span>
+<span id="cb5-30"><a href="#cb5-30" aria-label="30"></a>unseen_row <span class="op">=</span> pd.DataFrame([{</span>
+<span id="cb5-31"><a href="#cb5-31" aria-label="31"></a>    <span class="st">"maternal_age_years"</span>: <span class="dv">26</span>,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-label="32"></a>    <span class="st">"anc_visits"</span>: <span class="dv">999</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" aria-label="33"></a>    <span class="st">"maternal_hb_g_dl"</span>: np.nan,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-label="34"></a>    <span class="st">"residence"</span>: <span class="st">"PeriUrban"</span>,</span>
+<span id="cb5-35"><a href="#cb5-35" aria-label="35"></a>    <span class="st">"wealth_quintile"</span>: <span class="st">"Middle"</span>,</span>
+<span id="cb5-36"><a href="#cb5-36" aria-label="36"></a>}])</span>
+<span id="cb5-37"><a href="#cb5-37" aria-label="37"></a>pipe_lr.fit(X, y)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-label="38"></a>prob <span class="op">=</span> pipe_lr.predict_proba(unseen_row)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb5-39"><a href="#cb5-39" aria-label="39"></a><span class="bu">print</span>(<span class="st">"Unseen-category + 999 prob:"</span>, <span class="bu">round</span>(<span class="bu">float</span>(prob), <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Prepared matrix shape: (500, 10) | any NaN?: False</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Unseen-category + 999 prob: 0.055</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Trace how <code>unseen_row</code> flowed safely through <code>pipe_lr.predict_proba(unseen_row)</code>:</p>
+<ol type="1">
+<li><code>SentinelToNaNTransformer(999)</code> converted <code>anc_visits = 999</code> to <code>np.nan</code>.</li>
+<li><code>SimpleImputer(strategy="median")</code> filled both <code>anc_visits</code> and <code>maternal_hb_g_dl</code> using the <em>training-fold</em> medians.</li>
+<li><code>StandardScaler()</code> standardized all 3 numeric columns using the <em>training-fold</em> means and SDs.</li>
+<li><code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code> encoded the unseen <code>"PeriUrban"</code> residence category as <code>[0.0, 0.0]</code> instead of crashing, producing a clean 10-column dense array (<code>3 numeric + 2 residence + 5 wealth_quintile</code>).</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch26-cv-splitters" class="level3" data-number="26.3.4">
+<h3 data-number="26.3.4" class="anchored" data-anchor-id="sec-ch26-cv-splitters"><span class="header-section-number">26.3.4</span> Matching CV Splitters to Study Design (<code>StratifiedKFold</code>, <code>GroupKFold</code>, <code>TimeSeriesSplit</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>skf <span class="op">=</span> StratifiedKFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>skf_auc <span class="op">=</span> cross_val_score(pipe_lr, X, y, cv<span class="op">=</span>skf, scoring<span class="op">=</span><span class="st">"roc_auc"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>gkf <span class="op">=</span> GroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>gkf_auc <span class="op">=</span> cross_val_score(</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>    pipe_lr, X, y, groups<span class="op">=</span>groups, cv<span class="op">=</span>gkf, scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>dhaka <span class="op">=</span> (</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>    epi_raw[epi_raw[<span class="st">"district"</span>] <span class="op">==</span> <span class="st">"Dhaka"</span>]</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>    .sort_values([<span class="st">"year"</span>, <span class="st">"epi_week"</span>])</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>    .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>X_epi <span class="op">=</span> dhaka[[<span class="st">"rainfall_mm"</span>, <span class="st">"mean_temp_c"</span>, <span class="st">"epi_week"</span>]]</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>y_epi <span class="op">=</span> dhaka[<span class="st">"dengue_cases"</span>]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>ts_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>    (<span class="st">"model"</span>, Ridge(alpha<span class="op">=</span><span class="fl">1.0</span>)),</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a>])</span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a>tscv <span class="op">=</span> TimeSeriesSplit(n_splits<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>ts_rmse <span class="op">=</span> <span class="op">-</span>cross_val_score(</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a>    ts_pipe, X_epi, y_epi, cv<span class="op">=</span>tscv,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a>    scoring<span class="op">=</span><span class="st">"neg_root_mean_squared_error"</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-label="25"></a><span class="bu">print</span>(<span class="ss">f"StratifiedKFold (5-fold) AUC: "</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-label="26"></a>      <span class="ss">f"</span><span class="sc">{</span>skf_auc<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss"> +/- </span><span class="sc">{</span>skf_auc<span class="sc">.</span>std()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-label="27"></a><span class="bu">print</span>(<span class="ss">f"GroupKFold (50 clusters) AUC: "</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-label="28"></a>      <span class="ss">f"</span><span class="sc">{</span>gkf_auc<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss"> +/- </span><span class="sc">{</span>gkf_auc<span class="sc">.</span>std()<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-label="29"></a><span class="bu">print</span>(<span class="ss">f"TimeSeriesSplit (Dhaka) RMSE: </span><span class="sc">{</span>ts_rmse<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-label="30"></a>      <span class="ss">f"folds: </span><span class="sc">{</span>[<span class="bu">round</span>(<span class="bu">float</span>(r), <span class="dv">2</span>) <span class="cf">for</span> r <span class="kw">in</span> ts_rmse]<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>StratifiedKFold (5-fold) AUC: 0.6844 +/- 0.0535</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>GroupKFold (50 clusters) AUC: 0.7168 +/- 0.0802</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>TimeSeriesSplit (Dhaka) RMSE: 92.6077 | folds: [242.89, 25.03, 59.17, 43.34]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Study the scientific contrast across all three validation strategies:</p>
+<ul>
+<li><strong><code>StratifiedKFold</code></strong> preserves the 14% stunting class prevalence (<code>70/500</code>) across folds (<code>AUC = 0.6844 +/- 0.0535</code>), appropriate for independent patient cohorts.</li>
+<li><strong><code>GroupKFold</code></strong> holds out <strong>entire DHS clusters</strong> (<code>10 clusters</code> per validation fold, zero cluster overlap between train and test), revealing larger fold-to-fold variance (<code>+/- 0.0802</code>) driven by community-level heterogeneity.</li>
+<li><strong><code>TimeSeriesSplit</code></strong> enforces strict chronological ordering on Dhaka’s 104 weekly dengue counts. Notice why Fold 1 has high RMSE (<code>242.89</code>) while Folds 2–4 drop to <code>25.03–59.17</code>: Fold 1 predicts the very first unseen monsoon peak from winter training weeks alone, whereas later expanding windows have observed a full seasonal cycle! Remember also to <strong>negate</strong> <code>neg_root_mean_squared_error</code> so RMSE is positive.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch26-nested-cv" class="level3" data-number="26.3.5">
+<h3 data-number="26.3.5" class="anchored" data-anchor-id="sec-ch26-nested-cv"><span class="header-section-number">26.3.5</span> Eliminating Tuning Optimism Bias With True Nested Cross-Validation</h3>
+<p>Suppose you tune a <code>RandomForestClassifier</code> grid with flat <code>GridSearchCV</code> and report <code>flat_gs.best_score_</code>. How optimistic is that score compared to true <strong>Nested CV</strong> where every outer fold tunes hyperparameters strictly on its own inner folds?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>pipe_rf <span class="op">=</span> Pipeline([</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>    (<span class="st">"prep"</span>, prep),</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>    (<span class="st">"model"</span>, RandomForestClassifier(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>        n_estimators<span class="op">=</span><span class="dv">25</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>    )),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>])</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>rf_grid <span class="op">=</span> {</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>    <span class="st">"model__max_depth"</span>: [<span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>],</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>    <span class="st">"model__min_samples_leaf"</span>: [<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">15</span>],</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>}</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>outer_cv <span class="op">=</span> StratifiedKFold(n_splits<span class="op">=</span><span class="dv">4</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>flat_gs <span class="op">=</span> GridSearchCV(pipe_rf, rf_grid, cv<span class="op">=</span>outer_cv, scoring<span class="op">=</span><span class="st">"roc_auc"</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>flat_gs.fit(X, y)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>nested_scores <span class="op">=</span> []</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a><span class="cf">for</span> tr_i, te_i <span class="kw">in</span> outer_cv.split(X, y):</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>    inner_cv <span class="op">=</span> StratifiedKFold(</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>        n_splits<span class="op">=</span><span class="dv">3</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a>    )</span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a>    gs <span class="op">=</span> GridSearchCV(</span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a>        pipe_rf, rf_grid, cv<span class="op">=</span>inner_cv, scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a>    )</span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a>    gs.fit(X.iloc[tr_i], y.iloc[tr_i])</span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>    prob <span class="op">=</span> gs.best_estimator_.predict_proba(X.iloc[te_i])[:, <span class="dv">1</span>]</span>
+<span id="cb9-25"><a href="#cb9-25" aria-label="25"></a>    nested_scores.append(<span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y.iloc[te_i], prob)), <span class="dv">4</span>))</span>
+<span id="cb9-26"><a href="#cb9-26" aria-label="26"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-label="27"></a>bias <span class="op">=</span> <span class="bu">float</span>(flat_gs.best_score_ <span class="op">-</span> np.mean(nested_scores))</span>
+<span id="cb9-28"><a href="#cb9-28" aria-label="28"></a><span class="bu">print</span>(<span class="ss">f"Naive Flat GridSearchCV AUC: </span><span class="sc">{</span>flat_gs<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-label="29"></a>      <span class="ss">f"best: </span><span class="sc">{</span>flat_gs<span class="sc">.</span>best_params_<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-30"><a href="#cb9-30" aria-label="30"></a><span class="bu">print</span>(<span class="ss">f"True Nested CV AUC:          </span><span class="sc">{</span>np<span class="sc">.</span>mean(nested_scores)<span class="sc">:.4f}</span><span class="ss"> "</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-label="31"></a>      <span class="ss">f"+/- </span><span class="sc">{</span>np<span class="sc">.</span>std(nested_scores)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-32"><a href="#cb9-32" aria-label="32"></a><span class="bu">print</span>(<span class="st">"Outer fold scores:"</span>, nested_scores)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-label="33"></a><span class="bu">print</span>(<span class="ss">f"Optimism bias (flat - nested): </span><span class="sc">{</span>bias<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Naive Flat GridSearchCV AUC: 0.6827 | best: {'model__max_depth': 8, 'model__min_samples_leaf': 5}</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>True Nested CV AUC:          0.6716 +/- 0.0360</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Outer fold scores: [0.6266, 0.6495, 0.7199, 0.6903]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-label="4"></a>Optimism bias (flat - nested): 0.0112</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>There it is in black and white: even on a modest 9-configuration grid, reporting <code>flat_gs.best_score_</code> (<code>0.6827</code>) inflates expected generalization by <strong><code>+0.0112</code> ROC-AUC</strong> over unbiased Nested CV (<code>0.6716</code>). On larger 100-configuration grids in small clinical cohorts (<span class="math inline">\(n &lt; 500\)</span>), this selection optimism easily reaches <code>+0.03</code> to <code>+0.07</code> AUC!</p>
+<hr>
+</section>
+<section id="sec-ch26-tuning" class="level3" data-number="26.3.6">
+<h3 data-number="26.3.6" class="anchored" data-anchor-id="sec-ch26-tuning"><span class="header-section-number">26.3.6</span> Efficient Hyperparameter Search (<code>RandomizedSearchCV</code> &amp; Optuna Concepts)</h3>
+<p>Exhaustive grid search scales exponentially (<span class="math inline">\(O(m^d)\)</span>) in the number of hyperparameters <span class="math inline">\(d\)</span>. Sampling random combinations (<code>RandomizedSearchCV</code>) or using adaptive <strong>Tree-structured Parzen Estimator (TPE) Bayesian optimization</strong> (as in <strong>Optuna</strong>) explores far more unique values of important hyperparameters within the same compute budget:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>param_dist <span class="op">=</span> {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>    <span class="st">"model__max_depth"</span>: [<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">8</span>, <span class="va">None</span>],</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>    <span class="st">"model__min_samples_leaf"</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">15</span>],</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>    <span class="st">"model__max_features"</span>: [<span class="st">"sqrt"</span>, <span class="st">"log2"</span>, <span class="fl">0.7</span>],</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>}</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>rs <span class="op">=</span> RandomizedSearchCV(</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>    pipe_rf,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>    param_dist,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>    n_iter<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>    cv<span class="op">=</span>StratifiedKFold(n_splits<span class="op">=</span><span class="dv">4</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>),</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>    scoring<span class="op">=</span><span class="st">"roc_auc"</span>,</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>rs.fit(X, y)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a><span class="bu">print</span>(<span class="ss">f"RandomizedSearchCV (6 draws) best AUC: </span><span class="sc">{</span>rs<span class="sc">.</span>best_score_<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a><span class="bu">print</span>(<span class="st">"Best params:"</span>, rs.best_params_)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>RandomizedSearchCV (6 draws) best AUC: 0.6862</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>Best params: {'model__min_samples_leaf': 5, 'model__max_features': 'log2', 'model__max_depth': 3}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>With only <strong>6 random draws</strong> from a 90-point search space, <code>RandomizedSearchCV</code> outperformed the 9-point rigid grid (<code>0.6862</code> vs.&nbsp;<code>0.6827</code>) while running 33% fewer model fits! In large deep-learning or gradient-boosting sweeps, <strong>Optuna</strong> (<code>optuna.create_study(direction="maximize")</code>) takes this one step further by fitting a probabilistic surrogate model (TPE) over completed trials to focus subsequent trials on high-AUC regions while pruning hopeless runs early.</p>
+<hr>
+</section>
+<section id="sec-ch26-joblib" class="level3" data-number="26.3.7">
+<h3 data-number="26.3.7" class="anchored" data-anchor-id="sec-ch26-joblib"><span class="header-section-number">26.3.7</span> Reproducible Serialization With <code>joblib</code> Inside <code>tempfile.TemporaryDirectory()</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>X_clean <span class="op">=</span> X.replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>deploy_prep <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>    (<span class="st">"num"</span>, Pipeline([</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a>    ]), num_cols),</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>    (<span class="st">"cat"</span>, cat_pipe, cat_cols),</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>])</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>deploy_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>    (<span class="st">"prep"</span>, deploy_prep),</span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a>    (<span class="st">"model"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a>])</span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a>deploy_pipe.fit(X_clean, y)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-label="14"></a>X_sample <span class="op">=</span> X_clean.iloc[:<span class="dv">5</span>]</span>
+<span id="cb13-15"><a href="#cb13-15" aria-label="15"></a><span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb13-16"><a href="#cb13-16" aria-label="16"></a>    artifact <span class="op">=</span> Path(tmpdir) <span class="op">/</span> <span class="st">"stunting_lr_pipeline.joblib"</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-label="17"></a>    joblib.dump(deploy_pipe, artifact)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-label="18"></a>    reloaded <span class="op">=</span> joblib.load(artifact)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-label="19"></a>    p_orig <span class="op">=</span> deploy_pipe.predict_proba(X_sample)[:, <span class="dv">1</span>]</span>
+<span id="cb13-20"><a href="#cb13-20" aria-label="20"></a>    p_load <span class="op">=</span> reloaded.predict_proba(X_sample)[:, <span class="dv">1</span>]</span>
+<span id="cb13-21"><a href="#cb13-21" aria-label="21"></a>    <span class="bu">print</span>(<span class="st">"Saved artifact bytes:"</span>, artifact.stat().st_size)</span>
+<span id="cb13-22"><a href="#cb13-22" aria-label="22"></a>    <span class="bu">print</span>(<span class="st">"Predictions bit-identical?:"</span>,</span>
+<span id="cb13-23"><a href="#cb13-23" aria-label="23"></a>          <span class="bu">bool</span>(np.allclose(p_orig, p_load)))</span>
+<span id="cb13-24"><a href="#cb13-24" aria-label="24"></a>    <span class="bu">print</span>(<span class="st">"Reloaded risk probs:"</span>,</span>
+<span id="cb13-25"><a href="#cb13-25" aria-label="25"></a>          [<span class="bu">round</span>(<span class="bu">float</span>(p), <span class="dv">4</span>) <span class="cf">for</span> p <span class="kw">in</span> p_load])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>Saved artifact bytes: 4474</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>Predictions bit-identical?: True</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>Reloaded risk probs: [0.2576, 0.3069, 0.2505, 0.1818, 0.3862]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The entire production pipeline—training medians, scaling parameters, one-hot vocabulary, and logistic weights—serializes into just <strong>4,474 bytes</strong> and reloads with bit-identical probabilities. Notice a subtle Python MLOps rule demonstrated here: pipelines composed of built-in Scikit-Learn steps reload anywhere out-of-the-box, whereas custom classes (like <code>SentinelToNaNTransformer</code>) must be defined in an importable <code>.py</code> module—not an interactive <code>__main__</code> notebook cell—before <code>joblib.dump</code> can pickle them cleanly for another server. Wrapping verification demos in <code>tempfile.TemporaryDirectory()</code> guarantees automatic cleanup so stray <code>.joblib</code> binaries never pollute your Git repository.</p>
+<hr>
+</section>
+<section id="sec-ch26-errors" class="level3" data-number="26.3.8">
+<h3 data-number="26.3.8" class="anchored" data-anchor-id="sec-ch26-errors"><span class="header-section-number">26.3.8</span> Break It On Purpose! (Production ML Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — ValueError (Unseen Category When <code>handle_unknown='error'</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>enc_strict <span class="op">=</span> OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">"error"</span>, sparse_output<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>enc_strict.fit(pd.DataFrame({<span class="st">"district"</span>: [<span class="st">"Dhaka"</span>, <span class="st">"Sylhet"</span>]}))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>enc_strict.transform(pd.DataFrame({<span class="st">"district"</span>: [<span class="st">"Khulna"</span>]}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>ValueError: Found unknown categories ['Khulna'] in column 0 during transform</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>OneHotEncoder</code> defaults to <code>handle_unknown="error"</code>. The first time a validation fold or new clinic sends a district unseen during training (<code>"Khulna"</code>), inference crashes immediately.<br>
+<strong>Fix:</strong> Always configure <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code> so unseen categories safely map to an all-zero indicator vector.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ValueError (Missing <code>model__</code> Prefix in <code>GridSearchCV</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>bad_gs <span class="op">=</span> GridSearchCV(pipe_lr, {<span class="st">"C"</span>: [<span class="fl">0.1</span>, <span class="fl">1.0</span>]}, cv<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>bad_gs.fit(X, y)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: Invalid parameter 'C' for estimator Pipeline(...).</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>Valid parameters are: ['memory', 'steps', 'transform_input', 'verbose'].</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>GridSearchCV</code> inspects parameters of the outer <code>Pipeline</code> object, not its inner classifier. Bare <code>"C"</code> does not exist on <code>Pipeline</code>.<br>
+<strong>Fix:</strong> Prefix every inner parameter with <code>&lt;step_name&gt;__</code> (double underscore): <code>{"model__C": [0.1, 1.0]}</code>. You can inspect every valid key anytime with <code>pipe_lr.get_params().keys()</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (Calling <code>GroupKFold</code> Without <code>groups=</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>cross_val_score(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>    pipe_lr, X, y, cv<span class="op">=</span>GroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>), scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>ValueError: The 'groups' parameter should not be None.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>GroupKFold</code> cannot partition survey clusters without knowing which cluster each row belongs to. Passing <code>cv=GroupKFold(...)</code> alone leaves <code>groups=None</code>.<br>
+<strong>Fix:</strong> Always forward <code>groups=mch["cluster_id"]</code> explicitly into <code>cross_val_score(pipe, X, y, groups=groups, cv=gkf, scoring="roc_auc")</code> (and into <code>outer.split(X, y, groups=groups)</code> in manual nested loops).</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch26-blueprint" class="level2" data-number="26.4">
+<h2 data-number="26.4" class="anchored" data-anchor-id="sec-ch26-blueprint"><span class="header-section-number">26.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Your health-analytics team is preparing a manuscript and clinical risk API predicting child stunting (<code>child_stunted</code>) from <code>mch_survey_sample</code>. Peer reviewers require (1) <strong>zero data leakage</strong> across the 50 survey clusters (<code>cluster_id</code>), (2) <strong>nested hyperparameter tuning</strong> of <code>LogisticRegression</code>’s regularization strength <code>model__C</code>, and (3) a <strong>refitted, <code>joblib</code>-verified production artifact</strong> tested for exact reload parity without leaving temporary binaries on disk.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="26.4.1">
+<h3 data-number="26.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">26.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Input Hygiene Layer:</strong></p>
+<ul>
+<li>Copy <code>raw_df</code> first (<code>df = raw_df.copy()</code>), normalize <code>residence</code> casing (<code>str.strip().str.title()</code>), and convert numeric sentinel <code>999</code> codes to <code>np.nan</code> before building the portable built-in pipeline.</li>
+<li>Select <code>num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]</code>, <code>cat_cols = ["residence", "wealth_quintile"]</code>, <code>y = df["child_stunted"]</code>, and <code>grps = df["cluster_id"]</code>.</li>
+</ul></li>
+<li><p><strong>Leak-Free Pipeline &amp; Group-Nested Audit:</strong></p>
+<ul>
+<li>Build a portable <code>ColumnTransformer</code> chaining <code>SimpleImputer(strategy="median")</code> <span class="math inline">\(\rightarrow\)</span> <code>StandardScaler()</code> on numeric features and <code>SimpleImputer(strategy="most_frequent")</code> <span class="math inline">\(\rightarrow\)</span> <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code> on categorical features.</li>
+<li>Outer loop: <code>GroupKFold(n_splits=5)</code> on <code>grps</code>; inner loop: <code>GridSearchCV(cand, {"model__C": [0.05, 0.2, 1.0, 5.0]}, cv=StratifiedKFold(3, shuffle=True, random_state=seed), scoring="roc_auc")</code>.</li>
+</ul></li>
+<li><p><strong>Final Refit &amp; Temporary Serialization Parity Check:</strong></p>
+<ul>
+<li>Fit <code>final_search</code> across the full dataset to choose <code>best_C</code> and extract <code>best_estimator_</code>.</li>
+<li>Inside <code>with tempfile.TemporaryDirectory() as tmpdir:</code>, dump and reload <code>best_pipe</code> via <code>joblib</code>, verifying <code>np.allclose</code> on predicted probabilities and recording <code>artifact_bytes</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="26.4.2">
+<h3 data-number="26.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">26.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="kw">def</span> audit_and_package_dhs_model(raw_df, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>    <span class="co">"""Run Group-Nested CV, refit best DHS pipeline &amp; verify joblib."""</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>    df <span class="op">=</span> raw_df.copy()</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a>        df[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    )</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    n_cols <span class="op">=</span> [<span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>]</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    c_cols <span class="op">=</span> [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>    df[n_cols] <span class="op">=</span> df[n_cols].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    X_all, y_all <span class="op">=</span> df[n_cols <span class="op">+</span> c_cols], df[<span class="st">"child_stunted"</span>]</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    grps <span class="op">=</span> df[<span class="st">"cluster_id"</span>]</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a></span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    n_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>    ])</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    c_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>        (<span class="st">"encoder"</span>, OneHotEncoder(</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>            handle_unknown<span class="op">=</span><span class="st">"ignore"</span>, sparse_output<span class="op">=</span><span class="va">False</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>        )),</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    ])</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    pre <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        (<span class="st">"num"</span>, n_pipe, n_cols),</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>        (<span class="st">"cat"</span>, c_pipe, c_cols),</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>    ])</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    cand <span class="op">=</span> Pipeline([</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>        (<span class="st">"prep"</span>, pre),</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>        (<span class="st">"model"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    ])</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a></span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    grid <span class="op">=</span> {<span class="st">"model__C"</span>: [<span class="fl">0.05</span>, <span class="fl">0.2</span>, <span class="fl">1.0</span>, <span class="fl">5.0</span>]}</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    outer <span class="op">=</span> GroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>    fold_aucs <span class="op">=</span> []</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>    <span class="cf">for</span> tr_i, te_i <span class="kw">in</span> outer.split(X_all, y_all, groups<span class="op">=</span>grps):</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>        inner <span class="op">=</span> StratifiedKFold(</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>            n_splits<span class="op">=</span><span class="dv">3</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>        )</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>        search <span class="op">=</span> GridSearchCV(cand, grid, cv<span class="op">=</span>inner, scoring<span class="op">=</span><span class="st">"roc_auc"</span>)</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>        search.fit(X_all.iloc[tr_i], y_all.iloc[tr_i])</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>        pr <span class="op">=</span> search.best_estimator_.predict_proba(X_all.iloc[te_i])[:, <span class="dv">1</span>]</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>        auc_i <span class="op">=</span> roc_auc_score(y_all.iloc[te_i], pr)</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>        fold_aucs.append(<span class="bu">round</span>(<span class="bu">float</span>(auc_i), <span class="dv">4</span>))</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a></span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>    final_search <span class="op">=</span> GridSearchCV(</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>        cand, grid,</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        cv<span class="op">=</span>StratifiedKFold(n_splits<span class="op">=</span><span class="dv">3</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span>seed),</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>        scoring<span class="op">=</span><span class="st">"roc_auc"</span>,</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>    )</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>    final_search.fit(X_all, y_all)</span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>    best_pipe <span class="op">=</span> final_search.best_estimator_</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a></span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>    <span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> tmpdir:</span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a>        out_path <span class="op">=</span> Path(tmpdir) <span class="op">/</span> <span class="st">"dhs_production_pipe.joblib"</span></span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>        joblib.dump(best_pipe, out_path)</span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a>        reloaded <span class="op">=</span> joblib.load(out_path)</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>        same <span class="op">=</span> <span class="bu">bool</span>(np.allclose(</span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a>            best_pipe.predict_proba(X_all.iloc[:<span class="dv">5</span>])[:, <span class="dv">1</span>],</span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a>            reloaded.predict_proba(X_all.iloc[:<span class="dv">5</span>])[:, <span class="dv">1</span>],</span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>        ))</span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a>        n_bytes <span class="op">=</span> <span class="bu">int</span>(out_path.stat().st_size)</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a></span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>        <span class="st">"nested_group_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(fold_aucs)), <span class="dv">4</span>),</span>
+<span id="cb21-65"><a href="#cb21-65" aria-label="65"></a>        <span class="st">"nested_group_std"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.std(fold_aucs)), <span class="dv">4</span>),</span>
+<span id="cb21-66"><a href="#cb21-66" aria-label="66"></a>        <span class="st">"best_C"</span>: final_search.best_params_[<span class="st">"model__C"</span>],</span>
+<span id="cb21-67"><a href="#cb21-67" aria-label="67"></a>        <span class="st">"artifact_bytes"</span>: n_bytes,</span>
+<span id="cb21-68"><a href="#cb21-68" aria-label="68"></a>        <span class="st">"reload_verified"</span>: same,</span>
+<span id="cb21-69"><a href="#cb21-69" aria-label="69"></a>    }</span>
+<span id="cb21-70"><a href="#cb21-70" aria-label="70"></a></span>
+<span id="cb21-71"><a href="#cb21-71" aria-label="71"></a><span class="bu">print</span>(audit_and_package_dhs_model(mch_raw))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a>{'nested_group_auc': 0.7147, 'nested_group_std': 0.0851, 'best_C': 0.2, 'artifact_bytes': 4474, 'reload_verified': True}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch26-todos" class="level2" data-number="26.5">
+<h2 data-number="26.5" class="anchored" data-anchor-id="sec-ch26-todos"><span class="header-section-number">26.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_05_classical_ml/ch26_pipelines_nested_cv/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six production ML workflow building blocks below. Pass each <strong>class or function name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 26.1 (<code>SentinelToNaNTransformer</code>):</strong> Build a custom <code>(BaseEstimator, TransformerMixin)</code> class with <code>__init__(self, sentinel=999)</code>, <code>.fit(self, X, y=None)</code> returning <code>self</code>, and <code>.transform(self, X)</code> returning a non-mutated copy replacing <code>self.sentinel</code> with <code>np.nan</code> for both <code>pd.DataFrame</code> and <code>np.ndarray</code> inputs.</li>
+<li><strong>To-Do 26.2 (<code>build_mixed_preprocessor(num_cols, cat_cols)</code>):</strong> Return a <code>ColumnTransformer</code> with a numeric pipeline (<code>SimpleImputer(strategy="median")</code> + <code>StandardScaler()</code>) and a categorical pipeline (<code>SimpleImputer(strategy="most_frequent")</code> + <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code>).</li>
+<li><strong>To-Do 26.3 (<code>cross_validate_pipeline(pipe, X, y, cv=5, seed=42)</code>):</strong> Run <code>StratifiedKFold(n_splits=cv, shuffle=True, random_state=seed)</code> + <code>cross_val_score(..., scoring="roc_auc")</code> and return <code>{"mean_roc_auc": round4, "std_roc_auc": round4, "fold_scores": list_round4}</code>.</li>
+<li><strong>To-Do 26.4 (<code>group_cv_evaluation(pipe, X, y, groups, n_splits=5)</code>):</strong> Run <code>GroupKFold(n_splits=n_splits)</code> + <code>cross_val_score(..., groups=groups, scoring="roc_auc")</code> and return <code>{"mean_roc_auc": round4, "std_roc_auc": round4, "n_splits": int}</code>.</li>
+<li><strong>To-Do 26.5 (<code>temporal_cv_forecast_rmse(pipe, X, y, n_splits=4)</code>):</strong> Run <code>TimeSeriesSplit(n_splits=n_splits)</code> + <code>cross_val_score(..., scoring="neg_root_mean_squared_error")</code>, negate to positive RMSEs, and return <code>{"mean_rmse": round4, "fold_rmses": list_round4}</code>.</li>
+<li><strong>To-Do 26.6 (<code>save_and_reload_pipeline(pipe, model_path, X_sample)</code>):</strong> Save <code>pipe</code> via <code>joblib.dump</code>, reload via <code>joblib.load</code>, compare predictions on <code>X_sample</code>, and return <code>{"file_bytes": int, "predictions_match": bool, "reloaded_preds": preds}</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch26-test" class="level2" data-number="26.6">
+<h2 data-number="26.6" class="anchored" data-anchor-id="sec-ch26-test"><span class="header-section-number">26.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 production ML and Scikit-Learn reasoning questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Leakage Mechanics:</strong> A colleague computes <code>df["hb"] = df["hb"].fillna(df["hb"].median())</code> and <code>X_scaled = StandardScaler().fit_transform(X)</code> <em>before</em> running 5-fold cross-validation. What specific statistical information leaked from the validation folds into training, and how does <code>Pipeline</code> stop it?</li>
+<li><strong><code>sklearn.base.clone()</code> Contract:</strong> Why will <code>cross_val_score</code> or <code>GridSearchCV</code> fail if a custom transformer’s <code>__init__(self, sentinel=999)</code> stores <code>self._sentinel = float(sentinel)</code> instead of <code>self.sentinel = sentinel</code>?</li>
+<li><strong>Integer Array <code>NaN</code> Trap:</strong> Suppose <code>X</code> is an <code>int64</code> NumPy array <code>np.array([[3, 999], [4, 5]])</code>. What happens if <code>transform(X)</code> runs <code>arr = X.copy(); arr[arr == 999] = np.nan</code> without casting to <code>float</code>?</li>
+<li><strong>Step Ordering Inside <code>ColumnTransformer</code>:</strong> You accidentally place <code>SimpleImputer(strategy="median")</code> <em>before</em> <code>SentinelToNaNTransformer(999)</code> in the numeric pipeline. What happens when <code>anc_visits</code> contains <code>999</code>?</li>
+<li><strong>Unseen Category Behavior:</strong> A <code>ColumnTransformer</code> uses <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code> fitted on <code>["Rural", "Urban"]</code>. What 2-element vector does it output for a new test row with <code>"PeriUrban"</code>?</li>
+<li><strong>Choosing the Right CV Splitter:</strong> Match each study to <code>StratifiedKFold</code>, <code>GroupKFold</code>, or <code>TimeSeriesSplit</code>: (a) 600 ICU admissions where 120 patients have multiple repeat visits; (b) 156 weekly cholera case counts in Chattogram; (c) 1,200 independent blood donors screened for rare (3%) hepatitis B.</li>
+<li><strong>Why <code>neg_root_mean_squared_error</code> Is Negative:</strong> When you run <code>cross_val_score(..., scoring="neg_root_mean_squared_error")</code>, Scikit-Learn returns <code>[-242.89, -25.03, -59.17, -43.34]</code>. Why is it negative by design, and how do you convert it for a manuscript table?</li>
+<li><strong>Nested CV Fit Count:</strong> You run <strong>4-fold outer</strong> <span class="math inline">\(\times\)</span> <strong>3-fold inner</strong> Nested CV over a hyperparameter grid of <strong>5</strong> candidate values of <code>model__C</code>, with <code>GridSearchCV(refit=True)</code>. Exactly how many total pipeline <code>.fit()</code> calls occur? (Hint: count inner CV fits + 1 refit per outer fold!)</li>
+<li><strong>Grid Search vs.&nbsp;Randomized Search vs.&nbsp;Optuna:</strong> You have a compute budget of 20 model evaluations across 4 hyperparameters, only 1 of which strongly drives ROC-AUC. Why does <code>RandomizedSearchCV(n_iter=20)</code> typically beat a <span class="math inline">\(2 \times 2 \times 2 \times 2\)</span> grid—and what extra advantage does Optuna’s TPE sampler add?</li>
+<li><strong>Training–Serving Skew:</strong> Why is <code>joblib.dump(pipe.named_steps["model"], "model.joblib")</code> an anti-pattern in production compared to <code>joblib.dump(pipe, "pipeline.joblib")</code>?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch26-exam" class="level2" data-number="26.7">
+<h2 data-number="26.7" class="anchored" data-anchor-id="sec-ch26-exam"><span class="header-section-number">26.7</span> Stage 7 — Chapter 26 Part V Capstone Coding Exam (100 Points)</h2>
+<p>Open <code>part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam.ipynb</code>, implement all three capstone functions, and run <code>tutor.check_exam("ch26", exam_submissions)</code> to earn your <strong>Part V Capstone</strong> score out of 100 points.</p>
+<section id="exam-task-26.1-30-points-build_dhs_end_to_end_pipelinenum_cols-cat_cols-model" class="level3" data-number="26.7.1">
+<h3 data-number="26.7.1" class="anchored" data-anchor-id="exam-task-26.1-30-points-build_dhs_end_to_end_pipelinenum_cols-cat_cols-model"><span class="header-section-number">26.7.1</span> Exam Task 26.1 (30 Points): <code>build_dhs_end_to_end_pipeline(num_cols, cat_cols, model)</code></h3>
+<p>Return a single leak-free <code>Pipeline([("prep", prep), ("model", model)])</code> whose <code>"prep"</code> <code>ColumnTransformer</code> chains:</p>
+<ul>
+<li>On <code>num_cols</code>: <code>SentinelToNaNTransformer(999)</code> <span class="math inline">\(\rightarrow\)</span> <code>SimpleImputer(strategy="median")</code> <span class="math inline">\(\rightarrow\)</span> <code>StandardScaler()</code>.</li>
+<li>On <code>cat_cols</code>: <code>SimpleImputer(strategy="most_frequent")</code> <span class="math inline">\(\rightarrow\)</span> <code>OneHotEncoder(handle_unknown="ignore", sparse_output=False)</code>.</li>
+</ul>
+<p>The verifier checks that your pipeline handles <code>999</code>, <code>NaN</code>, and unseen test categories without crashing—and that identical rows with <code>anc_visits=999</code> vs.&nbsp;<code>anc_visits=NaN</code> yield identical predictions.</p>
+</section>
+<section id="exam-task-26.2-35-points-run_nested_cv_auditpipe-param_grid-x-y-outer_splits4-inner_splits3-seed42" class="level3" data-number="26.7.2">
+<h3 data-number="26.7.2" class="anchored" data-anchor-id="exam-task-26.2-35-points-run_nested_cv_auditpipe-param_grid-x-y-outer_splits4-inner_splits3-seed42"><span class="header-section-number">26.7.2</span> Exam Task 26.2 (35 Points): <code>run_nested_cv_audit(pipe, param_grid, X, y, outer_splits=4, inner_splits=3, seed=42)</code></h3>
+<p>Implement true <strong>Nested Stratified Cross-Validation</strong>:</p>
+<ul>
+<li>Outer splitter: <code>StratifiedKFold(n_splits=outer_splits, shuffle=True, random_state=seed)</code>.</li>
+<li>Inner tuning on each outer training split: <code>GridSearchCV(pipe, param_grid, cv=StratifiedKFold(n_splits=inner_splits, shuffle=True, random_state=seed), scoring="roc_auc")</code>.</li>
+<li>Evaluate <code>gs.best_estimator_</code> on the untouched outer test fold via <code>roc_auc_score</code> (rounded to 4 decimals) and log <code>gs.best_params_</code>.</li>
+<li>Return <code>{"outer_mean_auc": round4, "outer_std_auc": round4, "outer_scores": list_round4, "fold_best_params": list_of_dicts}</code>.</li>
+</ul>
+</section>
+<section id="exam-task-26.3-35-points-benchmark_part5_capstonemch_df-seed42" class="level3" data-number="26.7.3">
+<h3 data-number="26.7.3" class="anchored" data-anchor-id="exam-task-26.3-35-points-benchmark_part5_capstonemch_df-seed42"><span class="header-section-number">26.7.3</span> Exam Task 26.3 (35 Points): <code>benchmark_part5_capstone(mch_df, seed=42)</code></h3>
+<p>Without mutating <code>mch_df</code>:</p>
+<ul>
+<li>Clean <code>residence</code> casing (<code>str.strip().str.title()</code>).</li>
+<li>Predict <code>child_stunted</code> from <code>num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]</code> and <code>cat_cols = ["residence", "wealth_quintile"]</code>.</li>
+<li>Use <code>GroupKFold(n_splits=5)</code> grouped by <code>cluster_id</code> (<code>scoring="roc_auc"</code>) to benchmark leak-free <code>build_dhs_end_to_end_pipeline</code> across:
+<ul>
+<li><code>"LogisticRegression"</code>: <code>LogisticRegression(max_iter=500)</code></li>
+<li><code>"RandomForestClassifier"</code>: <code>RandomForestClassifier(n_estimators=80, max_depth=6, random_state=seed)</code></li>
+<li><code>"HistGradientBoostingClassifier"</code>: <code>HistGradientBoostingClassifier(max_depth=4, random_state=seed)</code></li>
+</ul></li>
+<li>Return <code>{"leaderboard": df_sorted, "winner": str}</code> where <code>leaderboard</code> has columns <code>["model", "mean_auc", "std_auc"]</code> (rounded to 4 decimals), sorted descending by <code>mean_auc</code> with a clean integer index.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch26-solutions" class="level2" data-number="26.8">
+<h2 data-number="26.8" class="anchored" data-anchor-id="sec-ch26-solutions"><span class="header-section-number">26.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="26.8.1">
+<h3 data-number="26.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">26.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><strong>Test-fold medians, means, and standard deviations</strong> leaked into every training fold, subtly inflating validation accuracy. A <code>Pipeline</code> fits imputers and scalers <em>exclusively</em> on <code>X_train</code> inside each fold and applies <code>.transform(X_val)</code> using those training-only statistics.</li>
+<li>Scikit-Learn’s <code>clone()</code> inspects <code>__init__</code> parameter names via <code>get_params()</code> and expects an identically named, unmodified attribute (<code>self.sentinel</code>). Renaming or mutating it breaks cloning inside <code>cross_val_score</code> and <code>GridSearchCV</code>.</li>
+<li>NumPy raises <strong><code>ValueError: cannot convert float NaN to integer</code></strong>. Always convert to a floating-point copy first: <code>arr = np.asarray(X, dtype=float).copy()</code>.</li>
+<li><code>SimpleImputer</code> sees <code>999</code> as a valid number (leaving it untouched and skewing the training median), and <em>then</em> <code>SentinelToNaNTransformer</code> turns <code>999</code> into <code>NaN</code>—sending un-imputed <code>NaN</code>s straight into <code>StandardScaler</code> and crashing <code>LogisticRegression</code>!</li>
+<li>It outputs <strong><code>[0.0, 0.0]</code></strong> (all zeros across the known category columns) without raising an error.</li>
+<li><ol type="a">
+<li><strong><code>GroupKFold</code></strong> grouped by <code>patient_id</code> (prevents repeat-visit patient leakage); (b) <strong><code>TimeSeriesSplit</code></strong> (prevents future-to-past look-ahead leakage); (c) <strong><code>StratifiedKFold</code></strong> (preserves the 3% rare positive class across independent donors).</li>
+</ol></li>
+<li>Scikit-Learn enforces a uniform <strong>“higher is better”</strong> convention across all scorers so <code>GridSearchCV</code> can always maximize. Multiply by <code>-1</code> (<code>rmses = -scores</code>) before reporting RMSE.</li>
+<li>Each of the 4 outer folds runs <code>3 inner folds * 5 grid configs = 15</code> inner fits plus <strong>1 refit</strong> of <code>best_estimator_</code> on the full outer training fold = <code>16</code> fits per outer fold <span class="math inline">\(\Rightarrow 4 \times 16 = \mathbf{64}\)</span> total pipeline <code>.fit()</code> calls!</li>
+<li>A <span class="math inline">\(2^4\)</span> grid tests only <strong>2 unique values</strong> along the single important hyperparameter, whereas <code>RandomizedSearchCV(n_iter=20)</code> probes <strong>20 distinct values</strong> along every axis. Optuna’s TPE sampler further adapts sequentially, concentrating later trials near promising regions and pruning weak trials early.</li>
+<li>Saving only the bare model throws away the fitted sentinel cleaner, median imputer, scaler mean/SD, and one-hot encoder column order—causing silent feature misalignment or crashes when raw rows arrive in production.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="26.8.2">
+<h3 data-number="26.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">26.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a><span class="im">import</span> joblib</span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a><span class="im">from</span> sklearn.base <span class="im">import</span> BaseEstimator, TransformerMixin</span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> (</span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a>    GroupKFold,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a>    StratifiedKFold,</span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a>    TimeSeriesSplit,</span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a>    cross_val_score,</span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a>)</span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder, StandardScaler</span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a></span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a><span class="co"># To-Do 26.1</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a><span class="kw">class</span> SentinelToNaNTransformer(BaseEstimator, TransformerMixin):</span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a>    <span class="co">"""Replace numeric sentinel codes (e.g., 999) with np.nan."""</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a></span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, sentinel<span class="op">=</span><span class="dv">999</span>):</span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a>        <span class="va">self</span>.sentinel <span class="op">=</span> sentinel</span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X, y<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a></span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a>    <span class="kw">def</span> transform(<span class="va">self</span>, X):</span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(X, pd.DataFrame):</span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>            <span class="cf">return</span> X.copy().replace(<span class="va">self</span>.sentinel, np.nan)</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a>        arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>).copy()</span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a>        arr[arr <span class="op">==</span> <span class="va">self</span>.sentinel] <span class="op">=</span> np.nan</span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a>        <span class="cf">return</span> arr</span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a></span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a><span class="co"># To-Do 26.2</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a><span class="kw">def</span> build_mixed_preprocessor(num_cols, cat_cols):</span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a>    <span class="co">"""Return a ColumnTransformer for numeric + categorical features."""</span></span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a>    num_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>    ])</span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a>    cat_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a>        (<span class="st">"encoder"</span>, OneHotEncoder(</span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a>            handle_unknown<span class="op">=</span><span class="st">"ignore"</span>, sparse_output<span class="op">=</span><span class="va">False</span></span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a>        )),</span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a>    ])</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>    <span class="cf">return</span> ColumnTransformer([</span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a>        (<span class="st">"num"</span>, num_pipe, num_cols),</span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a>        (<span class="st">"cat"</span>, cat_pipe, cat_cols),</span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a>    ])</span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a></span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a><span class="co"># To-Do 26.3</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-label="53"></a><span class="kw">def</span> cross_validate_pipeline(pipe, X, y, cv<span class="op">=</span><span class="dv">5</span>, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb23-54"><a href="#cb23-54" aria-label="54"></a>    <span class="co">"""Evaluate a pipeline via StratifiedKFold ROC-AUC cross-validation."""</span></span>
+<span id="cb23-55"><a href="#cb23-55" aria-label="55"></a>    skf <span class="op">=</span> StratifiedKFold(</span>
+<span id="cb23-56"><a href="#cb23-56" aria-label="56"></a>        n_splits<span class="op">=</span>cv, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb23-57"><a href="#cb23-57" aria-label="57"></a>    )</span>
+<span id="cb23-58"><a href="#cb23-58" aria-label="58"></a>    scores <span class="op">=</span> cross_val_score(pipe, X, y, cv<span class="op">=</span>skf, scoring<span class="op">=</span><span class="st">"roc_auc"</span>)</span>
+<span id="cb23-59"><a href="#cb23-59" aria-label="59"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-60"><a href="#cb23-60" aria-label="60"></a>        <span class="st">"mean_roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.mean()), <span class="dv">4</span>),</span>
+<span id="cb23-61"><a href="#cb23-61" aria-label="61"></a>        <span class="st">"std_roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.std()), <span class="dv">4</span>),</span>
+<span id="cb23-62"><a href="#cb23-62" aria-label="62"></a>        <span class="st">"fold_scores"</span>: [<span class="bu">round</span>(<span class="bu">float</span>(s), <span class="dv">4</span>) <span class="cf">for</span> s <span class="kw">in</span> scores],</span>
+<span id="cb23-63"><a href="#cb23-63" aria-label="63"></a>    }</span>
+<span id="cb23-64"><a href="#cb23-64" aria-label="64"></a></span>
+<span id="cb23-65"><a href="#cb23-65" aria-label="65"></a><span class="co"># To-Do 26.4</span></span>
+<span id="cb23-66"><a href="#cb23-66" aria-label="66"></a><span class="kw">def</span> group_cv_evaluation(pipe, X, y, groups, n_splits<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb23-67"><a href="#cb23-67" aria-label="67"></a>    <span class="co">"""Evaluate a pipeline via GroupKFold ROC-AUC without group leaks."""</span></span>
+<span id="cb23-68"><a href="#cb23-68" aria-label="68"></a>    gkf <span class="op">=</span> GroupKFold(n_splits<span class="op">=</span>n_splits)</span>
+<span id="cb23-69"><a href="#cb23-69" aria-label="69"></a>    scores <span class="op">=</span> cross_val_score(</span>
+<span id="cb23-70"><a href="#cb23-70" aria-label="70"></a>        pipe, X, y, groups<span class="op">=</span>groups, cv<span class="op">=</span>gkf, scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb23-71"><a href="#cb23-71" aria-label="71"></a>    )</span>
+<span id="cb23-72"><a href="#cb23-72" aria-label="72"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-73"><a href="#cb23-73" aria-label="73"></a>        <span class="st">"mean_roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.mean()), <span class="dv">4</span>),</span>
+<span id="cb23-74"><a href="#cb23-74" aria-label="74"></a>        <span class="st">"std_roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.std()), <span class="dv">4</span>),</span>
+<span id="cb23-75"><a href="#cb23-75" aria-label="75"></a>        <span class="st">"n_splits"</span>: <span class="bu">int</span>(n_splits),</span>
+<span id="cb23-76"><a href="#cb23-76" aria-label="76"></a>    }</span>
+<span id="cb23-77"><a href="#cb23-77" aria-label="77"></a></span>
+<span id="cb23-78"><a href="#cb23-78" aria-label="78"></a><span class="co"># To-Do 26.5</span></span>
+<span id="cb23-79"><a href="#cb23-79" aria-label="79"></a><span class="kw">def</span> temporal_cv_forecast_rmse(pipe, X, y, n_splits<span class="op">=</span><span class="dv">4</span>):</span>
+<span id="cb23-80"><a href="#cb23-80" aria-label="80"></a>    <span class="co">"""Evaluate chronological forecasting RMSE via TimeSeriesSplit."""</span></span>
+<span id="cb23-81"><a href="#cb23-81" aria-label="81"></a>    tscv <span class="op">=</span> TimeSeriesSplit(n_splits<span class="op">=</span>n_splits)</span>
+<span id="cb23-82"><a href="#cb23-82" aria-label="82"></a>    rmses <span class="op">=</span> <span class="op">-</span>cross_val_score(</span>
+<span id="cb23-83"><a href="#cb23-83" aria-label="83"></a>        pipe, X, y, cv<span class="op">=</span>tscv, scoring<span class="op">=</span><span class="st">"neg_root_mean_squared_error"</span></span>
+<span id="cb23-84"><a href="#cb23-84" aria-label="84"></a>    )</span>
+<span id="cb23-85"><a href="#cb23-85" aria-label="85"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-86"><a href="#cb23-86" aria-label="86"></a>        <span class="st">"mean_rmse"</span>: <span class="bu">round</span>(<span class="bu">float</span>(rmses.mean()), <span class="dv">4</span>),</span>
+<span id="cb23-87"><a href="#cb23-87" aria-label="87"></a>        <span class="st">"fold_rmses"</span>: [<span class="bu">round</span>(<span class="bu">float</span>(r), <span class="dv">4</span>) <span class="cf">for</span> r <span class="kw">in</span> rmses],</span>
+<span id="cb23-88"><a href="#cb23-88" aria-label="88"></a>    }</span>
+<span id="cb23-89"><a href="#cb23-89" aria-label="89"></a></span>
+<span id="cb23-90"><a href="#cb23-90" aria-label="90"></a><span class="co"># To-Do 26.6</span></span>
+<span id="cb23-91"><a href="#cb23-91" aria-label="91"></a><span class="kw">def</span> save_and_reload_pipeline(pipe, model_path, X_sample):</span>
+<span id="cb23-92"><a href="#cb23-92" aria-label="92"></a>    <span class="co">"""Dump a fitted pipeline with joblib, reload, and verify preds."""</span></span>
+<span id="cb23-93"><a href="#cb23-93" aria-label="93"></a>    joblib.dump(pipe, model_path)</span>
+<span id="cb23-94"><a href="#cb23-94" aria-label="94"></a>    reloaded <span class="op">=</span> joblib.load(model_path)</span>
+<span id="cb23-95"><a href="#cb23-95" aria-label="95"></a>    orig_preds <span class="op">=</span> pipe.predict(X_sample)</span>
+<span id="cb23-96"><a href="#cb23-96" aria-label="96"></a>    reloaded_preds <span class="op">=</span> reloaded.predict(X_sample)</span>
+<span id="cb23-97"><a href="#cb23-97" aria-label="97"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-98"><a href="#cb23-98" aria-label="98"></a>        <span class="st">"file_bytes"</span>: <span class="bu">int</span>(Path(model_path).stat().st_size),</span>
+<span id="cb23-99"><a href="#cb23-99" aria-label="99"></a>        <span class="st">"predictions_match"</span>: <span class="bu">bool</span>(</span>
+<span id="cb23-100"><a href="#cb23-100" aria-label="100"></a>            np.allclose(orig_preds, reloaded_preds)</span>
+<span id="cb23-101"><a href="#cb23-101" aria-label="101"></a>        ),</span>
+<span id="cb23-102"><a href="#cb23-102" aria-label="102"></a>        <span class="st">"reloaded_preds"</span>: reloaded_preds,</span>
+<span id="cb23-103"><a href="#cb23-103" aria-label="103"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-part-v-capstone-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="26.8.3">
+<h3 data-number="26.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-part-v-capstone-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">26.8.3</span> C. Annotated Solutions — Part V Capstone Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> (</span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a>    HistGradientBoostingClassifier,</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a>    RandomForestClassifier,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a>)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb24-6"><a href="#cb24-6" aria-label="6"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> roc_auc_score</span>
+<span id="cb24-7"><a href="#cb24-7" aria-label="7"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV</span>
+<span id="cb24-8"><a href="#cb24-8" aria-label="8"></a></span>
+<span id="cb24-9"><a href="#cb24-9" aria-label="9"></a><span class="co"># Exam Task 26.1 (30 pts)</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-label="10"></a><span class="kw">def</span> build_dhs_end_to_end_pipeline(num_cols, cat_cols, model):</span>
+<span id="cb24-11"><a href="#cb24-11" aria-label="11"></a>    <span class="co">"""Return leak-free DHS Pipeline with sentinel-999 &amp; mixed prep."""</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-label="12"></a>    num_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-13"><a href="#cb24-13" aria-label="13"></a>        (<span class="st">"sentinel"</span>, SentinelToNaNTransformer(<span class="dv">999</span>)),</span>
+<span id="cb24-14"><a href="#cb24-14" aria-label="14"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb24-15"><a href="#cb24-15" aria-label="15"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb24-16"><a href="#cb24-16" aria-label="16"></a>    ])</span>
+<span id="cb24-17"><a href="#cb24-17" aria-label="17"></a>    cat_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-18"><a href="#cb24-18" aria-label="18"></a>        (<span class="st">"imputer"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb24-19"><a href="#cb24-19" aria-label="19"></a>        (<span class="st">"encoder"</span>, OneHotEncoder(</span>
+<span id="cb24-20"><a href="#cb24-20" aria-label="20"></a>            handle_unknown<span class="op">=</span><span class="st">"ignore"</span>, sparse_output<span class="op">=</span><span class="va">False</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-label="21"></a>        )),</span>
+<span id="cb24-22"><a href="#cb24-22" aria-label="22"></a>    ])</span>
+<span id="cb24-23"><a href="#cb24-23" aria-label="23"></a>    prep <span class="op">=</span> ColumnTransformer([</span>
+<span id="cb24-24"><a href="#cb24-24" aria-label="24"></a>        (<span class="st">"num"</span>, num_pipe, num_cols),</span>
+<span id="cb24-25"><a href="#cb24-25" aria-label="25"></a>        (<span class="st">"cat"</span>, cat_pipe, cat_cols),</span>
+<span id="cb24-26"><a href="#cb24-26" aria-label="26"></a>    ])</span>
+<span id="cb24-27"><a href="#cb24-27" aria-label="27"></a>    <span class="cf">return</span> Pipeline([(<span class="st">"prep"</span>, prep), (<span class="st">"model"</span>, model)])</span>
+<span id="cb24-28"><a href="#cb24-28" aria-label="28"></a></span>
+<span id="cb24-29"><a href="#cb24-29" aria-label="29"></a><span class="co"># Exam Task 26.2 (35 pts)</span></span>
+<span id="cb24-30"><a href="#cb24-30" aria-label="30"></a><span class="kw">def</span> run_nested_cv_audit(</span>
+<span id="cb24-31"><a href="#cb24-31" aria-label="31"></a>    pipe, param_grid, X, y, outer_splits<span class="op">=</span><span class="dv">4</span>, inner_splits<span class="op">=</span><span class="dv">3</span>, seed<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb24-32"><a href="#cb24-32" aria-label="32"></a>):</span>
+<span id="cb24-33"><a href="#cb24-33" aria-label="33"></a>    <span class="co">"""Run true Nested Stratified CV and return outer AUC audit."""</span></span>
+<span id="cb24-34"><a href="#cb24-34" aria-label="34"></a>    outer_cv <span class="op">=</span> StratifiedKFold(</span>
+<span id="cb24-35"><a href="#cb24-35" aria-label="35"></a>        n_splits<span class="op">=</span>outer_splits, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb24-36"><a href="#cb24-36" aria-label="36"></a>    )</span>
+<span id="cb24-37"><a href="#cb24-37" aria-label="37"></a>    outer_scores <span class="op">=</span> []</span>
+<span id="cb24-38"><a href="#cb24-38" aria-label="38"></a>    fold_best_params <span class="op">=</span> []</span>
+<span id="cb24-39"><a href="#cb24-39" aria-label="39"></a>    <span class="cf">for</span> tr_idx, te_idx <span class="kw">in</span> outer_cv.split(X, y):</span>
+<span id="cb24-40"><a href="#cb24-40" aria-label="40"></a>        X_tr <span class="op">=</span> X.iloc[tr_idx] <span class="cf">if</span> <span class="bu">hasattr</span>(X, <span class="st">"iloc"</span>) <span class="cf">else</span> X[tr_idx]</span>
+<span id="cb24-41"><a href="#cb24-41" aria-label="41"></a>        X_te <span class="op">=</span> X.iloc[te_idx] <span class="cf">if</span> <span class="bu">hasattr</span>(X, <span class="st">"iloc"</span>) <span class="cf">else</span> X[te_idx]</span>
+<span id="cb24-42"><a href="#cb24-42" aria-label="42"></a>        y_tr <span class="op">=</span> y.iloc[tr_idx] <span class="cf">if</span> <span class="bu">hasattr</span>(y, <span class="st">"iloc"</span>) <span class="cf">else</span> y[tr_idx]</span>
+<span id="cb24-43"><a href="#cb24-43" aria-label="43"></a>        y_te <span class="op">=</span> y.iloc[te_idx] <span class="cf">if</span> <span class="bu">hasattr</span>(y, <span class="st">"iloc"</span>) <span class="cf">else</span> y[te_idx]</span>
+<span id="cb24-44"><a href="#cb24-44" aria-label="44"></a>        inner_cv <span class="op">=</span> StratifiedKFold(</span>
+<span id="cb24-45"><a href="#cb24-45" aria-label="45"></a>            n_splits<span class="op">=</span>inner_splits, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb24-46"><a href="#cb24-46" aria-label="46"></a>        )</span>
+<span id="cb24-47"><a href="#cb24-47" aria-label="47"></a>        gs <span class="op">=</span> GridSearchCV(</span>
+<span id="cb24-48"><a href="#cb24-48" aria-label="48"></a>            pipe, param_grid, cv<span class="op">=</span>inner_cv, scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb24-49"><a href="#cb24-49" aria-label="49"></a>        )</span>
+<span id="cb24-50"><a href="#cb24-50" aria-label="50"></a>        gs.fit(X_tr, y_tr)</span>
+<span id="cb24-51"><a href="#cb24-51" aria-label="51"></a>        probs <span class="op">=</span> gs.best_estimator_.predict_proba(X_te)[:, <span class="dv">1</span>]</span>
+<span id="cb24-52"><a href="#cb24-52" aria-label="52"></a>        outer_scores.append(<span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_te, probs)), <span class="dv">4</span>))</span>
+<span id="cb24-53"><a href="#cb24-53" aria-label="53"></a>        fold_best_params.append(gs.best_params_)</span>
+<span id="cb24-54"><a href="#cb24-54" aria-label="54"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-55"><a href="#cb24-55" aria-label="55"></a>        <span class="st">"outer_mean_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(outer_scores)), <span class="dv">4</span>),</span>
+<span id="cb24-56"><a href="#cb24-56" aria-label="56"></a>        <span class="st">"outer_std_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.std(outer_scores)), <span class="dv">4</span>),</span>
+<span id="cb24-57"><a href="#cb24-57" aria-label="57"></a>        <span class="st">"outer_scores"</span>: outer_scores,</span>
+<span id="cb24-58"><a href="#cb24-58" aria-label="58"></a>        <span class="st">"fold_best_params"</span>: fold_best_params,</span>
+<span id="cb24-59"><a href="#cb24-59" aria-label="59"></a>    }</span>
+<span id="cb24-60"><a href="#cb24-60" aria-label="60"></a></span>
+<span id="cb24-61"><a href="#cb24-61" aria-label="61"></a><span class="co"># Exam Task 26.3 (35 pts)</span></span>
+<span id="cb24-62"><a href="#cb24-62" aria-label="62"></a><span class="kw">def</span> benchmark_part5_capstone(mch_df, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb24-63"><a href="#cb24-63" aria-label="63"></a>    <span class="co">"""Benchmark 3 leak-free DHS pipelines under 5-fold GroupKFold."""</span></span>
+<span id="cb24-64"><a href="#cb24-64" aria-label="64"></a>    work <span class="op">=</span> mch_df.copy()</span>
+<span id="cb24-65"><a href="#cb24-65" aria-label="65"></a>    work[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb24-66"><a href="#cb24-66" aria-label="66"></a>        work[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb24-67"><a href="#cb24-67" aria-label="67"></a>    )</span>
+<span id="cb24-68"><a href="#cb24-68" aria-label="68"></a>    num_cols <span class="op">=</span> [</span>
+<span id="cb24-69"><a href="#cb24-69" aria-label="69"></a>        <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span></span>
+<span id="cb24-70"><a href="#cb24-70" aria-label="70"></a>    ]</span>
+<span id="cb24-71"><a href="#cb24-71" aria-label="71"></a>    cat_cols <span class="op">=</span> [<span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]</span>
+<span id="cb24-72"><a href="#cb24-72" aria-label="72"></a>    X <span class="op">=</span> work[num_cols <span class="op">+</span> cat_cols]</span>
+<span id="cb24-73"><a href="#cb24-73" aria-label="73"></a>    y <span class="op">=</span> work[<span class="st">"child_stunted"</span>]</span>
+<span id="cb24-74"><a href="#cb24-74" aria-label="74"></a>    groups <span class="op">=</span> work[<span class="st">"cluster_id"</span>]</span>
+<span id="cb24-75"><a href="#cb24-75" aria-label="75"></a>    gkf <span class="op">=</span> GroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb24-76"><a href="#cb24-76" aria-label="76"></a></span>
+<span id="cb24-77"><a href="#cb24-77" aria-label="77"></a>    models <span class="op">=</span> {</span>
+<span id="cb24-78"><a href="#cb24-78" aria-label="78"></a>        <span class="st">"LogisticRegression"</span>: LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>),</span>
+<span id="cb24-79"><a href="#cb24-79" aria-label="79"></a>        <span class="st">"RandomForestClassifier"</span>: RandomForestClassifier(</span>
+<span id="cb24-80"><a href="#cb24-80" aria-label="80"></a>            n_estimators<span class="op">=</span><span class="dv">80</span>, max_depth<span class="op">=</span><span class="dv">6</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb24-81"><a href="#cb24-81" aria-label="81"></a>        ),</span>
+<span id="cb24-82"><a href="#cb24-82" aria-label="82"></a>        <span class="st">"HistGradientBoostingClassifier"</span>: HistGradientBoostingClassifier(</span>
+<span id="cb24-83"><a href="#cb24-83" aria-label="83"></a>            max_depth<span class="op">=</span><span class="dv">4</span>, random_state<span class="op">=</span>seed</span>
+<span id="cb24-84"><a href="#cb24-84" aria-label="84"></a>        ),</span>
+<span id="cb24-85"><a href="#cb24-85" aria-label="85"></a>    }</span>
+<span id="cb24-86"><a href="#cb24-86" aria-label="86"></a>    rows <span class="op">=</span> []</span>
+<span id="cb24-87"><a href="#cb24-87" aria-label="87"></a>    <span class="cf">for</span> name, mdl <span class="kw">in</span> models.items():</span>
+<span id="cb24-88"><a href="#cb24-88" aria-label="88"></a>        pipe <span class="op">=</span> build_dhs_end_to_end_pipeline(num_cols, cat_cols, mdl)</span>
+<span id="cb24-89"><a href="#cb24-89" aria-label="89"></a>        scores <span class="op">=</span> cross_val_score(</span>
+<span id="cb24-90"><a href="#cb24-90" aria-label="90"></a>            pipe, X, y, groups<span class="op">=</span>groups, cv<span class="op">=</span>gkf, scoring<span class="op">=</span><span class="st">"roc_auc"</span></span>
+<span id="cb24-91"><a href="#cb24-91" aria-label="91"></a>        )</span>
+<span id="cb24-92"><a href="#cb24-92" aria-label="92"></a>        rows.append({</span>
+<span id="cb24-93"><a href="#cb24-93" aria-label="93"></a>            <span class="st">"model"</span>: name,</span>
+<span id="cb24-94"><a href="#cb24-94" aria-label="94"></a>            <span class="st">"mean_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.mean()), <span class="dv">4</span>),</span>
+<span id="cb24-95"><a href="#cb24-95" aria-label="95"></a>            <span class="st">"std_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(scores.std()), <span class="dv">4</span>),</span>
+<span id="cb24-96"><a href="#cb24-96" aria-label="96"></a>        })</span>
+<span id="cb24-97"><a href="#cb24-97" aria-label="97"></a>    leaderboard <span class="op">=</span> (</span>
+<span id="cb24-98"><a href="#cb24-98" aria-label="98"></a>        pd.DataFrame(rows)</span>
+<span id="cb24-99"><a href="#cb24-99" aria-label="99"></a>        .sort_values(<span class="st">"mean_auc"</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb24-100"><a href="#cb24-100" aria-label="100"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb24-101"><a href="#cb24-101" aria-label="101"></a>    )</span>
+<span id="cb24-102"><a href="#cb24-102" aria-label="102"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-103"><a href="#cb24-103" aria-label="103"></a>        <span class="st">"leaderboard"</span>: leaderboard,</span>
+<span id="cb24-104"><a href="#cb24-104" aria-label="104"></a>        <span class="st">"winner"</span>: <span class="bu">str</span>(leaderboard.loc[<span class="dv">0</span>, <span class="st">"model"</span>]),</span>
+<span id="cb24-105"><a href="#cb24-105" aria-label="105"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-26-failure-modes" class="level3" data-number="26.8.4">
+<h3 data-number="26.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-26-failure-modes"><span class="header-section-number">26.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 26 Failure Modes</h3>
+<ol type="1">
+<li><strong>Forgetting <code>SentinelToNaNTransformer(999)</code> Before <code>SimpleImputer</code> (or Mutating Inputs):</strong> If sentinel <code>999</code> is left uncleaned or placed after median imputation, <code>999</code> corrupts training means/SDs and produces nonsensical risk probabilities. Always clean sentinels first inside the numeric sub-pipeline on a non-mutated copy.</li>
+<li><strong>Omitting <code>handle_unknown="ignore"</code> or <code>model__</code> Prefixes:</strong> Default <code>OneHotEncoder(handle_unknown="error")</code> crashes whenever an unseen district appears in test data, while unprefixed keys like <code>"C"</code> fail inside <code>GridSearchCV(Pipeline(...))</code>. Always check <code>pipe.get_params().keys()</code> before writing a search grid.</li>
+<li><strong>Confusing Flat CV Tuning Scores With Unbiased Generalization (or Ignoring Clusters/Time):</strong> Reporting <code>GridSearchCV.best_score_</code> introduces positive optimism bias, and applying random <code>KFold</code> to clustered DHS surveys (<code>cluster_id</code>) or weekly surveillance (<code>epi_week</code>) leaks community and temporal structure. Match the splitter to the study design and wrap hyperparameter search inside Nested CV.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Part V Milestone Achieved — Welcome to Part VI: Deep Learning &amp; PyTorch!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Congratulations!</strong> By completing <strong>Chapter 26</strong>, you have mastered the complete <strong>Classical Machine Learning (Part V)</strong> toolkit: leak-free Scikit-Learn <code>Pipeline</code> and <code>ColumnTransformer</code> engineering, regularized linear models, tree ensembles, unsupervised clustering, model calibration &amp; explainability, study-matched Nested Cross-Validation, and reproducible <code>joblib</code> deployment—all audited on real-world clinical and epidemiological datasets where regularized <code>LogisticRegression</code> (<code>0.7168</code> cluster-CV AUC) proved why disciplined baselines must always anchor a scientific benchmark!</p>
+<p>In <strong>Part VI (Deep Learning &amp; PyTorch)</strong>, you will carry this exact scientific discipline—reproducible seeds, strict validation splits, and zero data leakage—into <strong>neural networks</strong>: PyTorch tensors and automatic differentiation (<code>autograd</code>), custom <code>Dataset</code>/<code>DataLoader</code> pipelines, multi-layer perceptrons, convolutional neural networks (CNNs) for medical imaging, and transfer learning for research manuscripts.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="pagination-link" aria-label="Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="pagination-link" aria-label="Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs">
+        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

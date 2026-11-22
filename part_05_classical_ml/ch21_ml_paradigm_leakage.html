@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>21&nbsp; The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_05_classical_ml/ch22_linear_regularized_regression.html" rel="next">
+<link href="../part_04_data_science_math/ch20_biostatistics_inference.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch21-intuition" id="toc-sec-ch21-intuition" class="nav-link" data-scroll-target="#sec-ch21-intuition"><span class="header-section-number">21.1</span> Stage 1 — First-Principles Intuition: From Explanatory <span class="math inline">\(p\)</span>-Values to Out-of-Sample Generalization</a></li>
+  <li><a href="#sec-ch21-mental-model" id="toc-sec-ch21-mental-model" class="nav-link" data-scroll-target="#sec-ch21-mental-model"><span class="header-section-number">21.2</span> Stage 2 — Visual Mental Model: Leak-Free Split &amp; Preprocessing Boundary</a></li>
+  <li><a href="#sec-ch21-walkthrough" id="toc-sec-ch21-walkthrough" class="nav-link" data-scroll-target="#sec-ch21-walkthrough"><span class="header-section-number">21.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch21-setup" id="toc-sec-ch21-setup" class="nav-link" data-scroll-target="#sec-ch21-setup"><span class="header-section-number">21.3.1</span> Setup: Cleaning <code>mch_survey_sample</code> &amp; Loading <code>epi_surveillance</code></a></li>
+  <li><a href="#sec-ch21-frame" id="toc-sec-ch21-frame" class="nav-link" data-scroll-target="#sec-ch21-frame"><span class="header-section-number">21.3.2</span> Prediction vs.&nbsp;Explanatory Inference (Framing <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span>)</a></li>
+  <li><a href="#sec-ch21-split3" id="toc-sec-ch21-split3" class="nav-link" data-scroll-target="#sec-ch21-split3"><span class="header-section-number">21.3.3</span> Stratified 3-Way Train / Validation / Test Split (60 / 20 / 20)</a></li>
+  <li><a href="#sec-ch21-group" id="toc-sec-ch21-group" class="nav-link" data-scroll-target="#sec-ch21-group"><span class="header-section-number">21.3.4</span> Preventing DHS Cluster Leakage with <code>GroupShuffleSplit</code></a></li>
+  <li><a href="#sec-ch21-temporal" id="toc-sec-ch21-temporal" class="nav-link" data-scroll-target="#sec-ch21-temporal"><span class="header-section-number">21.3.5</span> Chronological Temporal Split on Outbreak Surveillance</a></li>
+  <li><a href="#sec-ch21-leakage" id="toc-sec-ch21-leakage" class="nav-link" data-scroll-target="#sec-ch21-leakage"><span class="header-section-number">21.3.6</span> Live Preprocessing Leakage vs.&nbsp;Fit-on-Train-Only Scaling</a></li>
+  <li><a href="#sec-ch21-dummy" id="toc-sec-ch21-dummy" class="nav-link" data-scroll-target="#sec-ch21-dummy"><span class="header-section-number">21.3.7</span> Zero-Skill Baseline (<code>DummyClassifier</code>)</a></li>
+  <li><a href="#sec-ch21-bv" id="toc-sec-ch21-bv" class="nav-link" data-scroll-target="#sec-ch21-bv"><span class="header-section-number">21.3.8</span> Bias-Variance Tradeoff &amp; Learning Curve Diagnostics</a></li>
+  <li><a href="#sec-ch21-errors" id="toc-sec-ch21-errors" class="nav-link" data-scroll-target="#sec-ch21-errors"><span class="header-section-number">21.3.9</span> Break It On Purpose! (ML Splitting &amp; Scaling Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch21-blueprint" id="toc-sec-ch21-blueprint" class="nav-link" data-scroll-target="#sec-ch21-blueprint"><span class="header-section-number">21.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">21.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">21.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch21-todos" id="toc-sec-ch21-todos" class="nav-link" data-scroll-target="#sec-ch21-todos"><span class="header-section-number">21.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch21-test" id="toc-sec-ch21-test" class="nav-link" data-scroll-target="#sec-ch21-test"><span class="header-section-number">21.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch21-exam" id="toc-sec-ch21-exam" class="nav-link" data-scroll-target="#sec-ch21-exam"><span class="header-section-number">21.7</span> Stage 7 — Chapter 21 Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-21.1-30-points-audit_split_leakagetrain_df-test_df-id_col-group_colnone-time_colnone" id="toc-exam-task-21.1-30-points-audit_split_leakagetrain_df-test_df-id_col-group_colnone-time_colnone" class="nav-link" data-scroll-target="#exam-task-21.1-30-points-audit_split_leakagetrain_df-test_df-id_col-group_colnone-time_colnone"><span class="header-section-number">21.7.1</span> Exam Task 21.1 (30 Points): <code>audit_split_leakage(train_df, test_df, id_col, group_col=None, time_col=None)</code></a></li>
+  <li><a href="#exam-task-21.2-35-points-quantify_preprocessing_leakagex-y-seed42" id="toc-exam-task-21.2-35-points-quantify_preprocessing_leakagex-y-seed42" class="nav-link" data-scroll-target="#exam-task-21.2-35-points-quantify_preprocessing_leakagex-y-seed42"><span class="header-section-number">21.7.2</span> Exam Task 21.2 (35 Points): <code>quantify_preprocessing_leakage(X, y, seed=42)</code></a></li>
+  <li><a href="#exam-task-21.3-35-points-build_learning_curve_tablex-y-fractions-seed42" id="toc-exam-task-21.3-35-points-build_learning_curve_tablex-y-fractions-seed42" class="nav-link" data-scroll-target="#exam-task-21.3-35-points-build_learning_curve_tablex-y-fractions-seed42"><span class="header-section-number">21.7.3</span> Exam Task 21.3 (35 Points): <code>build_learning_curve_table(X, y, fractions, seed=42)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch21-solutions" id="toc-sec-ch21-solutions" class="nav-link" data-scroll-target="#sec-ch21-solutions"><span class="header-section-number">21.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">21.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">21.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">21.8.3</span> C. Annotated Solutions — Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-21-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-21-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-21-failure-modes"><span class="header-section-number">21.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 21 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch21" class="quarto-section-identifier"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Launch <strong>Part V (Classical Machine Learning with Scikit-Learn)</strong> by mastering the scientific rules that separate trustworthy predictive models from retracted papers. Using Bangladesh maternal-child health survey records (<code>mch_survey_sample</code>) and weekly outbreak surveillance logs (<code>epi_surveillance</code>), you will reframe explanatory statistics into supervised prediction, engineer leak-free stratified, cluster-grouped, and chronological splits, benchmark against zero-skill baselines, and diagnose bias versus variance through learning curves.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb">ch21 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 21 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb">ch21 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 21 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb">ch21 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 21 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Distinguish <strong>explanatory statistical inference</strong> (estimating <span class="math inline">\(p\)</span>-values, confidence intervals, and causal/adjusted effects) from <strong>predictive machine learning</strong> (minimizing out-of-sample generalization error on unseen cohorts).</li>
+<li>Partition supervised datasets cleanly into <strong>stratified train / validation / test splits</strong> preserving exact row totals and target class balance without touching the locked test set during tuning.</li>
+<li>Prevent <strong>structural data leakage</strong> in clustered surveys (DHS enumeration clusters via <code>GroupShuffleSplit</code>) and longitudinal surveillance feeds (strict chronological cutoff splits via <code>year &lt; cutoff_year</code>).</li>
+<li>Enforce the <strong>fit-on-train-only preprocessing boundary</strong> (<code>StandardScaler</code>), proving quantitatively how scaling before splitting injects phantom optimism into test accuracy.</li>
+<li>Benchmark every classifier against a zero-skill <strong><code>DummyClassifier(strategy="most_frequent")</code></strong> floor before claiming predictive utility.</li>
+<li>Diagnose <strong>Underfitting (High Bias)</strong> vs.&nbsp;<strong>Overfitting (High Variance)</strong> using model-complexity sweeps and multi-fraction <strong>learning curves</strong>.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch21-intuition" class="level2" data-number="21.1">
+<h2 data-number="21.1" class="anchored" data-anchor-id="sec-ch21-intuition"><span class="header-section-number">21.1</span> Stage 1 — First-Principles Intuition: From Explanatory <span class="math inline">\(p\)</span>-Values to Out-of-Sample Generalization</h2>
+<p>In Chapter 20, you fitted a multivariable <code>statsmodels.api.Logit</code> model on <code>mch_survey_sample</code> and discovered a statistically significant protective association between antenatal care visits (<code>anc_visits</code>) and maternal anemia (<span class="math inline">\(\text{aOR} = 0.9006\)</span>, <span class="math inline">\(p = 0.0378\)</span>). That is <strong>explanatory inference</strong>: we used all 492 complete records to estimate population parameters and test null hypotheses.</p>
+<p>Machine learning asks a fundamentally different question: <em>Given a new mother arriving at a rural clinic tomorrow whose hemoglobin has not yet been measured, how accurately can our model predict whether she is anemic?</em></p>
+<p>A feature can be highly statistically significant (<span class="math inline">\(p &lt; 0.001\)</span>) yet still yield mediocre individual-level predictions if unexplained biological variation is large. Conversely, a model can achieve <strong>100.0% training accuracy</strong> by memorizing noise and yet perform <em>worse than guessing the majority class</em> on unseen patients! Five foundational pillars govern every ML workflow in Part V:</p>
+<ul>
+<li><strong>Target Generalization, Never Training Fit:</strong> Training accuracy measures memorization; only performance on a <strong>strictly unseen holdout set</strong> estimates real-world clinical accuracy.</li>
+<li><strong>Three-Way Discipline (Train / Validation / Test):</strong> Fit model weights on <strong>Train</strong>, tune hyperparameters and compare architectures on <strong>Validation</strong>, and touch the locked <strong>Test</strong> set <em>once</em> at the end for your manuscript table.</li>
+<li><strong>Match the Split to the Data-Generating Process:</strong> Independent cross-sectional rows allow stratified random splitting. Clustered surveys (<code>cluster_id</code> in DHS, repeated <code>patient_id</code> visits in hospitals) require <strong>group splitting</strong> (<code>GroupShuffleSplit</code>). Outbreak time series (<code>epi_surveillance</code>) require <strong>chronological splitting</strong> (train on past years, test on future years).</li>
+<li><strong>Zero-Leakage Preprocessing Boundary:</strong> Any transformation that estimates statistics from data—means and standard deviations (<code>StandardScaler</code>), median imputation, or feature selection—must call <code>.fit()</code> on <strong>training rows ONLY</strong>, then apply <code>.transform()</code> to validation and test rows.</li>
+<li><strong>Bias-Variance Tradeoff &amp; Baselines:</strong> Expected prediction error decomposes as <span class="math inline">\(\text{Error} = \text{Bias}^2 + \text{Variance} + \sigma_{\epsilon}^2\)</span>. Simple models suffer <strong>High Bias (Underfitting)</strong> (low training and low validation scores); overly flexible models suffer <strong>High Variance (Overfitting)</strong> (high training score, large train–val gap). Always compare both against a zero-skill <strong><code>DummyClassifier</code></strong> baseline!</li>
+</ul>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>The Four Horsemen of Scientific Data Leakage
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Every year, high-profile clinical and bioinformatics ML papers are quietly retracted because test information leaked into training:</p>
+<ol type="1">
+<li><strong>Preprocessing Leakage:</strong> Fitting <code>StandardScaler()</code>, imputers, or top-<span class="math inline">\(k\)</span> feature filters on the full dataset <em>before</em> splitting.</li>
+<li><strong>Cluster / Patient Leakage:</strong> Putting two visits from the same patient—or two neighboring households from the same DHS <code>cluster_id</code>—into both train and test.</li>
+<li><strong>Temporal Leakage:</strong> Randomly shuffling <code>epi_surveillance</code> rows so 2025 outbreak weeks help predict 2024 weeks.</li>
+<li><strong>Target Leakage:</strong> Including a proxy measured <em>after</em> diagnosis (for example, using <code>maternal_hb_g_dl</code> to predict <code>maternal_anemia</code>, which is literally defined by <code>Hb &lt; 11.0 g/dL</code>!).</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch21-mental-model" class="level2" data-number="21.2">
+<h2 data-number="21.2" class="anchored" data-anchor-id="sec-ch21-mental-model"><span class="header-section-number">21.2</span> Stage 2 — Visual Mental Model: Leak-Free Split &amp; Preprocessing Boundary</h2>
+<p>Follow this strict architectural firewall in every machine learning project—nothing ever crosses backward from the locked test vault into fitting or tuning:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 21 (Leak-Free Split &amp; Preprocessing Boundary) illustrating 1. Raw Cohort; Clean Predictors X &amp; Target y Drop Target Proxies (e.g. Hb); 2. Split Policy; Stratified 3-Way Independent Rows; GroupShuff...">flowchart TD
+    subgraph S1["1. Raw Cohort"]
+        A["Clean Predictors X &amp; Target y&lt;br/&gt;Drop Target Proxies (e.g. Hb)"]
+    end
+    subgraph S2["2. Split Policy"]
+        B1["Stratified 3-Way&lt;br/&gt;Independent Rows"]
+        B2["GroupShuffleSplit&lt;br/&gt;DHS Clusters / Patients"]
+        B3["Temporal Cutoff&lt;br/&gt;year &lt; cutoff vs &gt;="]
+    end
+    subgraph S3["3. Fit on Train"]
+        C1["Fit Scaler &amp; Model&lt;br/&gt;on Train Split ONLY"]
+        C2["Transform &amp; Tune&lt;br/&gt;on Validation Split"]
+        C3["Audit Bias vs Variance&lt;br/&gt;&amp; Dummy Floor"]
+    end
+    subgraph S4["4. Locked Test"]
+        D["Apply Frozen Scaler&lt;br/&gt;(.transform ONLY)&lt;br/&gt;Report Final Test Score"]
+    end
+    A --&gt; B1
+    A --&gt; B2
+    A --&gt; B3
+    B1 --&gt; C1
+    B2 --&gt; C1
+    B3 --&gt; C1
+    C1 --&gt; C2
+    C2 --&gt; C3
+    C3 -.-&gt;|"Iterate Model"| C1
+    C3 ==&gt;|"Lock Model Once"| D
+</pre>
+</div>
+<p></p><figcaption> Chapter 21 visual mental model: Leak-Free Split &amp; Preprocessing Boundary</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the <strong>dashed iteration arrow</strong> lives strictly between <strong>Train</strong> and <strong>Validation</strong>, while the <strong>bold one-way gate</strong> enters the <strong>Locked Test</strong> vault exactly once at the end. Even the <code>StandardScaler</code> crosses that wall frozen—only <code>.transform()</code> is ever allowed on validation or test matrices.</p>
+<hr>
+</section>
+<section id="sec-ch21-walkthrough" class="level2" data-number="21.3">
+<h2 data-number="21.3" class="anchored" data-anchor-id="sec-ch21-walkthrough"><span class="header-section-number">21.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch21-setup" class="level3" data-number="21.3.1">
+<h3 data-number="21.3.1" class="anchored" data-anchor-id="sec-ch21-setup"><span class="header-section-number">21.3.1</span> Setup: Cleaning <code>mch_survey_sample</code> &amp; Loading <code>epi_surveillance</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">from</span> sklearn.datasets <span class="im">import</span> make_classification</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">from</span> sklearn.dummy <span class="im">import</span> DummyClassifier</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GroupShuffleSplit, train_test_split</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeClassifier</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a>epi_raw <span class="op">=</span> tutor.load_data(<span class="st">"epi_surveillance"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> mch[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>mch[<span class="st">"anc_visits"</span>] <span class="op">=</span> mch[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>mch[<span class="st">"is_urban"</span>] <span class="op">=</span> (mch[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a>w_map <span class="op">=</span> {<span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>, <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>}</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a>mch[<span class="st">"wealth_idx"</span>] <span class="op">=</span> mch[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(w_map)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a>feat_cols <span class="op">=</span> [</span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a>    <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"is_urban"</span>,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a>    <span class="st">"wealth_idx"</span>, <span class="st">"child_haz"</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a>]</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a>keep_cols <span class="op">=</span> [<span class="st">"household_id"</span>, <span class="st">"cluster_id"</span>] <span class="op">+</span> feat_cols <span class="op">+</span> [<span class="st">"maternal_anemia"</span>]</span>
+<span id="cb1-26"><a href="#cb1-26" aria-label="26"></a>clean_mch <span class="op">=</span> mch[keep_cols].dropna().reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-label="27"></a><span class="bu">print</span>(<span class="st">"clean_mch shape:"</span>, clean_mch.shape)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-label="28"></a><span class="bu">print</span>(<span class="st">"epi_surveillance shape:"</span>, epi_raw.shape)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>clean_mch shape: (492, 8)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>epi_surveillance shape: (416, 8)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at what we intentionally <strong>excluded</strong> from <code>feat_cols</code>: <code>maternal_hb_g_dl</code>! Because clinical anemia (<code>maternal_anemia</code>) is directly thresholded from hemoglobin (<code>Hb &lt; 11.0 g/dL</code>), including hemoglobin as a predictor would be <strong>target leakage</strong>—handing the model the answer key. Notice also that we clean <code>residence</code> casing and replace sentinel <code>anc_visits == 999</code> with <code>np.nan</code> on a non-mutating <code>.copy()</code>.</p>
+<hr>
+</section>
+<section id="sec-ch21-frame" class="level3" data-number="21.3.2">
+<h3 data-number="21.3.2" class="anchored" data-anchor-id="sec-ch21-frame"><span class="header-section-number">21.3.2</span> Prediction vs.&nbsp;Explanatory Inference (Framing <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>X <span class="op">=</span> clean_mch[feat_cols].copy()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>y <span class="op">=</span> clean_mch[<span class="st">"maternal_anemia"</span>].copy()</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a><span class="bu">print</span>(<span class="st">"Feature matrix X shape:"</span>, X.shape)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"Target y class counts:"</span>, y.value_counts().to_dict())</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a><span class="bu">print</span>(<span class="ss">f"Overall anemia prevalence: </span><span class="sc">{</span>y<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Feature matrix X shape: (492, 5)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Target y class counts: {0: 318, 1: 174}</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>Overall anemia prevalence: 0.3537</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In Scikit-Learn’s universal convention, the feature matrix <code>X</code> is always 2-dimensional with shape <code>(n_samples, n_features)</code> = <code>(492, 5)</code>, and the target vector <code>y</code> is 1-dimensional with shape <code>(492,)</code>. Notice the class imbalance: <code>318</code> non-anemic (<code>64.63%</code>) vs.&nbsp;<code>174</code> anemic (<code>35.37%</code>).</p>
+<hr>
+</section>
+<section id="sec-ch21-split3" class="level3" data-number="21.3.3">
+<h3 data-number="21.3.3" class="anchored" data-anchor-id="sec-ch21-split3"><span class="header-section-number">21.3.3</span> Stratified 3-Way Train / Validation / Test Split (60 / 20 / 20)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>X_tmp, X_test, y_tmp, y_test <span class="op">=</span> train_test_split(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>    X, y, test_size<span class="op">=</span><span class="fl">0.20</span>, stratify<span class="op">=</span>y, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>val_rel <span class="op">=</span> <span class="fl">0.20</span> <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> <span class="fl">0.20</span>)  <span class="co"># 0.25 of remaining 80% = 20% of total</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>X_train, X_val, y_train, y_val <span class="op">=</span> train_test_split(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>    X_tmp, y_tmp, test_size<span class="op">=</span>val_rel, stratify<span class="op">=</span>y_tmp, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a><span class="bu">print</span>(<span class="ss">f"Rows -&gt; train=</span><span class="sc">{</span><span class="bu">len</span>(X_train)<span class="sc">}</span><span class="ss">, val=</span><span class="sc">{</span><span class="bu">len</span>(X_val)<span class="sc">}</span><span class="ss">, "</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>      <span class="ss">f"test=</span><span class="sc">{</span><span class="bu">len</span>(X_test)<span class="sc">}</span><span class="ss"> (total=</span><span class="sc">{</span><span class="bu">len</span>(X_train)<span class="op">+</span><span class="bu">len</span>(X_val)<span class="op">+</span><span class="bu">len</span>(X_test)<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"Positive rate -&gt; train=</span><span class="sc">{</span>y_train<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>      <span class="ss">f"val=</span><span class="sc">{</span>y_val<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">, test=</span><span class="sc">{</span>y_test<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Rows -&gt; train=294, val=99, test=99 (total=492)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Positive rate -&gt; train=0.3537, val=0.3535, test=0.3535</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at two subtle details that save countless bugs:</p>
+<ul>
+<li><strong>Rescaling <code>val_rel</code>:</strong> After carving off <code>20%</code> for <code>X_test</code>, <code>80%</code> remains in <code>X_tmp</code>. To make <code>X_val</code> equal <code>20%</code> of the <em>original</em> dataset (giving <code>99</code> rows, identical to <code>X_test</code>), we pass <code>val_rel = 0.20 / (1.0 - 0.20) = 0.25</code>. Passing <code>0.20</code> directly would silently shrink validation to <code>16%</code>!</li>
+<li><strong>Stratifying BOTH calls:</strong> Passing <code>stratify=y</code> and <code>stratify=y_tmp</code> locks the positive anemia rate to <code>0.3537 / 0.3535 / 0.3535</code> across all three splits.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch21-group" class="level3" data-number="21.3.4">
+<h3 data-number="21.3.4" class="anchored" data-anchor-id="sec-ch21-group"><span class="header-section-number">21.3.4</span> Preventing DHS Cluster Leakage with <code>GroupShuffleSplit</code></h3>
+<p>In Demographic and Health Surveys (DHS), households within the same enumeration area (<code>cluster_id</code>) share water sources, clinics, and local socioeconomic shocks. Watch what happens when we compare a naive random split against <code>GroupShuffleSplit</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="co"># Naive random split leaks DHS clusters across train and test</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>tr_rand, te_rand <span class="op">=</span> train_test_split(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>    clean_mch, test_size<span class="op">=</span><span class="fl">0.20</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    stratify<span class="op">=</span>clean_mch[<span class="st">"maternal_anemia"</span>], random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>rand_overlap <span class="op">=</span> <span class="bu">len</span>(<span class="bu">set</span>(tr_rand[<span class="st">"cluster_id"</span>]) <span class="op">&amp;</span> <span class="bu">set</span>(te_rand[<span class="st">"cluster_id"</span>]))</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a><span class="bu">print</span>(<span class="ss">f"Naive random split -&gt; </span><span class="sc">{</span>rand_overlap<span class="sc">}</span><span class="ss"> of "</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>      <span class="ss">f"</span><span class="sc">{</span>te_rand[<span class="st">'cluster_id'</span>]<span class="sc">.</span>nunique()<span class="sc">}</span><span class="ss"> test clusters leaked!"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a><span class="co"># Proper cluster-aware split using GroupShuffleSplit</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>gss <span class="op">=</span> GroupShuffleSplit(n_splits<span class="op">=</span><span class="dv">1</span>, test_size<span class="op">=</span><span class="fl">0.20</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>tr_idx, te_idx <span class="op">=</span> <span class="bu">next</span>(</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>    gss.split(clean_mch, groups<span class="op">=</span>clean_mch[<span class="st">"cluster_id"</span>])</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>tr_grp <span class="op">=</span> clean_mch.iloc[tr_idx].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a>te_grp <span class="op">=</span> clean_mch.iloc[te_idx].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>grp_overlap <span class="op">=</span> <span class="bu">len</span>(<span class="bu">set</span>(tr_grp[<span class="st">"cluster_id"</span>]) <span class="op">&amp;</span> <span class="bu">set</span>(te_grp[<span class="st">"cluster_id"</span>]))</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>n_tr_c <span class="op">=</span> tr_grp[<span class="st">"cluster_id"</span>].nunique()</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a>n_te_c <span class="op">=</span> te_grp[<span class="st">"cluster_id"</span>].nunique()</span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a><span class="bu">print</span>(<span class="ss">f"GroupShuffleSplit -&gt; train=</span><span class="sc">{</span><span class="bu">len</span>(tr_grp)<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>n_tr_c<span class="sc">}</span><span class="ss"> clusters), "</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>      <span class="ss">f"test=</span><span class="sc">{</span><span class="bu">len</span>(te_grp)<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>n_te_c<span class="sc">}</span><span class="ss"> clusters)"</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a><span class="bu">print</span>(<span class="ss">f"Cluster overlap: </span><span class="sc">{</span>grp_overlap<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Naive random split -&gt; 43 of 43 test clusters leaked!</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>GroupShuffleSplit -&gt; train=386 (40 clusters), test=106 (10 clusters)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>Cluster overlap: 0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That single output explains why peer reviewers reject random splits on clustered surveys: naive <code>train_test_split</code> leaked <strong>43 out of 43 (100%)</strong> of the test DHS clusters into training! <code>GroupShuffleSplit</code> holds out <strong>10 completely unseen clusters</strong> (<code>106</code> households) with <strong>0 overlapping clusters</strong>, testing whether your model generalizes to <em>new villages</em>, not just neighbors of training households.</p>
+<hr>
+</section>
+<section id="sec-ch21-temporal" class="level3" data-number="21.3.5">
+<h3 data-number="21.3.5" class="anchored" data-anchor-id="sec-ch21-temporal"><span class="header-section-number">21.3.5</span> Chronological Temporal Split on Outbreak Surveillance</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>epi <span class="op">=</span> epi_raw.copy()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>epi_train <span class="op">=</span> epi.loc[epi[<span class="st">"year"</span>] <span class="op">&lt;</span> <span class="dv">2025</span>].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>epi_test <span class="op">=</span> epi.loc[epi[<span class="st">"year"</span>] <span class="op">&gt;=</span> <span class="dv">2025</span>].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a><span class="bu">print</span>(<span class="ss">f"Train weeks: </span><span class="sc">{</span><span class="bu">len</span>(epi_train)<span class="sc">}</span><span class="ss"> (max year=</span><span class="sc">{</span>epi_train[<span class="st">'year'</span>]<span class="sc">.</span><span class="bu">max</span>()<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="bu">print</span>(<span class="ss">f"Test weeks:  </span><span class="sc">{</span><span class="bu">len</span>(epi_test)<span class="sc">}</span><span class="ss"> (min year=</span><span class="sc">{</span>epi_test[<span class="st">'year'</span>]<span class="sc">.</span><span class="bu">min</span>()<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>has_time_leak <span class="op">=</span> <span class="bu">bool</span>(epi_train[<span class="st">"year"</span>].<span class="bu">max</span>() <span class="op">&gt;=</span> epi_test[<span class="st">"year"</span>].<span class="bu">min</span>())</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a><span class="bu">print</span>(<span class="st">"Temporal leak detected:"</span>, has_time_leak)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Train weeks: 208 (max year=2024)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Test weeks:  208 (min year=2025)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Temporal leak detected: False</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In <code>epi_surveillance</code>, weekly dengue and respiratory counts exhibit strong monsoon seasonality and autocorrelation. Training strictly on <code>year &lt; 2025</code> (<code>208</code> district-weeks) and evaluating strictly on <code>year &gt;= 2025</code> (<code>208</code> future district-weeks) mirrors real-world epidemic forecasting. Notice the invariant check <code>train_max &gt;= test_min</code>—using <code>&gt;=</code> ensures even a shared boundary year triggers a temporal leak alert.</p>
+<hr>
+</section>
+<section id="sec-ch21-leakage" class="level3" data-number="21.3.6">
+<h3 data-number="21.3.6" class="anchored" data-anchor-id="sec-ch21-leakage"><span class="header-section-number">21.3.6</span> Live Preprocessing Leakage vs.&nbsp;Fit-on-Train-Only Scaling</h3>
+<p>Does scaling features <em>before</em> splitting really distort test accuracy? Let’s measure the exact optimism inflation live on a 30-feature clinical cohort with uneven measurement units (spanning <code>0.1</code> to <code>100.0</code>), and verify clean scaling on <code>mch_survey_sample</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="co"># 1. High-dimensional cohort with uneven feature scales</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>X_hd, y_hd <span class="op">=</span> make_classification(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>    n_samples<span class="op">=</span><span class="dv">60</span>, n_features<span class="op">=</span><span class="dv">30</span>, n_informative<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>    n_redundant<span class="op">=</span><span class="dv">5</span>, random_state<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>X_hd <span class="op">=</span> X_hd <span class="op">*</span> np.linspace(<span class="fl">0.1</span>, <span class="fl">100.0</span>, <span class="dv">30</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a><span class="co"># LEAKY: fit StandardScaler on ALL rows before splitting</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>X_all_s <span class="op">=</span> StandardScaler().fit_transform(X_hd)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>Xl_tr, Xl_te, yl_tr, yl_te <span class="op">=</span> train_test_split(</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>    X_all_s, y_hd, test_size<span class="op">=</span><span class="fl">0.20</span>, stratify<span class="op">=</span>y_hd, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>leaky_acc <span class="op">=</span> LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>).fit(Xl_tr, yl_tr).score(</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>    Xl_te, yl_te</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a><span class="co"># CLEAN: split FIRST, fit StandardScaler on train ONLY</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>Xc_tr, Xc_te, yc_tr, yc_te <span class="op">=</span> train_test_split(</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a>    X_hd, y_hd, test_size<span class="op">=</span><span class="fl">0.20</span>, stratify<span class="op">=</span>y_hd, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a>)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a>scaler <span class="op">=</span> StandardScaler().fit(Xc_tr)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a>clean_acc <span class="op">=</span> LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>).fit(</span>
+<span id="cb11-23"><a href="#cb11-23" aria-label="23"></a>    scaler.transform(Xc_tr), yc_tr</span>
+<span id="cb11-24"><a href="#cb11-24" aria-label="24"></a>).score(scaler.transform(Xc_te), yc_te)</span>
+<span id="cb11-25"><a href="#cb11-25" aria-label="25"></a></span>
+<span id="cb11-26"><a href="#cb11-26" aria-label="26"></a><span class="bu">print</span>(<span class="ss">f"Leaky accuracy: </span><span class="sc">{</span>leaky_acc<span class="sc">:.4f}</span><span class="ss"> | Clean accuracy: </span><span class="sc">{</span>clean_acc<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb11-27"><a href="#cb11-27" aria-label="27"></a><span class="bu">print</span>(<span class="ss">f"Phantom optimism gap: </span><span class="sc">{</span>leaky_acc <span class="op">-</span> clean_acc<span class="sc">:+.4f}</span><span class="ss">"</span>)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-label="28"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-label="29"></a><span class="co"># 2. Verify train-only scaling on MCH features</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-label="30"></a>mch_scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb11-31"><a href="#cb11-31" aria-label="31"></a>X_tr_s <span class="op">=</span> mch_scaler.fit_transform(X_train)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-label="32"></a>X_te_s <span class="op">=</span> mch_scaler.transform(X_test)</span>
+<span id="cb11-33"><a href="#cb11-33" aria-label="33"></a><span class="bu">print</span>(<span class="st">"MCH train scaled means:"</span>, np.<span class="bu">round</span>(X_tr_s.mean(axis<span class="op">=</span><span class="dv">0</span>), <span class="dv">3</span>))</span>
+<span id="cb11-34"><a href="#cb11-34" aria-label="34"></a><span class="bu">print</span>(<span class="st">"MCH test scaled means: "</span>, np.<span class="bu">round</span>(X_te_s.mean(axis<span class="op">=</span><span class="dv">0</span>), <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>Leaky accuracy: 0.8333 | Clean accuracy: 0.7500</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>Phantom optimism gap: +0.0833</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>MCH train scaled means: [ 0.  0. -0.  0. -0.]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>MCH test scaled means:  [-0.007 -0.022 -0.073 -0.138 -0.121]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at those two results:</p>
+<ul>
+<li><strong>+8.33 percentage points of phantom accuracy:</strong> Merely moving <code>StandardScaler().fit_transform(X_hd)</code> <em>above</em> <code>train_test_split</code> leaked the test set’s mean and variance into the L2-regularized <code>LogisticRegression</code>, inflating reported accuracy from <strong><code>0.7500</code></strong> to <strong><code>0.8333</code></strong>!</li>
+<li><strong>Healthy non-zero test means:</strong> On <code>clean_mch</code>, <code>X_tr_s</code> has exact column means of <code>0.000</code>, whereas <code>X_te_s</code> has small non-zero means (<code>[-0.007, -0.022, -0.073, -0.138, -0.121]</code>). Seeing non-zero test means is a <strong>good sign</strong>—it proves <code>mch_scaler</code> never peeked at <code>X_test</code>!</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch21-dummy" class="level3" data-number="21.3.7">
+<h3 data-number="21.3.7" class="anchored" data-anchor-id="sec-ch21-dummy"><span class="header-section-number">21.3.7</span> Zero-Skill Baseline (<code>DummyClassifier</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>dummy <span class="op">=</span> DummyClassifier(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>dummy.fit(X_train, y_train)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>maj_class <span class="op">=</span> <span class="bu">int</span>(dummy.predict(X_test[:<span class="dv">1</span>])[<span class="dv">0</span>])</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>dummy_acc <span class="op">=</span> <span class="bu">float</span>(dummy.score(X_test, y_test))</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>pos_rate <span class="op">=</span> <span class="bu">float</span>(np.mean(y_test <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a><span class="bu">print</span>(<span class="ss">f"Majority class predicted: </span><span class="sc">{</span>maj_class<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a><span class="bu">print</span>(<span class="ss">f"Dummy accuracy floor:     </span><span class="sc">{</span>dummy_acc<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a><span class="bu">print</span>(<span class="ss">f"Test positive rate:       </span><span class="sc">{</span>pos_rate<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>Majority class predicted: 0</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>Dummy accuracy floor:     0.6465</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>Test positive rate:       0.3535</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Because <code>64.65%</code> of test mothers are non-anemic (<code>0</code>), a classifier that ignores every single clinical feature and blindly predicts <code>0</code> for everyone automatically scores <strong><code>64.65%</code> accuracy</strong>. Any complex model that scores <code>63%</code> is literally worse than doing nothing!</p>
+<hr>
+</section>
+<section id="sec-ch21-bv" class="level3" data-number="21.3.8">
+<h3 data-number="21.3.8" class="anchored" data-anchor-id="sec-ch21-bv"><span class="header-section-number">21.3.8</span> Bias-Variance Tradeoff &amp; Learning Curve Diagnostics</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a><span class="co"># 1. Complexity sweep: DecisionTree max_depth from 1 to None</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a><span class="cf">for</span> depth <span class="kw">in</span> [<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">6</span>, <span class="dv">12</span>, <span class="va">None</span>]:</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>    dt <span class="op">=</span> DecisionTreeClassifier(max_depth<span class="op">=</span>depth, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-label="4"></a>    dt.fit(X_train, y_train)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-label="5"></a>    tr_s <span class="op">=</span> dt.score(X_train, y_train)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-label="6"></a>    va_s <span class="op">=</span> dt.score(X_val, y_val)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-label="7"></a>    <span class="bu">print</span>(<span class="ss">f"depth=</span><span class="sc">{</span><span class="bu">str</span>(depth)<span class="sc">:&gt;4}</span><span class="ss"> | train=</span><span class="sc">{</span>tr_s<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-label="8"></a>          <span class="ss">f"val=</span><span class="sc">{</span>va_s<span class="sc">:.4f}</span><span class="ss"> | gap=</span><span class="sc">{</span>tr_s <span class="op">-</span> va_s<span class="sc">:+.4f}</span><span class="ss">"</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-label="9"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-label="10"></a><span class="co"># 2. Learning curve: vary training sample size on 75/25 stratified split</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-label="11"></a>X_lc_tr, X_lc_val, y_lc_tr, y_lc_val <span class="op">=</span> train_test_split(</span>
+<span id="cb15-12"><a href="#cb15-12" aria-label="12"></a>    X.to_numpy(), y.to_numpy(), test_size<span class="op">=</span><span class="fl">0.25</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-label="13"></a>    stratify<span class="op">=</span>y, random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-label="14"></a>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-label="15"></a>lc_rows <span class="op">=</span> []</span>
+<span id="cb15-16"><a href="#cb15-16" aria-label="16"></a><span class="cf">for</span> frac <span class="kw">in</span> [<span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>]:</span>
+<span id="cb15-17"><a href="#cb15-17" aria-label="17"></a>    n_sub <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(frac <span class="op">*</span> <span class="bu">len</span>(X_lc_tr)))</span>
+<span id="cb15-18"><a href="#cb15-18" aria-label="18"></a>    clf <span class="op">=</span> DecisionTreeClassifier(max_depth<span class="op">=</span><span class="dv">4</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb15-19"><a href="#cb15-19" aria-label="19"></a>    clf.fit(X_lc_tr[:n_sub], y_lc_tr[:n_sub])</span>
+<span id="cb15-20"><a href="#cb15-20" aria-label="20"></a>    tr_a <span class="op">=</span> <span class="bu">float</span>(clf.score(X_lc_tr[:n_sub], y_lc_tr[:n_sub]))</span>
+<span id="cb15-21"><a href="#cb15-21" aria-label="21"></a>    va_a <span class="op">=</span> <span class="bu">float</span>(clf.score(X_lc_val, y_lc_val))</span>
+<span id="cb15-22"><a href="#cb15-22" aria-label="22"></a>    lc_rows.append({</span>
+<span id="cb15-23"><a href="#cb15-23" aria-label="23"></a>        <span class="st">"fraction"</span>: frac, <span class="st">"n_train"</span>: n_sub,</span>
+<span id="cb15-24"><a href="#cb15-24" aria-label="24"></a>        <span class="st">"train_acc"</span>: <span class="bu">round</span>(tr_a, <span class="dv">4</span>), <span class="st">"val_acc"</span>: <span class="bu">round</span>(va_a, <span class="dv">4</span>),</span>
+<span id="cb15-25"><a href="#cb15-25" aria-label="25"></a>        <span class="st">"gap"</span>: <span class="bu">round</span>(tr_a <span class="op">-</span> va_a, <span class="dv">4</span>),</span>
+<span id="cb15-26"><a href="#cb15-26" aria-label="26"></a>    })</span>
+<span id="cb15-27"><a href="#cb15-27" aria-label="27"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Learning Curve Table (max_depth=4):"</span>)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-label="28"></a><span class="bu">print</span>(pd.DataFrame(lc_rows).to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>depth=   1 | train=0.6463 | val=0.6465 | gap=-0.0002</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>depth=   3 | train=0.6905 | val=0.6162 | gap=+0.0743</span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>depth=   6 | train=0.8061 | val=0.6162 | gap=+0.1900</span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a>depth=  12 | train=0.9966 | val=0.5152 | gap=+0.4814</span>
+<span id="cb16-5"><a href="#cb16-5" aria-label="5"></a>depth=None | train=1.0000 | val=0.5253 | gap=+0.4747</span>
+<span id="cb16-6"><a href="#cb16-6" aria-label="6"></a></span>
+<span id="cb16-7"><a href="#cb16-7" aria-label="7"></a>Learning Curve Table (max_depth=4):</span>
+<span id="cb16-8"><a href="#cb16-8" aria-label="8"></a> fraction  n_train  train_acc  val_acc    gap</span>
+<span id="cb16-9"><a href="#cb16-9" aria-label="9"></a>      0.2       74     0.8649   0.5610 0.3039</span>
+<span id="cb16-10"><a href="#cb16-10" aria-label="10"></a>      0.4      148     0.7297   0.6016 0.1281</span>
+<span id="cb16-11"><a href="#cb16-11" aria-label="11"></a>      0.6      221     0.7421   0.6179 0.1242</span>
+<span id="cb16-12"><a href="#cb16-12" aria-label="12"></a>      0.8      295     0.6881   0.5854 0.1028</span>
+<span id="cb16-13"><a href="#cb16-13" aria-label="13"></a>      1.0      369     0.6911   0.6341 0.0569</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read both diagnostic tables like a clinical researcher:</p>
+<ul>
+<li><strong>Complexity Sweep:</strong> At <code>depth=1</code>, the model is too rigid (<strong>High Bias / Underfitting</strong>, <code>train=0.6463</code>, matching the dummy floor). As depth grows to <code>6</code>, <code>12</code>, and <code>None</code>, training accuracy climbs all the way to <strong><code>1.0000</code></strong> while validation accuracy collapses to <strong><code>0.5253</code></strong> (<code>gap = +0.4747</code>)—textbook <strong>High Variance / Overfitting</strong>!</li>
+<li><strong>Learning Curve:</strong> Holding <code>max_depth=4</code> fixed while growing training size from <code>74</code> to <code>369</code> mothers shrinks the train–validation gap from <strong><code>0.3039</code></strong> down to <strong><code>0.0569</code></strong> and lifts validation accuracy from <code>0.5610</code> to <code>0.6341</code>. Learning curves reveal directly whether collecting more data will close a variance gap or whether stronger clinical biomarkers are needed to reduce bias.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch21-errors" class="level3" data-number="21.3.9">
+<h3 data-number="21.3.9" class="anchored" data-anchor-id="sec-ch21-errors"><span class="header-section-number">21.3.9</span> Break It On Purpose! (ML Splitting &amp; Scaling Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — ValueError (Stratifying a Singleton Class)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>X_tiny <span class="op">=</span> np.arange(<span class="dv">10</span>).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>y_singleton <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>train_test_split(X_tiny, y_singleton, test_size<span class="op">=</span><span class="fl">0.2</span>, stratify<span class="op">=</span>y_singleton)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: The least populated classes in y have only 1 member, which is</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>too few. The minimum number of groups for any class cannot be less than 2.</span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a>Classes with too few members are: [1]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Stratified splitting must place at least one member of every class into both train and test, which is mathematically impossible when a rare disease class has only <code>1</code> observation.<br>
+<strong>Fix:</strong> Inspect <code>y.value_counts()</code> before splitting; merge ultra-rare categories, collect more minority cases, or drop singleton strata with transparent documentation.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ValueError (Mismatched X and y Lengths)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>X_ten <span class="op">=</span> np.arange(<span class="dv">10</span>).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>y_five <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>train_test_split(X_ten, y_five, test_size<span class="op">=</span><span class="fl">0.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>ValueError: Found input variables with inconsistent numbers of samples:</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>[10, 5]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> This happens constantly when a researcher calls <code>X = df[feats].dropna()</code> while forgetting to drop the exact same rows from <code>y = df["target"]</code>!<br>
+<strong>Fix:</strong> Always drop missing values on the <strong>combined</strong> DataFrame <code>clean = df[feats + [target]].dropna()</code> <em>first</em>, then slice <code>X = clean[feats]</code> and <code>y = clean[target]</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — NotFittedError (Calling <code>.transform()</code> Before <code>.fit()</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a>unfitted_scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>unfitted_scaler.transform([[<span class="fl">25.0</span>, <span class="fl">4.0</span>, <span class="fl">1.0</span>]])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a>NotFittedError: This StandardScaler instance is not fitted yet. Call 'fit'</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>with appropriate arguments before using this estimator.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> A freshly instantiated <code>StandardScaler</code> has not learned column means (<span class="math inline">\(\mu\)</span>) or standard deviations (<span class="math inline">\(\sigma\)</span>) yet, so calling <code>.transform()</code> directly raises <code>sklearn.exceptions.NotFittedError</code>.<br>
+<strong>Fix:</strong> Always call <code>scaler.fit(X_train)</code> (or <code>scaler.fit_transform(X_train)</code>) on the training split first, and only then call <code>scaler.transform(X_test)</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch21-blueprint" class="level2" data-number="21.4">
+<h2 data-number="21.4" class="anchored" data-anchor-id="sec-ch21-blueprint"><span class="header-section-number">21.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Your health-data team needs a single reusable benchmark function <code>run_leak_free_mch_benchmark(raw_df, seed=42)</code> that takes the raw <code>mch_survey_sample</code> DataFrame (without mutating it), enforces DHS cluster-level splitting with a hard zero-leakage assertion, scales predictors strictly on training clusters, and compares four classifiers side-by-side (<code>DummyClassifier</code>, <code>LogisticRegression</code>, pruned <code>DecisionTree(max_depth=4)</code>, and unpruned <code>DecisionTree</code>) in one clean audit table.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="21.4.1">
+<h3 data-number="21.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">21.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Non-Mutating Hygiene &amp; Target-Leakage Exclusion:</strong></p>
+<ul>
+<li>Copy <code>raw_df</code>, standardize <code>residence</code>, convert <code>anc_visits == 999</code> to <code>np.nan</code>, encode <code>is_urban</code> and ordinal <code>wealth_idx</code>, and explicitly exclude <code>maternal_hb_g_dl</code>.</li>
+<li>Call <code>.dropna().reset_index(drop=True)</code> jointly across IDs, predictors, and target so <code>X</code> and <code>y</code> remain perfectly aligned.</li>
+</ul></li>
+<li><p><strong>Cluster Firewall &amp; Train-Only Scaling:</strong></p>
+<ul>
+<li>Partition by <code>cluster_id</code> with <code>GroupShuffleSplit(n_splits=1, test_size=0.20, random_state=seed)</code>.</li>
+<li>Run <code>assert len(set(tr_df["cluster_id"]) &amp; set(te_df["cluster_id"])) == 0</code> so cluster leakage halts execution immediately.</li>
+<li>Fit <code>StandardScaler()</code> on <code>tr_df[feats]</code> only, then transform both <code>tr_df[feats]</code> and <code>te_df[feats]</code>.</li>
+</ul></li>
+<li><p><strong>Benchmark &amp; Bias-Variance Verification:</strong></p>
+<ul>
+<li>Fit all four models on <code>(X_tr, y_tr)</code> and log <code>train_acc</code>, <code>test_acc</code>, and <code>gap = train_acc - test_acc</code> rounded to 4 decimals.</li>
+<li>Verify that unpruned decision trees memorize training clusters (<code>1.0000</code>) yet drop below the zero-skill <code>DummyClassifier</code> floor on unseen DHS clusters.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="21.4.2">
+<h3 data-number="21.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">21.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="kw">def</span> run_leak_free_mch_benchmark(raw_df, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a>    <span class="co">"""Cluster-split, train-only scale, and benchmark 3 ML models."""</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a>    df <span class="op">=</span> raw_df.copy()</span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> df[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a>    df[<span class="st">"anc_visits"</span>] <span class="op">=</span> df[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a>    df[<span class="st">"is_urban"</span>] <span class="op">=</span> (df[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a>    w_map <span class="op">=</span> {</span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a>        <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>, <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a>    }</span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a>    df[<span class="st">"wealth_idx"</span>] <span class="op">=</span> df[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(w_map)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a>    feats <span class="op">=</span> [</span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a>        <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"is_urban"</span>,</span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a>        <span class="st">"wealth_idx"</span>, <span class="st">"child_haz"</span>,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a>    ]</span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a>    cols <span class="op">=</span> [<span class="st">"household_id"</span>, <span class="st">"cluster_id"</span>] <span class="op">+</span> feats <span class="op">+</span> [<span class="st">"maternal_anemia"</span>]</span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a>    clean <span class="op">=</span> df[cols].dropna().reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a></span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a>    <span class="co"># 1. DHS cluster-aware split + zero-leakage assertion</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a>    gss <span class="op">=</span> GroupShuffleSplit(n_splits<span class="op">=</span><span class="dv">1</span>, test_size<span class="op">=</span><span class="fl">0.20</span>, random_state<span class="op">=</span>seed)</span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a>    tr_i, te_i <span class="op">=</span> <span class="bu">next</span>(gss.split(clean, groups<span class="op">=</span>clean[<span class="st">"cluster_id"</span>]))</span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a>    tr_df <span class="op">=</span> clean.iloc[tr_i].reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a>    te_df <span class="op">=</span> clean.iloc[te_i].reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a>    <span class="cf">assert</span> <span class="bu">len</span>(<span class="bu">set</span>(tr_df[<span class="st">"cluster_id"</span>]) <span class="op">&amp;</span> <span class="bu">set</span>(te_df[<span class="st">"cluster_id"</span>])) <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a></span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>    <span class="co"># 2. Fit scaler strictly on training clusters</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a>    scaler <span class="op">=</span> StandardScaler().fit(tr_df[feats])</span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a>    X_tr <span class="op">=</span> scaler.transform(tr_df[feats])</span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a>    X_te <span class="op">=</span> scaler.transform(te_df[feats])</span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>    y_tr <span class="op">=</span> tr_df[<span class="st">"maternal_anemia"</span>].to_numpy()</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a>    y_te <span class="op">=</span> te_df[<span class="st">"maternal_anemia"</span>].to_numpy()</span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a></span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a>    <span class="co"># 3. Benchmark Dummy vs Logistic vs Overfit Tree</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a>    dt4 <span class="op">=</span> DecisionTreeClassifier(max_depth<span class="op">=</span><span class="dv">4</span>, random_state<span class="op">=</span>seed)</span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a>    dt_full <span class="op">=</span> DecisionTreeClassifier(random_state<span class="op">=</span>seed)</span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a>    models <span class="op">=</span> [</span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a>        (<span class="st">"Dummy (Majority)"</span>, DummyClassifier(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a>        (<span class="st">"LogisticRegression"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a>        (<span class="st">"Tree (depth=4)"</span>, dt4),</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>        (<span class="st">"Tree (unpruned)"</span>, dt_full),</span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>    ]</span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a>    records <span class="op">=</span> []</span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a>    <span class="cf">for</span> name, mdl <span class="kw">in</span> models:</span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a>        mdl.fit(X_tr, y_tr)</span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a>        tr_acc <span class="op">=</span> <span class="bu">float</span>(mdl.score(X_tr, y_tr))</span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a>        te_acc <span class="op">=</span> <span class="bu">float</span>(mdl.score(X_te, y_te))</span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a>        records.append({</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>            <span class="st">"model"</span>: name, <span class="st">"train_acc"</span>: <span class="bu">round</span>(tr_acc, <span class="dv">4</span>),</span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a>            <span class="st">"test_acc"</span>: <span class="bu">round</span>(te_acc, <span class="dv">4</span>),</span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a>            <span class="st">"gap"</span>: <span class="bu">round</span>(tr_acc <span class="op">-</span> te_acc, <span class="dv">4</span>),</span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a>        })</span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a>    <span class="cf">return</span> pd.DataFrame(records)</span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a></span>
+<span id="cb23-53"><a href="#cb23-53" aria-label="53"></a><span class="bu">print</span>(run_leak_free_mch_benchmark(mch_raw).to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a>             model  train_acc  test_acc    gap</span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a>  Dummy (Majority)     0.6477    0.6415 0.0062</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a>LogisticRegression     0.6554    0.6415 0.0139</span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a>    Tree (depth=4)     0.6891    0.5189 0.1703</span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a>   Tree (unpruned)     1.0000    0.5943 0.4057</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Pause and appreciate the scientific honesty of this table: once we forbid hemoglobin target leakage and hold out unseen DHS clusters, demographic survey features alone barely match the <code>64.15%</code> majority-class floor—while an unpruned tree boasts a deceptive <code>100.0%</code> training score yet drops to <code>59.43%</code> (<code>gap = 0.4057</code>)! In Chapters 22–26, you will learn feature engineering, pipelines, cross-validation, ROC-AUC/PR-AUC thresholds, and gradient-boosted ensembles to extract true signal responsibly.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch21-todos" class="level2" data-number="21.5">
+<h2 data-number="21.5" class="anchored" data-anchor-id="sec-ch21-todos"><span class="header-section-number">21.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six reusable ML splitting, scaling, baseline, and diagnostic functions below. Pass each <strong>function name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 21.1 (<code>stratified_three_way_split(X, y, test_size=0.2, val_size=0.2, seed=42)</code>):</strong> Perform a two-stage stratified split returning <code>(X_train, X_val, X_test, y_train, y_val, y_test)</code> preserving exact row totals, disjoint splits, and class balance (scaling the second split by <code>val_size / (1.0 - test_size)</code>).</li>
+<li><strong>To-Do 21.2 (<code>group_cluster_split(df, group_col, test_size=0.2, seed=42)</code>):</strong> Use <code>GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=seed)</code> on <code>groups=df[group_col]</code> and return non-mutating <code>(train_df, test_df)</code> with <code>.reset_index(drop=True)</code> and <strong>zero</strong> overlapping <code>group_col</code> values.</li>
+<li><strong>To-Do 21.3 (<code>temporal_outbreak_split(epi_df, cutoff_year=2025)</code>):</strong> Split <code>epi_df</code> strictly by <code>year &lt; cutoff_year</code> (train) vs.&nbsp;<code>year &gt;= cutoff_year</code> (test), returning non-mutating <code>(train_df, test_df)</code> with <code>.reset_index(drop=True)</code>.</li>
+<li><strong>To-Do 21.4 (<code>leak_free_standardize(X_train, X_test)</code>):</strong> Fit <code>StandardScaler()</code> strictly on <code>X_train</code>, transform both splits (<code>fit_transform(X_train)</code> and <code>transform(X_test)</code>), and return <code>(X_train_s, X_test_s)</code>.</li>
+<li><strong>To-Do 21.5 (<code>evaluate_dummy_baseline(X_train, y_train, X_test, y_test)</code>):</strong> Fit <code>DummyClassifier(strategy="most_frequent")</code> on <code>(X_train, y_train)</code> and return <code>{"majority_class": int, "dummy_accuracy": round4, "positive_rate": round4}</code> evaluated on <code>(X_test, y_test)</code>.</li>
+<li><strong>To-Do 21.6 (<code>diagnose_bias_variance(train_score, val_score, gap_threshold=0.10, low_threshold=0.70)</code>):</strong> Return <code>"Underfitting (High Bias)"</code> if <code>train_score &lt; low_threshold</code>, <code>"Overfitting (High Variance)"</code> if <code>(train_score - val_score) &gt;= gap_threshold</code>, else <code>"Well-Balanced"</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch21-test" class="level2" data-number="21.6">
+<h2 data-number="21.6" class="anchored" data-anchor-id="sec-ch21-test"><span class="header-section-number">21.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 machine learning paradigm, leakage, and bias-variance questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Inference vs.&nbsp;Prediction:</strong> In Chapter 20, <code>anc_visits</code> had a statistically significant Adjusted Odds Ratio (<span class="math inline">\(p = 0.0378\)</span>) for maternal anemia. Why does statistical significance NOT guarantee 90% individual prediction accuracy?</li>
+<li><strong>Relative Validation Fraction:</strong> You have <span class="math inline">\(N = 1{,}000\)</span> patients and want a <code>60%</code> train / <code>20%</code> validation / <code>20%</code> test split. After holding out <code>200</code> test patients (<code>test_size=0.20</code>), what <code>test_size</code> argument must you pass to the <em>second</em> <code>train_test_split</code> call so validation receives exactly <code>200</code> patients—and how many patients would you accidentally get if you passed <code>0.20</code> again?</li>
+<li><strong>Target Leakage Spot-Check:</strong> A student builds an anemia classifier on <code>mch_survey_sample</code> using <code>["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]</code> and excitedly reports <code>99.8%</code> test accuracy. What went wrong?</li>
+<li><strong>Cluster Leakage Diagnosis:</strong> A hospital dataset contains <code>400</code> ICU lab rows across <code>80</code> unique patients (5 lab draws per patient). If you run standard <code>train_test_split(..., stratify=y)</code> instead of <code>GroupShuffleSplit(groups=patient_id)</code>, what specific form of data leakage occurs and why does test accuracy look artificially high?</li>
+<li><strong>Temporal Boundary Trap:</strong> Suppose <code>train_df["year"]</code> spans <code>2021..2024</code> and <code>test_df["year"]</code> spans <code>2024..2025</code>. Why should a temporal leakage auditor check <code>train_max &gt;= test_min</code> rather than strict <code>train_max &gt; test_min</code>?</li>
+<li><strong>Scaling Leakage Bug:</strong> Spot the fatal bug in <code>scaler = StandardScaler(); X_train_s = scaler.fit_transform(X_train); X_test_s = scaler.fit_transform(X_test)</code>. What happens to the column means of <code>X_test_s</code> under this bug vs.&nbsp;the leak-free fix?</li>
+<li><strong>Zero-Skill Accuracy Trap:</strong> A rare-disease screening cohort has <code>4%</code> positive cases (<code>y == 1</code>) and <code>96%</code> negative cases (<code>y == 0</code>). What accuracy does <code>DummyClassifier(strategy="most_frequent")</code> achieve, and is a deep neural network with <code>95.2%</code> accuracy clinically useful?</li>
+<li><strong>Bias-Variance Diagnosis Trace:</strong> Trace <code>diagnose_bias_variance(train_score, val_score)</code> (default <code>gap_threshold=0.10, low_threshold=0.70</code>) on three models: Model A <code>(0.64, 0.48)</code>, Model B <code>(0.95, 0.77)</code>, and Model C <code>(0.84, 0.79)</code>. What label does each return?</li>
+<li><strong>Learning Curve Action Plan:</strong> On a learning curve, training accuracy is <code>0.67</code> and validation accuracy is <code>0.66</code> across <code>n = 200, 400, 800, 1600</code>. Both curves have plateaued flat near <code>0.66</code>. Will collecting <code>10,000</code> more identical rows likely solve this problem? Why or why not?</li>
+<li><strong>Scikit-Learn <code>NotFittedError</code> vs.&nbsp;<code>ValueError</code>:</strong> Which exact exception does Scikit-Learn raise for (a) calling <code>StandardScaler().transform(X_test)</code> without calling <code>.fit()</code>, and (b) passing <code>stratify=y</code> when class <code>1</code> appears only once in <code>y</code>?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch21-exam" class="level2" data-number="21.7">
+<h2 data-number="21.7" class="anchored" data-anchor-id="sec-ch21-exam"><span class="header-section-number">21.7</span> Stage 7 — Chapter 21 Coding Exam (100 Points)</h2>
+<p>Open <code>part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch21", exam_submissions)</code> to earn your score out of 100 points.</p>
+<section id="exam-task-21.1-30-points-audit_split_leakagetrain_df-test_df-id_col-group_colnone-time_colnone" class="level3" data-number="21.7.1">
+<h3 data-number="21.7.1" class="anchored" data-anchor-id="exam-task-21.1-30-points-audit_split_leakagetrain_df-test_df-id_col-group_colnone-time_colnone"><span class="header-section-number">21.7.1</span> Exam Task 21.1 (30 Points): <code>audit_split_leakage(train_df, test_df, id_col, group_col=None, time_col=None)</code></h3>
+<p>Without mutating <code>train_df</code> or <code>test_df</code>, return a dictionary with exact keys:</p>
+<ul>
+<li><code>"id_overlap"</code>: integer count of unique <code>id_col</code> values present in both splits,</li>
+<li><code>"group_overlap"</code>: integer count of overlapping <code>group_col</code> values if <code>group_col is not None</code>, else <code>0</code>,</li>
+<li><code>"temporal_leak"</code>: <code>True</code> if <code>time_col is not None</code> and <code>train_df[time_col].max() &gt;= test_df[time_col].min()</code>, else <code>False</code>,</li>
+<li><code>"is_leak_free"</code>: <code>True</code> only if <code>id_overlap == 0</code>, <code>group_overlap == 0</code>, and <code>not temporal_leak</code>.</li>
+</ul>
+</section>
+<section id="exam-task-21.2-35-points-quantify_preprocessing_leakagex-y-seed42" class="level3" data-number="21.7.2">
+<h3 data-number="21.7.2" class="anchored" data-anchor-id="exam-task-21.2-35-points-quantify_preprocessing_leakagex-y-seed42"><span class="header-section-number">21.7.2</span> Exam Task 21.2 (35 Points): <code>quantify_preprocessing_leakage(X, y, seed=42)</code></h3>
+<p>Compare a leaky pre-split scaling workflow vs.&nbsp;a clean split-then-scale workflow using <code>train_test_split(..., test_size=0.2, stratify=y, random_state=seed)</code> and <code>LogisticRegression(max_iter=500)</code>:</p>
+<ul>
+<li><strong>Leaky path:</strong> Fit <code>StandardScaler().fit_transform(X)</code> on all rows <em>before</em> splitting, fit <code>LogisticRegression(max_iter=500)</code> on train, and score test accuracy (<code>leaky_acc</code>).</li>
+<li><strong>Clean path:</strong> Split <em>first</em>, fit <code>StandardScaler()</code> strictly on <code>X_train</code>, transform both splits, fit <code>LogisticRegression(max_iter=500)</code> on train, and score test accuracy (<code>clean_acc</code>).</li>
+<li>Return <code>{"leaky_acc": round4, "clean_acc": round4, "optimism_gap": round4}</code> where <code>optimism_gap = leaky_acc - clean_acc</code>.</li>
+</ul>
+</section>
+<section id="exam-task-21.3-35-points-build_learning_curve_tablex-y-fractions-seed42" class="level3" data-number="21.7.3">
+<h3 data-number="21.7.3" class="anchored" data-anchor-id="exam-task-21.3-35-points-build_learning_curve_tablex-y-fractions-seed42"><span class="header-section-number">21.7.3</span> Exam Task 21.3 (35 Points): <code>build_learning_curve_table(X, y, fractions, seed=42)</code></h3>
+<p>Construct a learning curve summary DataFrame:</p>
+<ul>
+<li>Hold out a 25% stratified validation set using <code>train_test_split(np.asarray(X, dtype=float), np.asarray(y), test_size=0.25, stratify=y, random_state=seed)</code>.</li>
+<li>For each <code>frac</code> in <code>fractions</code>, take the first <code>n_train = int(round(frac * len(X_train_full)))</code> rows of the shuffled training split and fit <code>DecisionTreeClassifier(max_depth=4, random_state=seed)</code>.</li>
+<li>Evaluate <code>train_acc</code>, <code>val_acc</code>, and <code>gap = train_acc - val_acc</code>.</li>
+<li>Return a <code>pd.DataFrame</code> with exact columns <code>["fraction", "n_train", "train_acc", "val_acc", "gap"]</code> with float columns rounded to <strong>4 decimals</strong>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch21-solutions" class="level2" data-number="21.8">
+<h2 data-number="21.8" class="anchored" data-anchor-id="sec-ch21-solutions"><span class="header-section-number">21.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="21.8.1">
+<h3 data-number="21.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">21.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><strong>Statistical significance</strong> tests whether a population average effect differs from zero (<span class="math inline">\(H_0: \beta = 0\)</span>), which becomes easy to detect even for modest effects when <span class="math inline">\(N\)</span> is large. <strong>Individual prediction</strong> depends on total signal-to-noise separation; large unexplained variance across mothers leaves substantial overlap between anemic and non-anemic distributions.</li>
+<li>Pass <code>test_size = 0.20 / (1.0 - 0.20) = 0.25</code> (25% of the remaining 800 rows = <strong>200</strong> validation rows). Passing <code>0.20</code> again would give only <code>0.20 * 800 = 160</code> rows (<code>16%</code> instead of <code>20%</code>).</li>
+<li><strong>Target leakage!</strong> <code>maternal_anemia</code> is defined directly by <code>maternal_hb_g_dl &lt; 11.0 g/dL</code>, so including hemoglobin hands the classifier the clinical outcome definition itself.</li>
+<li><strong>Group / patient leakage.</strong> Because the same patient’s longitudinal lab draws appear in both train and test, the model memorizes patient-specific baseline physiology rather than learning generalizable disease patterns, inflating test accuracy.</li>
+<li>When <code>train_max == test_min</code> (both contain year <code>2024</code>), observations from the same epidemic season appear in both training and test sets, violating strict future-only forecasting.</li>
+<li>Line 3 calls <strong><code>scaler.fit_transform(X_test)</code></strong> instead of <strong><code>scaler.transform(X_test)</code></strong>! That re-fits a brand-new mean and standard deviation on the test set—forcing <code>X_test_s</code> column means to <code>0.0</code> and leaking test distribution parameters—whereas a clean <code>scaler.transform(X_test)</code> applies training parameters and naturally leaves small non-zero test means.</li>
+<li><code>DummyClassifier(strategy="most_frequent")</code> predicts <code>0</code> for everyone and achieves <strong><code>96.0%</code></strong> accuracy. A neural network scoring <code>95.2%</code> is <em>below</em> the zero-skill floor and clinically useless!</li>
+<li><strong>Model A</strong> (<code>0.64 &lt; 0.70</code>): <code>"Underfitting (High Bias)"</code> (underfitting is checked first!). <strong>Model B</strong> (<code>0.95 &gt;= 0.70</code> and <code>0.95 - 0.77 = 0.18 &gt;= 0.10</code>): <code>"Overfitting (High Variance)"</code>. <strong>Model C</strong> (<code>0.84 &gt;= 0.70</code> and <code>0.84 - 0.79 = 0.05 &lt; 0.10</code>): <code>"Well-Balanced"</code>.</li>
+<li><strong>No!</strong> Both training and validation accuracy are low and have already converged (<code>gap = 0.01</code>), which is classic <strong>High Bias (Underfitting)</strong>. Adding more rows will not help; you need more expressive features, non-linear interactions, or a higher-capacity model.</li>
+<li><ol type="a">
+<li><strong><code>sklearn.exceptions.NotFittedError</code></strong>; (b) <strong><code>ValueError</code></strong> (least populated class has fewer than 2 members).</li>
+</ol></li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="21.8.2">
+<h3 data-number="21.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">21.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb25-2"><a href="#cb25-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb25-3"><a href="#cb25-3" aria-label="3"></a><span class="im">from</span> sklearn.dummy <span class="im">import</span> DummyClassifier</span>
+<span id="cb25-4"><a href="#cb25-4" aria-label="4"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GroupShuffleSplit, train_test_split</span>
+<span id="cb25-5"><a href="#cb25-5" aria-label="5"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb25-6"><a href="#cb25-6" aria-label="6"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-label="7"></a><span class="co"># To-Do 21.1</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-label="8"></a><span class="kw">def</span> stratified_three_way_split(</span>
+<span id="cb25-9"><a href="#cb25-9" aria-label="9"></a>    X, y, test_size<span class="op">=</span><span class="fl">0.2</span>, val_size<span class="op">=</span><span class="fl">0.2</span>, seed<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-label="10"></a>):</span>
+<span id="cb25-11"><a href="#cb25-11" aria-label="11"></a>    <span class="co">"""Return (X_train, X_val, X_test, y_train, y_val, y_test)."""</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-label="12"></a>    X_tmp, X_test, y_tmp, y_test <span class="op">=</span> train_test_split(</span>
+<span id="cb25-13"><a href="#cb25-13" aria-label="13"></a>        X, y, test_size<span class="op">=</span>test_size, stratify<span class="op">=</span>y, random_state<span class="op">=</span>seed</span>
+<span id="cb25-14"><a href="#cb25-14" aria-label="14"></a>    )</span>
+<span id="cb25-15"><a href="#cb25-15" aria-label="15"></a>    val_rel <span class="op">=</span> val_size <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> test_size)</span>
+<span id="cb25-16"><a href="#cb25-16" aria-label="16"></a>    X_train, X_val, y_train, y_val <span class="op">=</span> train_test_split(</span>
+<span id="cb25-17"><a href="#cb25-17" aria-label="17"></a>        X_tmp, y_tmp, test_size<span class="op">=</span>val_rel, stratify<span class="op">=</span>y_tmp, random_state<span class="op">=</span>seed</span>
+<span id="cb25-18"><a href="#cb25-18" aria-label="18"></a>    )</span>
+<span id="cb25-19"><a href="#cb25-19" aria-label="19"></a>    <span class="cf">return</span> (X_train, X_val, X_test, y_train, y_val, y_test)</span>
+<span id="cb25-20"><a href="#cb25-20" aria-label="20"></a></span>
+<span id="cb25-21"><a href="#cb25-21" aria-label="21"></a><span class="co"># To-Do 21.2</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-label="22"></a><span class="kw">def</span> group_cluster_split(df, group_col, test_size<span class="op">=</span><span class="fl">0.2</span>, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb25-23"><a href="#cb25-23" aria-label="23"></a>    <span class="co">"""Split DataFrame with zero group_col overlap via GroupShuffleSplit."""</span></span>
+<span id="cb25-24"><a href="#cb25-24" aria-label="24"></a>    gss <span class="op">=</span> GroupShuffleSplit(</span>
+<span id="cb25-25"><a href="#cb25-25" aria-label="25"></a>        n_splits<span class="op">=</span><span class="dv">1</span>, test_size<span class="op">=</span>test_size, random_state<span class="op">=</span>seed</span>
+<span id="cb25-26"><a href="#cb25-26" aria-label="26"></a>    )</span>
+<span id="cb25-27"><a href="#cb25-27" aria-label="27"></a>    tr_idx, te_idx <span class="op">=</span> <span class="bu">next</span>(gss.split(df, groups<span class="op">=</span>df[group_col]))</span>
+<span id="cb25-28"><a href="#cb25-28" aria-label="28"></a>    train_df <span class="op">=</span> df.iloc[tr_idx].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb25-29"><a href="#cb25-29" aria-label="29"></a>    test_df <span class="op">=</span> df.iloc[te_idx].reset_index(drop<span class="op">=</span><span class="va">True</span>).copy()</span>
+<span id="cb25-30"><a href="#cb25-30" aria-label="30"></a>    <span class="cf">return</span> train_df, test_df</span>
+<span id="cb25-31"><a href="#cb25-31" aria-label="31"></a></span>
+<span id="cb25-32"><a href="#cb25-32" aria-label="32"></a><span class="co"># To-Do 21.3</span></span>
+<span id="cb25-33"><a href="#cb25-33" aria-label="33"></a><span class="kw">def</span> temporal_outbreak_split(epi_df, cutoff_year<span class="op">=</span><span class="dv">2025</span>):</span>
+<span id="cb25-34"><a href="#cb25-34" aria-label="34"></a>    <span class="co">"""Split surveillance data strictly by year &lt; cutoff vs &gt;= cutoff."""</span></span>
+<span id="cb25-35"><a href="#cb25-35" aria-label="35"></a>    train_df <span class="op">=</span> (</span>
+<span id="cb25-36"><a href="#cb25-36" aria-label="36"></a>        epi_df.loc[epi_df[<span class="st">"year"</span>] <span class="op">&lt;</span> cutoff_year]</span>
+<span id="cb25-37"><a href="#cb25-37" aria-label="37"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb25-38"><a href="#cb25-38" aria-label="38"></a>        .copy()</span>
+<span id="cb25-39"><a href="#cb25-39" aria-label="39"></a>    )</span>
+<span id="cb25-40"><a href="#cb25-40" aria-label="40"></a>    test_df <span class="op">=</span> (</span>
+<span id="cb25-41"><a href="#cb25-41" aria-label="41"></a>        epi_df.loc[epi_df[<span class="st">"year"</span>] <span class="op">&gt;=</span> cutoff_year]</span>
+<span id="cb25-42"><a href="#cb25-42" aria-label="42"></a>        .reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb25-43"><a href="#cb25-43" aria-label="43"></a>        .copy()</span>
+<span id="cb25-44"><a href="#cb25-44" aria-label="44"></a>    )</span>
+<span id="cb25-45"><a href="#cb25-45" aria-label="45"></a>    <span class="cf">return</span> train_df, test_df</span>
+<span id="cb25-46"><a href="#cb25-46" aria-label="46"></a></span>
+<span id="cb25-47"><a href="#cb25-47" aria-label="47"></a><span class="co"># To-Do 21.4</span></span>
+<span id="cb25-48"><a href="#cb25-48" aria-label="48"></a><span class="kw">def</span> leak_free_standardize(X_train, X_test):</span>
+<span id="cb25-49"><a href="#cb25-49" aria-label="49"></a>    <span class="co">"""Fit StandardScaler on X_train ONLY and transform both splits."""</span></span>
+<span id="cb25-50"><a href="#cb25-50" aria-label="50"></a>    scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb25-51"><a href="#cb25-51" aria-label="51"></a>    X_train_s <span class="op">=</span> scaler.fit_transform(X_train)</span>
+<span id="cb25-52"><a href="#cb25-52" aria-label="52"></a>    X_test_s <span class="op">=</span> scaler.transform(X_test)</span>
+<span id="cb25-53"><a href="#cb25-53" aria-label="53"></a>    <span class="cf">return</span> X_train_s, X_test_s</span>
+<span id="cb25-54"><a href="#cb25-54" aria-label="54"></a></span>
+<span id="cb25-55"><a href="#cb25-55" aria-label="55"></a><span class="co"># To-Do 21.5</span></span>
+<span id="cb25-56"><a href="#cb25-56" aria-label="56"></a><span class="kw">def</span> evaluate_dummy_baseline(X_train, y_train, X_test, y_test):</span>
+<span id="cb25-57"><a href="#cb25-57" aria-label="57"></a>    <span class="co">"""Fit most-frequent DummyClassifier and return baseline metrics."""</span></span>
+<span id="cb25-58"><a href="#cb25-58" aria-label="58"></a>    dummy <span class="op">=</span> DummyClassifier(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)</span>
+<span id="cb25-59"><a href="#cb25-59" aria-label="59"></a>    dummy.fit(X_train, y_train)</span>
+<span id="cb25-60"><a href="#cb25-60" aria-label="60"></a>    majority_class <span class="op">=</span> <span class="bu">int</span>(dummy.predict(X_test[:<span class="dv">1</span>])[<span class="dv">0</span>])</span>
+<span id="cb25-61"><a href="#cb25-61" aria-label="61"></a>    dummy_acc <span class="op">=</span> <span class="bu">float</span>(dummy.score(X_test, y_test))</span>
+<span id="cb25-62"><a href="#cb25-62" aria-label="62"></a>    pos_rate <span class="op">=</span> <span class="bu">float</span>(np.mean(np.asarray(y_test) <span class="op">==</span> <span class="dv">1</span>))</span>
+<span id="cb25-63"><a href="#cb25-63" aria-label="63"></a>    <span class="cf">return</span> {</span>
+<span id="cb25-64"><a href="#cb25-64" aria-label="64"></a>        <span class="st">"majority_class"</span>: majority_class,</span>
+<span id="cb25-65"><a href="#cb25-65" aria-label="65"></a>        <span class="st">"dummy_accuracy"</span>: <span class="bu">round</span>(dummy_acc, <span class="dv">4</span>),</span>
+<span id="cb25-66"><a href="#cb25-66" aria-label="66"></a>        <span class="st">"positive_rate"</span>: <span class="bu">round</span>(pos_rate, <span class="dv">4</span>),</span>
+<span id="cb25-67"><a href="#cb25-67" aria-label="67"></a>    }</span>
+<span id="cb25-68"><a href="#cb25-68" aria-label="68"></a></span>
+<span id="cb25-69"><a href="#cb25-69" aria-label="69"></a><span class="co"># To-Do 21.6</span></span>
+<span id="cb25-70"><a href="#cb25-70" aria-label="70"></a><span class="kw">def</span> diagnose_bias_variance(</span>
+<span id="cb25-71"><a href="#cb25-71" aria-label="71"></a>    train_score, val_score, gap_threshold<span class="op">=</span><span class="fl">0.10</span>, low_threshold<span class="op">=</span><span class="fl">0.70</span></span>
+<span id="cb25-72"><a href="#cb25-72" aria-label="72"></a>):</span>
+<span id="cb25-73"><a href="#cb25-73" aria-label="73"></a>    <span class="co">"""Classify model fit into High Bias, High Variance, or Balanced."""</span></span>
+<span id="cb25-74"><a href="#cb25-74" aria-label="74"></a>    <span class="cf">if</span> train_score <span class="op">&lt;</span> low_threshold:</span>
+<span id="cb25-75"><a href="#cb25-75" aria-label="75"></a>        <span class="cf">return</span> <span class="st">"Underfitting (High Bias)"</span></span>
+<span id="cb25-76"><a href="#cb25-76" aria-label="76"></a>    <span class="cf">if</span> (train_score <span class="op">-</span> val_score) <span class="op">&gt;=</span> gap_threshold:</span>
+<span id="cb25-77"><a href="#cb25-77" aria-label="77"></a>        <span class="cf">return</span> <span class="st">"Overfitting (High Variance)"</span></span>
+<span id="cb25-78"><a href="#cb25-78" aria-label="78"></a>    <span class="cf">return</span> <span class="st">"Well-Balanced"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="21.8.3">
+<h3 data-number="21.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">21.8.3</span> C. Annotated Solutions — Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-label="1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb26-2"><a href="#cb26-2" aria-label="2"></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeClassifier</span>
+<span id="cb26-3"><a href="#cb26-3" aria-label="3"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-label="4"></a><span class="co"># Exam Task 21.1 (30 pts)</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-label="5"></a><span class="kw">def</span> audit_split_leakage(</span>
+<span id="cb26-6"><a href="#cb26-6" aria-label="6"></a>    train_df, test_df, id_col, group_col<span class="op">=</span><span class="va">None</span>, time_col<span class="op">=</span><span class="va">None</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-label="7"></a>):</span>
+<span id="cb26-8"><a href="#cb26-8" aria-label="8"></a>    <span class="co">"""Audit ID, group, and temporal leakage across train/test splits."""</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-label="9"></a>    id_overlap <span class="op">=</span> <span class="bu">len</span>(<span class="bu">set</span>(train_df[id_col]) <span class="op">&amp;</span> <span class="bu">set</span>(test_df[id_col]))</span>
+<span id="cb26-10"><a href="#cb26-10" aria-label="10"></a>    group_overlap <span class="op">=</span> (</span>
+<span id="cb26-11"><a href="#cb26-11" aria-label="11"></a>        <span class="bu">len</span>(<span class="bu">set</span>(train_df[group_col]) <span class="op">&amp;</span> <span class="bu">set</span>(test_df[group_col]))</span>
+<span id="cb26-12"><a href="#cb26-12" aria-label="12"></a>        <span class="cf">if</span> group_col <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-label="13"></a>        <span class="cf">else</span> <span class="dv">0</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-label="14"></a>    )</span>
+<span id="cb26-15"><a href="#cb26-15" aria-label="15"></a>    temporal_leak <span class="op">=</span> (</span>
+<span id="cb26-16"><a href="#cb26-16" aria-label="16"></a>        <span class="bu">bool</span>(train_df[time_col].<span class="bu">max</span>() <span class="op">&gt;=</span> test_df[time_col].<span class="bu">min</span>())</span>
+<span id="cb26-17"><a href="#cb26-17" aria-label="17"></a>        <span class="cf">if</span> time_col <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-label="18"></a>        <span class="cf">else</span> <span class="va">False</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-label="19"></a>    )</span>
+<span id="cb26-20"><a href="#cb26-20" aria-label="20"></a>    is_leak_free <span class="op">=</span> <span class="bu">bool</span>(</span>
+<span id="cb26-21"><a href="#cb26-21" aria-label="21"></a>        id_overlap <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> group_overlap <span class="op">==</span> <span class="dv">0</span> <span class="kw">and</span> <span class="kw">not</span> temporal_leak</span>
+<span id="cb26-22"><a href="#cb26-22" aria-label="22"></a>    )</span>
+<span id="cb26-23"><a href="#cb26-23" aria-label="23"></a>    <span class="cf">return</span> {</span>
+<span id="cb26-24"><a href="#cb26-24" aria-label="24"></a>        <span class="st">"id_overlap"</span>: <span class="bu">int</span>(id_overlap),</span>
+<span id="cb26-25"><a href="#cb26-25" aria-label="25"></a>        <span class="st">"group_overlap"</span>: <span class="bu">int</span>(group_overlap),</span>
+<span id="cb26-26"><a href="#cb26-26" aria-label="26"></a>        <span class="st">"temporal_leak"</span>: temporal_leak,</span>
+<span id="cb26-27"><a href="#cb26-27" aria-label="27"></a>        <span class="st">"is_leak_free"</span>: is_leak_free,</span>
+<span id="cb26-28"><a href="#cb26-28" aria-label="28"></a>    }</span>
+<span id="cb26-29"><a href="#cb26-29" aria-label="29"></a></span>
+<span id="cb26-30"><a href="#cb26-30" aria-label="30"></a><span class="co"># Exam Task 21.2 (35 pts)</span></span>
+<span id="cb26-31"><a href="#cb26-31" aria-label="31"></a><span class="kw">def</span> quantify_preprocessing_leakage(X, y, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb26-32"><a href="#cb26-32" aria-label="32"></a>    <span class="co">"""Compare pre-split vs. train-only StandardScaler accuracy."""</span></span>
+<span id="cb26-33"><a href="#cb26-33" aria-label="33"></a>    X_arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb26-34"><a href="#cb26-34" aria-label="34"></a>    y_arr <span class="op">=</span> np.asarray(y)</span>
+<span id="cb26-35"><a href="#cb26-35" aria-label="35"></a></span>
+<span id="cb26-36"><a href="#cb26-36" aria-label="36"></a>    X_all_s <span class="op">=</span> StandardScaler().fit_transform(X_arr)</span>
+<span id="cb26-37"><a href="#cb26-37" aria-label="37"></a>    Xl_tr, Xl_te, yl_tr, yl_te <span class="op">=</span> train_test_split(</span>
+<span id="cb26-38"><a href="#cb26-38" aria-label="38"></a>        X_all_s, y_arr, test_size<span class="op">=</span><span class="fl">0.2</span>, stratify<span class="op">=</span>y_arr, random_state<span class="op">=</span>seed</span>
+<span id="cb26-39"><a href="#cb26-39" aria-label="39"></a>    )</span>
+<span id="cb26-40"><a href="#cb26-40" aria-label="40"></a>    leaky_acc <span class="op">=</span> <span class="bu">float</span>(</span>
+<span id="cb26-41"><a href="#cb26-41" aria-label="41"></a>        LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)</span>
+<span id="cb26-42"><a href="#cb26-42" aria-label="42"></a>        .fit(Xl_tr, yl_tr)</span>
+<span id="cb26-43"><a href="#cb26-43" aria-label="43"></a>        .score(Xl_te, yl_te)</span>
+<span id="cb26-44"><a href="#cb26-44" aria-label="44"></a>    )</span>
+<span id="cb26-45"><a href="#cb26-45" aria-label="45"></a></span>
+<span id="cb26-46"><a href="#cb26-46" aria-label="46"></a>    Xc_tr, Xc_te, yc_tr, yc_te <span class="op">=</span> train_test_split(</span>
+<span id="cb26-47"><a href="#cb26-47" aria-label="47"></a>        X_arr, y_arr, test_size<span class="op">=</span><span class="fl">0.2</span>, stratify<span class="op">=</span>y_arr, random_state<span class="op">=</span>seed</span>
+<span id="cb26-48"><a href="#cb26-48" aria-label="48"></a>    )</span>
+<span id="cb26-49"><a href="#cb26-49" aria-label="49"></a>    scaler <span class="op">=</span> StandardScaler().fit(Xc_tr)</span>
+<span id="cb26-50"><a href="#cb26-50" aria-label="50"></a>    clean_acc <span class="op">=</span> <span class="bu">float</span>(</span>
+<span id="cb26-51"><a href="#cb26-51" aria-label="51"></a>        LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)</span>
+<span id="cb26-52"><a href="#cb26-52" aria-label="52"></a>        .fit(scaler.transform(Xc_tr), yc_tr)</span>
+<span id="cb26-53"><a href="#cb26-53" aria-label="53"></a>        .score(scaler.transform(Xc_te), yc_te)</span>
+<span id="cb26-54"><a href="#cb26-54" aria-label="54"></a>    )</span>
+<span id="cb26-55"><a href="#cb26-55" aria-label="55"></a></span>
+<span id="cb26-56"><a href="#cb26-56" aria-label="56"></a>    <span class="cf">return</span> {</span>
+<span id="cb26-57"><a href="#cb26-57" aria-label="57"></a>        <span class="st">"leaky_acc"</span>: <span class="bu">round</span>(leaky_acc, <span class="dv">4</span>),</span>
+<span id="cb26-58"><a href="#cb26-58" aria-label="58"></a>        <span class="st">"clean_acc"</span>: <span class="bu">round</span>(clean_acc, <span class="dv">4</span>),</span>
+<span id="cb26-59"><a href="#cb26-59" aria-label="59"></a>        <span class="st">"optimism_gap"</span>: <span class="bu">round</span>(leaky_acc <span class="op">-</span> clean_acc, <span class="dv">4</span>),</span>
+<span id="cb26-60"><a href="#cb26-60" aria-label="60"></a>    }</span>
+<span id="cb26-61"><a href="#cb26-61" aria-label="61"></a></span>
+<span id="cb26-62"><a href="#cb26-62" aria-label="62"></a><span class="co"># Exam Task 21.3 (35 pts)</span></span>
+<span id="cb26-63"><a href="#cb26-63" aria-label="63"></a><span class="kw">def</span> build_learning_curve_table(X, y, fractions, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb26-64"><a href="#cb26-64" aria-label="64"></a>    <span class="co">"""Evaluate DecisionTreeClassifier(max_depth=4) across train sizes."""</span></span>
+<span id="cb26-65"><a href="#cb26-65" aria-label="65"></a>    X_arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb26-66"><a href="#cb26-66" aria-label="66"></a>    y_arr <span class="op">=</span> np.asarray(y)</span>
+<span id="cb26-67"><a href="#cb26-67" aria-label="67"></a>    X_tr, X_val, y_tr, y_val <span class="op">=</span> train_test_split(</span>
+<span id="cb26-68"><a href="#cb26-68" aria-label="68"></a>        X_arr, y_arr, test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>y_arr, random_state<span class="op">=</span>seed</span>
+<span id="cb26-69"><a href="#cb26-69" aria-label="69"></a>    )</span>
+<span id="cb26-70"><a href="#cb26-70" aria-label="70"></a>    rows <span class="op">=</span> []</span>
+<span id="cb26-71"><a href="#cb26-71" aria-label="71"></a>    <span class="cf">for</span> frac <span class="kw">in</span> fractions:</span>
+<span id="cb26-72"><a href="#cb26-72" aria-label="72"></a>        n_sub <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(frac <span class="op">*</span> <span class="bu">len</span>(X_tr)))</span>
+<span id="cb26-73"><a href="#cb26-73" aria-label="73"></a>        clf <span class="op">=</span> DecisionTreeClassifier(max_depth<span class="op">=</span><span class="dv">4</span>, random_state<span class="op">=</span>seed)</span>
+<span id="cb26-74"><a href="#cb26-74" aria-label="74"></a>        clf.fit(X_tr[:n_sub], y_tr[:n_sub])</span>
+<span id="cb26-75"><a href="#cb26-75" aria-label="75"></a>        tr_acc <span class="op">=</span> <span class="bu">float</span>(clf.score(X_tr[:n_sub], y_tr[:n_sub]))</span>
+<span id="cb26-76"><a href="#cb26-76" aria-label="76"></a>        val_acc <span class="op">=</span> <span class="bu">float</span>(clf.score(X_val, y_val))</span>
+<span id="cb26-77"><a href="#cb26-77" aria-label="77"></a>        rows.append({</span>
+<span id="cb26-78"><a href="#cb26-78" aria-label="78"></a>            <span class="st">"fraction"</span>: <span class="bu">round</span>(<span class="bu">float</span>(frac), <span class="dv">4</span>),</span>
+<span id="cb26-79"><a href="#cb26-79" aria-label="79"></a>            <span class="st">"n_train"</span>: <span class="bu">int</span>(n_sub),</span>
+<span id="cb26-80"><a href="#cb26-80" aria-label="80"></a>            <span class="st">"train_acc"</span>: <span class="bu">round</span>(tr_acc, <span class="dv">4</span>),</span>
+<span id="cb26-81"><a href="#cb26-81" aria-label="81"></a>            <span class="st">"val_acc"</span>: <span class="bu">round</span>(val_acc, <span class="dv">4</span>),</span>
+<span id="cb26-82"><a href="#cb26-82" aria-label="82"></a>            <span class="st">"gap"</span>: <span class="bu">round</span>(tr_acc <span class="op">-</span> val_acc, <span class="dv">4</span>),</span>
+<span id="cb26-83"><a href="#cb26-83" aria-label="83"></a>        })</span>
+<span id="cb26-84"><a href="#cb26-84" aria-label="84"></a>    cols <span class="op">=</span> [<span class="st">"fraction"</span>, <span class="st">"n_train"</span>, <span class="st">"train_acc"</span>, <span class="st">"val_acc"</span>, <span class="st">"gap"</span>]</span>
+<span id="cb26-85"><a href="#cb26-85" aria-label="85"></a>    <span class="cf">return</span> pd.DataFrame(rows, columns<span class="op">=</span>cols)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-21-failure-modes" class="level3" data-number="21.8.4">
+<h3 data-number="21.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-21-failure-modes"><span class="header-section-number">21.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 21 Failure Modes</h3>
+<ol type="1">
+<li><strong>Scaling or Imputing Before Splitting (or Calling <code>.fit_transform(X_test)</code>):</strong> Fitting any transformer on the combined dataset—or re-fitting on <code>X_test</code>—contaminates evaluation with test distribution parameters and creates phantom accuracy gains (<code>+0.0833</code> in our benchmark). Always enforce <code>.fit()</code> on training data only and <code>.transform()</code> on validation/test.</li>
+<li><strong>Using Random <code>train_test_split</code> on Clustered or Temporal Data:</strong> Randomly splitting <code>mch_survey_sample</code> leaked <strong>43 / 43</strong> test DHS clusters into training, and randomly splitting <code>epi_surveillance</code> lets 2025 outbreak weeks predict 2024. Match your split tool (<code>GroupShuffleSplit</code> or strict <code>year &lt; cutoff_year</code>) to the study design and run an automated leakage audit every time.</li>
+<li><strong>Forgetting to Rescale <code>val_rel</code> or Slicing With <code>train_test_split(train_size=1.0)</code>:</strong> In 3-way splits, failing to compute <code>val_size / (1.0 - test_size)</code> silently shrinks validation from <code>20%</code> to <code>16%</code>. In learning curves, calling <code>train_test_split(..., train_size=1.0)</code> throws a <code>ValueError</code>—slice <code>X_tr[:n_sub]</code> from the already-shuffled training split instead.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Up Next — Chapter 22: Scikit-Learn Pipelines, ColumnTransformer &amp; Cross-Validation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In this chapter, you enforced the train/test preprocessing boundary manually with <code>StandardScaler().fit(X_train)</code> and <code>scaler.transform(X_test)</code>. In <strong>Chapter 22</strong>, you will encapsulate missing-value imputation, categorical one-hot encoding, scaling, and estimation inside Scikit-Learn <strong><code>Pipeline</code></strong> and <strong><code>ColumnTransformer</code></strong> objects—making preprocessing leakage structurally impossible even inside <span class="math inline">\(k\)</span>-fold and grouped cross-validation!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="pagination-link" aria-label="Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="pagination-link" aria-label="Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn">
+        <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>1&nbsp; How Computers Think, Google Colab, and Your Very First Program – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_01_python_foundations/ch02_variables_types.html" rel="next">
+<link href="../index.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch01-intuition" id="toc-sec-ch01-intuition" class="nav-link" data-scroll-target="#sec-ch01-intuition"><span class="header-section-number">1.1</span> Stage 1 — First-Principles Intuition: How Computers Actually Think</a>
+  <ul class="collapse">
+  <li><a href="#why-python-for-statistics-public-health-and-machine-learning" id="toc-why-python-for-statistics-public-health-and-machine-learning" class="nav-link" data-scroll-target="#why-python-for-statistics-public-health-and-machine-learning"><span class="header-section-number">1.1.1</span> Why Python for Statistics, Public Health, and Machine Learning?</a></li>
+  </ul></li>
+  <li><a href="#sec-ch01-mental-model" id="toc-sec-ch01-mental-model" class="nav-link" data-scroll-target="#sec-ch01-mental-model"><span class="header-section-number">1.2</span> Stage 2 — Visual Mental Model: Inside Google Colab &amp; the Python Interpreter</a></li>
+  <li><a href="#sec-ch01-walkthrough" id="toc-sec-ch01-walkthrough" class="nav-link" data-scroll-target="#sec-ch01-walkthrough"><span class="header-section-number">1.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch01-print" id="toc-sec-ch01-print" class="nav-link" data-scroll-target="#sec-ch01-print"><span class="header-section-number">1.3.1</span> Your Very First <code>print()</code> Statements &amp; Comments</a></li>
+  <li><a href="#sec-ch01-arithmetic" id="toc-sec-ch01-arithmetic" class="nav-link" data-scroll-target="#sec-ch01-arithmetic"><span class="header-section-number">1.3.2</span> Python as a Scientific &amp; Epidemiological Calculator</a></li>
+  <li><a href="#operator-precedence-why-parentheses-save-lives-in-biostatistics" id="toc-operator-precedence-why-parentheses-save-lives-in-biostatistics" class="nav-link" data-scroll-target="#operator-precedence-why-parentheses-save-lives-in-biostatistics"><span class="header-section-number">1.3.3</span> Operator Precedence: Why Parentheses Save Lives in Biostatistics</a></li>
+  <li><a href="#sec-ch01-errors" id="toc-sec-ch01-errors" class="nav-link" data-scroll-target="#sec-ch01-errors"><span class="header-section-number">1.3.4</span> Break It On Purpose! (Error Anatomy Lab)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch01-blueprint" id="toc-sec-ch01-blueprint" class="nav-link" data-scroll-target="#sec-ch01-blueprint"><span class="header-section-number">1.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">1.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">1.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch01-todos" id="toc-sec-ch01-todos" class="nav-link" data-scroll-target="#sec-ch01-todos"><span class="header-section-number">1.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch01-test" id="toc-sec-ch01-test" class="nav-link" data-scroll-target="#sec-ch01-test"><span class="header-section-number">1.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch01-exam" id="toc-sec-ch01-exam" class="nav-link" data-scroll-target="#sec-ch01-exam"><span class="header-section-number">1.7</span> Stage 7 — Chapter 1 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-1.1-30-points-pediatric-ors-supply-carton-logistics" id="toc-exam-task-1.1-30-points-pediatric-ors-supply-carton-logistics" class="nav-link" data-scroll-target="#exam-task-1.1-30-points-pediatric-ors-supply-carton-logistics"><span class="header-section-number">1.7.1</span> Exam Task 1.1 (30 Points): Pediatric ORS Supply &amp; Carton Logistics</a></li>
+  <li><a href="#exam-task-1.2-35-points-maternal-health-clinic-summary-card" id="toc-exam-task-1.2-35-points-maternal-health-clinic-summary-card" class="nav-link" data-scroll-target="#exam-task-1.2-35-points-maternal-health-clinic-summary-card"><span class="header-section-number">1.7.2</span> Exam Task 1.2 (35 Points): Maternal Health Clinic Summary Card</a></li>
+  <li><a href="#exam-task-1.3-35-points-rural-vs.-urban-case-fatality-rate-disparity" id="toc-exam-task-1.3-35-points-rural-vs.-urban-case-fatality-rate-disparity" class="nav-link" data-scroll-target="#exam-task-1.3-35-points-rural-vs.-urban-case-fatality-rate-disparity"><span class="header-section-number">1.7.3</span> Exam Task 1.3 (35 Points): Rural vs.&nbsp;Urban Case Fatality Rate Disparity</a></li>
+  </ul></li>
+  <li><a href="#sec-ch01-solutions" id="toc-sec-ch01-solutions" class="nav-link" data-scroll-target="#sec-ch01-solutions"><span class="header-section-number">1.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">1.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">1.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-1-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-1-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-1-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">1.8.3</span> C. Annotated Solutions — Chapter 1 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-1-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-1-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-1-failure-modes"><span class="header-section-number">1.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 1 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch01" class="quarto-section-identifier"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Demystify what a computer program actually is, launch your first cloud Python environment in Google Colab without installing anything, write and dissect your first epidemiological calculations line-by-line, and lose all fear of Python error messages forever.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb">ch01 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 1 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb">ch01 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 1 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb">ch01 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 1 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Explain how the <strong>Python interpreter</strong> reads and executes code line-by-line inside a Google Colab cloud runtime.</li>
+<li>Write clean <code>print()</code> statements, human-readable <code>#</code> comments, and basic arithmetic expressions (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>, <code>**</code>).</li>
+<li>Apply <strong>operator precedence</strong> and explicit parentheses so statistical averages and epidemiological rates are never silently corrupted.</li>
+<li>Calmly read and fix four foundational Python errors: <code>SyntaxError</code>, <code>NameError</code>, <code>TypeError</code>, and <code>ZeroDivisionError</code>.</li>
+<li>Structure any beginner data problem using the <strong>4-Step Problem-Structuring Blueprint</strong> <em>before</em> typing Python code.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch01-intuition" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="sec-ch01-intuition"><span class="header-section-number">1.1</span> Stage 1 — First-Principles Intuition: How Computers Actually Think</h2>
+<p>Before touching a keyboard, let us clear up the biggest myth in programming:</p>
+<blockquote class="blockquote">
+<p><em>Computers are <strong>not</strong> intelligent.</em> A computer is an astonishingly fast, 100% literal clerk who follows a checklist one line at a time—and never guesses what you “meant.”</p>
+</blockquote>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Upazila Clinic Intake Clerk
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Imagine a newly hired clerk at a rural Upazila Health Complex who has zero medical background, cannot improvise, and obeys written instructions literally:</p>
+<ul>
+<li>If you write: <em>“Measure temperature and write down if it is high,”</em> the clerk freezes—what does “high” mean? Celsius or Fahrenheit? Where should it be written?</li>
+<li>If instead you write an unambiguous numbered checklist:
+<ol type="1">
+<li>Take the thermometer reading in Celsius (<code>38.5</code>).</li>
+<li>Multiply that number by <code>9</code>, divide by <code>5</code>, and add <code>32</code>.</li>
+<li>Print the resulting Fahrenheit number on the intake slip.</li>
+</ol></li>
+</ul>
+<p>The clerk executes those three steps accurately <strong>ten million times per second</strong> without ever getting tired or making an arithmetic slip.</p>
+<p><strong>A Python program is simply that exact numbered checklist—written in a tiny, unambiguous language called Python.</strong></p>
+</div>
+</div>
+<section id="why-python-for-statistics-public-health-and-machine-learning" class="level3" data-number="1.1.1">
+<h3 data-number="1.1.1" class="anchored" data-anchor-id="why-python-for-statistics-public-health-and-machine-learning"><span class="header-section-number">1.1.1</span> Why Python for Statistics, Public Health, and Machine Learning?</h3>
+<p>You may wonder why researchers worldwide—from WHO epidemiologists to deep learning labs—converged on Python:</p>
+<ol type="1">
+<li><strong>Readable Like English:</strong> <code>mean_sbp = (124 + 130 + 127) / 3</code> reads almost identically to a biostatistics notebook.</li>
+<li><strong>One Language from First Line to First Paper:</strong> Unlike tools that trap you inside point-and-click menus, Python handles raw messy household surveys (Pandas), classical hypothesis tests (SciPy/Statsmodels), gradient-boosted trees (XGBoost), and neural networks on GPUs (PyTorch) in one unified workflow.</li>
+<li><strong>Reproducibility:</strong> When a peer reviewer asks, <em>“How did you compute your maternal anemia prevalence after excluding missing hemoglobin values?”</em>, a Python script answers with exact mathematical transparency.</li>
+</ol>
+<hr>
+</section>
+</section>
+<section id="sec-ch01-mental-model" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="sec-ch01-mental-model"><span class="header-section-number">1.2</span> Stage 2 — Visual Mental Model: Inside Google Colab &amp; the Python Interpreter</h2>
+<p>When you open one of this book’s <code>.ipynb</code> notebooks in <strong>Google Colab</strong>, you are not running code on your laptop’s processor—you are sending Python instructions over the internet to a clean Linux computer hosted by Google (the <strong>Colab Runtime</strong>).</p>
+<div class="cell" data-fig-width="2.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 1 (Inside Google Colab &amp; the Python Interpreter) illustrating 1. Your Browser (Google Colab Code Cell); 2. Python Interpreter (Checks Grammar / Syntax); 3. CPU &amp; Working Memory (Stores Values &amp; Com...">flowchart TD
+    A["1. Your Browser&lt;br/&gt;(Google Colab Code Cell)"] --&gt;|"Press Shift + Enter"| B["2. Python Interpreter&lt;br/&gt;(Checks Grammar / Syntax)"]
+    B --&gt;|"Evaluates Line by Line"| C["3. CPU &amp; Working Memory&lt;br/&gt;(Stores Values &amp; Computes Math)"]
+    C --&gt;|"Sends Printed Output Back"| D["4. Output Area Below Cell&lt;br/&gt;(Text, Numbers, Tables, or Error)"]
+</pre>
+</div>
+<p></p><figcaption> Chapter 1 visual mental model: Inside Google Colab &amp; the Python Interpreter</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the two distinct checkpoints in that pipeline:</p>
+<ol type="1">
+<li><strong>Grammar Check (Syntax Parsing):</strong> Before running <em>any</em> line in a cell, Python scans your grammar. If you forgot a closing quotation mark or parenthesis, Python stops immediately with a <strong><code>SyntaxError</code></strong>.</li>
+<li><strong>Step-by-Step Execution (Runtime):</strong> Once grammar passes, Python executes Line 1, then Line 2, then Line 3 in strict top-to-bottom order. If Line 3 asks Python to divide by zero, Lines 1 and 2 succeed and Line 3 stops with a <strong><code>ZeroDivisionError</code></strong>.</li>
+</ol>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Researcher’s Note — Always Save Your Own Copy in Google Drive
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When you click any <strong>Open in Colab</strong> link from this book, Google opens our master read-only copy. Always click <strong>File <span class="math inline">\(\rightarrow\)</span> Save a copy in Drive</strong> immediately so every note, edit, and solved exercise stays safely inside your personal Google Drive folder.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch01-walkthrough" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="sec-ch01-walkthrough"><span class="header-section-number">1.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb</code> in Colab and run each cell alongside the line-by-line dissections below.</p>
+<section id="sec-ch01-print" class="level3" data-number="1.3.1">
+<h3 data-number="1.3.1" class="anchored" data-anchor-id="sec-ch01-print"><span class="header-section-number">1.3.1</span> Your Very First <code>print()</code> Statements &amp; Comments</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="co"># Lines starting with '#' are comments — ignored by Python.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="bu">print</span>(<span class="st">"Upazila Health Complex — Morning Triage Started"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="bu">print</span>(<span class="st">"Patients waiting in queue:"</span>, <span class="dv">14</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Upazila Health Complex — Morning Triage Started</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Patients waiting in queue: 14</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Line-by-Line Dissection:</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 38%">
+<col style="width: 30%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Line</th>
+<th style="text-align: left;">Code Element</th>
+<th style="text-align: left;">What Python Does Internally</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>1</code></td>
+<td style="text-align: left;"><code># Lines starting with '#' ...</code></td>
+<td style="text-align: left;">Sees <code>#</code> and skips everything to the end of the line. Comments explain <em>why</em> to future humans (especially your future self six months later!).</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: left;"><code>print(...)</code></td>
+<td style="text-align: left;">Calls Python’s built-in <strong>function</strong> <code>print</code>, which displays whatever sits inside its parentheses <code>(...)</code> onto the screen.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>2</code></td>
+<td style="text-align: left;"><code>"Upazila Health Complex ..."</code></td>
+<td style="text-align: left;">Quotation marks tell Python: <em>“Treat these characters literally as text (a <strong>string</strong>, or <code>str</code>), not as Python commands.”</em></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>3</code></td>
+<td style="text-align: left;"><code>"Patients waiting in queue:", 14</code></td>
+<td style="text-align: left;">A comma inside <code>print()</code> lets you pass <strong>multiple items</strong> (here, a text string and the whole number <code>14</code>). Python automatically inserts one clean space between them.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="sec-ch01-arithmetic" class="level3" data-number="1.3.2">
+<h3 data-number="1.3.2" class="anchored" data-anchor-id="sec-ch01-arithmetic"><span class="header-section-number">1.3.2</span> Python as a Scientific &amp; Epidemiological Calculator</h3>
+<p>Every quantitative researcher needs exact command over Python’s <strong>seven arithmetic operators</strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="co"># Basic arithmetic operators in Python</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a><span class="bu">print</span>(<span class="st">"Addition (+):"</span>, <span class="dv">120</span> <span class="op">+</span> <span class="dv">45</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a><span class="bu">print</span>(<span class="st">"Subtraction (-):"</span>, <span class="dv">120</span> <span class="op">-</span> <span class="dv">45</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a><span class="bu">print</span>(<span class="st">"Multiplication (*):"</span>, <span class="dv">14</span> <span class="op">*</span> <span class="dv">3</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"True Division (/):"</span>, <span class="dv">10</span> <span class="op">/</span> <span class="dv">4</span>)       <span class="co"># Always returns float: 2.5</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Floor Division (//):"</span>, <span class="dv">10</span> <span class="op">//</span> <span class="dv">4</span>)    <span class="co"># Whole groups only: 2</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Remainder / Modulo (%):"</span>, <span class="dv">10</span> <span class="op">%</span> <span class="dv">4</span>)  <span class="co"># Leftover after packing: 2</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a><span class="bu">print</span>(<span class="st">"Exponentiation (**):"</span>, <span class="fl">1.65</span> <span class="op">**</span> <span class="dv">2</span>)  <span class="co"># Height squared for BMI: 2.7225</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Addition (+): 165</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Subtraction (-): 75</span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>Multiplication (*): 42</span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>True Division (/): 2.5</span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a>Floor Division (//): 2</span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a>Remainder / Modulo (%): 2</span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a>Exponentiation (**): 2.7225</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Let us zoom in on the <strong>three operators that surprise beginners most</strong>:</p>
+<ol type="1">
+<li><strong>True Division (<code>/</code>) vs.&nbsp;Floor Division (<code>//</code>):</strong>
+<ul>
+<li><code>10 / 4</code> gives <code>2.5</code> (a decimal number, called a <strong><code>float</code></strong>). Even <code>8 / 2</code> gives <code>4.0</code>!</li>
+<li><code>10 // 4</code> asks: <em>“How many <strong>complete</strong> groups of 4 fit inside 10?”</em> Answer: <code>2</code> (an exact whole number, called an <strong><code>int</code></strong>). Think of packing vaccine vials into 24-vial cold boxes.</li>
+</ul></li>
+<li><strong>Modulo / Remainder (<code>%</code>):</strong>
+<ul>
+<li><code>10 % 4</code> asks: <em>“After removing those complete groups of 4, how many items are <strong>left over</strong>?”</em> Since <span class="math inline">\(2 \times 4 = 8\)</span>, the leftover is <span class="math inline">\(10 - 8 = 2\)</span>.</li>
+<li><strong>Golden Packing Invariant:</strong> For any positive integers <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span>, <code>(a // b) * b + (a % b) == a</code>.</li>
+</ul></li>
+<li><strong>Exponentiation (<code>**</code>), NOT <code>^</code>:</strong>
+<ul>
+<li>To square height (<span class="math inline">\(1.65^2\)</span>) for Body Mass Index, write <code>1.65 ** 2</code>.</li>
+<li>Never write <code>1.65 ^ 2</code>—in Python, <code>^</code> is a completely different operator (bitwise XOR) that will crash on decimals and give wrong answers on integers!</li>
+</ul></li>
+</ol>
+<hr>
+</section>
+<section id="operator-precedence-why-parentheses-save-lives-in-biostatistics" class="level3" data-number="1.3.3">
+<h3 data-number="1.3.3" class="anchored" data-anchor-id="operator-precedence-why-parentheses-save-lives-in-biostatistics"><span class="header-section-number">1.3.3</span> Operator Precedence: Why Parentheses Save Lives in Biostatistics</h3>
+<p>Python follows standard mathematical <strong>PEMDAS</strong> order: <strong>P</strong>arentheses <span class="math inline">\(\rightarrow\)</span> <strong>E</strong>xponents (<code>**</code>) <span class="math inline">\(\rightarrow\)</span> <strong>M</strong>ultiplication / <strong>D</strong>ivision (<code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>) <span class="math inline">\(\rightarrow\)</span> <strong>A</strong>ddition / <strong>S</strong>ubtraction (<code>+</code>, <code>-</code>).</p>
+<p>Run this experiment in Cell 3 of <code>01_walkthrough.ipynb</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Operator precedence: Why parentheses save lives in biostatistics!</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>wrong_mean <span class="op">=</span> <span class="dv">120</span> <span class="op">+</span> <span class="dv">130</span> <span class="op">+</span> <span class="dv">140</span> <span class="op">/</span> <span class="dv">3</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>right_mean <span class="op">=</span> (<span class="dv">120</span> <span class="op">+</span> <span class="dv">130</span> <span class="op">+</span> <span class="dv">140</span>) <span class="op">/</span> <span class="dv">3</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"Without parentheses (BUG!):"</span>, wrong_mean)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"With parentheses (CORRECT):"</span>, right_mean)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Without parentheses (BUG!): 296.6666666666667</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>With parentheses (CORRECT): 130.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Common Trap — Silent Logic Bugs
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Notice that <code>wrong_mean = 120 + 130 + 140 / 3</code> did <strong>not</strong> produce a red error! Python happily calculated <code>140 / 3 = 46.67</code> first, then added <code>120 + 130 + 46.67 = 296.67</code>—claiming the average systolic blood pressure of three normotensive adults is a fatal <strong>296.7 mmHg</strong>!</p>
+<p><strong>Researcher’s Rule:</strong> Whenever you divide a sum, multiply a rate, or convert units, <strong>use explicit parentheses</strong> even when you think you know the precedence rule. Clarity beats cleverness every single time.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch01-errors" class="level3" data-number="1.3.4">
+<h3 data-number="1.3.4" class="anchored" data-anchor-id="sec-ch01-errors"><span class="header-section-number">1.3.4</span> Break It On Purpose! (Error Anatomy Lab)</h3>
+<p>Beginners often treat red Python error boxes as a personal failure. Senior researchers treat them as <strong>free diagnostic reports</strong>. Let us trigger three classic errors <em>deliberately</em> so you can dissect how to read them from the <strong>bottom line upward</strong>.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — NameError
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="bu">print</span>(Dhaka)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>NameError: name 'Dhaka' is not defined</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Because <code>Dhaka</code> has no quotation marks around it, Python assumes <code>Dhaka</code> is the name of a stored variable—looks in memory, finds nothing, and tells you so.<br>
+<strong>Fix:</strong> Wrap text in quotes: <code>print("Dhaka")</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — TypeError
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="bu">print</span>(<span class="st">"Fever temperature: "</span> <span class="op">+</span> <span class="fl">38.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>TypeError: can only concatenate str (not "float") to str</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> The <code>+</code> symbol glues two strings together (<code>"A" + "B"</code>) OR adds two numbers (<code>1 + 2</code>), but refuses to glue a string and a float directly.<br>
+<strong>Fix:</strong> Pass separate arguments with a comma (<code>print("Fever temperature:", 38.5)</code>) or use an <strong>f-string</strong> (<code>print(f"Fever temperature: {38.5}")</code>).</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ZeroDivisionError
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>cases <span class="op">=</span> <span class="dv">12</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>population <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>rate <span class="op">=</span> (cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>ZeroDivisionError: division by zero</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> In epidemiology, missing or unpopulated catchment records sometimes enter datasets as <code>0</code>. Dividing by zero is mathematically undefined, so Python halts cleanly rather than silently inventing a bogus incidence rate. (In Chapter 4 and Chapter 10, we will guard against this defensively!)</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch01-blueprint" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="sec-ch01-blueprint"><span class="header-section-number">1.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p>Let us apply our signature <strong>4-Step Problem-Structuring Blueprint</strong> to a realistic clinical intake task <em>before</em> writing code.</p>
+<p><strong>Scenario:</strong> A nurse at an Upazila clinic enters a patient’s ID (<code>"UHC-0001"</code>), weight (<code>58.4</code> kg), height (<code>160.0</code> cm), and body temperature (<code>38.6</code> °C). Print a structured intake card showing Body Mass Index (<span class="math inline">\(\text{kg/m}^2\)</span>, rounded to 2 decimals) and temperature in both Celsius and Fahrenheit (rounded to 1 decimal).</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="1.4.1">
+<h3 data-number="1.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">1.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Inputs &amp; Units:</strong>
+<ul>
+<li><code>patient_id = "UHC-0001"</code> (<code>str</code>)</li>
+<li><code>weight_kg = 58.4</code> (<code>float</code>, kilograms)</li>
+<li><code>height_cm = 160.0</code> (<code>float</code>, <strong>centimeters</strong> — notice the unit!)</li>
+<li><code>temp_c = 38.6</code> (<code>float</code>, degrees Celsius)</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li><strong>Unit Trap:</strong> BMI requires height in <strong>meters</strong>, not centimeters! Forgetting to divide <code>height_cm / 100</code> produces an absurd BMI of <code>0.0023</code>.</li>
+<li><strong>Exponent Trap:</strong> Square meters using <code>height_m ** 2</code>, not <code>height_m * 2</code>.</li>
+<li><strong>Precedence Trap:</strong> Convert Celsius to Fahrenheit as <code>(temp_c * 9 / 5) + 32</code>.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Convert <code>height_cm</code> to <code>height_m</code> by dividing by <code>100</code>.</li>
+<li>Compute <code>bmi = round(weight_kg / (height_m ** 2), 2)</code>.</li>
+<li>Compute <code>temp_f = round((temp_c * 9 / 5) + 32, 1)</code>.</li>
+<li>Print a clean, aligned intake card using f-strings.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li><span class="math inline">\(160\text{ cm} = 1.60\text{ m}\)</span>; <span class="math inline">\(1.60^2 = 2.56\)</span>; <span class="math inline">\(58.4 / 2.56 = 22.8125 \approx 22.81\)</span> (healthy adult range: 18.5–24.9).</li>
+<li><span class="math inline">\(38.6 \times 1.8 + 32 = 69.48 + 32 = 101.48 \approx 101.5^\circ\text{F}\)</span> (consistent with mild-to-moderate fever).</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="1.4.2">
+<h3 data-number="1.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">1.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a><span class="co"># Step 1: Inputs (documented with explicit units!)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>patient_id <span class="op">=</span> <span class="st">"UHC-0001"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>weight_kg <span class="op">=</span> <span class="fl">58.4</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>height_cm <span class="op">=</span> <span class="fl">160.0</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>temp_c <span class="op">=</span> <span class="fl">38.6</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a><span class="co"># Step 2: Algorithm (convert cm -&gt; m, compute BMI, convert C -&gt; F)</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>bmi <span class="op">=</span> <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>temp_f <span class="op">=</span> <span class="bu">round</span>((temp_c <span class="op">*</span> <span class="dv">9</span> <span class="op">/</span> <span class="dv">5</span>) <span class="op">+</span> <span class="dv">32</span>, <span class="dv">1</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a><span class="co"># Step 3: Clean Structured Output</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"=== COMMUNITY CLINIC INTAKE CARD ==="</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-label="14"></a><span class="bu">print</span>(<span class="ss">f"Patient ID : </span><span class="sc">{</span>patient_id<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-label="15"></a><span class="bu">print</span>(<span class="ss">f"BMI        : </span><span class="sc">{</span>bmi<span class="sc">}</span><span class="ss"> kg/m^2"</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-label="16"></a><span class="bu">print</span>(<span class="ss">f"Temperature: </span><span class="sc">{</span>temp_c<span class="sc">}</span><span class="ss"> C (</span><span class="sc">{</span>temp_f<span class="sc">}</span><span class="ss"> F)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>=== COMMUNITY CLINIC INTAKE CARD ===</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>Patient ID : UHC-0001</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>BMI        : 22.81 kg/m^2</span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a>Temperature: 38.6 C (101.5 F)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice how writing the <strong>unit</strong> directly inside the variable name (<code>weight_kg</code>, <code>height_cm</code>, <code>height_m</code>, <code>temp_c</code>, <code>temp_f</code>) makes unit-mismatch bugs immediately visible to the human eye. This is a lifelong research software engineering habit.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch01-todos" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="sec-ch01-todos"><span class="header-section-number">1.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and solve all six exercises below. Use <code>tutor.hint("ch01_todo_XX", level=1..3)</code> if you need a progressive nudge, and run <code>tutor.check(...)</code> after each solution.</p>
+<ul>
+<li><p><strong>To-Do 1.1 (Warm-Up — Clinic Intake Banner):</strong> Create a string variable <code>clinic_banner</code> set to <code>"Upazila Health Complex - Patient Intake Active"</code>.</p></li>
+<li><p><strong>To-Do 1.2 (Core Arithmetic — Fever Conversion):</strong> Given <code>temp_c = 38.5</code>, compute Fahrenheit using <span class="math inline">\(F = (C \times \frac{9}{5}) + 32\)</span> and store the result in <code>temp_f</code>.</p></li>
+<li><p><strong>To-Do 1.3 (Public Health Metric — Patient BMI):</strong> Given <code>weight_kg = 62.0</code> and <code>height_m = 1.65</code>, compute <span class="math inline">\(\text{BMI} = \frac{\text{weight}}{\text{height}^2}\)</span> rounded to 2 decimal places (<code>round(..., 2)</code>), stored in <code>patient_bmi</code>.</p></li>
+<li><p><strong>To-Do 1.4 (Cold-Chain Logistics — Vaccine Box Packing):</strong> An outreach clinic receives <code>275</code> vaccine vials; each cold box holds <code>24</code> vials. Compute <code>full_boxes</code> (using <code>//</code>) and <code>leftover_vials</code> (using <code>%</code>).</p></li>
+<li><p><strong>To-Do 1.5 (Epidemiology — Weekly Dengue Incidence Rate):</strong> A district of <code>240000</code> residents recorded <code>186</code> confirmed dengue cases. Compute <code>incidence_per_100k = round((cases / population) * 100000, 2)</code>.</p></li>
+<li><p><strong>To-Do 1.6 (Stretch Debugging — Fix the Broken Blood Pressure Average):</strong> Correct the type bug and operator-precedence bug in:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>sbp_1 <span class="op">=</span> <span class="dv">124</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>sbp_2 <span class="op">=</span> <span class="st">"130"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>sbp_3 <span class="op">=</span> <span class="dv">127</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-label="4"></a>mean_sbp <span class="op">=</span> sbp_1 <span class="op">+</span> sbp_2 <span class="op">+</span> sbp_3 <span class="op">/</span> <span class="dv">3</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>so that <code>mean_sbp</code> computes the true average (<code>127.0</code>).</p></li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch01-test" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="sec-ch01-test"><span class="header-section-number">1.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Before opening the Coding Exam, test your mental model on paper. Check your answers against Stage 8.</p>
+<ol type="1">
+<li><p><strong>Predict the Output:</strong> What exact number does <code>15 // 4</code> evaluate to? What about <code>15 % 4</code>?</p></li>
+<li><p><strong>Predict the Output:</strong> What data type (<code>int</code> or <code>float</code>) does <code>12 / 3</code> return in Python?</p></li>
+<li><p><strong>Spot the Error Type:</strong> Running <code>print(Chattogram)</code> without quotes triggers which exact Python error?</p></li>
+<li><p><strong>Spot the Error Type:</strong> Running <code>print("Age: " + 29)</code> triggers which exact Python error?</p></li>
+<li><p><strong>Operator Precedence Trace:</strong> Evaluate <code>10 + 20 * 3</code> by hand, then evaluate <code>(10 + 20) * 3</code>.</p></li>
+<li><p><strong>Exponent Trap:</strong> What does <code>3 ** 2</code> return? Why should you never write <code>3 ^ 2</code> for squaring in Python?</p></li>
+<li><p><strong>Execution Trace Table:</strong> Fill in the values after each line executes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>cases <span class="op">=</span> <span class="dv">40</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>cases <span class="op">=</span> cases <span class="op">+</span> <span class="dv">15</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>double_cases <span class="op">=</span> cases <span class="op">*</span> <span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Silent Bug Audit:</strong> A student writes <code>bmi = 70 / 1.75 * 1.75</code>. What number does Python compute, and why is it dangerously wrong?</p></li>
+<li><p><strong>Unit Hygiene:</strong> Why is <code>height_cm = 165</code> superior to <code>h = 165</code> in public health code?</p></li>
+<li><p><strong>Colab Discipline:</strong> Why must you click <em>File <span class="math inline">\(\rightarrow\)</span> Save a copy in Drive</em> before editing a shared course notebook?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch01-exam" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="sec-ch01-exam"><span class="header-section-number">1.7</span> Stage 7 — Chapter 1 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb</code>, complete all three tasks using the <strong>4-Step Problem-Structuring Blueprint</strong>, and run <code>tutor.check_exam("ch01", exam_submissions)</code> for your automated 100-point scorecard.</p>
+<section id="exam-task-1.1-30-points-pediatric-ors-supply-carton-logistics" class="level3" data-number="1.7.1">
+<h3 data-number="1.7.1" class="anchored" data-anchor-id="exam-task-1.1-30-points-pediatric-ors-supply-carton-logistics"><span class="header-section-number">1.7.1</span> Exam Task 1.1 (30 Points): Pediatric ORS Supply &amp; Carton Logistics</h3>
+<p>A community clinic projects <code>140</code> pediatric diarrhea patients this week, each requiring <code>3</code> Oral Rehydration Solution (ORS) packets, plus a <strong>15% emergency safety buffer</strong> (<code>* 1.15</code>). Each shipping carton holds <code>50</code> packets. Compute:</p>
+<ul>
+<li><code>base_packets</code> (int)</li>
+<li><code>total_packets</code> (int, computed with <code>round(base_packets * buffer_multiplier)</code> to avoid binary float truncation)</li>
+<li><code>full_cartons</code> (int) and <code>extra_packets</code> (int)</li>
+</ul>
+</section>
+<section id="exam-task-1.2-35-points-maternal-health-clinic-summary-card" class="level3" data-number="1.7.2">
+<h3 data-number="1.7.2" class="anchored" data-anchor-id="exam-task-1.2-35-points-maternal-health-clinic-summary-card"><span class="header-section-number">1.7.2</span> Exam Task 1.2 (35 Points): Maternal Health Clinic Summary Card</h3>
+<p>Out of <code>320</code> registered mothers in Q1, <code>218</code> completed 4+ antenatal visits and <code>96</code> tested positive for maternal anemia. Compute:</p>
+<ul>
+<li><code>anc_coverage_pct</code> (rounded to 1 decimal)</li>
+<li><code>anemia_prevalence_pct</code> (rounded to 1 decimal)</li>
+<li><code>summary_line</code>: exact formatted report <code>"ANC 4+ Coverage: 68.1% | Anemia Prevalence: 30.0%"</code> generated dynamically using an f-string.</li>
+</ul>
+</section>
+<section id="exam-task-1.3-35-points-rural-vs.-urban-case-fatality-rate-disparity" class="level3" data-number="1.7.3">
+<h3 data-number="1.7.3" class="anchored" data-anchor-id="exam-task-1.3-35-points-rural-vs.-urban-case-fatality-rate-disparity"><span class="header-section-number">1.7.3</span> Exam Task 1.3 (35 Points): Rural vs.&nbsp;Urban Case Fatality Rate Disparity</h3>
+<p>Surveillance reports record <code>450</code> rural cases with <code>9</code> deaths, and <code>600</code> urban cases with <code>6</code> deaths. Compute:</p>
+<ul>
+<li><code>cfr_rural_pct</code>: <span class="math inline">\(\left(\frac{9}{450}\right) \times 100\)</span></li>
+<li><code>cfr_urban_pct</code>: <span class="math inline">\(\left(\frac{6}{600}\right) \times 100\)</span></li>
+<li><code>cfr_ratio</code>: <code>cfr_rural_pct / cfr_urban_pct</code></li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch01-solutions" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="sec-ch01-solutions"><span class="header-section-number">1.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="1.8.1">
+<h3 data-number="1.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">1.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><code>15 // 4</code> is <code>3</code>; <code>15 % 4</code> is <code>3</code> (check: <span class="math inline">\(3 \times 4 + 3 = 15\)</span>).</li>
+<li><code>float</code> (<code>4.0</code>) — true division <code>/</code> <em>always</em> returns a <code>float</code>.</li>
+<li><code>NameError: name 'Chattogram' is not defined</code>.</li>
+<li><code>TypeError: can only concatenate str (not "int") to str</code>.</li>
+<li><code>10 + 20 * 3 = 70</code>; <code>(10 + 20) * 3 = 90</code>.</li>
+<li><code>3 ** 2 = 9</code>. In Python, <code>^</code> is bitwise XOR (<code>3 ^ 2 == 1</code>!), not exponentiation.</li>
+<li>After Line 1: <code>cases = 40</code>. After Line 2: <code>cases = 55</code>. After Line 3: <code>cases = 55</code>, <code>double_cases = 110</code>.</li>
+<li>Python evaluates <code>(70 / 1.75) * 1.75 = 70.0</code> (division and multiplication execute left-to-right)! It must be <code>70 / (1.75 ** 2)</code> or <code>70 / (1.75 * 1.75)</code>.</li>
+<li>Encoding the unit (<code>_cm</code>) prevents silent cm-vs-meter errors during data cleaning and modeling.</li>
+<li>Shared links are read-only; saving a copy to your Google Drive preserves your work permanently.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="1.8.2">
+<h3 data-number="1.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">1.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a><span class="co"># To-Do 1.1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>clinic_banner <span class="op">=</span> <span class="st">"Upazila Health Complex - Patient Intake Active"</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a><span class="co"># To-Do 1.2</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a>temp_c <span class="op">=</span> <span class="fl">38.5</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a>temp_f <span class="op">=</span> (temp_c <span class="op">*</span> <span class="dv">9</span> <span class="op">/</span> <span class="dv">5</span>) <span class="op">+</span> <span class="dv">32</span>           <span class="co"># 101.3</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a><span class="co"># To-Do 1.3</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-label="9"></a>weight_kg <span class="op">=</span> <span class="fl">62.0</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-label="10"></a>height_m <span class="op">=</span> <span class="fl">1.65</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-label="11"></a>patient_bmi <span class="op">=</span> <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)  <span class="co"># 22.77</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-label="12"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-label="13"></a><span class="co"># To-Do 1.4</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-label="14"></a>total_vials <span class="op">=</span> <span class="dv">275</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-label="15"></a>box_capacity <span class="op">=</span> <span class="dv">24</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-label="16"></a>full_boxes <span class="op">=</span> total_vials <span class="op">//</span> box_capacity      <span class="co"># 11</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-label="17"></a>leftover_vials <span class="op">=</span> total_vials <span class="op">%</span> box_capacity   <span class="co"># 11</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-label="18"></a></span>
+<span id="cb17-19"><a href="#cb17-19" aria-label="19"></a><span class="co"># To-Do 1.5</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-label="20"></a>cases <span class="op">=</span> <span class="dv">186</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-label="21"></a>population <span class="op">=</span> <span class="dv">240000</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-label="22"></a>incidence_per_100k <span class="op">=</span> <span class="bu">round</span>((cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span>, <span class="dv">2</span>)  <span class="co"># 77.5</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-label="23"></a></span>
+<span id="cb17-24"><a href="#cb17-24" aria-label="24"></a><span class="co"># To-Do 1.6</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-label="25"></a>sbp_1 <span class="op">=</span> <span class="dv">124</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-label="26"></a>sbp_2 <span class="op">=</span> <span class="dv">130</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-label="27"></a>sbp_3 <span class="op">=</span> <span class="dv">127</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-label="28"></a>mean_sbp <span class="op">=</span> (sbp_1 <span class="op">+</span> sbp_2 <span class="op">+</span> sbp_3) <span class="op">/</span> <span class="dv">3</span>        <span class="co"># 127.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-1-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="1.8.3">
+<h3 data-number="1.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-1-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">1.8.3</span> C. Annotated Solutions — Chapter 1 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a><span class="co"># Exam Task 1.1 (30 pts)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>patients <span class="op">=</span> <span class="dv">140</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a>packets_per_patient <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a>buffer_multiplier <span class="op">=</span> <span class="fl">1.15</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-label="5"></a>carton_size <span class="op">=</span> <span class="dv">50</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-label="6"></a>base_packets <span class="op">=</span> patients <span class="op">*</span> packets_per_patient           <span class="co"># 420</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-label="7"></a>total_packets <span class="op">=</span> <span class="bu">round</span>(base_packets <span class="op">*</span> buffer_multiplier) <span class="co"># 483</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-label="8"></a>full_cartons <span class="op">=</span> total_packets <span class="op">//</span> carton_size             <span class="co"># 9</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-label="9"></a>extra_packets <span class="op">=</span> total_packets <span class="op">%</span> carton_size             <span class="co"># 33</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-label="10"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-label="11"></a><span class="co"># Exam Task 1.2 (35 pts)</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-label="12"></a>total_mothers <span class="op">=</span> <span class="dv">320</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-label="13"></a>anc_4plus <span class="op">=</span> <span class="dv">218</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-label="14"></a>anemic_count <span class="op">=</span> <span class="dv">96</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-label="15"></a>anc_coverage_pct <span class="op">=</span> <span class="bu">round</span>((anc_4plus <span class="op">/</span> total_mothers) <span class="op">*</span> <span class="dv">100</span>, <span class="dv">1</span>)       <span class="co"># 68.1</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-label="16"></a>anemia_prevalence_pct <span class="op">=</span> <span class="bu">round</span>((anemic_count <span class="op">/</span> total_mothers) <span class="op">*</span> <span class="dv">100</span>, <span class="dv">1</span>) <span class="co"># 30%</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-label="17"></a>summary_line <span class="op">=</span> (</span>
+<span id="cb18-18"><a href="#cb18-18" aria-label="18"></a>    <span class="ss">f"ANC 4+ Coverage: </span><span class="sc">{</span>anc_coverage_pct<span class="sc">}</span><span class="ss">% | "</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-label="19"></a>    <span class="ss">f"Anemia Prevalence: </span><span class="sc">{</span>anemia_prevalence_pct<span class="sc">}</span><span class="ss">%"</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-label="20"></a>)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-label="21"></a></span>
+<span id="cb18-22"><a href="#cb18-22" aria-label="22"></a><span class="co"># Exam Task 1.3 (35 pts)</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-label="23"></a>rural_cases, rural_deaths <span class="op">=</span> <span class="dv">450</span>, <span class="dv">9</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-label="24"></a>urban_cases, urban_deaths <span class="op">=</span> <span class="dv">600</span>, <span class="dv">6</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-label="25"></a>cfr_rural_pct <span class="op">=</span> (rural_deaths <span class="op">/</span> rural_cases) <span class="op">*</span> <span class="dv">100</span>      <span class="co"># 2.0</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-label="26"></a>cfr_urban_pct <span class="op">=</span> (urban_deaths <span class="op">/</span> urban_cases) <span class="op">*</span> <span class="dv">100</span>      <span class="co"># 1.0</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-label="27"></a>cfr_ratio <span class="op">=</span> cfr_rural_pct <span class="op">/</span> cfr_urban_pct               <span class="co"># 2.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-1-failure-modes" class="level3" data-number="1.8.4">
+<h3 data-number="1.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-1-failure-modes"><span class="header-section-number">1.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 1 Failure Modes</h3>
+<ol type="1">
+<li><strong>The Famous IEEE-754 Binary Float Trap (<code>int(420 * 1.15) == 482</code>!):</strong> Because computers store decimals in base-2 binary, <code>420 * 1.15</code> evaluates internally to <code>482.99999999999994</code>. Calling <code>int(...)</code> chops off everything after the decimal point and drops a packet (<code>482</code>), whereas <code>round(...)</code> properly rounds to <code>483</code>. We will unpack binary floating-point representation deeply in Chapter 2.</li>
+<li><strong>Hardcoding Numbers Inside Summary Strings:</strong> Typing <code>"ANC 4+ Coverage: 68.1%"</code> manually instead of using <code>{anc_coverage_pct}</code> defeats the entire purpose of reproducible research—the next time Q2 clinic counts arrive, your printed report will silently contradict your data.</li>
+<li><strong>Inverting Epidemiological Ratios:</strong> Writing <code>cfr_urban_pct / cfr_rural_pct</code> yields <code>0.5</code> instead of <code>2.0</code>. Always label which group is your <strong>reference (denominator)</strong> group—an essential habit we carry directly into logistic regression odds ratios in Chapter 20 and Chapter 23.</li>
+</ol>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../index.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_01_python_foundations/ch02_variables_types.html" class="pagination-link" aria-label="Variables, Memory Models, Data Types, and Arithmetic Logic">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

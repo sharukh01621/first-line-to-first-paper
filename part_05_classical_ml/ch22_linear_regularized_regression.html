@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>22&nbsp; Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_05_classical_ml/ch23_classification_calibration.html" rel="next">
+<link href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch22_linear_regularized_regression.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch22-intuition" id="toc-sec-ch22-intuition" class="nav-link" data-scroll-target="#sec-ch22-intuition"><span class="header-section-number">22.1</span> Stage 1 — First-Principles Intuition: Fitting Lines Without Fitting Noise</a></li>
+  <li><a href="#sec-ch22-mental-model" id="toc-sec-ch22-mental-model" class="nav-link" data-scroll-target="#sec-ch22-mental-model"><span class="header-section-number">22.2</span> Stage 2 — Visual Mental Model: Gradient Descent Loop &amp; Regularization Selector</a></li>
+  <li><a href="#sec-ch22-walkthrough" id="toc-sec-ch22-walkthrough" class="nav-link" data-scroll-target="#sec-ch22-walkthrough"><span class="header-section-number">22.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch22-setup" id="toc-sec-ch22-setup" class="nav-link" data-scroll-target="#sec-ch22-setup"><span class="header-section-number">22.3.1</span> Setup: Loading &amp; Cleaning <code>mch_survey_sample</code></a></li>
+  <li><a href="#sec-ch22-metrics" id="toc-sec-ch22-metrics" class="nav-link" data-scroll-target="#sec-ch22-metrics"><span class="header-section-number">22.3.2</span> Regression Metrics: MSE, RMSE, MAE &amp; <span class="math inline">\(R^2\)</span></a></li>
+  <li><a href="#sec-ch22-normal-eq" id="toc-sec-ch22-normal-eq" class="nav-link" data-scroll-target="#sec-ch22-normal-eq"><span class="header-section-number">22.3.3</span> Closed-Form OLS: The Normal Equation From Scratch</a></li>
+  <li><a href="#sec-ch22-gd" id="toc-sec-ch22-gd" class="nav-link" data-scroll-target="#sec-ch22-gd"><span class="header-section-number">22.3.4</span> Pure-NumPy Batch Gradient Descent on MSE</a></li>
+  <li><a href="#sec-ch22-collinearity" id="toc-sec-ch22-collinearity" class="nav-link" data-scroll-target="#sec-ch22-collinearity"><span class="header-section-number">22.3.5</span> Multicollinearity Instability: OLS Explosion vs.&nbsp;Ridge Stabilization</a></li>
+  <li><a href="#sec-ch22-regularizers" id="toc-sec-ch22-regularizers" class="nav-link" data-scroll-target="#sec-ch22-regularizers"><span class="header-section-number">22.3.6</span> Regularization Geometry: Ridge (<span class="math inline">\(L_2\)</span>) vs.&nbsp;Lasso (<span class="math inline">\(L_1\)</span>) vs.&nbsp;ElasticNet</a></li>
+  <li><a href="#sec-ch22-residuals" id="toc-sec-ch22-residuals" class="nav-link" data-scroll-target="#sec-ch22-residuals"><span class="header-section-number">22.3.7</span> Residual Diagnostics &amp; Error Inspection</a></li>
+  <li><a href="#sec-ch22-errors" id="toc-sec-ch22-errors" class="nav-link" data-scroll-target="#sec-ch22-errors"><span class="header-section-number">22.3.8</span> Break It On Purpose! (Regression Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch22-blueprint" id="toc-sec-ch22-blueprint" class="nav-link" data-scroll-target="#sec-ch22-blueprint"><span class="header-section-number">22.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">22.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">22.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch22-todos" id="toc-sec-ch22-todos" class="nav-link" data-scroll-target="#sec-ch22-todos"><span class="header-section-number">22.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch22-test" id="toc-sec-ch22-test" class="nav-link" data-scroll-target="#sec-ch22-test"><span class="header-section-number">22.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch22-exam" id="toc-sec-ch22-exam" class="nav-link" data-scroll-target="#sec-ch22-exam"><span class="header-section-number">22.7</span> Stage 7 — Chapter 22 Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-22.1-30-points-compare_ols_ridge_lassox_train-y_train-x_test-y_test-ridge_alpha1.0-lasso_alpha0.1" id="toc-exam-task-22.1-30-points-compare_ols_ridge_lassox_train-y_train-x_test-y_test-ridge_alpha1.0-lasso_alpha0.1" class="nav-link" data-scroll-target="#exam-task-22.1-30-points-compare_ols_ridge_lassox_train-y_train-x_test-y_test-ridge_alpha1.0-lasso_alpha0.1"><span class="header-section-number">22.7.1</span> Exam Task 22.1 (30 Points): <code>compare_ols_ridge_lasso(X_train, y_train, X_test, y_test, ridge_alpha=1.0, lasso_alpha=0.1)</code></a></li>
+  <li><a href="#exam-task-22.2-35-points-tune_ridge_alpha_cvx-y-alphas-cv5" id="toc-exam-task-22.2-35-points-tune_ridge_alpha_cvx-y-alphas-cv5" class="nav-link" data-scroll-target="#exam-task-22.2-35-points-tune_ridge_alpha_cvx-y-alphas-cv5"><span class="header-section-number">22.7.2</span> Exam Task 22.2 (35 Points): <code>tune_ridge_alpha_cv(X, y, alphas, cv=5)</code></a></li>
+  <li><a href="#exam-task-22.3-35-points-predict_child_haz_pipelinemch_df-seed42" id="toc-exam-task-22.3-35-points-predict_child_haz_pipelinemch_df-seed42" class="nav-link" data-scroll-target="#exam-task-22.3-35-points-predict_child_haz_pipelinemch_df-seed42"><span class="header-section-number">22.7.3</span> Exam Task 22.3 (35 Points): <code>predict_child_haz_pipeline(mch_df, seed=42)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch22-solutions" id="toc-sec-ch22-solutions" class="nav-link" data-scroll-target="#sec-ch22-solutions"><span class="header-section-number">22.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">22.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">22.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-22-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-22-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-22-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">22.8.3</span> C. Annotated Solutions — Chapter 22 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-22-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-22-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-22-failure-modes"><span class="header-section-number">22.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 22 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch22_linear_regularized_regression.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch22" class="quarto-section-identifier"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Master continuous-outcome supervised learning from mathematical first principles to leak-free Scikit-Learn production pipelines. Using Bangladesh maternal and child health survey data (<code>mch_survey_sample</code>) to predict Child Height-for-Age Z-score (<code>child_haz</code>), you will derive and implement Ordinary Least Squares (Normal Equation and Batch Gradient Descent) in pure NumPy, diagnose multicollinearity collapse, control overfitting via Ridge (<span class="math inline">\(L_2\)</span>), Lasso (<span class="math inline">\(L_1\)</span>), and ElasticNet regularization, tune <span class="math inline">\(\alpha\)</span> via leak-free <span class="math inline">\(K\)</span>-fold cross-validation, and audit test residuals.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb">ch22 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 22 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb">ch22 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 22 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb">ch22 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 22 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Compute and interpret <strong>MSE</strong>, <strong>RMSE</strong>, <strong>MAE</strong>, and out-of-sample <strong><span class="math inline">\(R^2\)</span></strong>—including why out-of-sample <span class="math inline">\(R^2\)</span> can become negative on noisy clinical cohorts.</li>
+<li>Derive and implement <strong>Ordinary Least Squares (OLS)</strong> from scratch in pure NumPy using both the rank-safe <strong>Normal Equation</strong> (<code>np.linalg.lstsq</code> / <code>pinv</code>) and iterative <strong>Batch Gradient Descent</strong> on MSE.</li>
+<li>Diagnose <strong>multicollinearity instability</strong> when correlated predictors cause OLS weights to explode in opposite directions, and verify how <strong><span class="math inline">\(L_2\)</span> Ridge shrinkage</strong> stabilizes the coefficient norm.</li>
+<li>Contrast the geometry and behavior of <strong>Ridge (<span class="math inline">\(L_2\)</span>)</strong>, <strong>Lasso (<span class="math inline">\(L_1\)</span>)</strong>, and <strong>ElasticNet (<span class="math inline">\(L_1 + L_2\)</span>)</strong>—explaining why Lasso drives weak features to exact zero while Ridge shrinks all weights smoothly.</li>
+<li>Build leak-free Scikit-Learn <code>Pipeline</code> workflows pairing <code>StandardScaler()</code> with regularized regressors and tune <span class="math inline">\(\alpha\)</span> via <span class="math inline">\(K\)</span>-fold cross-validation (<code>neg_root_mean_squared_error</code>).</li>
+<li>Audit continuous-model predictions through <strong>residual diagnostics</strong> (mean bias, residual spread, and worst-case absolute error) and clean raw survey predictors without data leakage or DataFrame mutation.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch22-intuition" class="level2" data-number="22.1">
+<h2 data-number="22.1" class="anchored" data-anchor-id="sec-ch22-intuition"><span class="header-section-number">22.1</span> Stage 1 — First-Principles Intuition: Fitting Lines Without Fitting Noise</h2>
+<p>In <strong>Chapter 21</strong>, you learned the universal architecture of supervised machine learning: separate training from test data, prevent data leakage with <code>Pipeline</code>, and judge models by out-of-sample generalization rather than in-sample fit. Now we open the engine hood on the foundational workhorse of predictive modeling: <strong>Linear Regression</strong> and its regularized extensions.</p>
+<p>Given a matrix of <span class="math inline">\(n\)</span> observations and <span class="math inline">\(p\)</span> features <span class="math inline">\(X \in \mathbb{R}^{n \times p}\)</span>, a linear regressor predicts a continuous outcome <span class="math inline">\(\hat{y} \in \mathbb{R}^n\)</span> via an affine combination of weights <span class="math inline">\(w \in \mathbb{R}^p\)</span> and intercept <span class="math inline">\(b \in \mathbb{R}\)</span>:</p>
+<p><span class="math display">\[\hat{y} = X w + b\]</span></p>
+<p>Five core principles govern every algorithm in this chapter:</p>
+<ul>
+<li><strong>Squared Error vs.&nbsp;Absolute Error:</strong> Minimizing <strong>Mean Squared Error</strong> <span class="math inline">\(\text{MSE} = \frac{1}{n}\sum_{i=1}^n (y_i - \hat{y}_i)^2\)</span> produces a smooth, convex bowl with a unique analytical minimum, while <strong>RMSE</strong> <span class="math inline">\(= \sqrt{\text{MSE}}\)</span> restores the target’s physical units (here, HAZ Z-scores). <strong>MAE</strong> <span class="math inline">\(= \frac{1}{n}\sum |y_i - \hat{y}_i|\)</span> weights outliers linearly rather than quadratically.</li>
+<li><strong>Closed-Form vs.&nbsp;Iterative Solvers:</strong> For moderate feature counts, the <strong>Normal Equation</strong> <span class="math inline">\(\hat{\theta} = (X_b^T X_b)^+ X_b^T y\)</span> (computed safely via SVD in <code>np.linalg.lstsq</code>) jumps straight to the global minimum in one shot. When <span class="math inline">\(n\)</span> or <span class="math inline">\(p\)</span> grows massive—or in deep neural networks later in Part VI—<strong>Batch Gradient Descent</strong> walks downhill iteratively along the negative gradient <span class="math inline">\(-\nabla L(w, b)\)</span>.</li>
+<li><strong>Why Multicollinearity Breaks Unregularized OLS:</strong> When two predictors move almost identically (for example, duplicate antenatal clinic visit counters), <span class="math inline">\((X_b^T X_b)\)</span> becomes nearly singular. OLS can add <span class="math inline">\(+6.9\)</span> to one weight and <span class="math inline">\(-6.7\)</span> to the other with nearly zero change in training error, creating massive variance on unseen test households.</li>
+<li><strong>Regularization Geometry (<span class="math inline">\(L_2\)</span> vs.&nbsp;<span class="math inline">\(L_1\)</span> vs.&nbsp;ElasticNet):</strong> Adding a penalty <span class="math inline">\(\alpha \Omega(w)\)</span> to the MSE objective trades a tiny increase in bias for a sharp drop in variance. <strong>Ridge</strong> (<span class="math inline">\(\alpha \|w\|_2^2\)</span>) imposes a smooth circular constraint that shrinks correlated weights together; <strong>Lasso</strong> (<span class="math inline">\(\alpha \|w\|_1\)</span>) imposes a sharp diamond constraint whose corners lie on the axes, driving weak predictors to <strong>exact <code>0.0</code></strong>; <strong>ElasticNet</strong> blends both via <code>l1_ratio</code>.</li>
+<li><strong>Scaling Is Mandatory Before Regularization:</strong> Because penalties act directly on coefficient magnitudes <span class="math inline">\(|w_j|\)</span> or <span class="math inline">\(w_j^2\)</span>, measuring maternal age in years vs.&nbsp;days would alter its penalty by <span class="math inline">\(365^2\)</span>! Always place <code>StandardScaler()</code> <strong>inside</strong> a Scikit-Learn <code>Pipeline</code> so every predictor is penalized on a fair 1-SD scale with zero test-set leakage.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Why Out-of-Sample R^2 Can Be Negative
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In introductory statistics, students learn that <span class="math inline">\(R^2 \in [0, 1]\)</span> on training data. On an <strong>unseen holdout test set</strong>, however, <span class="math inline">\(R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y}_{\text{test}})^2}\)</span> can drop <strong>below zero</strong>! A negative test <span class="math inline">\(R^2\)</span> simply means your model’s test MSE is slightly worse than predicting the test-set mean <span class="math inline">\(\bar{y}_{\text{test}}\)</span>—an immediate diagnostic cue to regularize harder, simplify noisy covariates, or engineer stronger features.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch22-mental-model" class="level2" data-number="22.2">
+<h2 data-number="22.2" class="anchored" data-anchor-id="sec-ch22-mental-model"><span class="header-section-number">22.2</span> Stage 2 — Visual Mental Model: Gradient Descent Loop &amp; Regularization Selector</h2>
+<p>Use this two-part roadmap to connect how linear models optimize MSE under the hood and how to select the right penalty family for your dataset:</p>
+<div class="cell" data-fig-width="5.6" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 22 (Gradient Descent Loop &amp; Regularization Selector) illustrating Batch GD Loop; Init w = 0, b = 0 Standardize X_train; Forward &amp; MSE Loss err = Xw + b - y; Update Step w -= lr * dw b -= lr * db; P...">flowchart TD
+    subgraph GDLoop["Batch GD Loop"]
+        G1["Init w = 0, b = 0&lt;br/&gt;Standardize X_train"]
+        G2["Forward &amp; MSE Loss&lt;br/&gt;err = Xw + b - y"]
+        G3["Update Step&lt;br/&gt;w -= lr * dw&lt;br/&gt;b -= lr * db"]
+    end
+    subgraph RegSelect["Penalty Selector"]
+        R0["Check Collinearity&lt;br/&gt;&amp; Feature Sparsity"]
+        R1["OLS (alpha = 0)&lt;br/&gt;Low p, clean features"]
+        R2["Ridge (L2)&lt;br/&gt;Correlated features&lt;br/&gt;Shrinks smoothly"]
+        R3["Lasso (L1)&lt;br/&gt;Sparse signal&lt;br/&gt;Zeros weak weights"]
+        R4["ElasticNet&lt;br/&gt;Collinear + Sparse&lt;br/&gt;Grouped selection"]
+    end
+    G1 --&gt; G2
+    G2 --&gt; G3
+    G3 --&gt;|"Repeat epochs"| G2
+    G3 --&gt;|"Converged"| R0
+    R0 --&gt;|"Independent, small p"| R1
+    R0 --&gt;|"Collinear features"| R2
+    R0 --&gt;|"Sparse signal"| R3
+    R0 --&gt;|"Both collinear &amp; sparse"| R4
+</pre>
+</div>
+<p></p><figcaption> Chapter 22 visual mental model: Gradient Descent Loop &amp; Regularization Selector</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the direct link between optimization and regularization: <strong>Gradient Descent</strong> minimizes pure training MSE, whereas the <strong>Penalty Selector</strong> modifies the objective landscape (<code>Ridge</code>, <code>Lasso</code>, or <code>ElasticNet</code>)—always wrapped behind <code>StandardScaler()</code> inside a <code>Pipeline</code> and tuned with <span class="math inline">\(K\)</span>-fold cross-validation.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Two Silent Regularization Traps in Scikit-Learn
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><strong>Unscaled Penalties:</strong> Calling <code>Ridge(alpha=1.0).fit(X_train, y_train)</code> directly on raw features penalizes small-range variables (e.g., binary <code>is_urban</code>) far less than large-range variables (e.g., <code>maternal_age_years</code>). Always wrap <code>StandardScaler()</code> inside a <code>Pipeline</code>.</li>
+<li><strong>Negative CV Scores:</strong> Scikit-Learn maximizes every scorer inside <code>cross_val_score</code>, so <code>scoring="neg_root_mean_squared_error"</code> returns <strong>negative</strong> RMSE values (e.g., <code>-1.1359</code>). Always negate (<code>rmses = -scores</code>) before averaging or calling <code>.idxmin()</code>.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch22-walkthrough" class="level2" data-number="22.3">
+<h2 data-number="22.3" class="anchored" data-anchor-id="sec-ch22-walkthrough"><span class="header-section-number">22.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch22-setup" class="level3" data-number="22.3.1">
+<h3 data-number="22.3.1" class="anchored" data-anchor-id="sec-ch22-setup"><span class="header-section-number">22.3.1</span> Setup: Loading &amp; Cleaning <code>mch_survey_sample</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> (</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a>    ElasticNet, Lasso, LinearRegression, Ridge</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a>    mean_absolute_error, r2_score, root_mean_squared_error</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> (</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>    KFold, cross_val_score, train_test_split</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> mch[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a>mch[<span class="st">"anc_visits"</span>] <span class="op">=</span> mch[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>mch[<span class="st">"is_urban"</span>] <span class="op">=</span> (mch[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a>feat_cols <span class="op">=</span> [</span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a>    <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>, <span class="st">"maternal_age_years"</span>, <span class="st">"is_urban"</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a>]</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a>clean <span class="op">=</span> mch[feat_cols <span class="op">+</span> [<span class="st">"child_haz"</span>]].dropna()</span>
+<span id="cb1-26"><a href="#cb1-26" aria-label="26"></a><span class="bu">print</span>(<span class="ss">f"Raw rows: </span><span class="sc">{</span><span class="bu">len</span>(mch_raw)<span class="sc">}</span><span class="ss"> -&gt; Complete rows: </span><span class="sc">{</span><span class="bu">len</span>(clean)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-label="27"></a><span class="bu">print</span>(clean.mean().<span class="bu">round</span>(<span class="dv">3</span>).to_string())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Raw rows: 500 -&gt; Complete rows: 470</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>anc_visits             3.809</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>maternal_hb_g_dl      11.476</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a>maternal_age_years    30.498</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a>is_urban               0.289</span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a>child_haz             -0.805</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Working strictly on a clean <code>.copy()</code> (zero mutation, zero <code>inplace=True</code> for Pandas 3.x compatibility), we standardize <code>residence</code> casing, convert sentinel <code>anc_visits == 999</code> to <code>np.nan</code>, encode <code>is_urban</code>, and retain the <code>470</code> complete records across our four maternal predictors and continuous outcome <code>child_haz</code> (mean <code>-0.805</code> Z-scores).</p>
+<hr>
+</section>
+<section id="sec-ch22-metrics" class="level3" data-number="22.3.2">
+<h3 data-number="22.3.2" class="anchored" data-anchor-id="sec-ch22-metrics"><span class="header-section-number">22.3.2</span> Regression Metrics: MSE, RMSE, MAE &amp; <span class="math inline">\(R^2\)</span></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>X <span class="op">=</span> clean[feat_cols]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>y <span class="op">=</span> clean[<span class="st">"child_haz"</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>X_tr, X_te, y_tr, y_te <span class="op">=</span> train_test_split(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>    X, y, test_size<span class="op">=</span><span class="fl">0.2</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>ols_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a>    (<span class="st">"ols"</span>, LinearRegression()),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>])</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>ols_pipe.fit(X_tr, y_tr)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>y_pred <span class="op">=</span> ols_pipe.predict(X_te)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>err <span class="op">=</span> y_te.to_numpy() <span class="op">-</span> y_pred</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>mse <span class="op">=</span> <span class="bu">float</span>(np.mean(err <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>rmse <span class="op">=</span> <span class="bu">float</span>(np.sqrt(mse))</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a>mae <span class="op">=</span> <span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(err)))</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>ss_tot <span class="op">=</span> <span class="bu">float</span>(np.<span class="bu">sum</span>((y_te.to_numpy() <span class="op">-</span> y_te.mean()) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a>r2 <span class="op">=</span> <span class="fl">1.0</span> <span class="op">-</span> <span class="bu">float</span>(np.<span class="bu">sum</span>(err <span class="op">**</span> <span class="dv">2</span>)) <span class="op">/</span> ss_tot</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a><span class="bu">print</span>(<span class="ss">f"From scratch -&gt; MSE=</span><span class="sc">{</span>mse<span class="sc">:.4f}</span><span class="ss">, RMSE=</span><span class="sc">{</span>rmse<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a>      <span class="ss">f"MAE=</span><span class="sc">{</span>mae<span class="sc">:.4f}</span><span class="ss">, R2=</span><span class="sc">{</span>r2<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a><span class="bu">print</span>(<span class="ss">f"Scikit-Learn -&gt; RMSE=</span><span class="sc">{</span>root_mean_squared_error(y_te, y_pred)<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a>      <span class="ss">f"MAE=</span><span class="sc">{</span>mean_absolute_error(y_te, y_pred)<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a>      <span class="ss">f"R2=</span><span class="sc">{</span>r2_score(y_te, y_pred)<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>From scratch -&gt; MSE=1.9180, RMSE=1.3849, MAE=1.0509, R2=-0.0270</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Scikit-Learn -&gt; RMSE=1.3849, MAE=1.0509, R2=-0.0270</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at two clinical insights from this output:</p>
+<ul>
+<li><strong>Exact Formula Verification:</strong> Our pure-NumPy equations reproduce Scikit-Learn’s <code>root_mean_squared_error</code>, <code>mean_absolute_error</code>, and <code>r2_score</code> to all four decimal places (<code>RMSE = 1.3849</code>, <code>MAE = 1.0509</code>).</li>
+<li><strong>RMSE &gt; MAE &amp; Negative Holdout <span class="math inline">\(R^2\)</span>:</strong> Notice that <code>RMSE (1.3849)</code> exceeds <code>MAE (1.0509)</code> by 32%, signaling heavy-tailed errors from severely stunted children. Moreover, unregularized OLS achieves <code>R2 = -0.0270</code> on this noisy 94-child holdout split—a textbook motivation for regularization!</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch22-normal-eq" class="level3" data-number="22.3.3">
+<h3 data-number="22.3.3" class="anchored" data-anchor-id="sec-ch22-normal-eq"><span class="header-section-number">22.3.3</span> Closed-Form OLS: The Normal Equation From Scratch</h3>
+<p>Prepending a column of ones <span class="math inline">\(X_b = [\mathbf{1}, Z]\)</span> absorbs the intercept <span class="math inline">\(b\)</span> into a single parameter vector <span class="math inline">\(\theta = [b, w_1, \dots, w_p]^T\)</span>. Setting <span class="math inline">\(\nabla_\theta \|X_b \theta - y\|_2^2 = 0\)</span> yields the <strong>Normal Equation</strong>:</p>
+<p><span class="math display">\[X_b^T X_b \hat{\theta} = X_b^T y \implies \hat{\theta} = (X_b^T X_b)^+ X_b^T y\]</span></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Standardize using training-fold statistics ONLY (zero leakage)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>mu_tr <span class="op">=</span> X_tr.to_numpy().mean(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>sd_tr <span class="op">=</span> X_tr.to_numpy().std(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>Z_tr <span class="op">=</span> (X_tr.to_numpy() <span class="op">-</span> mu_tr) <span class="op">/</span> sd_tr</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>y_tr_arr <span class="op">=</span> y_tr.to_numpy()</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>Zb <span class="op">=</span> np.column_stack([np.ones(<span class="bu">len</span>(Z_tr)), Z_tr])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>theta_lstsq <span class="op">=</span> np.linalg.lstsq(Zb, y_tr_arr, rcond<span class="op">=</span><span class="va">None</span>)[<span class="dv">0</span>]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>theta_pinv <span class="op">=</span> np.linalg.pinv(Zb.T <span class="op">@</span> Zb) <span class="op">@</span> Zb.T <span class="op">@</span> y_tr_arr</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>sk_ols <span class="op">=</span> ols_pipe.named_steps[<span class="st">"ols"</span>]</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a><span class="bu">print</span>(<span class="ss">f"Normal Eq (lstsq) b=</span><span class="sc">{</span>theta_lstsq[<span class="dv">0</span>]<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>      <span class="ss">f"w=</span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(theta_lstsq[<span class="dv">1</span>:], <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a><span class="bu">print</span>(<span class="ss">f"Normal Eq (pinv)  b=</span><span class="sc">{</span>theta_pinv[<span class="dv">0</span>]<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>      <span class="ss">f"w=</span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(theta_pinv[<span class="dv">1</span>:], <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a><span class="bu">print</span>(<span class="ss">f"Scikit-Learn OLS  b=</span><span class="sc">{</span>sk_ols<span class="sc">.</span>intercept_<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>      <span class="ss">f"w=</span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(sk_ols.coef_, <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Normal Eq (lstsq) b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Normal Eq (pinv)  b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>Scikit-Learn OLS  b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>All three solvers (<code>np.linalg.lstsq</code>, Moore-Penrose pseudoinverse <code>pinv</code>, and <code>sklearn.linear_model.LinearRegression</code>) produce identical standardized parameters down to the fourth decimal place. Notice why <code>lstsq</code> is preferred over <code>np.linalg.inv(Zb.T @ Zb)</code>: SVD-based <code>lstsq</code> stays numerically stable even when columns are perfectly collinear.</p>
+<hr>
+</section>
+<section id="sec-ch22-gd" class="level3" data-number="22.3.4">
+<h3 data-number="22.3.4" class="anchored" data-anchor-id="sec-ch22-gd"><span class="header-section-number">22.3.4</span> Pure-NumPy Batch Gradient Descent on MSE</h3>
+<p>Instead of inverting a <span class="math inline">\(p \times p\)</span> matrix (which costs <span class="math inline">\(\mathcal{O}(p^3)\)</span>), <strong>Batch Gradient Descent</strong> differentiates the MSE loss <span class="math inline">\(L(w, b) = \frac{1}{n} \sum_{i=1}^n (z_i^T w + b - y_i)^2\)</span> directly:</p>
+<p><span class="math display">\[\nabla_w L = \frac{2}{n} Z^T (\hat{y} - y), \qquad \nabla_b L = \frac{2}{n} \sum_{i=1}^n (\hat{y}_i - y_i)\]</span></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="kw">def</span> run_batch_gd(Z, y_vec, lr<span class="op">=</span><span class="fl">0.05</span>, epochs<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>    n, p <span class="op">=</span> Z.shape</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>    w <span class="op">=</span> np.zeros(p, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    b <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>    history <span class="op">=</span> []</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>        err <span class="op">=</span> (Z <span class="op">@</span> w <span class="op">+</span> b) <span class="op">-</span> y_vec</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>        history.append(<span class="bu">float</span>(np.mean(err <span class="op">**</span> <span class="dv">2</span>)))</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>        w <span class="op">=</span> w <span class="op">-</span> lr <span class="op">*</span> ((<span class="fl">2.0</span> <span class="op">/</span> n) <span class="op">*</span> (Z.T <span class="op">@</span> err))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>        b <span class="op">=</span> b <span class="op">-</span> lr <span class="op">*</span> ((<span class="fl">2.0</span> <span class="op">/</span> n) <span class="op">*</span> <span class="bu">float</span>(np.<span class="bu">sum</span>(err)))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>    <span class="cf">return</span> w, b, history</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>w_gd, b_gd, losses <span class="op">=</span> run_batch_gd(Z_tr, y_tr_arr, lr<span class="op">=</span><span class="fl">0.05</span>, epochs<span class="op">=</span><span class="dv">300</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a><span class="bu">print</span>(<span class="ss">f"MSE Epoch 1: </span><span class="sc">{</span>losses[<span class="dv">0</span>]<span class="sc">:.4f}</span><span class="ss"> -&gt; Epoch 25: </span><span class="sc">{</span>losses[<span class="dv">24</span>]<span class="sc">:.4f}</span><span class="ss"> "</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>      <span class="ss">f"-&gt; Epoch 300: </span><span class="sc">{</span>losses[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a><span class="bu">print</span>(<span class="ss">f"Batch GD params   b=</span><span class="sc">{</span>b_gd<span class="sc">:.4f}</span><span class="ss">, w=</span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(w_gd, <span class="dv">4</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a>max_diff <span class="op">=</span> <span class="bu">float</span>(np.<span class="bu">max</span>(np.<span class="bu">abs</span>(w_gd <span class="op">-</span> sk_ols.coef_)))</span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a><span class="bu">print</span>(<span class="ss">f"Max |w_gd - w_ols|: </span><span class="sc">{</span>max_diff<span class="sc">:.6f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>MSE Epoch 1: 1.8524 -&gt; Epoch 25: 1.2607 -&gt; Epoch 300: 1.2569</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>Batch GD params   b=-0.7445, w=[ 0.1694  0.0797 -0.034   0.0006]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a>Max |w_gd - w_ols|: 0.000000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Starting from all zeros (<code>MSE = 1.8524</code>), Batch Gradient Descent drops rapidly to <code>1.2607</code> by Epoch 25 and converges to the exact OLS minimum (<code>Max |w_gd - w_ols| = 0.000000</code>) by Epoch 300! Standardizing <code>Z_tr</code> first made the MSE contours nearly spherical so a single learning rate <code>lr = 0.05</code> descends smoothly without oscillating.</p>
+<hr>
+</section>
+<section id="sec-ch22-collinearity" class="level3" data-number="22.3.5">
+<h3 data-number="22.3.5" class="anchored" data-anchor-id="sec-ch22-collinearity"><span class="header-section-number">22.3.5</span> Multicollinearity Instability: OLS Explosion vs.&nbsp;Ridge Stabilization</h3>
+<p>Suppose a survey merges two nearly identical clinic-visit logs (<code>anc_visits</code> and <code>anc_proxy = anc_visits + tiny_noise</code>). Let’s see what happens to OLS versus Ridge (<span class="math inline">\(L_2\)</span>) regularization:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>X_col <span class="op">=</span> X_tr.copy()</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a><span class="co"># Add a nearly collinear duplicate clinic-visit counter (r &gt; 0.9999)</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>X_col[<span class="st">"anc_proxy"</span>] <span class="op">=</span> (</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>    X_col[<span class="st">"anc_visits"</span>] <span class="op">+</span> rng.normal(<span class="fl">0.0</span>, <span class="fl">0.01</span>, size<span class="op">=</span><span class="bu">len</span>(X_col))</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a><span class="cf">for</span> label, est <span class="kw">in</span> [</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>    (<span class="st">"OLS (unregularized)"</span>, LinearRegression()),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>    (<span class="st">"Ridge (alpha=1.0)  "</span>, Ridge(alpha<span class="op">=</span><span class="fl">1.0</span>)),</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>    (<span class="st">"Ridge (alpha=10.0) "</span>, Ridge(alpha<span class="op">=</span><span class="fl">10.0</span>)),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>]:</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>    pipe <span class="op">=</span> Pipeline([(<span class="st">"scaler"</span>, StandardScaler()), (<span class="st">"m"</span>, est)])</span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a>    pipe.fit(X_col, y_tr)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>    c <span class="op">=</span> pipe.named_steps[<span class="st">"m"</span>].coef_</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a>    l2_norm <span class="op">=</span> <span class="bu">float</span>(np.linalg.norm(c))</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss"> anc=</span><span class="sc">{</span>c[<span class="dv">0</span>]<span class="sc">:+7.3f}</span><span class="ss">, proxy=</span><span class="sc">{</span>c[<span class="dv">4</span>]<span class="sc">:+7.3f}</span><span class="ss"> "</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>          <span class="ss">f"| ||w||_2=</span><span class="sc">{</span>l2_norm<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>OLS (unregularized) anc= -6.733, proxy= +6.902 | ||w||_2=9.643</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Ridge (alpha=1.0)   anc= +0.056, proxy= +0.113 | ||w||_2=0.153</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Ridge (alpha=10.0)  anc= +0.081, proxy= +0.087 | ||w||_2=0.146</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at that dramatic collapse: unregularized <strong>OLS</strong> assigns <code>-6.733</code> to <code>anc_visits</code> and <code>+6.902</code> to its near-identical twin <code>anc_proxy</code>—inflating <span class="math inline">\(\|w\|_2\)</span> by more than <strong>60-fold</strong> to <code>9.643</code> just to chase random 0.01-visit noise! Adding Ridge’s <span class="math inline">\(L_2\)</span> term <span class="math inline">\((Z^T Z + \alpha I)^{-1} Z^T y\)</span> instantly stabilizes the matrix diagonal, splitting the true <code>+0.168</code> effect cleanly between both counters (<code>+0.081</code> and <code>+0.087</code> at <span class="math inline">\(\alpha = 10.0\)</span>).</p>
+<hr>
+</section>
+<section id="sec-ch22-regularizers" class="level3" data-number="22.3.6">
+<h3 data-number="22.3.6" class="anchored" data-anchor-id="sec-ch22-regularizers"><span class="header-section-number">22.3.6</span> Regularization Geometry: Ridge (<span class="math inline">\(L_2\)</span>) vs.&nbsp;Lasso (<span class="math inline">\(L_1\)</span>) vs.&nbsp;ElasticNet</h3>
+<p>Compare the three regularized objectives on the four standardized MCH predictors:</p>
+<ul>
+<li><strong>Ridge (<span class="math inline">\(L_2\)</span>):</strong> <span class="math inline">\(\min_{w,b} \sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \|w\|_2^2\)</span> (smooth shrinkage; keeps all features nonzero).</li>
+<li><strong>Lasso (<span class="math inline">\(L_1\)</span>):</strong> <span class="math inline">\(\min_{w,b} \frac{1}{2n}\sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \|w\|_1\)</span> (sparse selection; sets weak coefficients to exact <code>0.0</code>).</li>
+<li><strong>ElasticNet (<span class="math inline">\(L_1 + L_2\)</span>):</strong> <span class="math inline">\(\min_{w,b} \frac{1}{2n}\sum_{i=1}^n (y_i - \hat{y}_i)^2 + \alpha \rho \|w\|_1 + \frac{\alpha (1 - \rho)}{2} \|w\|_2^2\)</span> where <span class="math inline">\(\rho =\)</span> <code>l1_ratio</code>.</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>models <span class="op">=</span> [</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>    (<span class="st">"OLS"</span>, LinearRegression()),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>    (<span class="st">"Ridge(1.0)"</span>, Ridge(alpha<span class="op">=</span><span class="fl">1.0</span>)),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>    (<span class="st">"Ridge(10.0)"</span>, Ridge(alpha<span class="op">=</span><span class="fl">10.0</span>)),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>    (<span class="st">"Lasso(0.05)"</span>, Lasso(alpha<span class="op">=</span><span class="fl">0.05</span>, max_iter<span class="op">=</span><span class="dv">5000</span>)),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>    (<span class="st">"ElasticNet(0.05)"</span>, ElasticNet(alpha<span class="op">=</span><span class="fl">0.05</span>, l1_ratio<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>                                    max_iter<span class="op">=</span><span class="dv">5000</span>)),</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>rows <span class="op">=</span> []</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a><span class="cf">for</span> name, est <span class="kw">in</span> models:</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>    pipe <span class="op">=</span> Pipeline([(<span class="st">"scaler"</span>, StandardScaler()), (<span class="st">"m"</span>, est)])</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    pipe.fit(X_tr, y_tr)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>    pred <span class="op">=</span> pipe.predict(X_te)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>    c <span class="op">=</span> pipe.named_steps[<span class="st">"m"</span>].coef_</span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>    rows.append({</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a>        <span class="st">"model"</span>: name,</span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a>        <span class="st">"rmse"</span>: <span class="bu">round</span>(<span class="bu">float</span>(root_mean_squared_error(y_te, pred)), <span class="dv">4</span>),</span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>        <span class="st">"nonzero"</span>: <span class="bu">int</span>(np.<span class="bu">sum</span>(np.<span class="bu">abs</span>(c) <span class="op">&gt;</span> <span class="fl">1e-6</span>)),</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a>        <span class="st">"anc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(c[<span class="dv">0</span>]), <span class="dv">4</span>),</span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a>        <span class="st">"hb"</span>: <span class="bu">round</span>(<span class="bu">float</span>(c[<span class="dv">1</span>]), <span class="dv">4</span>),</span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a>        <span class="st">"age"</span>: <span class="bu">round</span>(<span class="bu">float</span>(c[<span class="dv">2</span>]), <span class="dv">4</span>),</span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a>        <span class="st">"urban"</span>: <span class="bu">round</span>(<span class="bu">float</span>(c[<span class="dv">3</span>]), <span class="dv">4</span>),</span>
+<span id="cb11-23"><a href="#cb11-23" aria-label="23"></a>    })</span>
+<span id="cb11-24"><a href="#cb11-24" aria-label="24"></a><span class="bu">print</span>(pd.DataFrame(rows).to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>           model   rmse  nonzero    anc     hb     age  urban</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>             OLS 1.3849        4 0.1694 0.0797 -0.0340 0.0006</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a>      Ridge(1.0) 1.3849        4 0.1689 0.0796 -0.0340 0.0007</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a>     Ridge(10.0) 1.3847        4 0.1648 0.0783 -0.0333 0.0020</span>
+<span id="cb12-5"><a href="#cb12-5" aria-label="5"></a>     Lasso(0.05) 1.3804        2 0.1262 0.0398 -0.0000 0.0000</span>
+<span id="cb12-6"><a href="#cb12-6" aria-label="6"></a>ElasticNet(0.05) 1.3815        3 0.1443 0.0594 -0.0105 0.0000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read this comparison table like a senior applied scientist:</p>
+<ul>
+<li><strong>Ridge</strong> shrinks coefficients smoothly toward zero but retains all <code>4</code> predictors (<code>nonzero = 4</code>).</li>
+<li><strong>Lasso (<code>alpha = 0.05</code>)</strong> hits the sharp corners of the <span class="math inline">\(L_1\)</span> diamond, setting both <code>maternal_age_years</code> (<code>-0.0000</code>) and <code>is_urban</code> (<code>0.0000</code>) to <strong>exact zero</strong>, retaining only the two biologically informative predictors (<code>anc_visits</code> and <code>maternal_hb_g_dl</code>), and achieving the lowest holdout RMSE (<code>1.3804</code>)!</li>
+<li><strong>ElasticNet (<code>l1_ratio = 0.5</code>)</strong> sits cleanly in between, zeroing <code>is_urban</code> while retaining a heavily shrunk <code>maternal_age_years</code> (<code>-0.0105</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch22-residuals" class="level3" data-number="22.3.7">
+<h3 data-number="22.3.7" class="anchored" data-anchor-id="sec-ch22-residuals"><span class="header-section-number">22.3.7</span> Residual Diagnostics &amp; Error Inspection</h3>
+<p>Never stop at a single headline RMSE. Inspect the residual vector <span class="math inline">\(e = y_{\text{true}} - \hat{y}\)</span> to catch systematic bias or extreme outliers:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>lasso_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>    (<span class="st">"lasso"</span>, Lasso(alpha<span class="op">=</span><span class="fl">0.05</span>, max_iter<span class="op">=</span><span class="dv">5000</span>)),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>])</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>lasso_pipe.fit(X_tr, y_tr)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a>y_hat_lasso <span class="op">=</span> lasso_pipe.predict(X_te)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>resid <span class="op">=</span> y_te.to_numpy() <span class="op">-</span> y_hat_lasso</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>within_2sd <span class="op">=</span> <span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(resid) <span class="op">&lt;=</span> <span class="fl">2.0</span> <span class="op">*</span> np.std(resid)))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a><span class="bu">print</span>(<span class="ss">f"Mean residual : </span><span class="sc">{</span>np<span class="sc">.</span>mean(resid)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a><span class="bu">print</span>(<span class="ss">f"Std residual  : </span><span class="sc">{</span>np<span class="sc">.</span>std(resid)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a><span class="bu">print</span>(<span class="ss">f"Max |error|   : </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">max</span>(np.<span class="bu">abs</span>(resid))<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a><span class="bu">print</span>(<span class="ss">f"Share &lt;= 2 SD : </span><span class="sc">{</span>within_2sd <span class="op">*</span> <span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>Mean residual : -0.2955</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>Std residual  : 1.3484</span>
+<span id="cb14-3"><a href="#cb14-3" aria-label="3"></a>Max |error|   : 4.7090</span>
+<span id="cb14-4"><a href="#cb14-4" aria-label="4"></a>Share &lt;= 2 SD : 94.7%</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look at what these four diagnostic numbers tell us immediately:</p>
+<ul>
+<li><strong><code>Mean residual = -0.2955</code>:</strong> On this holdout split, the model slightly over-predicts child HAZ by <code>0.30</code> Z-scores on average (because test households happen to have a slightly lower mean HAZ than training households).</li>
+<li><strong><code>Share &lt;= 2 SD = 94.7%</code> vs.&nbsp;<code>Max |error| = 4.7090</code>:</strong> Nearly 95% of test residuals fall cleanly within <span class="math inline">\(\pm 2\sigma\)</span> (consistent with approximate Normality), yet at least one extreme outlier sits <code>4.71</code> Z-scores away—explaining why RMSE (<code>1.3804</code>) substantially exceeds MAE (<code>1.0406</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch22-errors" class="level3" data-number="22.3.8">
+<h3 data-number="22.3.8" class="anchored" data-anchor-id="sec-ch22-errors"><span class="header-section-number">22.3.8</span> Break It On Purpose! (Regression Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — LinAlgError (Inverting Singular Collinear X^T X)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>X_sing <span class="op">=</span> np.array([[<span class="fl">1.0</span>, <span class="fl">2.0</span>, <span class="fl">4.0</span>], [<span class="fl">1.0</span>, <span class="fl">3.0</span>, <span class="fl">6.0</span>], [<span class="fl">1.0</span>, <span class="fl">5.0</span>, <span class="fl">10.0</span>]])</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>np.linalg.inv(X_sing.T <span class="op">@</span> X_sing)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>LinAlgError: Singular matrix</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Column 2 (<code>[4, 6, 10]</code>) equals exactly <span class="math inline">\(2 \times\)</span> Column 1 (<code>[2, 3, 5]</code>), so <span class="math inline">\(\det(X^T X) = 0\)</span> and the matrix has no inverse.<br>
+<strong>Fix:</strong> Never solve OLS with raw <code>np.linalg.inv(X.T @ X)</code>. Use SVD-based <code>np.linalg.lstsq(Xb, y, rcond=None)[0]</code>, <code>np.linalg.pinv(...)</code>, or add a Ridge penalty <span class="math inline">\((X^T X + \alpha I)\)</span> which guarantees strict invertibility for any <span class="math inline">\(\alpha &gt; 0\)</span>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ValueError (Passing 1D X Instead of 2D (n, p))
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>x_1d <span class="op">=</span> clean[<span class="st">"anc_visits"</span>].to_numpy()[:<span class="dv">5</span>]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>y_1d <span class="op">=</span> clean[<span class="st">"child_haz"</span>].to_numpy()[:<span class="dv">5</span>]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>LinearRegression().fit(x_1d, y_1d)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: Expected 2D array, got 1D array instead:</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>array=[4. 3. 2. 2. 0.].</span>
+<span id="cb18-3"><a href="#cb18-3" aria-label="3"></a>Reshape your data either using array.reshape(-1, 1) if your data has a</span>
+<span id="cb18-4"><a href="#cb18-4" aria-label="4"></a>single feature or array.reshape(1, -1) if it contains a single sample.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Every Scikit-Learn estimator requires a 2D design matrix <code>X</code> of shape <code>(n_samples, n_features)</code>. Indexing a single column with <code>clean["anc_visits"]</code> yields a 1D Series/array of shape <code>(n,)</code>.<br>
+<strong>Fix:</strong> Slice with double brackets <code>clean[["anc_visits"]]</code> (a 2D DataFrame) or reshape a 1D NumPy vector with <code>x_1d.reshape(-1, 1)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError / InvalidParameterError (Negative Ridge Alpha)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>Ridge(alpha<span class="op">=-</span><span class="fl">1.0</span>).fit(X_tr, y_tr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>InvalidParameterError: The 'alpha' parameter of Ridge must be a float</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>in the range [0.0, inf) or an array-like. Got -1.0 instead.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>InvalidParameterError</code> (a Scikit-Learn subclass of <code>ValueError</code>) catches negative regularization penalties. A negative <span class="math inline">\(\alpha\)</span> would <em>reward</em> arbitrarily large weights, destroying convexity and sending <span class="math inline">\(\|w\|_2 \to \infty\)</span>.<br>
+<strong>Fix:</strong> Always search strictly non-negative penalties on a logarithmic grid such as <code>np.logspace(-3, 3, 7)</code> (<code>[0.001, 0.01, ..., 1000.0]</code>).</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch22-blueprint" class="level2" data-number="22.4">
+<h2 data-number="22.4" class="anchored" data-anchor-id="sec-ch22-blueprint"><span class="header-section-number">22.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Your health-analytics team needs a single reproducible function <code>build_haz_regression_report(raw_df, alphas=(0.1, 1.0, 10.0, 100.0))</code> that cleans raw <code>mch_survey_sample</code> without mutating it, holds out 20% of households for untouched final testing, tunes Ridge <span class="math inline">\(\alpha\)</span> via leak-free 5-fold cross-validation <strong>strictly inside the 80% training split</strong>, evaluates the winning Ridge model on the untouched holdout set, and audits test residuals.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="22.4.1">
+<h3 data-number="22.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">22.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Non-Mutating Survey Cleaning Layer:</strong></p>
+<ul>
+<li>Copy <code>raw_df</code> via <code>df = raw_df.copy()</code>.</li>
+<li>Normalize <code>residence</code> casing, replace sentinel <code>anc_visits == 999</code> with <code>np.nan</code>, engineer <code>is_urban</code>, and drop missing rows across the four predictors plus <code>child_haz</code>.</li>
+</ul></li>
+<li><p><strong>Strict Train/Test Isolation + Leak-Free CV Tuning:</strong></p>
+<ul>
+<li>Split 80/20 first (<code>train_test_split(..., test_size=0.2, random_state=42)</code>). Never touch <code>(X_b, y_b)</code> during hyperparameter selection!</li>
+<li>Run 5-fold <code>KFold(n_splits=5, shuffle=True, random_state=42)</code> over <code>alphas</code> using <code>Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=float(a)))])</code> and <code>scoring="neg_root_mean_squared_error"</code>, negating scores (<code>-scores</code>) to pick <code>best_a</code>.</li>
+</ul></li>
+<li><p><strong>Final Holdout Fit &amp; Residual Audit:</strong></p>
+<ul>
+<li>Refit <code>Pipeline(StandardScaler, Ridge(alpha=best_a))</code> on <code>(X_a, y_a)</code>, score holdout <code>test_rmse</code> on <code>(X_b, y_b)</code>, and return residual diagnostics (<code>mean_resid</code>, <code>max_abs_err</code>).</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="22.4.2">
+<h3 data-number="22.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">22.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="kw">def</span> build_haz_regression_report(raw_df, alphas<span class="op">=</span>(<span class="fl">0.1</span>, <span class="fl">1.0</span>, <span class="fl">10.0</span>, <span class="fl">100.0</span>)):</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>    <span class="co">"""Clean MCH data, tune Ridge via 5-fold CV, and benchmark models."""</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>    df <span class="op">=</span> raw_df.copy()</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> df[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a>    df[<span class="st">"anc_visits"</span>] <span class="op">=</span> df[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    df[<span class="st">"is_urban"</span>] <span class="op">=</span> (df[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    feats <span class="op">=</span> [</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>        <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>        <span class="st">"maternal_age_years"</span>, <span class="st">"is_urban"</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    ]</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    cdf <span class="op">=</span> df[feats <span class="op">+</span> [<span class="st">"child_haz"</span>]].dropna()</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    X_all, y_all <span class="op">=</span> cdf[feats], cdf[<span class="st">"child_haz"</span>]</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    X_a, X_b, y_a, y_b <span class="op">=</span> train_test_split(</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>        X_all, y_all, test_size<span class="op">=</span><span class="fl">0.2</span>, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>    )</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    <span class="co"># 1. Leak-free 5-fold CV on training split ONLY</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>    kf <span class="op">=</span> KFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>    cv_rows <span class="op">=</span> []</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>    <span class="cf">for</span> a <span class="kw">in</span> alphas:</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>        pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>            (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>            (<span class="st">"ridge"</span>, Ridge(alpha<span class="op">=</span><span class="bu">float</span>(a))),</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>        ])</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>        rmses <span class="op">=</span> <span class="op">-</span>cross_val_score(</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>            pipe, X_a, y_a, cv<span class="op">=</span>kf,</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>            scoring<span class="op">=</span><span class="st">"neg_root_mean_squared_error"</span>,</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>        )</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>        cv_rows.append({</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>            <span class="st">"alpha"</span>: <span class="bu">float</span>(a),</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>            <span class="st">"cv_rmse"</span>: <span class="bu">round</span>(<span class="bu">float</span>(rmses.mean()), <span class="dv">4</span>),</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>        })</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>    cv_df <span class="op">=</span> pd.DataFrame(cv_rows)</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>    best_a <span class="op">=</span> <span class="bu">float</span>(cv_df.loc[cv_df[<span class="st">"cv_rmse"</span>].idxmin(), <span class="st">"alpha"</span>])</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a></span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>    <span class="co"># 2. Final holdout evaluation with tuned Ridge</span></span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    best_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>        (<span class="st">"ridge"</span>, Ridge(alpha<span class="op">=</span>best_a)),</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>    ])</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>    best_pipe.fit(X_a, y_a)</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>    preds <span class="op">=</span> best_pipe.predict(X_b)</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>    test_rmse <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(root_mean_squared_error(y_b, preds)), <span class="dv">4</span>)</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>    resid <span class="op">=</span> y_b.to_numpy() <span class="op">-</span> preds</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>    diag <span class="op">=</span> {</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>        <span class="st">"mean_resid"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(resid)), <span class="dv">4</span>),</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>        <span class="st">"max_abs_err"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.<span class="bu">max</span>(np.<span class="bu">abs</span>(resid))), <span class="dv">4</span>),</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>    }</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>    <span class="cf">return</span> <span class="bu">len</span>(cdf), cv_df, best_a, test_rmse, diag</span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a></span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>n_ok, cv_tbl, best_alpha, holdout_rmse, resid_diag <span class="op">=</span> (</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a>    build_haz_regression_report(mch_raw)</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>)</span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a><span class="bu">print</span>(<span class="ss">f"Clean rows: </span><span class="sc">{</span>n_ok<span class="sc">}</span><span class="ss"> | Best CV alpha: </span><span class="sc">{</span>best_alpha<span class="sc">}</span><span class="ss"> "</span></span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>      <span class="ss">f"| Test RMSE: </span><span class="sc">{</span>holdout_rmse<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a><span class="bu">print</span>(cv_tbl.to_string(index<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a><span class="bu">print</span>(<span class="st">"Residual diagnostics:"</span>, resid_diag)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a>Clean rows: 470 | Best CV alpha: 100.0 | Test RMSE: 1.384</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a> alpha  cv_rmse</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>   0.1   1.1360</span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>   1.0   1.1359</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>  10.0   1.1355</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a> 100.0   1.1333</span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>Residual diagnostics: {'mean_resid': -0.2932, 'max_abs_err': 4.732}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice how cleanly every safeguard works together: cross-validation selects stronger regularization (<code>alpha = 100.0</code>, lowering CV RMSE from <code>1.1360</code> to <code>1.1333</code>) using <strong>only</strong> the 376 training households, and the untouched 94-household holdout set gives an honest <code>Test RMSE = 1.384</code> alongside residual diagnostics.</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch22-todos" class="level2" data-number="22.5">
+<h2 data-number="22.5" class="anchored" data-anchor-id="sec-ch22-todos"><span class="header-section-number">22.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six regression functions below. Pass each <strong>function name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 22.1 (<code>regression_metrics(y_true, y_pred)</code>):</strong> Compute MAE, RMSE, and <span class="math inline">\(R^2\)</span> without mutating caller inputs, returning <code>{"mae": round4, "rmse": round4, "r2": round4}</code>.</li>
+<li><strong>To-Do 22.2 (<code>ols_normal_equation(X, y)</code>):</strong> Pure-NumPy OLS that prepends an intercept column of <code>1</code>s, solves safely via <code>np.linalg.lstsq</code> (or <code>np.linalg.pinv(Xb.T @ Xb) @ Xb.T @ y</code>), and returns <code>(float_intercept, 1D_coef_array)</code>.</li>
+<li><strong>To-Do 22.3 (<code>gradient_descent_linear(X, y, lr=0.05, epochs=300)</code>):</strong> Pure-NumPy batch gradient descent on MSE returning <code>(w_1d, b_float, loss_history_list)</code> with <code>len(loss_history) == epochs</code> and <code>loss_history[-1] &lt; loss_history[0]</code>.</li>
+<li><strong>To-Do 22.4 (<code>fit_ridge_standardized(X_train, y_train, X_test, alpha=1.0)</code>):</strong> Build a leak-free <code>Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=alpha))])</code>, fit on training data only, and return <code>(y_pred_test, coef_array)</code>.</li>
+<li><strong>To-Do 22.5 (<code>count_lasso_selected_features(X_train, y_train, alpha=0.1, tol=1e-6)</code>):</strong> Fit standardized <code>Lasso(alpha=alpha, max_iter=5000)</code> inside a <code>Pipeline</code> and return the integer count of coefficients where <code>abs(coef) &gt; tol</code>.</li>
+<li><strong>To-Do 22.6 (<code>residual_summary(y_true, y_pred)</code>):</strong> Define residuals <code>resid = y_true - y_pred</code> and return <code>{"mean_residual": round4, "std_residual": round4, "max_abs_error": round4}</code> using NumPy’s default <code>np.std(resid)</code> (<code>ddof=0</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch22-test" class="level2" data-number="22.6">
+<h2 data-number="22.6" class="anchored" data-anchor-id="sec-ch22-test"><span class="header-section-number">22.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 linear and regularized regression questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>MSE, RMSE &amp; MAE by Hand:</strong> Given <code>y_true = [2.0, 4.0, 6.0]</code> and <code>y_pred = [2.0, 5.0, 4.0]</code>, compute exact <strong>MAE</strong>, <strong>MSE</strong>, and <strong>RMSE</strong>. Why is <span class="math inline">\(\text{RMSE} &gt; \text{MAE}\)</span> here?</li>
+<li><strong>Negative Out-of-Sample <span class="math inline">\(R^2\)</span>:</strong> On a holdout set <code>y_true = [1.0, 2.0, 3.0, 4.0]</code>, a bad model predicts <code>y_pred = [4.0, 3.0, 2.0, 1.0]</code>. Compute <span class="math inline">\(\text{SS}_{\text{tot}}\)</span>, <span class="math inline">\(\text{SS}_{\text{res}}\)</span>, and <span class="math inline">\(R^2\)</span> by hand. What does a negative <span class="math inline">\(R^2\)</span> mean?</li>
+<li><strong>Why <code>np.linalg.inv(Xb.T @ Xb)</code> Fails:</strong> Suppose feature column <span class="math inline">\(x_2 = 3 x_1\)</span> across every row. What exception does <code>np.linalg.inv(Xb.T @ Xb)</code> raise, and which NumPy solver avoids it?</li>
+<li><strong>One Step of Batch Gradient Descent:</strong> With <span class="math inline">\(n = 2\)</span> observations <span class="math inline">\(x = [1, 3]\)</span>, <span class="math inline">\(y = [2, 6]\)</span>, initial <span class="math inline">\(w = 0\)</span>, <span class="math inline">\(b = 0\)</span>, and learning rate <span class="math inline">\(\eta = 0.1\)</span>, compute <span class="math inline">\(\hat{y}\)</span>, <span class="math inline">\(\nabla_w L\)</span>, <span class="math inline">\(\nabla_b L\)</span>, and the updated <span class="math inline">\((w^{(1)}, b^{(1)})\)</span> after <strong>one</strong> epoch of MSE gradient descent.</li>
+<li><strong>Multicollinearity Under OLS vs.&nbsp;Ridge:</strong> Two identical features <span class="math inline">\(x_1 = x_2\)</span> together explain <span class="math inline">\(y \approx 2 x_1\)</span>. Why does Ridge (<span class="math inline">\(\alpha &gt; 0\)</span>) prefer <span class="math inline">\(w_1 = 1, w_2 = 1\)</span> over <span class="math inline">\(w_1 = 100, w_2 = -98\)</span> even though both give nearly identical training predictions?</li>
+<li><strong>Geometry of Sparsity (<span class="math inline">\(L_1\)</span> vs.&nbsp;<span class="math inline">\(L_2\)</span>):</strong> Geometrically, why does <strong>Lasso</strong> produce exact zeros (<code>w_j == 0.0</code>) whereas <strong>Ridge</strong> shrinks small coefficients close to zero without ever hitting exact zero?</li>
+<li><strong>Feature Scaling Before Regularization:</strong> Feature A (<code>anc_visits</code>) ranges from <code>0</code> to <code>10</code>; Feature B (<code>income_bdt</code>) ranges from <code>5,000</code> to <code>100,000</code>. If you fit <code>Ridge(alpha=10.0)</code> <strong>without</strong> <code>StandardScaler()</code>, which feature’s slope gets unfairly punished more—and why?</li>
+<li><strong>Data Leakage in Cross-Validation:</strong> A colleague runs <code>X_scaled = StandardScaler().fit_transform(X)</code> <strong>before</strong> calling <code>cross_val_score(Ridge(alpha=1.0), X_scaled, y, cv=5)</code>. Why is this subtle data leakage, and how does <code>Pipeline</code> eliminate it?</li>
+<li><strong>Scikit-Learn Negative Scorers:</strong> <code>cross_val_score(..., scoring="neg_root_mean_squared_error")</code> returns <code>[-1.24, -1.18, -1.30]</code>. What is the positive mean CV RMSE, and why does Scikit-Learn return negative numbers?</li>
+<li><strong>Residual Sign &amp; Outlier Diagnosis:</strong> On test data, your model reports <code>mean_residual = +0.85</code> (where <code>resid = y_true - y_pred</code>) and <code>max_abs_error = 5.4</code>. Is the model systematically <strong>under-predicting</strong> or <strong>over-predicting</strong>, and what does the large <code>max_abs_error</code> suggest?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch22-exam" class="level2" data-number="22.7">
+<h2 data-number="22.7" class="anchored" data-anchor-id="sec-ch22-exam"><span class="header-section-number">22.7</span> Stage 7 — Chapter 22 Coding Exam (100 Points)</h2>
+<p>Open <code>part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch22", exam_submissions)</code> to earn your Chapter 22 score out of 100 points.</p>
+<section id="exam-task-22.1-30-points-compare_ols_ridge_lassox_train-y_train-x_test-y_test-ridge_alpha1.0-lasso_alpha0.1" class="level3" data-number="22.7.1">
+<h3 data-number="22.7.1" class="anchored" data-anchor-id="exam-task-22.1-30-points-compare_ols_ridge_lassox_train-y_train-x_test-y_test-ridge_alpha1.0-lasso_alpha0.1"><span class="header-section-number">22.7.1</span> Exam Task 22.1 (30 Points): <code>compare_ols_ridge_lasso(X_train, y_train, X_test, y_test, ridge_alpha=1.0, lasso_alpha=0.1)</code></h3>
+<p>Without mutating caller inputs:</p>
+<ul>
+<li>Wrap <code>LinearRegression()</code>, <code>Ridge(alpha=ridge_alpha)</code>, and <code>Lasso(alpha=lasso_alpha, max_iter=5000)</code> each in a leak-free <code>Pipeline([("scaler", StandardScaler()), ("model", est)])</code>.</li>
+<li>Fit on <code>(X_train, y_train)</code>, evaluate on <code>(X_test, y_test)</code>, and count <code>nonzero_coefs = int(np.sum(np.abs(coef) &gt; 1e-6))</code>.</li>
+<li>Return a <code>pd.DataFrame</code> with exact columns <code>["model", "rmse", "mae", "r2", "nonzero_coefs"]</code>, rows ordered <code>["OLS", "Ridge", "Lasso"]</code>, and float metrics rounded to <strong>4 decimals</strong>.</li>
+</ul>
+</section>
+<section id="exam-task-22.2-35-points-tune_ridge_alpha_cvx-y-alphas-cv5" class="level3" data-number="22.7.2">
+<h3 data-number="22.7.2" class="anchored" data-anchor-id="exam-task-22.2-35-points-tune_ridge_alpha_cvx-y-alphas-cv5"><span class="header-section-number">22.7.2</span> Exam Task 22.2 (35 Points): <code>tune_ridge_alpha_cv(X, y, alphas, cv=5)</code></h3>
+<p>Without mutating <code>X</code> or <code>y</code>:</p>
+<ul>
+<li>Create <code>kf = KFold(n_splits=cv, shuffle=True, random_state=42)</code>.</li>
+<li>For every <code>a</code> in <code>alphas</code>, evaluate <code>Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=float(a)))])</code> via <code>cross_val_score(..., cv=kf, scoring="neg_root_mean_squared_error")</code> and negate scores (<code>rmses = -scores</code>).</li>
+<li>Build <code>cv_table</code> with columns <code>["alpha", "mean_rmse", "std_rmse"]</code> (RMSE columns rounded to <strong>4 decimals</strong>), select the <code>alpha</code> minimizing <code>mean_rmse</code>, and return <code>{"best_alpha": float, "best_rmse": round4, "cv_table": DataFrame}</code>.</li>
+</ul>
+</section>
+<section id="exam-task-22.3-35-points-predict_child_haz_pipelinemch_df-seed42" class="level3" data-number="22.7.3">
+<h3 data-number="22.7.3" class="anchored" data-anchor-id="exam-task-22.3-35-points-predict_child_haz_pipelinemch_df-seed42"><span class="header-section-number">22.7.3</span> Exam Task 22.3 (35 Points): <code>predict_child_haz_pipeline(mch_df, seed=42)</code></h3>
+<p>Without mutating <code>mch_df</code>:</p>
+<ul>
+<li>Copy <code>mch_df</code>, standardize <code>residence</code> (<code>str.strip().str.title()</code>), replace sentinel <code>anc_visits == 999</code> with <code>np.nan</code>, and add binary <code>is_urban = (work["residence"] == "Urban").astype(int)</code>.</li>
+<li>Drop rows with missing values in <code>["anc_visits", "maternal_hb_g_dl", "maternal_age_years", "is_urban", "child_haz"]</code>.</li>
+<li>Split the four predictors and <code>child_haz</code> 80/20 via <code>train_test_split(..., test_size=0.2, random_state=seed)</code>.</li>
+<li>Fit <code>Pipeline([("scaler", StandardScaler()), ("ridge", Ridge(alpha=1.0))])</code> and return <code>{"n_clean": int, "test_rmse": round4, "test_r2": round4, "coefs": dict_feature_to_round4}</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch22-solutions" class="level2" data-number="22.8">
+<h2 data-number="22.8" class="anchored" data-anchor-id="sec-ch22-solutions"><span class="header-section-number">22.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="22.8.1">
+<h3 data-number="22.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">22.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li>Residuals are <code>[0.0, -1.0, 2.0]</code>: <span class="math inline">\(\text{MAE} = (0 + 1 + 2)/3 = \mathbf{1.0000}\)</span>, <span class="math inline">\(\text{MSE} = (0 + 1 + 4)/3 = \mathbf{1.6667}\)</span>, <span class="math inline">\(\text{RMSE} = \sqrt{5/3} \approx \mathbf{1.2910}\)</span>. <span class="math inline">\(\text{RMSE} &gt; \text{MAE}\)</span> because squaring amplifies the larger error (<code>2.0</code>) disproportionately.</li>
+<li>Mean <span class="math inline">\(\bar{y} = 2.5\)</span>, so <span class="math inline">\(\text{SS}_{\text{tot}} = 1.5^2 + 0.5^2 + 0.5^2 + 1.5^2 = 5.0\)</span>. Errors are <code>[-3, -1, 1, 3]</code>, so <span class="math inline">\(\text{SS}_{\text{res}} = 9 + 1 + 1 + 9 = 20.0\)</span>. Thus <span class="math inline">\(R^2 = 1 - 20/5 = \mathbf{-3.0}\)</span>. A negative <span class="math inline">\(R^2\)</span> means the model performs worse than predicting the constant mean <span class="math inline">\(\bar{y}\)</span>.</li>
+<li><code>np.linalg.inv(Xb.T @ Xb)</code> raises <strong><code>np.linalg.LinAlgError: Singular matrix</code></strong> because <span class="math inline">\(X_b^T X_b\)</span> is rank-deficient (<span class="math inline">\(\det = 0\)</span>). Using <strong><code>np.linalg.lstsq(Xb, y, rcond=None)</code></strong> (or <code>np.linalg.pinv</code>) computes the minimum-norm least-squares solution safely via SVD.</li>
+<li>At <span class="math inline">\(w = 0, b = 0\)</span>: <span class="math inline">\(\hat{y} = [0, 0]\)</span>, error <span class="math inline">\(e = \hat{y} - y = [-2, -6]\)</span>. Gradients: <span class="math inline">\(\nabla_w L = \frac{2}{2}(1(-2) + 3(-6)) = \mathbf{-20}\)</span>, <span class="math inline">\(\nabla_b L = \frac{2}{2}(-2 + -6) = \mathbf{-8}\)</span>. Update with <span class="math inline">\(\eta = 0.1\)</span>: <span class="math inline">\(w^{(1)} = 0 - 0.1(-20) = \mathbf{2.0}\)</span>, <span class="math inline">\(b^{(1)} = 0 - 0.1(-8) = \mathbf{0.8}\)</span>.</li>
+<li>Ridge minimizes <span class="math inline">\(\text{SSE} + \alpha (w_1^2 + w_2^2)\)</span>. For <span class="math inline">\((1, 1)\)</span>, the penalty is <span class="math inline">\(\alpha (1^2 + 1^2) = 2\alpha\)</span>; for <span class="math inline">\((100, -98)\)</span>, the penalty is <span class="math inline">\(\alpha (10000 + 9604) = 19{,}604\alpha\)</span>! Squaring forces correlated features to share weight evenly.</li>
+<li>The <span class="math inline">\(L_1\)</span> constraint region <span class="math inline">\(|w_1| + |w_2| \le t\)</span> is a <strong>diamond with sharp corners</strong> sitting directly on the coordinate axes, where elliptical MSE contours naturally touch first (setting one coordinate to exact <code>0.0</code>). The <span class="math inline">\(L_2\)</span> sphere <span class="math inline">\(w_1^2 + w_2^2 \le t\)</span> is smooth everywhere with no corners.</li>
+<li><strong>Feature A (<code>anc_visits</code>)</strong> gets punished far harder! Because <code>income_bdt</code> has <span class="math inline">\(10{,}000\times\)</span> larger units, its raw regression slope is tiny (<span class="math inline">\(\sim 10^{-5}\)</span>), so its squared penalty <span class="math inline">\(w_B^2 \approx 10^{-10}\)</span> is negligible compared with <span class="math inline">\(w_A^2\)</span>. Standardizing equalizes both features to mean <code>0</code>, SD <code>1</code>.</li>
+<li>Fitting <code>StandardScaler</code> on the full dataset <code>X</code> leaks validation-fold means and standard deviations into training folds, subtly inflating CV performance. Wrapping <code>StandardScaler()</code> inside a <code>Pipeline</code> refits the scaler independently inside every training fold.</li>
+<li>Negating gives <code>[1.24, 1.18, 1.30]</code>, whose positive mean CV RMSE is <strong><span class="math inline">\(\mathbf{1.24}\)</span></strong>. Scikit-Learn follows a universal “higher score is better” API across all grid-search and CV utilities, so loss metrics are negated.</li>
+<li>Because <code>resid = y_true - y_pred &gt; 0</code>, <span class="math inline">\(y_{\text{true}} &gt; \hat{y}\)</span>, meaning the model is systematically <strong>under-predicting</strong> by <code>0.85</code> units on average. The <code>max_abs_error = 5.4</code> warns of at least one severe outlier pulling up squared error (MSE/RMSE).</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="22.8.2">
+<h3 data-number="22.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">22.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> Lasso, Ridge</span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a><span class="co"># To-Do 22.1</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a><span class="kw">def</span> regression_metrics(y_true, y_pred):</span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a>    <span class="co">"""Return dict with MAE, RMSE, and R^2 rounded to 4 decimals."""</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a>    yp <span class="op">=</span> np.asarray(y_pred, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a>    err <span class="op">=</span> yt <span class="op">-</span> yp</span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a>    mae <span class="op">=</span> <span class="bu">float</span>(np.mean(np.<span class="bu">abs</span>(err)))</span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a>    rmse <span class="op">=</span> <span class="bu">float</span>(np.sqrt(np.mean(err <span class="op">**</span> <span class="dv">2</span>)))</span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a>    ss_res <span class="op">=</span> <span class="bu">float</span>(np.<span class="bu">sum</span>(err <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a>    ss_tot <span class="op">=</span> <span class="bu">float</span>(np.<span class="bu">sum</span>((yt <span class="op">-</span> np.mean(yt)) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a>    r2 <span class="op">=</span> <span class="fl">1.0</span> <span class="op">-</span> ss_res <span class="op">/</span> ss_tot</span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a>        <span class="st">"mae"</span>: <span class="bu">round</span>(mae, <span class="dv">4</span>),</span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a>        <span class="st">"rmse"</span>: <span class="bu">round</span>(rmse, <span class="dv">4</span>),</span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a>        <span class="st">"r2"</span>: <span class="bu">round</span>(r2, <span class="dv">4</span>),</span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a>    }</span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a></span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a><span class="co"># To-Do 22.2</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a><span class="kw">def</span> ols_normal_equation(X, y):</span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>    <span class="co">"""Solve OLS via Normal Equation / lstsq; return (intercept, coef)."""</span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a>    X_arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a>    y_arr <span class="op">=</span> np.asarray(y, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a>    Xb <span class="op">=</span> np.column_stack([np.ones(<span class="bu">len</span>(X_arr)), X_arr])</span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>    theta <span class="op">=</span> np.linalg.lstsq(Xb, y_arr, rcond<span class="op">=</span><span class="va">None</span>)[<span class="dv">0</span>]</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a>    <span class="cf">return</span> (<span class="bu">float</span>(theta[<span class="dv">0</span>]), theta[<span class="dv">1</span>:])</span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a></span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a><span class="co"># To-Do 22.3</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a><span class="kw">def</span> gradient_descent_linear(X, y, lr<span class="op">=</span><span class="fl">0.05</span>, epochs<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a>    <span class="co">"""Run batch gradient descent on MSE; return (w, b, loss_history)."""</span></span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a>    X_arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a>    y_arr <span class="op">=</span> np.asarray(y, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a>    n, p <span class="op">=</span> X_arr.shape</span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a>    w <span class="op">=</span> np.zeros(p, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>    b <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>    loss_history <span class="op">=</span> []</span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a>        err <span class="op">=</span> (X_arr <span class="op">@</span> w <span class="op">+</span> b) <span class="op">-</span> y_arr</span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a>        loss_history.append(<span class="bu">float</span>(np.mean(err <span class="op">**</span> <span class="dv">2</span>)))</span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a>        dw <span class="op">=</span> (<span class="fl">2.0</span> <span class="op">/</span> n) <span class="op">*</span> (X_arr.T <span class="op">@</span> err)</span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a>        db <span class="op">=</span> (<span class="fl">2.0</span> <span class="op">/</span> n) <span class="op">*</span> <span class="bu">float</span>(np.<span class="bu">sum</span>(err))</span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a>        w <span class="op">=</span> w <span class="op">-</span> lr <span class="op">*</span> dw</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>        b <span class="op">=</span> b <span class="op">-</span> lr <span class="op">*</span> db</span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a>    <span class="cf">return</span> (w, <span class="bu">float</span>(b), loss_history)</span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a></span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a><span class="co"># To-Do 22.4</span></span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a><span class="kw">def</span> fit_ridge_standardized(X_train, y_train, X_test, alpha<span class="op">=</span><span class="fl">1.0</span>):</span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a>    <span class="co">"""Fit leak-free StandardScaler + Ridge; return (y_pred, coef)."""</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-label="53"></a>    pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb23-54"><a href="#cb23-54" aria-label="54"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb23-55"><a href="#cb23-55" aria-label="55"></a>        (<span class="st">"ridge"</span>, Ridge(alpha<span class="op">=</span>alpha)),</span>
+<span id="cb23-56"><a href="#cb23-56" aria-label="56"></a>    ])</span>
+<span id="cb23-57"><a href="#cb23-57" aria-label="57"></a>    pipe.fit(X_train, y_train)</span>
+<span id="cb23-58"><a href="#cb23-58" aria-label="58"></a>    y_pred <span class="op">=</span> pipe.predict(X_test)</span>
+<span id="cb23-59"><a href="#cb23-59" aria-label="59"></a>    <span class="cf">return</span> (y_pred, pipe.named_steps[<span class="st">"ridge"</span>].coef_)</span>
+<span id="cb23-60"><a href="#cb23-60" aria-label="60"></a></span>
+<span id="cb23-61"><a href="#cb23-61" aria-label="61"></a><span class="co"># To-Do 22.5</span></span>
+<span id="cb23-62"><a href="#cb23-62" aria-label="62"></a><span class="kw">def</span> count_lasso_selected_features(</span>
+<span id="cb23-63"><a href="#cb23-63" aria-label="63"></a>    X_train, y_train, alpha<span class="op">=</span><span class="fl">0.1</span>, tol<span class="op">=</span><span class="fl">1e-6</span></span>
+<span id="cb23-64"><a href="#cb23-64" aria-label="64"></a>):</span>
+<span id="cb23-65"><a href="#cb23-65" aria-label="65"></a>    <span class="co">"""Count standardized Lasso coefficients with |coef| &gt; tol."""</span></span>
+<span id="cb23-66"><a href="#cb23-66" aria-label="66"></a>    pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb23-67"><a href="#cb23-67" aria-label="67"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb23-68"><a href="#cb23-68" aria-label="68"></a>        (<span class="st">"lasso"</span>, Lasso(alpha<span class="op">=</span>alpha, max_iter<span class="op">=</span><span class="dv">5000</span>)),</span>
+<span id="cb23-69"><a href="#cb23-69" aria-label="69"></a>    ])</span>
+<span id="cb23-70"><a href="#cb23-70" aria-label="70"></a>    pipe.fit(X_train, y_train)</span>
+<span id="cb23-71"><a href="#cb23-71" aria-label="71"></a>    coefs <span class="op">=</span> pipe.named_steps[<span class="st">"lasso"</span>].coef_</span>
+<span id="cb23-72"><a href="#cb23-72" aria-label="72"></a>    <span class="cf">return</span> <span class="bu">int</span>(np.<span class="bu">sum</span>(np.<span class="bu">abs</span>(coefs) <span class="op">&gt;</span> tol))</span>
+<span id="cb23-73"><a href="#cb23-73" aria-label="73"></a></span>
+<span id="cb23-74"><a href="#cb23-74" aria-label="74"></a><span class="co"># To-Do 22.6</span></span>
+<span id="cb23-75"><a href="#cb23-75" aria-label="75"></a><span class="kw">def</span> residual_summary(y_true, y_pred):</span>
+<span id="cb23-76"><a href="#cb23-76" aria-label="76"></a>    <span class="co">"""Return mean, std (ddof=0), and max |error| of y_true - y_pred."""</span></span>
+<span id="cb23-77"><a href="#cb23-77" aria-label="77"></a>    resid <span class="op">=</span> (</span>
+<span id="cb23-78"><a href="#cb23-78" aria-label="78"></a>        np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-79"><a href="#cb23-79" aria-label="79"></a>        <span class="op">-</span> np.asarray(y_pred, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-80"><a href="#cb23-80" aria-label="80"></a>    )</span>
+<span id="cb23-81"><a href="#cb23-81" aria-label="81"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-82"><a href="#cb23-82" aria-label="82"></a>        <span class="st">"mean_residual"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.mean(resid)), <span class="dv">4</span>),</span>
+<span id="cb23-83"><a href="#cb23-83" aria-label="83"></a>        <span class="st">"std_residual"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.std(resid)), <span class="dv">4</span>),</span>
+<span id="cb23-84"><a href="#cb23-84" aria-label="84"></a>        <span class="st">"max_abs_error"</span>: <span class="bu">round</span>(<span class="bu">float</span>(np.<span class="bu">max</span>(np.<span class="bu">abs</span>(resid))), <span class="dv">4</span>),</span>
+<span id="cb23-85"><a href="#cb23-85" aria-label="85"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-22-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="22.8.3">
+<h3 data-number="22.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-22-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">22.8.3</span> C. Annotated Solutions — Chapter 22 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> Lasso, LinearRegression, Ridge</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a>    mean_absolute_error, r2_score, root_mean_squared_error</span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-label="6"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> (</span>
+<span id="cb24-7"><a href="#cb24-7" aria-label="7"></a>    KFold, cross_val_score, train_test_split</span>
+<span id="cb24-8"><a href="#cb24-8" aria-label="8"></a>)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-label="9"></a></span>
+<span id="cb24-10"><a href="#cb24-10" aria-label="10"></a><span class="co"># Exam Task 22.1 (30 pts)</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-label="11"></a><span class="kw">def</span> compare_ols_ridge_lasso(</span>
+<span id="cb24-12"><a href="#cb24-12" aria-label="12"></a>    X_train, y_train, X_test, y_test,</span>
+<span id="cb24-13"><a href="#cb24-13" aria-label="13"></a>    ridge_alpha<span class="op">=</span><span class="fl">1.0</span>, lasso_alpha<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb24-14"><a href="#cb24-14" aria-label="14"></a>):</span>
+<span id="cb24-15"><a href="#cb24-15" aria-label="15"></a>    <span class="co">"""Benchmark standardized OLS, Ridge, and Lasso on a holdout set."""</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-label="16"></a>    specs <span class="op">=</span> [</span>
+<span id="cb24-17"><a href="#cb24-17" aria-label="17"></a>        (<span class="st">"OLS"</span>, LinearRegression()),</span>
+<span id="cb24-18"><a href="#cb24-18" aria-label="18"></a>        (<span class="st">"Ridge"</span>, Ridge(alpha<span class="op">=</span>ridge_alpha)),</span>
+<span id="cb24-19"><a href="#cb24-19" aria-label="19"></a>        (<span class="st">"Lasso"</span>, Lasso(alpha<span class="op">=</span>lasso_alpha, max_iter<span class="op">=</span><span class="dv">5000</span>)),</span>
+<span id="cb24-20"><a href="#cb24-20" aria-label="20"></a>    ]</span>
+<span id="cb24-21"><a href="#cb24-21" aria-label="21"></a>    rows <span class="op">=</span> []</span>
+<span id="cb24-22"><a href="#cb24-22" aria-label="22"></a>    <span class="cf">for</span> name, est <span class="kw">in</span> specs:</span>
+<span id="cb24-23"><a href="#cb24-23" aria-label="23"></a>        pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-24"><a href="#cb24-24" aria-label="24"></a>            (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb24-25"><a href="#cb24-25" aria-label="25"></a>            (<span class="st">"model"</span>, est),</span>
+<span id="cb24-26"><a href="#cb24-26" aria-label="26"></a>        ])</span>
+<span id="cb24-27"><a href="#cb24-27" aria-label="27"></a>        pipe.fit(X_train, y_train)</span>
+<span id="cb24-28"><a href="#cb24-28" aria-label="28"></a>        pred <span class="op">=</span> pipe.predict(X_test)</span>
+<span id="cb24-29"><a href="#cb24-29" aria-label="29"></a>        coefs <span class="op">=</span> pipe.named_steps[<span class="st">"model"</span>].coef_</span>
+<span id="cb24-30"><a href="#cb24-30" aria-label="30"></a>        rows.append({</span>
+<span id="cb24-31"><a href="#cb24-31" aria-label="31"></a>            <span class="st">"model"</span>: name,</span>
+<span id="cb24-32"><a href="#cb24-32" aria-label="32"></a>            <span class="st">"rmse"</span>: <span class="bu">round</span>(</span>
+<span id="cb24-33"><a href="#cb24-33" aria-label="33"></a>                <span class="bu">float</span>(root_mean_squared_error(y_test, pred)), <span class="dv">4</span></span>
+<span id="cb24-34"><a href="#cb24-34" aria-label="34"></a>            ),</span>
+<span id="cb24-35"><a href="#cb24-35" aria-label="35"></a>            <span class="st">"mae"</span>: <span class="bu">round</span>(</span>
+<span id="cb24-36"><a href="#cb24-36" aria-label="36"></a>                <span class="bu">float</span>(mean_absolute_error(y_test, pred)), <span class="dv">4</span></span>
+<span id="cb24-37"><a href="#cb24-37" aria-label="37"></a>            ),</span>
+<span id="cb24-38"><a href="#cb24-38" aria-label="38"></a>            <span class="st">"r2"</span>: <span class="bu">round</span>(<span class="bu">float</span>(r2_score(y_test, pred)), <span class="dv">4</span>),</span>
+<span id="cb24-39"><a href="#cb24-39" aria-label="39"></a>            <span class="st">"nonzero_coefs"</span>: <span class="bu">int</span>(np.<span class="bu">sum</span>(np.<span class="bu">abs</span>(coefs) <span class="op">&gt;</span> <span class="fl">1e-6</span>)),</span>
+<span id="cb24-40"><a href="#cb24-40" aria-label="40"></a>        })</span>
+<span id="cb24-41"><a href="#cb24-41" aria-label="41"></a>    <span class="cf">return</span> pd.DataFrame(rows)</span>
+<span id="cb24-42"><a href="#cb24-42" aria-label="42"></a></span>
+<span id="cb24-43"><a href="#cb24-43" aria-label="43"></a><span class="co"># Exam Task 22.2 (35 pts)</span></span>
+<span id="cb24-44"><a href="#cb24-44" aria-label="44"></a><span class="kw">def</span> tune_ridge_alpha_cv(X, y, alphas, cv<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb24-45"><a href="#cb24-45" aria-label="45"></a>    <span class="co">"""Tune Ridge alpha via leak-free KFold CV on positive RMSE."""</span></span>
+<span id="cb24-46"><a href="#cb24-46" aria-label="46"></a>    kf <span class="op">=</span> KFold(n_splits<span class="op">=</span>cv, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb24-47"><a href="#cb24-47" aria-label="47"></a>    rows <span class="op">=</span> []</span>
+<span id="cb24-48"><a href="#cb24-48" aria-label="48"></a>    <span class="cf">for</span> a <span class="kw">in</span> alphas:</span>
+<span id="cb24-49"><a href="#cb24-49" aria-label="49"></a>        pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-50"><a href="#cb24-50" aria-label="50"></a>            (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb24-51"><a href="#cb24-51" aria-label="51"></a>            (<span class="st">"ridge"</span>, Ridge(alpha<span class="op">=</span><span class="bu">float</span>(a))),</span>
+<span id="cb24-52"><a href="#cb24-52" aria-label="52"></a>        ])</span>
+<span id="cb24-53"><a href="#cb24-53" aria-label="53"></a>        rmses <span class="op">=</span> <span class="op">-</span>cross_val_score(</span>
+<span id="cb24-54"><a href="#cb24-54" aria-label="54"></a>            pipe, X, y, cv<span class="op">=</span>kf,</span>
+<span id="cb24-55"><a href="#cb24-55" aria-label="55"></a>            scoring<span class="op">=</span><span class="st">"neg_root_mean_squared_error"</span>,</span>
+<span id="cb24-56"><a href="#cb24-56" aria-label="56"></a>        )</span>
+<span id="cb24-57"><a href="#cb24-57" aria-label="57"></a>        rows.append({</span>
+<span id="cb24-58"><a href="#cb24-58" aria-label="58"></a>            <span class="st">"alpha"</span>: <span class="bu">float</span>(a),</span>
+<span id="cb24-59"><a href="#cb24-59" aria-label="59"></a>            <span class="st">"mean_rmse"</span>: <span class="bu">round</span>(<span class="bu">float</span>(rmses.mean()), <span class="dv">4</span>),</span>
+<span id="cb24-60"><a href="#cb24-60" aria-label="60"></a>            <span class="st">"std_rmse"</span>: <span class="bu">round</span>(<span class="bu">float</span>(rmses.std()), <span class="dv">4</span>),</span>
+<span id="cb24-61"><a href="#cb24-61" aria-label="61"></a>        })</span>
+<span id="cb24-62"><a href="#cb24-62" aria-label="62"></a>    cv_table <span class="op">=</span> pd.DataFrame(rows)</span>
+<span id="cb24-63"><a href="#cb24-63" aria-label="63"></a>    best_idx <span class="op">=</span> <span class="bu">int</span>(cv_table[<span class="st">"mean_rmse"</span>].idxmin())</span>
+<span id="cb24-64"><a href="#cb24-64" aria-label="64"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-65"><a href="#cb24-65" aria-label="65"></a>        <span class="st">"best_alpha"</span>: <span class="bu">float</span>(cv_table.loc[best_idx, <span class="st">"alpha"</span>]),</span>
+<span id="cb24-66"><a href="#cb24-66" aria-label="66"></a>        <span class="st">"best_rmse"</span>: <span class="bu">float</span>(cv_table.loc[best_idx, <span class="st">"mean_rmse"</span>]),</span>
+<span id="cb24-67"><a href="#cb24-67" aria-label="67"></a>        <span class="st">"cv_table"</span>: cv_table,</span>
+<span id="cb24-68"><a href="#cb24-68" aria-label="68"></a>    }</span>
+<span id="cb24-69"><a href="#cb24-69" aria-label="69"></a></span>
+<span id="cb24-70"><a href="#cb24-70" aria-label="70"></a><span class="co"># Exam Task 22.3 (35 pts)</span></span>
+<span id="cb24-71"><a href="#cb24-71" aria-label="71"></a><span class="kw">def</span> predict_child_haz_pipeline(mch_df, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb24-72"><a href="#cb24-72" aria-label="72"></a>    <span class="co">"""Clean MCH survey data and fit a standardized Ridge HAZ model."""</span></span>
+<span id="cb24-73"><a href="#cb24-73" aria-label="73"></a>    work <span class="op">=</span> mch_df.copy()</span>
+<span id="cb24-74"><a href="#cb24-74" aria-label="74"></a>    work[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb24-75"><a href="#cb24-75" aria-label="75"></a>        work[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb24-76"><a href="#cb24-76" aria-label="76"></a>    )</span>
+<span id="cb24-77"><a href="#cb24-77" aria-label="77"></a>    work[<span class="st">"anc_visits"</span>] <span class="op">=</span> work[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb24-78"><a href="#cb24-78" aria-label="78"></a>    work[<span class="st">"is_urban"</span>] <span class="op">=</span> (work[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb24-79"><a href="#cb24-79" aria-label="79"></a></span>
+<span id="cb24-80"><a href="#cb24-80" aria-label="80"></a>    feats <span class="op">=</span> [</span>
+<span id="cb24-81"><a href="#cb24-81" aria-label="81"></a>        <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>,</span>
+<span id="cb24-82"><a href="#cb24-82" aria-label="82"></a>        <span class="st">"maternal_age_years"</span>, <span class="st">"is_urban"</span>,</span>
+<span id="cb24-83"><a href="#cb24-83" aria-label="83"></a>    ]</span>
+<span id="cb24-84"><a href="#cb24-84" aria-label="84"></a>    clean <span class="op">=</span> work[feats <span class="op">+</span> [<span class="st">"child_haz"</span>]].dropna()</span>
+<span id="cb24-85"><a href="#cb24-85" aria-label="85"></a>    X_tr, X_te, y_tr, y_te <span class="op">=</span> train_test_split(</span>
+<span id="cb24-86"><a href="#cb24-86" aria-label="86"></a>        clean[feats], clean[<span class="st">"child_haz"</span>],</span>
+<span id="cb24-87"><a href="#cb24-87" aria-label="87"></a>        test_size<span class="op">=</span><span class="fl">0.2</span>, random_state<span class="op">=</span>seed,</span>
+<span id="cb24-88"><a href="#cb24-88" aria-label="88"></a>    )</span>
+<span id="cb24-89"><a href="#cb24-89" aria-label="89"></a>    pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-90"><a href="#cb24-90" aria-label="90"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb24-91"><a href="#cb24-91" aria-label="91"></a>        (<span class="st">"ridge"</span>, Ridge(alpha<span class="op">=</span><span class="fl">1.0</span>)),</span>
+<span id="cb24-92"><a href="#cb24-92" aria-label="92"></a>    ])</span>
+<span id="cb24-93"><a href="#cb24-93" aria-label="93"></a>    pipe.fit(X_tr, y_tr)</span>
+<span id="cb24-94"><a href="#cb24-94" aria-label="94"></a>    y_pred <span class="op">=</span> pipe.predict(X_te)</span>
+<span id="cb24-95"><a href="#cb24-95" aria-label="95"></a>    coefs <span class="op">=</span> {</span>
+<span id="cb24-96"><a href="#cb24-96" aria-label="96"></a>        f: <span class="bu">round</span>(<span class="bu">float</span>(c), <span class="dv">4</span>)</span>
+<span id="cb24-97"><a href="#cb24-97" aria-label="97"></a>        <span class="cf">for</span> f, c <span class="kw">in</span> <span class="bu">zip</span>(feats, pipe.named_steps[<span class="st">"ridge"</span>].coef_)</span>
+<span id="cb24-98"><a href="#cb24-98" aria-label="98"></a>    }</span>
+<span id="cb24-99"><a href="#cb24-99" aria-label="99"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-100"><a href="#cb24-100" aria-label="100"></a>        <span class="st">"n_clean"</span>: <span class="bu">int</span>(<span class="bu">len</span>(clean)),</span>
+<span id="cb24-101"><a href="#cb24-101" aria-label="101"></a>        <span class="st">"test_rmse"</span>: <span class="bu">round</span>(</span>
+<span id="cb24-102"><a href="#cb24-102" aria-label="102"></a>            <span class="bu">float</span>(root_mean_squared_error(y_te, y_pred)), <span class="dv">4</span></span>
+<span id="cb24-103"><a href="#cb24-103" aria-label="103"></a>        ),</span>
+<span id="cb24-104"><a href="#cb24-104" aria-label="104"></a>        <span class="st">"test_r2"</span>: <span class="bu">round</span>(<span class="bu">float</span>(r2_score(y_te, y_pred)), <span class="dv">4</span>),</span>
+<span id="cb24-105"><a href="#cb24-105" aria-label="105"></a>        <span class="st">"coefs"</span>: coefs,</span>
+<span id="cb24-106"><a href="#cb24-106" aria-label="106"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-22-failure-modes" class="level3" data-number="22.8.4">
+<h3 data-number="22.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-22-failure-modes"><span class="header-section-number">22.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 22 Failure Modes</h3>
+<ol type="1">
+<li><strong>Regularizing Without <code>StandardScaler()</code> Inside a <code>Pipeline</code>:</strong> Fitting <code>Ridge</code> or <code>Lasso</code> on raw unscaled predictors distorts penalties by measurement units, while scaling before splitting or before <code>cross_val_score</code> leaks test/validation statistics into training. Always chain <code>Pipeline([("scaler", StandardScaler()), ...])</code>.</li>
+<li><strong>Inverting Singular Matrices or Flipping Gradient Signs:</strong> Calling <code>np.linalg.inv(Xb.T @ Xb)</code> crashes on perfectly collinear features (<code>LinAlgError</code>), and flipping <code>err = y_hat - y</code> inside gradient descent turns minimization into explosive ascent. Prefer <code>np.linalg.lstsq</code> for closed-form OLS and always assert <code>loss_history[-1] &lt; loss_history[0]</code> in gradient descent.</li>
+<li><strong>Forgetting to Negate <code>neg_root_mean_squared_error</code> or Clean Sentinel <code>999</code>:</strong> Scikit-Learn returns negative RMSE scores during CV—negate them before selecting <code>idxmin()</code>. Likewise, leaving <code>anc_visits == 999</code> inside <code>mch_survey_sample</code> silently wrecks feature standardization and crushes the learned antenatal-care coefficient.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Next Step — From Continuous Prediction to Binary Classification
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You now command linear models from raw NumPy gradients through regularized Scikit-Learn pipelines. In <strong>Chapter 23</strong>, you will extend this exact linear-combination framework through the <strong>sigmoid function</strong> and <strong>binary cross-entropy loss</strong> to build regularized Logistic Regression classifiers, tune decision thresholds, and evaluate ROC-AUC, Precision-Recall curves, and probability calibration!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="pagination-link" aria-label="The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="pagination-link" aria-label="Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance">
+        <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

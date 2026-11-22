@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>7&nbsp; Lists, Indexing, Slicing, Mutation, and Aliasing Traps – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" rel="next">
+<link href="../part_01_python_foundations/ch06_functions_scope.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</a></li><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch07-intuition" id="toc-sec-ch07-intuition" class="nav-link" data-scroll-target="#sec-ch07-intuition"><span class="header-section-number">7.1</span> Stage 1 — First-Principles Intuition: Lists as Numbered Laboratory Specimen Racks</a>
+  <ul class="collapse">
+  <li><a href="#why-non-mutating-functions-matter-in-science" id="toc-why-non-mutating-functions-matter-in-science" class="nav-link" data-scroll-target="#why-non-mutating-functions-matter-in-science"><span class="header-section-number">7.1.1</span> Why Non-Mutating Functions Matter in Science</a></li>
+  </ul></li>
+  <li><a href="#sec-ch07-mental-model" id="toc-sec-ch07-mental-model" class="nav-link" data-scroll-target="#sec-ch07-mental-model"><span class="header-section-number">7.2</span> Stage 2 — Visual Mental Model: Aliasing vs.&nbsp;Shallow Copy vs.&nbsp;Deep Copy</a></li>
+  <li><a href="#sec-ch07-walkthrough" id="toc-sec-ch07-walkthrough" class="nav-link" data-scroll-target="#sec-ch07-walkthrough"><span class="header-section-number">7.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch07-indexing" id="toc-sec-ch07-indexing" class="nav-link" data-scroll-target="#sec-ch07-indexing"><span class="header-section-number">7.3.1</span> Zero-Based Indexing, Negative Indexing, and Slicing</a></li>
+  <li><a href="#sec-ch07-mutation" id="toc-sec-ch07-mutation" class="nav-link" data-scroll-target="#sec-ch07-mutation"><span class="header-section-number">7.3.2</span> In-Place Mutation Methods vs.&nbsp;Non-Mutating <code>sorted()</code></a></li>
+  <li><a href="#sec-ch07-aliasing" id="toc-sec-ch07-aliasing" class="nav-link" data-scroll-target="#sec-ch07-aliasing"><span class="header-section-number">7.3.3</span> The Aliasing Trap: <code>b = a</code> vs.&nbsp;<code>.copy()</code> vs.&nbsp;<code>copy.deepcopy()</code></a></li>
+  <li><a href="#sec-ch07-comprehensions" id="toc-sec-ch07-comprehensions" class="nav-link" data-scroll-target="#sec-ch07-comprehensions"><span class="header-section-number">7.3.4</span> List Comprehensions: Clean Filtering &amp; Transformation</a></li>
+  <li><a href="#sec-ch07-errors" id="toc-sec-ch07-errors" class="nav-link" data-scroll-target="#sec-ch07-errors"><span class="header-section-number">7.3.5</span> Break It On Purpose! (List &amp; Sorting Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch07-blueprint" id="toc-sec-ch07-blueprint" class="nav-link" data-scroll-target="#sec-ch07-blueprint"><span class="header-section-number">7.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">7.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">7.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch07-todos" id="toc-sec-ch07-todos" class="nav-link" data-scroll-target="#sec-ch07-todos"><span class="header-section-number">7.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch07-test" id="toc-sec-ch07-test" class="nav-link" data-scroll-target="#sec-ch07-test"><span class="header-section-number">7.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch07-exam" id="toc-sec-ch07-exam" class="nav-link" data-scroll-target="#sec-ch07-exam"><span class="header-section-number">7.7</span> Stage 7 — Chapter 7 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-7.1-30-points-clean-sort-systolic-blood-pressure" id="toc-exam-task-7.1-30-points-clean-sort-systolic-blood-pressure" class="nav-link" data-scroll-target="#exam-task-7.1-30-points-clean-sort-systolic-blood-pressure"><span class="header-section-number">7.7.1</span> Exam Task 7.1 (30 Points): Clean &amp; Sort Systolic Blood Pressure</a></li>
+  <li><a href="#exam-task-7.2-35-points-rolling-3-day-outbreak-totals" id="toc-exam-task-7.2-35-points-rolling-3-day-outbreak-totals" class="nav-link" data-scroll-target="#exam-task-7.2-35-points-rolling-3-day-outbreak-totals"><span class="header-section-number">7.7.2</span> Exam Task 7.2 (35 Points): Rolling 3-Day Outbreak Totals</a></li>
+  <li><a href="#exam-task-7.3-35-points-flag-adjust-medication-doses" id="toc-exam-task-7.3-35-points-flag-adjust-medication-doses" class="nav-link" data-scroll-target="#exam-task-7.3-35-points-flag-adjust-medication-doses"><span class="header-section-number">7.7.3</span> Exam Task 7.3 (35 Points): Flag &amp; Adjust Medication Doses</a></li>
+  </ul></li>
+  <li><a href="#sec-ch07-solutions" id="toc-sec-ch07-solutions" class="nav-link" data-scroll-target="#sec-ch07-solutions"><span class="header-section-number">7.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">7.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">7.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-7-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-7-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-7-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">7.8.3</span> C. Annotated Solutions — Chapter 7 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-7-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-7-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-7-failure-modes"><span class="header-section-number">7.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 7 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</a></li><li class="breadcrumb-item"><a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch07" class="quarto-section-identifier"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Launch <strong>Part II (Data Structures &amp; Algorithms)</strong> by mastering Python’s workhorse ordered container: the <code>list</code>. Learn zero-based and negative indexing, slicing windows, in-place mutation methods versus non-mutating functions, list comprehensions, and—above all—the <strong>aliasing, shallow-copy, and deep-copy memory traps</strong> that silently corrupt real scientific datasets when programmers overlook object references.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb">ch07 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 7 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb">ch07 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 7 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb">ch07 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 7 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Access, slice, reverse, and window ordered biomedical time series using zero-based indices, negative indices, and <code>start:stop:step</code> slicing—while avoiding the <code>[-0:]</code> trap.</li>
+<li>Distinguish <strong>in-place mutation methods</strong> (<code>.append()</code>, <code>.extend()</code>, <code>.insert()</code>, <code>.pop()</code>, <code>.remove()</code>, <code>.sort()</code>, which modify memory directly and often return <code>None</code>) from <strong>non-mutating operations</strong> (<code>sorted()</code>, slicing, comprehensions).</li>
+<li>Diagnose and eliminate <strong>aliasing bugs</strong> (<code>b = a</code>), <strong>shallow-copy traps</strong> (<code>a.copy()</code> on nested 2D lists), and <strong>deep-copy isolation</strong> (<code>copy.deepcopy(a)</code>).</li>
+<li>Write clean, non-mutating <strong>list comprehensions</strong> to filter missing sentinels (<code>None</code>, <code>999</code>) and transform clinical units in a single readable expression.</li>
+<li>Design pure list-processing functions that leave the caller’s raw dataset completely untouched for downstream audit trails and reproducible research.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch07-intuition" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="sec-ch07-intuition"><span class="header-section-number">7.1</span> Stage 1 — First-Principles Intuition: Lists as Numbered Laboratory Specimen Racks</h2>
+<p>In <strong>Part I</strong>, you built individual scalar calculations and clean, modular functions. Real clinical studies and outbreak surveillance pipelines, however, rarely process one number at a time: they process <strong>ordered sequences</strong>—52 weekly dengue counts, 1,200 systolic blood pressure readings, or a 2D grid of daily occupancy counts across hospital wards.</p>
+<p>Python’s <code>list</code> is an <strong>ordered, mutable sequence of object references</strong>. Think of it as a numbered specimen rack sitting on a laboratory bench:</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — The Numbered Specimen Rack &amp; Sticky-Note Labels
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Picture a physical laboratory rack holding numbered slots <code>0, 1, 2, ...</code>:</p>
+<ol type="1">
+<li><strong>Order Matters (Indexing &amp; Slicing):</strong> Slot <code>0</code> holds Week 1’s count; slot <code>-1</code> holds the most recent week. Pulling a slice <code>rack[-3:]</code> photographs the last three tubes and places those values into a <strong>brand-new tray</strong>.</li>
+<li><strong>Mutable In Place (Editing the Same Rack):</strong> Calling <code>rack.append(x)</code> or <code>rack.sort()</code> physically rearranges the <strong>exact same rack</strong> on the bench—and hands back <code>None</code>, because the work happened inside the rack itself.</li>
+<li><strong>The Aliasing Trap (Two Sticky Notes on One Rack):</strong> Remember from Chapter 2 that Python variables are <em>name tags</em>, not boxes! Writing <code>backup = rack</code> does <strong>not</strong> clone the rack; it merely sticks a second label (<code>backup</code>) onto the <strong>exact same physical rack</strong>. If you alter <code>backup[0] = 999</code>, you just corrupted <code>rack[0]</code> too!</li>
+<li><strong>Shallow Copy vs.&nbsp;Deep Copy (Racks Inside a Cabinet):</strong> Calling <code>cabinet.copy()</code> builds a new outer cabinet frame, but if the cabinet holds <em>inner ward trays</em> (a list of lists like <code>[[12, 14], [18, 20]]</code>), both cabinets still point to the <strong>same shared inner trays</strong>! Only <code>copy.deepcopy(cabinet)</code> clones the outer cabinet <em>and</em> every inner tray recursively.</li>
+</ol>
+</div>
+</div>
+<section id="why-non-mutating-functions-matter-in-science" class="level3" data-number="7.1.1">
+<h3 data-number="7.1.1" class="anchored" data-anchor-id="why-non-mutating-functions-matter-in-science"><span class="header-section-number">7.1.1</span> Why Non-Mutating Functions Matter in Science</h3>
+<p>Imagine passing <code>raw_sbp_readings</code> into a helper function <code>clean_and_sort_sbp(raw_sbp_readings)</code> to compute percentiles for Table 1, and then later plotting <code>raw_sbp_readings</code> in chronological visit order for Figure 2. If your helper silently called <code>raw_sbp_readings.sort()</code> in place, <strong>Figure 2’s time axis is now destroyed</strong>—with zero error messages raised! Throughout Part II, our discipline is simple: <strong>unless a function explicitly documents in-place mutation, never mutate a caller’s list.</strong></p>
+<hr>
+</section>
+</section>
+<section id="sec-ch07-mental-model" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="sec-ch07-mental-model"><span class="header-section-number">7.2</span> Stage 2 — Visual Mental Model: Aliasing vs.&nbsp;Shallow Copy vs.&nbsp;Deep Copy</h2>
+<p>Trace the three memory topologies side by side for a nested 2D hospital ward matrix <code>wards = [[12, 14], [18, 20]]</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> copy</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a>wards <span class="op">=</span> [[<span class="dv">12</span>, <span class="dv">14</span>], [<span class="dv">18</span>, <span class="dv">20</span>]]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a>alias_w <span class="op">=</span> wards                 <span class="co"># Same outer list, same inner rows</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>shallow_w <span class="op">=</span> wards.copy()        <span class="co"># New outer list, SAME inner rows!</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>deep_w <span class="op">=</span> copy.deepcopy(wards)   <span class="co"># New outer list, NEW inner rows!</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell" data-fig-width="6.2" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 7 (Aliasing vs. Shallow Copy vs. Deep Copy) illustrating Variable Name Tags; wards; alias_w = wards; shallow_w = wards.copy(); deep_w = copy.deepcopy(wards); Outer List Objects">flowchart TD
+    subgraph Names["Variable Name Tags"]
+        N1["wards"]
+        N2["alias_w = wards"]
+        N3["shallow_w = wards.copy()"]
+        N4["deep_w = copy.deepcopy(wards)"]
+    end
+    subgraph Outer["Outer List Objects"]
+        O1["Outer List #1"]
+        O2["Outer List #2&lt;br/&gt;(new container)"]
+        O3["Outer List #3&lt;br/&gt;(new container)"]
+    end
+    subgraph Inner["Inner Ward Row Lists"]
+        R1["Row 0: [12, 14]&lt;br/&gt;(SHARED by alias &amp; shallow!)"]
+        R2["Row 1: [18, 20]&lt;br/&gt;(SHARED by alias &amp; shallow!)"]
+        R3["Cloned Row 0: [12, 14]&lt;br/&gt;(100% isolated)"]
+        R4["Cloned Row 1: [18, 20]&lt;br/&gt;(100% isolated)"]
+    end
+    N1 --&gt; O1
+    N2 --&gt; O1
+    N3 --&gt; O2
+    N4 --&gt; O3
+    O1 --&gt; R1
+    O1 --&gt; R2
+    O2 -. "shared ref!" .-&gt; R1
+    O2 -. "shared ref!" .-&gt; R2
+    O3 ==&gt; R3
+    O3 ==&gt; R4
+</pre>
+</div>
+<p></p><figcaption> Chapter 7 visual mental model: Aliasing vs.&nbsp;Shallow Copy vs.&nbsp;Deep Copy</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Verify memory identity at any time using Python’s <code>is</code> operator:</p>
+<ul>
+<li><code>alias_w is wards</code> evaluates to <strong><code>True</code></strong> (same object in memory).</li>
+<li><code>shallow_w is wards</code> evaluates to <strong><code>False</code></strong>, <strong>but</strong> <code>shallow_w[0] is wards[0]</code> is <strong><code>True</code></strong> (the hidden shallow-copy trap!).</li>
+<li><code>deep_w is wards</code> is <strong><code>False</code></strong> <strong>and</strong> <code>deep_w[0] is wards[0]</code> is <strong><code>False</code></strong> (total isolation).</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Quick Rule of Thumb for Copying Lists
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>Flat 1D list of numbers/strings</strong> (e.g., <code>[10.4, 11.8, 12.1]</code>): <code>data.copy()</code>, <code>list(data)</code>, or <code>data[:]</code> gives full isolation because numbers and strings are immutable.</li>
+<li><strong>Nested list of lists or dicts</strong> (e.g., <code>[[12, 14], [18, 20]]</code>): always use <strong><code>copy.deepcopy(data)</code></strong>!</li>
+</ul>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch07-walkthrough" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="sec-ch07-walkthrough"><span class="header-section-number">7.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb</code> in Colab and execute every cell alongside the dissections below.</p>
+<section id="sec-ch07-indexing" class="level3" data-number="7.3.1">
+<h3 data-number="7.3.1" class="anchored" data-anchor-id="sec-ch07-indexing"><span class="header-section-number">7.3.1</span> Zero-Based Indexing, Negative Indexing, and Slicing</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>weekly_cases <span class="op">=</span> [<span class="dv">12</span>, <span class="dv">18</span>, <span class="dv">25</span>, <span class="dv">31</span>, <span class="dv">40</span>, <span class="dv">28</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a><span class="bu">print</span>(<span class="st">"First week (index 0):"</span>, weekly_cases[<span class="dv">0</span>])</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a><span class="bu">print</span>(<span class="st">"Last week (index -1):"</span>, weekly_cases[<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"Weeks 2 to 4 [1:4]:  "</span>, weekly_cases[<span class="dv">1</span>:<span class="dv">4</span>])</span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"Last 3 weeks [-3:]:  "</span>, weekly_cases[<span class="op">-</span><span class="dv">3</span>:])</span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Every 2nd week [::2]:"</span>, weekly_cases[::<span class="dv">2</span>])</span>
+<span id="cb2-8"><a href="#cb2-8" aria-label="8"></a><span class="bu">print</span>(<span class="st">"Reversed copy [::-1]:"</span>, weekly_cases[::<span class="op">-</span><span class="dv">1</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>First week (index 0): 12</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>Last week (index -1): 28</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>Weeks 2 to 4 [1:4]:   [18, 25, 31]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>Last 3 weeks [-3:]:   [31, 40, 28]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>Every 2nd week [::2]: [12, 25, 40]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>Reversed copy [::-1]: [28, 40, 31, 25, 18, 12]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Notice Python’s <strong>half-open interval</strong> rule <code>[start:stop:step]</code>: <code>start</code> is <strong>included</strong>, <code>stop</code> is <strong>excluded</strong>, so <code>weekly_cases[1:4]</code> returns exactly <span class="math inline">\(4 - 1 = 3\)</span> elements (indices <code>1</code>, <code>2</code>, <code>3</code>). Even better: slicing <strong>never raises <code>IndexError</code></strong> when <code>stop</code> or <code>-k</code> exceeds the list length, and it always produces a <strong>new list</strong>.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Watch Out for the Sneaky [-0:] Slicing Trap!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Suppose you write a helper to return the last <code>k</code> weeks using <code>weekly_cases[-k:]</code>. When <code>k = 3</code>, <code>weekly_cases[-3:]</code> returns <code>[31, 40, 28]</code>. What happens when <code>k = 0</code>? In Python, <code>-0</code> equals <code>0</code>, so <code>weekly_cases[-0:]</code> evaluates as <code>weekly_cases[0:]</code> and silently returns the <strong>entire list</strong> instead of <code>[]</code>! Always add an explicit guard <code>if k &lt;= 0: return []</code> before negative slicing.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch07-mutation" class="level3" data-number="7.3.2">
+<h3 data-number="7.3.2" class="anchored" data-anchor-id="sec-ch07-mutation"><span class="header-section-number">7.3.2</span> In-Place Mutation Methods vs.&nbsp;Non-Mutating <code>sorted()</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>sbp_log <span class="op">=</span> [<span class="dv">124</span>, <span class="dv">138</span>, <span class="dv">119</span>]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a><span class="co"># In-place mutation methods modify sbp_log directly and return None</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>ret_val <span class="op">=</span> sbp_log.append(<span class="dv">145</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a><span class="bu">print</span>(<span class="st">"After append(145):"</span>, sbp_log, <span class="st">"| return value:"</span>, ret_val)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a>sbp_log.extend([<span class="dv">131</span>, <span class="dv">128</span>])</span>
+<span id="cb4-8"><a href="#cb4-8" aria-label="8"></a>sbp_log.insert(<span class="dv">0</span>, <span class="dv">120</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-label="9"></a>popped <span class="op">=</span> sbp_log.pop()</span>
+<span id="cb4-10"><a href="#cb4-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"After extend/insert/pop:"</span>, sbp_log, <span class="st">"| popped:"</span>, popped)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-label="11"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-label="12"></a><span class="co"># sorted() returns a NEW sorted list; original chronological order stays!</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-label="13"></a>ranked <span class="op">=</span> <span class="bu">sorted</span>(sbp_log, reverse<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"Ranked copy:     "</span>, ranked)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"Original intact: "</span>, sbp_log)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>After append(145): [124, 138, 119, 145] | return value: None</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>After extend/insert/pop: [120, 124, 138, 119, 145, 131] | popped: 128</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>Ranked copy:      [145, 138, 131, 124, 120, 119]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>Original intact:  [120, 124, 138, 119, 145, 131]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Memorize the critical distinction between Python’s two sorting tools:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 29%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Operation</th>
+<th style="text-align: center;">Mutates Original List?</th>
+<th style="text-align: left;">Return Value</th>
+<th style="text-align: left;">Best Used When</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>data.sort()</code></td>
+<td style="text-align: center;"><strong>Yes (in place!)</strong></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">You explicitly own a private list and want to sort it in place</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>sorted(data)</code></td>
+<td style="text-align: center;"><strong>No (safe copy!)</strong></td>
+<td style="text-align: left;">New sorted <code>list</code></td>
+<td style="text-align: left;">You want to preserve the caller’s original chronological order</td>
+</tr>
+</tbody>
+</table>
+<p>Also notice <code>.append(x)</code> versus <code>.extend(iterable)</code>: <code>.append([131, 128])</code> adds a single nested list element (<code>[124, ..., [131, 128]]</code>), whereas <code>.extend([131, 128])</code> unpacks and appends each item individually.</p>
+<hr>
+</section>
+<section id="sec-ch07-aliasing" class="level3" data-number="7.3.3">
+<h3 data-number="7.3.3" class="anchored" data-anchor-id="sec-ch07-aliasing"><span class="header-section-number">7.3.3</span> The Aliasing Trap: <code>b = a</code> vs.&nbsp;<code>.copy()</code> vs.&nbsp;<code>copy.deepcopy()</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a><span class="im">import</span> copy</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a><span class="co"># 1. Direct assignment creates an ALIAS (same list in memory!)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>raw_hb <span class="op">=</span> [<span class="fl">10.4</span>, <span class="fl">11.8</span>, <span class="fl">12.1</span>]</span>
+<span id="cb6-5"><a href="#cb6-5" aria-label="5"></a>alias_hb <span class="op">=</span> raw_hb</span>
+<span id="cb6-6"><a href="#cb6-6" aria-label="6"></a>alias_hb[<span class="dv">0</span>] <span class="op">=</span> <span class="dv">999</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-label="7"></a><span class="bu">print</span>(<span class="st">"Alias -&gt; raw_hb changed:"</span>, raw_hb, <span class="st">"same?"</span>, alias_hb <span class="kw">is</span> raw_hb)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-label="8"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-label="9"></a><span class="co"># 2. Shallow .copy() isolates flat 1D lists</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-label="10"></a>clean_hb <span class="op">=</span> [<span class="fl">10.4</span>, <span class="fl">11.8</span>, <span class="fl">12.1</span>]</span>
+<span id="cb6-11"><a href="#cb6-11" aria-label="11"></a>safe_1d <span class="op">=</span> clean_hb.copy()</span>
+<span id="cb6-12"><a href="#cb6-12" aria-label="12"></a>safe_1d[<span class="dv">0</span>] <span class="op">=</span> <span class="fl">9.9</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"Flat .copy() -&gt; intact:"</span>, clean_hb, <span class="st">"| copy:"</span>, safe_1d)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-label="14"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-label="15"></a><span class="co"># 3. Nested 2D ward matrix: shallow copy SHARES inner rows!</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-label="16"></a>wards <span class="op">=</span> [[<span class="dv">12</span>, <span class="dv">14</span>], [<span class="dv">18</span>, <span class="dv">20</span>]]</span>
+<span id="cb6-17"><a href="#cb6-17" aria-label="17"></a>shallow_wards <span class="op">=</span> wards.copy()</span>
+<span id="cb6-18"><a href="#cb6-18" aria-label="18"></a>deep_wards <span class="op">=</span> copy.deepcopy(wards)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-label="19"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-label="20"></a>shallow_wards[<span class="dv">0</span>][<span class="dv">0</span>] <span class="op">=</span> <span class="dv">999</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-label="21"></a><span class="bu">print</span>(<span class="st">"After shallow edit -&gt; wards corrupted:"</span>, wards)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-label="22"></a><span class="bu">print</span>(<span class="st">"Deep copy unaffected:                 "</span>, deep_wards)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>Alias -&gt; raw_hb changed: [999, 11.8, 12.1] same? True</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>Flat .copy() -&gt; intact: [10.4, 11.8, 12.1] | copy: [9.9, 11.8, 12.1]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>After shallow edit -&gt; wards corrupted: [[999, 14], [18, 20]]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>Deep copy unaffected:                  [[12, 14], [18, 20]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Stare closely at the final two output lines: editing <code>shallow_wards[0][0] = 999</code> <strong>silently corrupted <code>wards[0][0]</code></strong>, because <code>.copy()</code> duplicated only the outer list frame while keeping references to the original inner rows. <code>copy.deepcopy(wards)</code> remained completely intact at <code>[[12, 14], [18, 20]]</code>.</p>
+<hr>
+</section>
+<section id="sec-ch07-comprehensions" class="level3" data-number="7.3.4">
+<h3 data-number="7.3.4" class="anchored" data-anchor-id="sec-ch07-comprehensions"><span class="header-section-number">7.3.4</span> List Comprehensions: Clean Filtering &amp; Transformation</h3>
+<p>A <strong>list comprehension</strong> builds a brand-new list by applying an expression (and optional <code>if</code> filter) across every element of an existing sequence—without ever touching the input list:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>raw_readings <span class="op">=</span> [<span class="fl">10.4</span>, <span class="va">None</span>, <span class="fl">11.8</span>, <span class="dv">999</span>, <span class="fl">9.6</span>, <span class="fl">12.3</span>]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>heights_cm <span class="op">=</span> [<span class="dv">168</span>, <span class="dv">156</span>, <span class="fl">172.4</span>, <span class="dv">160</span>]</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a><span class="co"># Filter sentinels into a brand-new list (raw_readings untouched)</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>valid_hb <span class="op">=</span> [v <span class="cf">for</span> v <span class="kw">in</span> raw_readings <span class="cf">if</span> v <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> v <span class="op">!=</span> <span class="dv">999</span>]</span>
+<span id="cb8-6"><a href="#cb8-6" aria-label="6"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-label="7"></a><span class="co"># Transform units cleanly into a new list</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-label="8"></a>heights_m <span class="op">=</span> [<span class="bu">round</span>(h <span class="op">/</span> <span class="dv">100</span>, <span class="dv">2</span>) <span class="cf">for</span> h <span class="kw">in</span> heights_cm]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-label="9"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-label="10"></a><span class="co"># Filter + transform in one readable expression</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-label="11"></a>anemic_gaps <span class="op">=</span> [<span class="bu">round</span>(<span class="fl">11.0</span> <span class="op">-</span> v, <span class="dv">2</span>) <span class="cf">for</span> v <span class="kw">in</span> valid_hb <span class="cf">if</span> v <span class="op">&lt;</span> <span class="fl">11.0</span>]</span>
+<span id="cb8-12"><a href="#cb8-12" aria-label="12"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-label="13"></a><span class="bu">print</span>(<span class="st">"Valid Hb:     "</span>, valid_hb)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"Heights (m):  "</span>, heights_m)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"Anemic gaps:  "</span>, anemic_gaps)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-label="16"></a><span class="bu">print</span>(<span class="st">"Raw unchanged:"</span>, raw_readings)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>Valid Hb:      [10.4, 11.8, 9.6, 12.3]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>Heights (m):   [1.68, 1.56, 1.72, 1.6]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>Anemic gaps:   [0.6, 1.4]</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>Raw unchanged: [10.4, None, 11.8, 999, 9.6, 12.3]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read a comprehension like set-builder notation in mathematics: <code>[expression for item in iterable if condition]</code>. Always place <code>v is not None</code> <strong>before</strong> numeric comparisons (<code>v &lt; 11.0</code>, <code>v &gt; 0</code>) so short-circuit <code>and</code> prevents <code>TypeError</code> on missing entries.</p>
+<hr>
+</section>
+<section id="sec-ch07-errors" class="level3" data-number="7.3.5">
+<h3 data-number="7.3.5" class="anchored" data-anchor-id="sec-ch07-errors"><span class="header-section-number">7.3.5</span> Break It On Purpose! (List &amp; Sorting Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — IndexError (Off-by-One Past Last Valid Index)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>weekly_cases <span class="op">=</span> [<span class="dv">12</span>, <span class="dv">18</span>, <span class="dv">25</span>, <span class="dv">31</span>, <span class="dv">40</span>, <span class="dv">28</span>]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a><span class="bu">print</span>(weekly_cases[<span class="dv">6</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>IndexError: list index out of range</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> A list of length <span class="math inline">\(N = 6\)</span> has valid non-negative indices <code>0, 1, 2, 3, 4, 5</code> (up to <code>len(lst) - 1</code>). Index <code>6</code> points past the end of the rack!<br>
+<strong>Fix:</strong> Use <code>weekly_cases[5]</code> or <code>weekly_cases[-1]</code> for the final element.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ValueError on .remove() Missing Item
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>ward_ids <span class="op">=</span> [<span class="st">"W-01"</span>, <span class="st">"W-02"</span>, <span class="st">"W-03"</span>]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a>ward_ids.remove(<span class="st">"W-99"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>ValueError: list.remove(x): x not in list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>.remove(x)</code> searches for the first occurrence of <code>x</code> and raises <code>ValueError</code> if <code>x</code> is absent. (Additionally, mutating a list with <code>.remove()</code> inside a <code>for</code> loop over that same list causes skipped elements!)<br>
+<strong>Fix:</strong> Check <code>if "W-99" in ward_ids:</code> first, or better yet build a new filtered list with a comprehension <code>[w for w in ward_ids if w != "W-99"]</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — TypeError Sorting Mixed None and float
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>mixed_hb <span class="op">=</span> [<span class="fl">10.4</span>, <span class="va">None</span>, <span class="fl">11.8</span>]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>sorted_hb <span class="op">=</span> <span class="bu">sorted</span>(mixed_hb)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>TypeError: '&lt;' not supported between instances of 'NoneType' and 'float'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Sorting compares pairs of elements with <code>&lt;</code>. Python refuses to guess whether <code>None</code> is smaller or larger than <code>10.4</code>.<br>
+<strong>Fix:</strong> Always filter out <code>None</code> <em>before</em> calling <code>sorted()</code>: <code>sorted([v for v in mixed_hb if v is not None])</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch07-blueprint" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="sec-ch07-blueprint"><span class="header-section-number">7.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> A regional epidemiology team sends raw weekly dengue counts containing missing reports (<code>None</code>), sentinel codes (<code>999</code>), and occasional negative transcription errors (<code>-3</code>). Build a pure, non-mutating function <code>analyze_surveillance_series(raw_weekly_cases, window=3, top_k=2)</code> that returns the 3-tuple <code>(cleaned, recent, peaks)</code> while keeping <code>raw_weekly_cases</code> completely intact for audit logging.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="7.4.1">
+<h3 data-number="7.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">7.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Inputs &amp; Purity Contract:</strong>
+<ul>
+<li>Inputs: <code>raw_weekly_cases</code> (<code>list</code>), <code>window=3</code> (<code>int</code>), <code>top_k=2</code> (<code>int</code>).</li>
+<li>Output: <code>(cleaned, recent, peaks)</code> where all three elements are brand-new lists; <code>raw_weekly_cases</code> must <strong>never</strong> be mutated.</li>
+</ul></li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Must check <code>c is not None</code> <em>before</em> <code>c &gt;= 0</code> to avoid <code>TypeError</code>.</li>
+<li>Must guard <code>window &lt;= 0</code> (preventing <code>cleaned[-0:]</code> trap) and <code>top_k &lt;= 0</code>.</li>
+<li>Must use <code>sorted(cleaned, reverse=True)</code> rather than <code>cleaned.sort()</code> so <code>cleaned</code> retains its chronological week order!</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Build <code>cleaned</code> via a filtering list comprehension keeping <code>c is not None and c != 999 and c &gt;= 0</code>.</li>
+<li>Slice <code>recent = [] if window &lt;= 0 else cleaned[-window:]</code>.</li>
+<li>Compute <code>peaks = [] if top_k &lt;= 0 else sorted(cleaned, reverse=True)[:top_k]</code>.</li>
+<li>Return <code>(cleaned, recent, peaks)</code>.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li><code>[14, None, 42, 999, 19, 68, -3, 35, 51]</code> <span class="math inline">\(\rightarrow\)</span> <code>cleaned = [14, 42, 19, 68, 35, 51]</code>, <code>recent = [68, 35, 51]</code>, <code>peaks = [68, 51]</code>, and <code>dhaka_raw</code> stays untouched.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="7.4.2">
+<h3 data-number="7.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">7.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a><span class="kw">def</span> analyze_surveillance_series(raw_weekly_cases, window<span class="op">=</span><span class="dv">3</span>, top_k<span class="op">=</span><span class="dv">2</span>):</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>    <span class="co">"""Clean sentinels, slice recent window, and find top-k peaks safely."""</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-label="3"></a>    cleaned <span class="op">=</span> [</span>
+<span id="cb16-4"><a href="#cb16-4" aria-label="4"></a>        c <span class="cf">for</span> c <span class="kw">in</span> raw_weekly_cases</span>
+<span id="cb16-5"><a href="#cb16-5" aria-label="5"></a>        <span class="cf">if</span> c <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> c <span class="op">!=</span> <span class="dv">999</span> <span class="kw">and</span> c <span class="op">&gt;=</span> <span class="dv">0</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-label="6"></a>    ]</span>
+<span id="cb16-7"><a href="#cb16-7" aria-label="7"></a>    recent <span class="op">=</span> [] <span class="cf">if</span> window <span class="op">&lt;=</span> <span class="dv">0</span> <span class="cf">else</span> cleaned[<span class="op">-</span>window:]</span>
+<span id="cb16-8"><a href="#cb16-8" aria-label="8"></a>    peaks <span class="op">=</span> [] <span class="cf">if</span> top_k <span class="op">&lt;=</span> <span class="dv">0</span> <span class="cf">else</span> <span class="bu">sorted</span>(cleaned, reverse<span class="op">=</span><span class="va">True</span>)[:top_k]</span>
+<span id="cb16-9"><a href="#cb16-9" aria-label="9"></a>    <span class="cf">return</span> (cleaned, recent, peaks)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-label="10"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-label="11"></a>dhaka_raw <span class="op">=</span> [<span class="dv">14</span>, <span class="va">None</span>, <span class="dv">42</span>, <span class="dv">999</span>, <span class="dv">19</span>, <span class="dv">68</span>, <span class="op">-</span><span class="dv">3</span>, <span class="dv">35</span>, <span class="dv">51</span>]</span>
+<span id="cb16-12"><a href="#cb16-12" aria-label="12"></a>cleaned, recent_3, top_2 <span class="op">=</span> analyze_surveillance_series(dhaka_raw)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-label="13"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-label="14"></a><span class="bu">print</span>(<span class="st">"Cleaned series:"</span>, cleaned)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-label="15"></a><span class="bu">print</span>(<span class="st">"Last 3 weeks:  "</span>, recent_3)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-label="16"></a><span class="bu">print</span>(<span class="st">"Top 2 peaks:   "</span>, top_2)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-label="17"></a><span class="bu">print</span>(<span class="st">"Raw untouched: "</span>, dhaka_raw)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>Cleaned series: [14, 42, 19, 68, 35, 51]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>Last 3 weeks:   [68, 35, 51]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>Top 2 peaks:    [68, 51]</span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a>Raw untouched:  [14, None, 42, 999, 19, 68, -3, 35, 51]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch07-todos" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="sec-ch07-todos"><span class="header-section-number">7.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and build all six non-mutating list functions below. Remember: <code>sharukh-tutor</code> now checks <strong>both</strong> your returned answer <em>and</em> verifies that you did not silently mutate the caller’s input list!</p>
+<ul>
+<li><strong>To-Do 7.1 (Negative Slicing &amp; Guard — <code>extract_recent_window(weekly_cases, k)</code>):</strong> Return a new list containing the last <code>k</code> weekly case counts (returning <code>[]</code> whenever <code>k &lt;= 0</code>, and never mutating or aliasing <code>weekly_cases</code>).</li>
+<li><strong>To-Do 7.2 (Aliasing Prevention — <code>append_reading_safely(readings, new_val)</code>):</strong> Return a new list containing all items of <code>readings</code> plus <code>new_val</code> at the end, leaving the caller’s <code>readings</code> list intact.</li>
+<li><strong>To-Do 7.3 (Filtering Comprehension — <code>filter_valid_hb(raw_hb_list)</code>):</strong> Return a new list containing only valid hemoglobin readings, skipping every <code>None</code> and every sentinel <code>999</code>.</li>
+<li><strong>To-Do 7.4 (Transformation Comprehension — <code>convert_heights_cm_to_m(heights_cm)</code>):</strong> Return a new list converting centimeter heights to meters (<code>h / 100</code>) rounded to 2 decimal places.</li>
+<li><strong>To-Do 7.5 (Non-Mutating Sort — <code>top_k_outbreak_weeks(weekly_cases, k)</code>):</strong> Return the <code>k</code> highest weekly case counts in descending order (<code>[]</code> if <code>k &lt;= 0</code>) without mutating <code>weekly_cases</code>.</li>
+<li><strong>To-Do 7.6 (Nested Copy Isolation — <code>clone_ward_matrix(wards)</code>):</strong> Return a deep copy of a 2D nested list of ward counts so mutating any inner ward row in the clone never affects <code>wards</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch07-test" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="sec-ch07-test"><span class="header-section-number">7.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Trace every snippet carefully on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong>Half-Open Slice Length:</strong> Given <code>x = [10, 20, 30, 40, 50, 60]</code>, what exact list does <code>x[1:4]</code> return? How many elements are in it?</p></li>
+<li><p><strong>The <code>[-0:]</code> Trap:</strong> For <code>cases = [12, 18, 25]</code>, what does <code>cases[-0:]</code> evaluate to, and why?</p></li>
+<li><p><strong>In-Place Return Value:</strong> What value is stored in <code>y</code> after running:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>vals <span class="op">=</span> [<span class="dv">30</span>, <span class="dv">10</span>, <span class="dv">20</span>]</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>y <span class="op">=</span> vals.sort()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Aliasing Trace:</strong> What does this snippet print?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>a <span class="op">=</span> [<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">300</span>]</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>b <span class="op">=</span> a</span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a>b.append(<span class="dv">400</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a><span class="bu">print</span>(<span class="bu">len</span>(a), a <span class="kw">is</span> b)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Shallow Copy Trap on 2D Lists:</strong> What does <code>grid</code> contain after this code runs?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>grid <span class="op">=</span> [[<span class="dv">1</span>, <span class="dv">2</span>], [<span class="dv">3</span>, <span class="dv">4</span>]]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>clone <span class="op">=</span> grid.copy()</span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a>clone[<span class="dv">0</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="dv">99</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Deep Copy Isolation:</strong> In Question 5, if <code>clone = copy.deepcopy(grid)</code> had been used instead, what would <code>grid</code> contain and what would <code>clone[0] is grid[0]</code> evaluate to?</p></li>
+<li><p><strong><code>.append()</code> vs.&nbsp;<code>.extend()</code>:</strong> Starting from <code>ids = ["A", "B"]</code>, contrast the resulting list after <code>ids.append(["C", "D"])</code> versus <code>ids.extend(["C", "D"])</code>.</p></li>
+<li><p><strong>Comprehension Short-Circuit Order:</strong> Why does <code>[v for v in [10, None, 20] if v &gt; 5 and v is not None]</code> crash with <code>TypeError</code>, whereas putting <code>v is not None</code> first succeeds?</p></li>
+<li><p><strong>Sliding Window Count:</strong> If a daily outbreak list has length <span class="math inline">\(N = 7\)</span>, how many complete 3-day windows (<code>daily[i : i + 3]</code>) exist, and what is the exact <code>range(...)</code> stop argument?</p></li>
+<li><p><strong><code>.remove()</code> vs.&nbsp;Filtering:</strong> Why is calling <code>vals.remove(x)</code> inside <code>for x in vals:</code> dangerous, and what is the clean, non-mutating Pythonic replacement?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch07-exam" class="level2" data-number="7.7">
+<h2 data-number="7.7" class="anchored" data-anchor-id="sec-ch07-exam"><span class="header-section-number">7.7</span> Stage 7 — Chapter 7 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb</code>, implement all three pure list-processing functions, and run <code>tutor.check_exam("ch07", exam_submissions)</code> to earn your score out of 100 points.</p>
+<section id="exam-task-7.1-30-points-clean-sort-systolic-blood-pressure" class="level3" data-number="7.7.1">
+<h3 data-number="7.7.1" class="anchored" data-anchor-id="exam-task-7.1-30-points-clean-sort-systolic-blood-pressure"><span class="header-section-number">7.7.1</span> Exam Task 7.1 (30 Points): Clean &amp; Sort Systolic Blood Pressure</h3>
+<p>Write <code>clean_and_sort_sbp(readings)</code> to sanitize raw systolic blood pressure (mmHg) logs from district clinics:</p>
+<ul>
+<li>Skip every <code>None</code> entry, sentinel <code>999</code> value, and non-positive value (<code>&lt;= 0</code>).</li>
+<li>Return a <strong>new list</strong> of the valid readings sorted in <strong>ascending</strong> order.</li>
+<li>Do <strong>not</strong> mutate the caller’s original <code>readings</code> list.</li>
+</ul>
+</section>
+<section id="exam-task-7.2-35-points-rolling-3-day-outbreak-totals" class="level3" data-number="7.7.2">
+<h3 data-number="7.7.2" class="anchored" data-anchor-id="exam-task-7.2-35-points-rolling-3-day-outbreak-totals"><span class="header-section-number">7.7.2</span> Exam Task 7.2 (35 Points): Rolling 3-Day Outbreak Totals</h3>
+<p>Write <code>rolling_3day_totals(daily_cases)</code> to smooth daily outbreak counts into 3-day cumulative windows:</p>
+<ul>
+<li>For each consecutive 3-day slice <code>daily_cases[i : i + 3]</code>, compute its sum and include it in the returned list.</li>
+<li>If <code>len(daily_cases) &lt; 3</code>, return an empty list <code>[]</code>.</li>
+<li>Example: <code>[10, 15, 20, 25, 30]</code> <span class="math inline">\(\rightarrow\)</span> <code>[45, 60, 75]</code>.</li>
+<li>Do <strong>not</strong> mutate <code>daily_cases</code>.</li>
+</ul>
+</section>
+<section id="exam-task-7.3-35-points-flag-adjust-medication-doses" class="level3" data-number="7.7.3">
+<h3 data-number="7.7.3" class="anchored" data-anchor-id="exam-task-7.3-35-points-flag-adjust-medication-doses"><span class="header-section-number">7.7.3</span> Exam Task 7.3 (35 Points): Flag &amp; Adjust Medication Doses</h3>
+<p>Write <code>flag_and_adjust_doses(doses_mg, cap_mg)</code> to apply a maximum safe dosing cap without altering the original prescription audit log:</p>
+<ul>
+<li>Build a <strong>new list</strong> <code>adjusted_list</code> where every dose strictly greater than <code>cap_mg</code> (<code>dose &gt; cap_mg</code>) is replaced with <code>cap_mg</code>, while doses <code>&lt;= cap_mg</code> remain unchanged.</li>
+<li>Count <code>capped_count</code> (<code>int</code>): how many doses strictly exceeded <code>cap_mg</code>.</li>
+<li>Return the 2-tuple <code>(adjusted_list, capped_count)</code> without mutating <code>doses_mg</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch07-solutions" class="level2" data-number="7.8">
+<h2 data-number="7.8" class="anchored" data-anchor-id="sec-ch07-solutions"><span class="header-section-number">7.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="7.8.1">
+<h3 data-number="7.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">7.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><strong><code>[20, 30, 40]</code></strong> — exactly <span class="math inline">\(4 - 1 = 3\)</span> elements (index <code>1</code> included, index <code>4</code> excluded).</li>
+<li><strong><code>[12, 18, 25]</code></strong> (the entire list!), because in Python <code>-0 == 0</code>, so <code>cases[-0:]</code> is identical to <code>cases[0:]</code>.</li>
+<li><strong><code>None</code></strong> — <code>vals.sort()</code> sorts <code>vals</code> in place to <code>[10, 20, 30]</code> and returns <code>None</code>.</li>
+<li>Prints <strong><code>4 True</code></strong> — <code>b = a</code> creates an alias pointing to the exact same list object, so appending to <code>b</code> mutates <code>a</code> as well.</li>
+<li><strong><code>[[1, 99], [3, 4]]</code></strong> — <code>.copy()</code> makes a shallow copy, so <code>clone[0]</code> and <code>grid[0]</code> still reference the exact same inner list!</li>
+<li><code>grid</code> stays <strong><code>[[1, 2], [3, 4]]</code></strong>, and <code>clone[0] is grid[0]</code> evaluates to <strong><code>False</code></strong>.</li>
+<li><code>.append(["C", "D"])</code> produces <code>["A", "B", ["C", "D"]]</code> (length 3, nested list); <code>.extend(["C", "D"])</code> produces <code>["A", "B", "C", "D"]</code> (length 4, flat list).</li>
+<li>Python evaluates <code>and</code> left-to-right: testing <code>None &gt; 5</code> first immediately raises <code>TypeError</code>. Putting <code>v is not None</code> first short-circuits to <code>False</code> and skips <code>None &gt; 5</code>.</li>
+<li>Exactly <span class="math inline">\(7 - 3 + 1 = 5\)</span> windows (start indices <code>0, 1, 2, 3, 4</code>), so the stop argument is <code>range(len(daily) - 2)</code> (i.e., <code>range(5)</code>).</li>
+<li>Mutating a list while iterating over it shifts element indices mid-loop, causing Python to skip adjacent elements (and <code>.remove()</code> raises <code>ValueError</code> if an item is absent). Always build a new list with a comprehension: <code>[v for v in vals if v != target]</code>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="7.8.2">
+<h3 data-number="7.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">7.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="im">import</span> copy</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a><span class="co"># To-Do 7.1</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a><span class="kw">def</span> extract_recent_window(weekly_cases, k):</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a>    <span class="co">"""Return the last k weekly case counts as a new list."""</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    <span class="cf">if</span> k <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>        <span class="cf">return</span> []</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    <span class="cf">return</span> weekly_cases[<span class="op">-</span>k:]</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a></span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a><span class="co"># To-Do 7.2</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a><span class="kw">def</span> append_reading_safely(readings, new_val):</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    <span class="co">"""Return a new list with new_val appended, leaving readings intact."""</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    updated <span class="op">=</span> readings.copy()</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>    updated.append(new_val)</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>    <span class="cf">return</span> updated</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a><span class="co"># To-Do 7.3</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a><span class="kw">def</span> filter_valid_hb(raw_hb_list):</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>    <span class="co">"""Return a new list of valid Hb readings, skipping None and 999."""</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>    <span class="cf">return</span> [val <span class="cf">for</span> val <span class="kw">in</span> raw_hb_list <span class="cf">if</span> val <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> val <span class="op">!=</span> <span class="dv">999</span>]</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a></span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a><span class="co"># To-Do 7.4</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a><span class="kw">def</span> convert_heights_cm_to_m(heights_cm):</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>    <span class="co">"""Convert a list of heights from cm to meters (2 decimals)."""</span></span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>    <span class="cf">return</span> [<span class="bu">round</span>(h <span class="op">/</span> <span class="dv">100</span>, <span class="dv">2</span>) <span class="cf">for</span> h <span class="kw">in</span> heights_cm]</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a><span class="co"># To-Do 7.5</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a><span class="kw">def</span> top_k_outbreak_weeks(weekly_cases, k):</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>    <span class="co">"""Return the k highest weekly counts (descending), non-mutating."""</span></span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    <span class="cf">if</span> k <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>        <span class="cf">return</span> []</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(weekly_cases, reverse<span class="op">=</span><span class="va">True</span>)[:k]</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a></span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a><span class="co"># To-Do 7.6</span></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a><span class="kw">def</span> clone_ward_matrix(wards):</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>    <span class="co">"""Return a deep copy of a nested ward matrix for full isolation."""</span></span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    <span class="cf">return</span> copy.deepcopy(wards)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-7-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="7.8.3">
+<h3 data-number="7.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-7-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">7.8.3</span> C. Annotated Solutions — Chapter 7 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 7.1 (30 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a><span class="kw">def</span> clean_and_sort_sbp(readings):</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>    <span class="co">"""Return sorted ascending valid SBP list (skip None, 999, &lt;= 0)."""</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>    valid <span class="op">=</span> [</span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a>        val <span class="cf">for</span> val <span class="kw">in</span> readings</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>        <span class="cf">if</span> val <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> val <span class="op">!=</span> <span class="dv">999</span> <span class="kw">and</span> val <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a>    ]</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>    <span class="cf">return</span> <span class="bu">sorted</span>(valid)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a></span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a><span class="co"># Exam Task 7.2 (35 pts)</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a><span class="kw">def</span> rolling_3day_totals(daily_cases):</span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>    <span class="co">"""Return sliding 3-day window sums, or [] if fewer than 3 days."""</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a>    <span class="cf">if</span> <span class="bu">len</span>(daily_cases) <span class="op">&lt;</span> <span class="dv">3</span>:</span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a>        <span class="cf">return</span> []</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>    <span class="cf">return</span> [</span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a>        <span class="bu">sum</span>(daily_cases[i : i <span class="op">+</span> <span class="dv">3</span>])</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(daily_cases) <span class="op">-</span> <span class="dv">2</span>)</span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a>    ]</span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a></span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a><span class="co"># Exam Task 7.3 (35 pts)</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a><span class="kw">def</span> flag_and_adjust_doses(doses_mg, cap_mg):</span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a>    <span class="co">"""Cap doses &gt; cap_mg without mutating input; return (list, count)."""</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>    adjusted <span class="op">=</span> []</span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a>    capped_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>    <span class="cf">for</span> dose <span class="kw">in</span> doses_mg:</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>        <span class="cf">if</span> dose <span class="op">&gt;</span> cap_mg:</span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>            adjusted.append(cap_mg)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>            capped_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a>        <span class="cf">else</span>:</span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a>            adjusted.append(dose)</span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>    <span class="cf">return</span> (adjusted, capped_count)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-7-failure-modes" class="level3" data-number="7.8.4">
+<h3 data-number="7.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-7-failure-modes"><span class="header-section-number">7.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 7 Failure Modes</h3>
+<ol type="1">
+<li><strong>Silent Caller Mutation (<code>list.sort()</code> / <code>list.append()</code> Inside Functions):</strong> Writing <code>readings.sort()</code> or <code>doses_mg[i] = cap_mg</code> inside a function silently alters the caller’s list—and writing <code>return readings.sort()</code> returns <code>None</code>! Default to non-mutating tools (<code>sorted(...)</code>, <code>.copy()</code>, list comprehensions) whenever you build analytical helpers.</li>
+<li><strong>The Shallow-Copy Illusion on Nested 2D Lists:</strong> Calling <code>wards.copy()</code> or <code>wards[:]</code> looks safe until you edit <code>cloned[0][0] = 999</code> and watch the original <code>wards[0][0]</code> mutate simultaneously. Whenever a list holds nested mutable containers, reach directly for <code>copy.deepcopy()</code>.</li>
+<li><strong>Off-by-One Slicing &amp; <code>[-0:]</code> Traps:</strong> Forgetting that <code>daily_cases[-0:]</code> returns the entire list, or looping <code>range(len(daily_cases) - 3)</code> (missing the final 3-day window) versus <code>range(len(daily_cases))</code> (summing partial 1-day/2-day tails), accounts for the majority of time-series window bugs. Always hand-check your window formula on a 3-element and 5-element list!</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Up Next — Dictionaries, Tuples, and Sets
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Lists shine when order and position are primary, but looking up a patient record by <code>patient_id</code> across 50,000 list entries is slow and clumsy. In <strong>Chapter 8</strong>, you will unlock Python’s hash-table superpowers—<strong>dictionaries (<code>dict</code>)</strong>, <strong>immutable tuples (<code>tuple</code>)</strong>, and <strong>sets (<code>set</code>)</strong>—for instant <span class="math inline">\(O(1)\)</span> clinical record lookup, cohort deduplication, and frequency counting.</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_01_python_foundations/ch06_functions_scope.html" class="pagination-link" aria-label="Functions, Scope, Decomposition, and Modular Problem Solving">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="pagination-link" aria-label="Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking">
+        <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

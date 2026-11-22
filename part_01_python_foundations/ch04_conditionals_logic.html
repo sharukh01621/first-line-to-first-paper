@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>4&nbsp; Boolean Logic, Conditionals, and Decision Trees in Code – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_01_python_foundations/ch05_loops_tracing.html" rel="next">
+<link href="../part_01_python_foundations/ch03_strings_input.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch04_conditionals_logic.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch04-intuition" id="toc-sec-ch04-intuition" class="nav-link" data-scroll-target="#sec-ch04-intuition"><span class="header-section-number">4.1</span> Stage 1 — First-Principles Intuition: Clinical Triage Protocols as Boolean Gates</a>
+  <ul class="collapse">
+  <li><a href="#boolean-truth-tables-and-or-not" id="toc-boolean-truth-tables-and-or-not" class="nav-link" data-scroll-target="#boolean-truth-tables-and-or-not"><span class="header-section-number">4.1.1</span> Boolean Truth Tables (<code>and</code>, <code>or</code>, <code>not</code>)</a></li>
+  <li><a href="#operator-precedence-pythons-indentation-law" id="toc-operator-precedence-pythons-indentation-law" class="nav-link" data-scroll-target="#operator-precedence-pythons-indentation-law"><span class="header-section-number">4.1.2</span> Operator Precedence &amp; Python’s Indentation Law</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-mental-model" id="toc-sec-ch04-mental-model" class="nav-link" data-scroll-target="#sec-ch04-mental-model"><span class="header-section-number">4.2</span> Stage 2 — Visual Mental Model: Clinical Decision Tree Flowchart</a></li>
+  <li><a href="#sec-ch04-walkthrough" id="toc-sec-ch04-walkthrough" class="nav-link" data-scroll-target="#sec-ch04-walkthrough"><span class="header-section-number">4.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch04-chained" id="toc-sec-ch04-chained" class="nav-link" data-scroll-target="#sec-ch04-chained"><span class="header-section-number">4.3.1</span> Comparison Operators &amp; Chained Clinical Ranges</a></li>
+  <li><a href="#sec-ch04-bools" id="toc-sec-ch04-bools" class="nav-link" data-scroll-target="#sec-ch04-bools"><span class="header-section-number">4.3.2</span> Boolean Algebra (<code>and</code>, <code>or</code>, <code>not</code>) &amp; Operator Precedence</a></li>
+  <li><a href="#sec-ch04-branching" id="toc-sec-ch04-branching" class="nav-link" data-scroll-target="#sec-ch04-branching"><span class="header-section-number">4.3.3</span> <code>if</code> / <code>elif</code> / <code>else</code> Clinical Decision Trees &amp; the <code>if</code> vs.&nbsp;<code>elif</code> Bug</a></li>
+  <li><a href="#sec-ch04-guards" id="toc-sec-ch04-guards" class="nav-link" data-scroll-target="#sec-ch04-guards"><span class="header-section-number">4.3.4</span> Short-Circuit Evaluation &amp; Defensive Guard Clauses</a></li>
+  <li><a href="#sec-ch04-errors" id="toc-sec-ch04-errors" class="nav-link" data-scroll-target="#sec-ch04-errors"><span class="header-section-number">4.3.5</span> Break It On Purpose! (Conditional &amp; Guard Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-blueprint" id="toc-sec-ch04-blueprint" class="nav-link" data-scroll-target="#sec-ch04-blueprint"><span class="header-section-number">4.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">4.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">4.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-todos" id="toc-sec-ch04-todos" class="nav-link" data-scroll-target="#sec-ch04-todos"><span class="header-section-number">4.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch04-test" id="toc-sec-ch04-test" class="nav-link" data-scroll-target="#sec-ch04-test"><span class="header-section-number">4.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch04-exam" id="toc-sec-ch04-exam" class="nav-link" data-scroll-target="#sec-ch04-exam"><span class="header-section-number">4.7</span> Stage 7 — Chapter 4 Hands-On Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-4.1-30-points-who-bmi-maternal-anemia-dual-classifier" id="toc-exam-task-4.1-30-points-who-bmi-maternal-anemia-dual-classifier" class="nav-link" data-scroll-target="#exam-task-4.1-30-points-who-bmi-maternal-anemia-dual-classifier"><span class="header-section-number">4.7.1</span> Exam Task 4.1 (30 Points): WHO BMI &amp; Maternal Anemia Dual Classifier</a></li>
+  <li><a href="#exam-task-4.2-35-points-upazila-clinic-emergency-dengue-triage" id="toc-exam-task-4.2-35-points-upazila-clinic-emergency-dengue-triage" class="nav-link" data-scroll-target="#exam-task-4.2-35-points-upazila-clinic-emergency-dengue-triage"><span class="header-section-number">4.7.2</span> Exam Task 4.2 (35 Points): Upazila Clinic Emergency Dengue Triage</a></li>
+  <li><a href="#exam-task-4.3-35-points-safe-outbreak-surveillance-guard-pipeline" id="toc-exam-task-4.3-35-points-safe-outbreak-surveillance-guard-pipeline" class="nav-link" data-scroll-target="#exam-task-4.3-35-points-safe-outbreak-surveillance-guard-pipeline"><span class="header-section-number">4.7.3</span> Exam Task 4.3 (35 Points): Safe Outbreak Surveillance Guard Pipeline</a></li>
+  </ul></li>
+  <li><a href="#sec-ch04-solutions" id="toc-sec-ch04-solutions" class="nav-link" data-scroll-target="#sec-ch04-solutions"><span class="header-section-number">4.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">4.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">4.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-4-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-4-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-4-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">4.8.3</span> C. Annotated Solutions — Chapter 4 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-4-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-4-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-4-failure-modes"><span class="header-section-number">4.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 4 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch01_first_program.html">Computational Thinking &amp; Python from Absolute Zero</a></li><li class="breadcrumb-item"><a href="../part_01_python_foundations/ch04_conditionals_logic.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch04" class="quarto-section-identifier"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Turn clinical guidelines and epidemiological criteria into watertight Python decision trees using <strong>chained comparisons</strong>, <strong>Boolean algebra</strong> (<code>and</code>, <code>or</code>, <code>not</code>), mutually exclusive <strong><code>if</code> / <code>elif</code> / <code>else</code> ladders</strong>, and <strong>short-circuit guard clauses</strong> that defend your research scripts against <code>ZeroDivisionError</code>, <code>None</code>, and DHS missing-value sentinels like <code>999</code>.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb">ch04 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch04_conditionals_logic__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 4 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb">ch04 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch04_conditionals_logic__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 4 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb">ch04 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_01_python_foundations__ch04_conditionals_logic__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 4 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Express clinical reference intervals cleanly using Python’s six comparison operators and <strong>chained comparisons</strong> (e.g., <code>90 &lt;= sbp_mmhg &lt; 120</code>).</li>
+<li>Combine multi-factor screening rules accurately using Boolean truth tables (<code>and</code>, <code>or</code>, <code>not</code>), operator precedence, and explicit parentheses.</li>
+<li>Translate clinical guidelines—such as <strong>WHO BMI classification</strong>, <strong>WHO maternal anemia severity</strong>, and <strong>Upazila clinic triage</strong>—into mutually exclusive <code>if</code> / <code>elif</code> / <code>else</code> decision trees without falling into the silent <code>if</code>-vs.-<code>elif</code> overwrite bug.</li>
+<li>Harness <strong>short-circuit evaluation</strong> (<code>population &gt; 0 and ...</code>) to shield incidence calculations from <code>ZeroDivisionError</code>.</li>
+<li>Write defensive <strong>missing-value guard clauses</strong> that intercept <code>None</code> and survey sentinel codes (<code>999</code>) <em>before</em> any numeric comparison executes.</li>
+<li>Trace branching execution paths by hand and debug common conditional errors (<code>TypeError</code>, <code>ZeroDivisionError</code>, <code>NameError</code>, and precedence traps).</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch04-intuition" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="sec-ch04-intuition"><span class="header-section-number">4.1</span> Stage 1 — First-Principles Intuition: Clinical Triage Protocols as Boolean Gates</h2>
+<p>Up to Chapter 3, every Python script you wrote ran strictly top-to-bottom—like a single-lane corridor where every single line executes unconditionally. Real medicine and public health never work that way.</p>
+<p>When a mother walks into an Upazila Health Complex in Sylhet or Rangpur, a triage nurse does <strong>not</strong> give every patient the exact same treatment. Instead, the nurse walks down a rapid <strong>yes/no decision checklist</strong>:</p>
+<ul>
+<li><em>Is hemoglobin missing (<code>None</code> or <code>999</code>)?</em> <span class="math inline">\(\rightarrow\)</span> Flag for lab draw immediately.</li>
+<li><em>Is hemoglobin below <span class="math inline">\(7.0\text{ g/dL}\)</span>?</em> <span class="math inline">\(\rightarrow\)</span> <strong>Severe anemia</strong> (urgent referral!).</li>
+<li><em>Otherwise, is it below <span class="math inline">\(10.0\text{ g/dL}\)</span>?</em> <span class="math inline">\(\rightarrow\)</span> <strong>Moderate anemia</strong>.</li>
+<li><em>Otherwise, is it below <span class="math inline">\(11.0\text{ g/dL}\)</span>?</em> <span class="math inline">\(\rightarrow\)</span> <strong>Mild anemia</strong>.</li>
+<li><em>Otherwise?</em> <span class="math inline">\(\rightarrow\)</span> <strong>Normal</strong>.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Every Branch Asks a Yes/No (Boolean) Question
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In Python, a <strong>conditional statement</strong> (<code>if</code>, <code>elif</code>, <code>else</code>) is a railroad switch controlled by a Boolean expression (<code>True</code> or <code>False</code>).</p>
+<ul>
+<li><strong>Boolean expressions</strong> are the <em>questions</em> (<code>hb_g_dl &lt; 7.0</code>, <code>sbp_mmhg &gt;= 140 and has_headache</code>).</li>
+<li><strong>Indented code blocks</strong> (4 spaces after a colon <code>:</code>) are the <em>actions</em> taken only when that specific track is switched open.</li>
+<li>In an <strong><code>if</code> / <code>elif</code> / <code>else</code></strong> chain, Python walks top-to-bottom and executes <strong>at most one branch</strong>—the <em>very first</em> condition that evaluates to <code>True</code>—then jumps straight to the end of the entire chain.</li>
+</ul>
+</div>
+</div>
+<section id="boolean-truth-tables-and-or-not" class="level3" data-number="4.1.1">
+<h3 data-number="4.1.1" class="anchored" data-anchor-id="boolean-truth-tables-and-or-not"><span class="header-section-number">4.1.1</span> Boolean Truth Tables (<code>and</code>, <code>or</code>, <code>not</code>)</h3>
+<p>Every compound clinical rule boils down to three logical operators named after 19th-century mathematician George Boole:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;"><code>A</code></th>
+<th style="text-align: center;"><code>B</code></th>
+<th style="text-align: center;"><code>A and B</code> (Both true)</th>
+<th style="text-align: center;"><code>A or B</code> (At least one true)</th>
+<th style="text-align: center;"><code>not A</code> (Flip)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>False</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>False</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>True</code></td>
+<td style="text-align: center;"><code>True</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>False</code></td>
+<td style="text-align: center;"><code>True</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="operator-precedence-pythons-indentation-law" class="level3" data-number="4.1.2">
+<h3 data-number="4.1.2" class="anchored" data-anchor-id="operator-precedence-pythons-indentation-law"><span class="header-section-number">4.1.2</span> Operator Precedence &amp; Python’s Indentation Law</h3>
+<p>When mixing logical operators in one expression, Python always evaluates in strict priority order:</p>
+<p><span class="math display">\[\text{Comparisons } (&lt;, \le, ==, \neq, \ge, &gt;) \;\longrightarrow\; \texttt{not} \;\longrightarrow\; \texttt{and} \;\longrightarrow\; \texttt{or}\]</span></p>
+<p>Just like arithmetic PEMDAS, <strong>never force a reader to memorize precedence during clinical triage</strong>—wrap compound clauses in explicit parentheses so your scientific intent is unmistakable!</p>
+<hr>
+</section>
+</section>
+<section id="sec-ch04-mental-model" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="sec-ch04-mental-model"><span class="header-section-number">4.2</span> Stage 2 — Visual Mental Model: Clinical Decision Tree Flowchart</h2>
+<p>Watch how Python evaluates a guarded <strong>WHO Maternal Anemia &amp; Triage Decision Tree</strong> from top to bottom. Notice how the missing-value guard sits at the <strong>very top gate</strong>, before any <code>&lt;</code> comparison can touch <code>None</code> or misread <code>999</code>:</p>
+<div class="cell" data-fig-width="4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 4 (Clinical Decision Tree Flowchart) illustrating Start: Receive raw_hb; anemia = 'Missing' (Guard exits early); anemia = 'Severe' Triage: Urgent; anemia = 'Moderate' Triage: Moderate; anemia = 'Mi...">flowchart TD
+    S["Start: Receive raw_hb"] --&gt; G{"raw_hb is None&lt;br/&gt;or raw_hb == 999?"}
+    G --&gt;|Yes| M["anemia = 'Missing'&lt;br/&gt;(Guard exits early)"]
+    G --&gt;|No| A{"raw_hb &lt; 7.0?"}
+    A --&gt;|Yes| SEV["anemia = 'Severe'&lt;br/&gt;Triage: Urgent"]
+    A --&gt;|No| B{"raw_hb &lt; 10.0?"}
+    B --&gt;|Yes| MOD["anemia = 'Moderate'&lt;br/&gt;Triage: Moderate"]
+    B --&gt;|No| C{"raw_hb &lt; 11.0?"}
+    C --&gt;|Yes| MLD["anemia = 'Mild'&lt;br/&gt;Iron + Follow-up"]
+    C --&gt;|No| NRM["anemia = 'Normal'&lt;br/&gt;Routine ANC"]
+</pre>
+</div>
+<p></p><figcaption> Chapter 4 visual mental model: Clinical Decision Tree Flowchart</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice the elegance of mutually exclusive <code>elif</code> arrows: the moment Python takes the <code>No</code> arrow out of <code>raw_hb &lt; 7.0</code>, we <strong>already know mathematically</strong> that <code>raw_hb &gt;= 7.0</code>. Therefore, the next gate only needs to ask <code>raw_hb &lt; 10.0</code>—it automatically captures the exact half-open interval <span class="math inline">\(7.0 \le \text{Hb} &lt; 10.0\)</span> with zero gaps and zero overlaps!</p>
+<hr>
+</section>
+<section id="sec-ch04-walkthrough" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="sec-ch04-walkthrough"><span class="header-section-number">4.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb</code> in Colab and run every cell alongside the dissections below.</p>
+<section id="sec-ch04-chained" class="level3" data-number="4.3.1">
+<h3 data-number="4.3.1" class="anchored" data-anchor-id="sec-ch04-chained"><span class="header-section-number">4.3.1</span> Comparison Operators &amp; Chained Clinical Ranges</h3>
+<p>Python supports all six relational operators (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>)—and unlike C or Java, Python lets you <strong>chain comparisons</strong> directly just as you write them in biostatistics papers:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a>sbp_mmhg <span class="op">=</span> <span class="dv">114</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a>hb_g_dl <span class="op">=</span> <span class="fl">12.2</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a>temp_c <span class="op">=</span> <span class="fl">38.4</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="co"># Chained comparisons mirror clinical reference intervals directly</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>is_normal_bp <span class="op">=</span> <span class="dv">90</span> <span class="op">&lt;=</span> sbp_mmhg <span class="op">&lt;</span> <span class="dv">120</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a>is_normal_hb <span class="op">=</span> <span class="fl">11.0</span> <span class="op">&lt;=</span> hb_g_dl <span class="op">&lt;=</span> <span class="fl">16.0</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>has_fever <span class="op">=</span> temp_c <span class="op">&gt;=</span> <span class="fl">38.0</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Normal BP:"</span>, is_normal_bp)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a><span class="bu">print</span>(<span class="st">"Normal Hb:"</span>, is_normal_hb)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a><span class="bu">print</span>(<span class="st">"Has Fever:"</span>, has_fever)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Normal BP: True</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Normal Hb: True</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a>Has Fever: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Under the hood, Python translates <code>90 &lt;= sbp_mmhg &lt; 120</code> into <code>(90 &lt;= sbp_mmhg) and (sbp_mmhg &lt; 120)</code>—evaluating <code>sbp_mmhg</code> only once and keeping the clinical interval crystal clear.</p>
+<hr>
+</section>
+<section id="sec-ch04-bools" class="level3" data-number="4.3.2">
+<h3 data-number="4.3.2" class="anchored" data-anchor-id="sec-ch04-bools"><span class="header-section-number">4.3.2</span> Boolean Algebra (<code>and</code>, <code>or</code>, <code>not</code>) &amp; Operator Precedence</h3>
+<p>In outbreak surveillance, case definitions almost always combine multiple symptoms and vaccination status:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a>has_fever <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>has_rash <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>is_vaccinated <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a><span class="co"># Precedence: not &gt; and &gt; or (parentheses make clinical intent explicit!)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>suspect_measles <span class="op">=</span> has_fever <span class="kw">and</span> has_rash <span class="kw">and</span> (<span class="kw">not</span> is_vaccinated)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>needs_isolation <span class="op">=</span> suspect_measles <span class="kw">or</span> (has_fever <span class="kw">and</span> <span class="kw">not</span> is_vaccinated)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a><span class="bu">print</span>(<span class="st">"Suspect measles:"</span>, suspect_measles)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a><span class="bu">print</span>(<span class="st">"Needs isolation:"</span>, needs_isolation)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Suspect measles: True</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Needs isolation: True</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Researcher’s Note — Always Write == for Equality, Never =
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Remember Chapter 2: a single <code>=</code> <strong>assigns</strong> a value (<code>age = 30</code>), whereas a double <code>==</code> <strong>tests equality</strong> (<code>age == 30</code> <span class="math inline">\(\rightarrow\)</span> <code>True</code> or <code>False</code>). For checking <code>None</code>, Python best practice uses the identity operator <strong><code>is None</code></strong> or <strong><code>is not None</code></strong> rather than <code>== None</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch04-branching" class="level3" data-number="4.3.3">
+<h3 data-number="4.3.3" class="anchored" data-anchor-id="sec-ch04-branching"><span class="header-section-number">4.3.3</span> <code>if</code> / <code>elif</code> / <code>else</code> Clinical Decision Trees &amp; the <code>if</code> vs.&nbsp;<code>elif</code> Bug</h3>
+<p>Compare these two side-by-side WHO maternal anemia classifiers on a critically ill mother whose hemoglobin is <code>hb_g_dl = 6.4</code> g/dL:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Correct WHO maternal anemia severity ladder (mutually exclusive elif)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>hb_g_dl <span class="op">=</span> <span class="fl">6.4</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a><span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>    severity <span class="op">=</span> <span class="st">"Severe"</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>    severity <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>    severity <span class="op">=</span> <span class="st">"Mild"</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a><span class="cf">else</span>:</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>    severity <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a><span class="bu">print</span>(<span class="ss">f"Hb </span><span class="sc">{</span>hb_g_dl<span class="sc">}</span><span class="ss"> g/dL -&gt; Correct severity: </span><span class="sc">{</span>severity<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Hb 6.4 g/dL -&gt; Correct severity: Severe</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Now watch what happens if a hasty programmer writes three separate <code>if</code> statements instead of <code>elif</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="co"># Silent Logic Bug: independent 'if' statements overwrite earlier matches!</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>hb_g_dl <span class="op">=</span> <span class="fl">6.4</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>buggy_severity <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a><span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>    buggy_severity <span class="op">=</span> <span class="st">"Severe"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a><span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    buggy_severity <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a><span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>    buggy_severity <span class="op">=</span> <span class="st">"Mild"</span>   <span class="co"># DANGEROUS: overwrites 'Severe' with 'Mild'!</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a><span class="bu">print</span>(<span class="ss">f"Hb </span><span class="sc">{</span>hb_g_dl<span class="sc">}</span><span class="ss"> g/dL -&gt; Buggy severity:   </span><span class="sc">{</span>buggy_severity<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Hb 6.4 g/dL -&gt; Buggy severity:   Mild</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Silent Clinical Danger — No Error Message, Wrong Diagnosis!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Notice that Python raised <strong>zero exceptions</strong> in the buggy cell! Because <span class="math inline">\(6.4 &lt; 7.0\)</span> is <code>True</code>, <strong>and</strong> <span class="math inline">\(6.4 &lt; 10.0\)</span> is <code>True</code>, <strong>and</strong> <span class="math inline">\(6.4 &lt; 11.0\)</span> is <code>True</code>, every independent <code>if</code> block executed in sequence—silently downgrading a life-threatening <strong>Severe</strong> anemia case to <strong>Mild</strong>. Whenever categories are mutually exclusive, <strong>always link them with <code>elif</code></strong>.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch04-guards" class="level3" data-number="4.3.4">
+<h3 data-number="4.3.4" class="anchored" data-anchor-id="sec-ch04-guards"><span class="header-section-number">4.3.4</span> Short-Circuit Evaluation &amp; Defensive Guard Clauses</h3>
+<p>Python evaluates <code>and</code> and <code>or</code> <strong>lazily from left to right</strong>:</p>
+<ul>
+<li>In <code>A and B</code>, if <code>A</code> is <code>False</code>, the entire expression can <em>never</em> be <code>True</code>—so Python <strong>stops immediately and never evaluates <code>B</code></strong>.</li>
+<li>In <code>A or B</code>, if <code>A</code> is <code>True</code>, the entire expression is <em>already</em> <code>True</code>—so Python <strong>stops immediately and never evaluates <code>B</code></strong>.</li>
+</ul>
+<p>This behavior—called <strong>short-circuit evaluation</strong>—lets you place a <strong>guard condition</strong> on the left to protect dangerous operations (like dividing by a possibly zero population or comparing a possibly <code>None</code> lab value) on the right:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="co"># Guard 1: Short-circuit prevents ZeroDivisionError when population == 0</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>cases <span class="op">=</span> <span class="dv">18</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>population <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>high_outbreak <span class="op">=</span> population <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> (cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span> <span class="op">&gt;=</span> <span class="fl">50.0</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="bu">print</span>(<span class="st">"High outbreak (safely guarded):"</span>, high_outbreak)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a><span class="co"># Guard 2: Missing-value guard intercepts BOTH None and DHS sentinel 999</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>raw_hb <span class="op">=</span> <span class="dv">999</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a><span class="cf">if</span> raw_hb <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> raw_hb <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>    hb_label <span class="op">=</span> <span class="st">"Missing"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a><span class="cf">elif</span> raw_hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>    hb_label <span class="op">=</span> <span class="st">"Anemic"</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a><span class="cf">else</span>:</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>    hb_label <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a><span class="bu">print</span>(<span class="st">"Guarded Hb status:"</span>, hb_label)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>High outbreak (safely guarded): False</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Guarded Hb status: Missing</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at Guard 2: in real DHS, MICS, and hospital EHR exports, missing laboratory values are frequently coded as numeric sentinels like <code>999</code> or <code>-9</code>. If you forget to check <code>raw_hb == 999</code> <strong>first</strong>, Python happily evaluates <code>999 &lt; 11.0</code> as <code>False</code> and misclassifies a patient who never got a blood test as <code>"Normal"</code>!</p>
+<hr>
+</section>
+<section id="sec-ch04-errors" class="level3" data-number="4.3.5">
+<h3 data-number="4.3.5" class="anchored" data-anchor-id="sec-ch04-errors"><span class="header-section-number">4.3.5</span> Break It On Purpose! (Conditional &amp; Guard Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — TypeError Comparing None to a Number
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>hb_g_dl <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>is_anemic <span class="op">=</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>TypeError: '&lt;' not supported between instances of 'NoneType' and 'float'</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Unlike <code>==</code>, Python refuses to order <code>None</code> relative to a float—protecting you from silently treating missing measurements as zero.<br>
+<strong>Fix:</strong> Guard <code>None</code> first: <code>is_anemic = (hb_g_dl is not None) and (hb_g_dl &lt; 11.0)</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ZeroDivisionError from Reversed Guard Order
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a>cases <span class="op">=</span> <span class="dv">12</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>population <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>high_rate <span class="op">=</span> (cases <span class="op">/</span> population) <span class="op">&gt;</span> <span class="fl">0.05</span> <span class="kw">and</span> population <span class="op">&gt;</span> <span class="dv">0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>ZeroDivisionError: division by zero</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> The author wrote the right guard (<code>population &gt; 0</code>), but placed it on the <strong>right</strong> side of <code>and</code>! Because Python evaluates left-to-right, <code>cases / population</code> crashed before Python ever reached the guard.<br>
+<strong>Fix:</strong> Always put the guard <strong>first</strong>: <code>high_rate = population &gt; 0 and (cases / population) &gt; 0.05</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — NameError on Lowercase Boolean
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a>is_eligible <span class="op">=</span> true</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>NameError: name 'true' is not defined</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Unlike JavaScript, R (<code>TRUE</code>), or JSON (<code>true</code>), Python’s Boolean literals are strictly capitalized <strong><code>True</code></strong> and <strong><code>False</code></strong>. Writing lowercase <code>true</code> makes Python search for a variable named <code>true</code>.<br>
+<strong>Fix:</strong> Capitalize the first letter: <code>is_eligible = True</code>.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch04-blueprint" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="sec-ch04-blueprint"><span class="header-section-number">4.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Build an automated <strong>Upazila Health Complex Maternal Triage Router</strong>. Given a pregnant patient’s hemoglobin (<code>hb_g_dl = 6.8</code>), systolic blood pressure (<code>sbp_mmhg = 152</code>), and severe headache symptom (<code>has_headache = True</code>), classify her WHO maternal anemia severity (with a missing-value guard for <code>None</code> or <code>999</code>), flag potential preeclampsia (<code>sbp_mmhg &gt;= 140</code> AND <code>has_headache</code>), and route her clinic <code>triage_priority</code>:</p>
+<ul>
+<li><strong><code>"Urgent"</code></strong> if <code>anemia_grade == "Severe"</code> OR <code>sbp_mmhg &gt;= 160</code> OR <code>preeclampsia_flag</code></li>
+<li><strong><code>"Moderate"</code></strong> if <code>anemia_grade == "Moderate"</code> OR <code>sbp_mmhg &gt;= 140</code></li>
+<li><strong><code>"Routine"</code></strong> otherwise</li>
+</ul>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="4.4.1">
+<h3 data-number="4.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">4.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><strong>Inputs &amp; Units:</strong> <code>hb_g_dl</code> (g/dL, possibly <code>None</code> or <code>999</code>), <code>sbp_mmhg</code> (mmHg), <code>has_headache</code> (<code>bool</code>).</li>
+<li><strong>Edge Cases &amp; Traps:</strong>
+<ul>
+<li>Guard <code>hb_g_dl is None or hb_g_dl == 999</code> at the very top of the anemia ladder before <code>&lt; 7.0</code>.</li>
+<li>Use mutually exclusive <code>elif</code> branches so <code>"Severe"</code> cannot be overwritten by <code>"Mild"</code>.</li>
+<li>Test <code>"Urgent"</code> <em>before</em> <code>"Moderate"</code> in the triage router so high-risk red flags always win.</li>
+</ul></li>
+<li><strong>Step-by-Step Algorithm:</strong>
+<ol type="1">
+<li>Classify <code>anemia_grade</code> via guarded <code>if / elif / else</code>.</li>
+<li>Compute <code>preeclampsia_flag = (sbp_mmhg &gt;= 140) and has_headache</code>.</li>
+<li>Route <code>triage_priority</code> from most urgent (<code>"Urgent"</code>) to least urgent (<code>"Routine"</code>).</li>
+<li>Print a clean structured triage summary.</li>
+</ol></li>
+<li><strong>Verification Plan (Hand Check):</strong>
+<ul>
+<li><code>hb_g_dl = 6.8 &lt; 7.0</code> <span class="math inline">\(\Rightarrow\)</span> <code>anemia_grade = "Severe"</code>.</li>
+<li><code>sbp_mmhg = 152 &gt;= 140</code> and <code>has_headache = True</code> <span class="math inline">\(\Rightarrow\)</span> <code>preeclampsia_flag = True</code>.</li>
+<li>Both red flags trigger the first branch <span class="math inline">\(\Rightarrow\)</span> <code>triage_priority = "Urgent"</code>.</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="4.4.2">
+<h3 data-number="4.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">4.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a><span class="co"># Step 1: Patient intake readings from Upazila Health Complex</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-label="2"></a>hb_g_dl <span class="op">=</span> <span class="fl">6.8</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-label="3"></a>sbp_mmhg <span class="op">=</span> <span class="dv">152</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-label="4"></a>has_headache <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-label="5"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-label="6"></a><span class="co"># Step 2: Missing-value guard + WHO maternal anemia classification</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-label="7"></a><span class="cf">if</span> hb_g_dl <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> hb_g_dl <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb17-8"><a href="#cb17-8" aria-label="8"></a>    anemia_grade <span class="op">=</span> <span class="st">"Missing"</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-label="9"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb17-10"><a href="#cb17-10" aria-label="10"></a>    anemia_grade <span class="op">=</span> <span class="st">"Severe"</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-label="11"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb17-12"><a href="#cb17-12" aria-label="12"></a>    anemia_grade <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-label="13"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb17-14"><a href="#cb17-14" aria-label="14"></a>    anemia_grade <span class="op">=</span> <span class="st">"Mild"</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-label="15"></a><span class="cf">else</span>:</span>
+<span id="cb17-16"><a href="#cb17-16" aria-label="16"></a>    anemia_grade <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-label="17"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-label="18"></a><span class="co"># Step 3: Preeclampsia warning &amp; clinic triage routing</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-label="19"></a>preeclampsia_flag <span class="op">=</span> (sbp_mmhg <span class="op">&gt;=</span> <span class="dv">140</span>) <span class="kw">and</span> has_headache</span>
+<span id="cb17-20"><a href="#cb17-20" aria-label="20"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-label="21"></a><span class="cf">if</span> anemia_grade <span class="op">==</span> <span class="st">"Severe"</span> <span class="kw">or</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">160</span> <span class="kw">or</span> preeclampsia_flag:</span>
+<span id="cb17-22"><a href="#cb17-22" aria-label="22"></a>    triage_priority <span class="op">=</span> <span class="st">"Urgent"</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-label="23"></a><span class="cf">elif</span> anemia_grade <span class="op">==</span> <span class="st">"Moderate"</span> <span class="kw">or</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">140</span>:</span>
+<span id="cb17-24"><a href="#cb17-24" aria-label="24"></a>    triage_priority <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-label="25"></a><span class="cf">else</span>:</span>
+<span id="cb17-26"><a href="#cb17-26" aria-label="26"></a>    triage_priority <span class="op">=</span> <span class="st">"Routine"</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-label="27"></a></span>
+<span id="cb17-28"><a href="#cb17-28" aria-label="28"></a><span class="co"># Step 4: Structured clinical triage readout</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-label="29"></a><span class="bu">print</span>(<span class="ss">f"Anemia: </span><span class="sc">{</span>anemia_grade<span class="sc">}</span><span class="ss"> | Preeclampsia Flag: </span><span class="sc">{</span>preeclampsia_flag<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb17-30"><a href="#cb17-30" aria-label="30"></a><span class="bu">print</span>(<span class="ss">f"Upazila Triage Priority: </span><span class="sc">{</span>triage_priority<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>Anemia: Severe | Preeclampsia Flag: True</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>Upazila Triage Priority: Urgent</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch04-todos" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="sec-ch04-todos"><span class="header-section-number">4.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and complete all six labs:</p>
+<ul>
+<li><strong>To-Do 4.1 (Warm-Up — WHO Adult BMI Classification):</strong> Classify <code>bmi = 27.4</code> into <code>"Underweight"</code> (<span class="math inline">\(&lt; 18.5\)</span>), <code>"Normal"</code> (<span class="math inline">\(&lt; 25.0\)</span>), <code>"Overweight"</code> (<span class="math inline">\(&lt; 30.0\)</span>), or <code>"Obese"</code> (<span class="math inline">\(\ge 30.0\)</span>) using <code>if</code> / <code>elif</code> / <code>else</code>.</li>
+<li><strong>To-Do 4.2 (Chained Comparisons — Normal Vitals):</strong> Given <code>temp_c = 36.8</code>, <code>sbp_mmhg = 114</code>, <code>spo2_pct = 98</code>, compute <code>temp_normal</code> (<span class="math inline">\(36.1 \le T \le 37.2\)</span>), <code>sbp_normal</code> (<span class="math inline">\(90 \le \text{SBP} &lt; 120\)</span>), <code>spo2_normal</code> (<span class="math inline">\(95 \le \text{SpO}_2 \le 100\)</span>), and <code>all_vitals_normal</code>.</li>
+<li><strong>To-Do 4.3 (Boolean Algebra — Vaccine Trial Screen):</strong> Given <code>age_years = 24</code>, <code>is_pregnant = False</code>, <code>has_severe_allergy = False</code>, <code>consented = True</code>, compute <code>age_ok</code> (<span class="math inline">\(18 \le \text{age} \le 65\)</span>), <code>medically_safe</code>, <code>can_enroll</code>, and <code>needs_review</code>.</li>
+<li><strong>To-Do 4.4 (Clinical Decision Tree — Maternal Anemia Severity):</strong> Classify <code>hb_g_dl = 8.9</code> into <code>"Severe"</code>, <code>"Moderate"</code>, <code>"Mild"</code>, or <code>"Normal"</code> without falling into the <code>if</code>-vs.-<code>elif</code> overwrite trap.</li>
+<li><strong>To-Do 4.5 (Short-Circuit Guard — Zero Population):</strong> Given <code>cases = 15</code> and <code>population = 0</code>, compute <code>has_valid_pop</code>, short-circuited <code>is_high_incidence</code>, and guarded <code>incidence_per_100k</code> (<code>None</code> when <code>population &lt;= 0</code>) without crashing.</li>
+<li><strong>To-Do 4.6 (Stretch Guard &amp; Triage — Sentinel <code>999</code> / <code>None</code>):</strong> Given <code>raw_hb = 999</code> and <code>sbp_mmhg = 148</code>, intercept missing hemoglobin (<code>hb_missing</code>, <code>anemia_status = "Missing"</code>) and route <code>triage_priority</code> (<code>"Urgent"</code>, <code>"Moderate"</code>, or <code>"Routine"</code>).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch04-test" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="sec-ch04-test"><span class="header-section-number">4.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work every question on paper before checking Stage 8:</p>
+<ol type="1">
+<li><p><strong>Chained Comparison Trace:</strong> What does <code>90 &lt;= 120 &lt; 120</code> evaluate to (<code>True</code> or <code>False</code>), and why?</p></li>
+<li><p><strong>Precedence Trap:</strong> Without parentheses, what does <code>True or False and False</code> evaluate to? Why?</p></li>
+<li><p><strong>Spot the Silent Bug:</strong> If <code>bmi = 17.2</code>, what does <code>cat</code> hold after running these four lines?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a><span class="cf">if</span> bmi <span class="op">&lt;</span> <span class="fl">18.5</span>:</span>
+<span id="cb19-2"><a href="#cb19-2" aria-label="2"></a>    cat <span class="op">=</span> <span class="st">"Underweight"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-label="3"></a><span class="cf">if</span> bmi <span class="op">&lt;</span> <span class="fl">25.0</span>:</span>
+<span id="cb19-4"><a href="#cb19-4" aria-label="4"></a>    cat <span class="op">=</span> <span class="st">"Normal"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Short-Circuit Order:</strong> Does <code>population &gt; 0 and (cases / population) &gt; 0.1</code> crash when <code>population = 0</code>? What if you swap the two sides?</p></li>
+<li><p><strong>De Morgan’s Law:</strong> Rewrite <code>not (is_pregnant or has_allergy)</code> as an equivalent expression using <code>and</code>.</p></li>
+<li><p><strong>Sentinel Guard Trap:</strong> Why is checking <code>if raw_hb &lt; 11.0:</code> <em>before</em> <code>elif raw_hb == 999:</code> a dangerous bug in DHS data cleaning?</p></li>
+<li><p><strong>Identity vs.&nbsp;Equality:</strong> What is the preferred Pythonic way to test whether <code>lab_result</code> is missing (<code>None</code>)?</p></li>
+<li><p><strong>Branch Ordering:</strong> What is printed if <code>sbp = 175</code> enters this <code>if / elif</code> block?</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a><span class="cf">if</span> sbp <span class="op">&gt;=</span> <span class="dv">140</span>:</span>
+<span id="cb20-2"><a href="#cb20-2" aria-label="2"></a>    priority <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-label="3"></a><span class="cf">elif</span> sbp <span class="op">&gt;=</span> <span class="dv">160</span>:</span>
+<span id="cb20-4"><a href="#cb20-4" aria-label="4"></a>    priority <span class="op">=</span> <span class="st">"Urgent"</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-label="5"></a><span class="cf">else</span>:</span>
+<span id="cb20-6"><a href="#cb20-6" aria-label="6"></a>    priority <span class="op">=</span> <span class="st">"Routine"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><strong>Case Sensitivity:</strong> What exact exception does <code>flag = false</code> raise in Python?</p></li>
+<li><p><strong>Boundary Audit:</strong> In <code>if hb &lt; 7.0: ... elif hb &lt; 10.0: ...</code>, which exact category does a patient with <code>hb = 7.0</code> receive?</p></li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch04-exam" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="sec-ch04-exam"><span class="header-section-number">4.7</span> Stage 7 — Chapter 4 Hands-On Coding Exam (100 Points)</h2>
+<p>Open <code>part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb</code>, complete all three tasks, and run <code>tutor.check_exam("ch04", exam_submissions)</code> to grade your exam out of 100 points.</p>
+<section id="exam-task-4.1-30-points-who-bmi-maternal-anemia-dual-classifier" class="level3" data-number="4.7.1">
+<h3 data-number="4.7.1" class="anchored" data-anchor-id="exam-task-4.1-30-points-who-bmi-maternal-anemia-dual-classifier"><span class="header-section-number">4.7.1</span> Exam Task 4.1 (30 Points): WHO BMI &amp; Maternal Anemia Dual Classifier</h3>
+<p>An antenatal clinic record contains <code>weight_kg = 46.0</code>, <code>height_m = 1.60</code>, and <code>hb_g_dl = 6.7</code>. Compute:</p>
+<ul>
+<li><code>bmi</code>: <code>round(weight_kg / (height_m ** 2), 2)</code></li>
+<li><code>bmi_category</code>: WHO adult category (<code>"Underweight"</code> <span class="math inline">\(&lt; 18.5\)</span>, <code>"Normal"</code> <span class="math inline">\(&lt; 25.0\)</span>, <code>"Overweight"</code> <span class="math inline">\(&lt; 30.0\)</span>, else <code>"Obese"</code>)</li>
+<li><code>anemia_severity</code>: guard <code>hb_g_dl is None or hb_g_dl == 999</code> <span class="math inline">\(\rightarrow\)</span> <code>"Missing"</code>, else <code>"Severe"</code> (<span class="math inline">\(&lt; 7.0\)</span>), <code>"Moderate"</code> (<span class="math inline">\(&lt; 10.0\)</span>), <code>"Mild"</code> (<span class="math inline">\(&lt; 11.0\)</span>), or <code>"Normal"</code></li>
+<li><code>high_risk_nutrition</code>: <code>bool</code> — <code>True</code> if <code>bmi_category == "Underweight"</code> <strong>and</strong> <code>anemia_severity</code> is <code>"Severe"</code> or <code>"Moderate"</code></li>
+</ul>
+</section>
+<section id="exam-task-4.2-35-points-upazila-clinic-emergency-dengue-triage" class="level3" data-number="4.7.2">
+<h3 data-number="4.7.2" class="anchored" data-anchor-id="exam-task-4.2-35-points-upazila-clinic-emergency-dengue-triage"><span class="header-section-number">4.7.2</span> Exam Task 4.2 (35 Points): Upazila Clinic Emergency Dengue Triage</h3>
+<p>A febrile pediatric patient arrives with <code>temp_c = 39.4</code>, <code>platelets_k = 42</code> (thousands/µL), <code>has_bleeding = False</code>, and <code>age_years = 9</code>. Compute:</p>
+<ul>
+<li><code>critical_thrombocytopenia</code>: <code>platelets_k &lt; 50</code> (<code>bool</code>)</li>
+<li><code>pediatric_high_fever</code>: <code>age_years &lt; 12 and temp_c &gt;= 39.0</code> (<code>bool</code>)</li>
+<li><code>triage_priority</code>: <code>"Urgent"</code> if <code>has_bleeding or critical_thrombocytopenia or temp_c &gt;= 40.0</code>; <code>"Moderate"</code> if <code>(50 &lt;= platelets_k &lt; 100) or (temp_c &gt;= 38.5)</code>; <code>"Routine"</code> otherwise</li>
+<li><code>admit_inpatient</code>: <code>True</code> if <code>triage_priority == "Urgent"</code> <strong>or</strong> (<code>triage_priority == "Moderate"</code> and <code>age_years &lt; 12</code>)</li>
+</ul>
+</section>
+<section id="exam-task-4.3-35-points-safe-outbreak-surveillance-guard-pipeline" class="level3" data-number="4.7.3">
+<h3 data-number="4.7.3" class="anchored" data-anchor-id="exam-task-4.3-35-points-safe-outbreak-surveillance-guard-pipeline"><span class="header-section-number">4.7.3</span> Exam Task 4.3 (35 Points): Safe Outbreak Surveillance Guard Pipeline</h3>
+<p>Two rural health wards submit weekly cholera surveillance counts: Ward A (<code>cases_a = 28</code>, <code>pop_a = 40000</code>) and Ward B (<code>cases_b = 999</code>, <code>pop_b = 0</code>). For each ward, guard against invalid data (<code>pop &lt;= 0</code>, <code>cases is None</code>, <code>cases == 999</code>, or <code>cases &lt; 0</code>) <strong>before</strong> dividing, and compute:</p>
+<ul>
+<li><code>rate_a</code> and <code>rate_b</code>: <code>round((cases / pop) * 100000, 2)</code> when valid, or <code>None</code> when invalid</li>
+<li><code>alert_a</code> and <code>alert_b</code>: <code>"Red"</code> (<span class="math inline">\(\ge 50.0\)</span>), <code>"Amber"</code> (<span class="math inline">\(\ge 20.0\)</span>), <code>"Green"</code> (<span class="math inline">\(&lt; 20.0\)</span>) when valid, or <code>"Data Error"</code> when invalid</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch04-solutions" class="level2" data-number="4.8">
+<h2 data-number="4.8" class="anchored" data-anchor-id="sec-ch04-solutions"><span class="header-section-number">4.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="4.8.1">
+<h3 data-number="4.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">4.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li><strong><code>False</code></strong>—because the right half <code>120 &lt; 120</code> is strictly false (<code>120</code> is equal to <code>120</code>, not less than it).</li>
+<li><strong><code>True</code></strong>—because <code>and</code> has higher precedence than <code>or</code>, so Python evaluates <code>True or (False and False)</code> <span class="math inline">\(\rightarrow\)</span> <code>True or False</code> <span class="math inline">\(\rightarrow\)</span> <code>True</code>.</li>
+<li><strong><code>"Normal"</code></strong>—because the second <code>if</code> is independent (not <code>elif</code>), so <code>17.2 &lt; 25.0</code> executes and overwrites <code>"Underweight"</code>.</li>
+<li>With <code>population &gt; 0</code> on the left, it <strong>does not crash</strong> (<code>False</code> short-circuits immediately). Swapping them raises <strong><code>ZeroDivisionError</code></strong>.</li>
+<li><strong><code>(not is_pregnant) and (not has_allergy)</code></strong>.</li>
+<li><code>999 &lt; 11.0</code> evaluates to <code>False</code>, and if you also have an <code>else: "Normal"</code> or forgot to check <code>999</code> before numeric ranges (e.g., <code>raw_hb &gt;= 11.0</code>), the missing code <code>999</code> gets misclassified as a valid reading instead of <code>"Missing"</code>.</li>
+<li><strong><code>lab_result is None</code></strong> (and <code>lab_result is not None</code>).</li>
+<li><strong><code>"Moderate"</code></strong>! Because <code>175 &gt;= 140</code> matches first, Python never reaches <code>elif sbp &gt;= 160</code>—always put stricter thresholds first!</li>
+<li><strong><code>NameError: name 'false' is not defined</code></strong> (Python requires capitalized <code>False</code>).</li>
+<li><strong><code>"Moderate"</code></strong>—because <code>7.0 &lt; 7.0</code> is <code>False</code>, so execution falls to <code>elif hb &lt; 10.0</code>, which is <code>True</code>.</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="4.8.2">
+<h3 data-number="4.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">4.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="co"># To-Do 4.1</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>bmi <span class="op">=</span> <span class="fl">27.4</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a><span class="cf">if</span> bmi <span class="op">&lt;</span> <span class="fl">18.5</span>:</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    bmi_category <span class="op">=</span> <span class="st">"Underweight"</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a><span class="cf">elif</span> bmi <span class="op">&lt;</span> <span class="fl">25.0</span>:</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    bmi_category <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a><span class="cf">elif</span> bmi <span class="op">&lt;</span> <span class="fl">30.0</span>:</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>    bmi_category <span class="op">=</span> <span class="st">"Overweight"</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a><span class="cf">else</span>:</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    bmi_category <span class="op">=</span> <span class="st">"Obese"</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a></span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a><span class="co"># To-Do 4.2</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>temp_c, sbp_mmhg, spo2_pct <span class="op">=</span> <span class="fl">36.8</span>, <span class="dv">114</span>, <span class="dv">98</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>temp_normal <span class="op">=</span> <span class="fl">36.1</span> <span class="op">&lt;=</span> temp_c <span class="op">&lt;=</span> <span class="fl">37.2</span>           <span class="co"># True</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>sbp_normal <span class="op">=</span> <span class="dv">90</span> <span class="op">&lt;=</span> sbp_mmhg <span class="op">&lt;</span> <span class="dv">120</span>              <span class="co"># True</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>spo2_normal <span class="op">=</span> <span class="dv">95</span> <span class="op">&lt;=</span> spo2_pct <span class="op">&lt;=</span> <span class="dv">100</span>            <span class="co"># True</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>all_vitals_normal <span class="op">=</span> temp_normal <span class="kw">and</span> sbp_normal <span class="kw">and</span> spo2_normal</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a></span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a><span class="co"># To-Do 4.3</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>age_years, is_pregnant <span class="op">=</span> <span class="dv">24</span>, <span class="va">False</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>has_severe_allergy, consented <span class="op">=</span> <span class="va">False</span>, <span class="va">True</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>age_ok <span class="op">=</span> <span class="dv">18</span> <span class="op">&lt;=</span> age_years <span class="op">&lt;=</span> <span class="dv">65</span>                 <span class="co"># True</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>medically_safe <span class="op">=</span> (<span class="kw">not</span> is_pregnant) <span class="kw">and</span> (<span class="kw">not</span> has_severe_allergy)</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>can_enroll <span class="op">=</span> age_ok <span class="kw">and</span> medically_safe <span class="kw">and</span> consented</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>needs_review <span class="op">=</span> is_pregnant <span class="kw">or</span> has_severe_allergy</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a></span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a><span class="co"># To-Do 4.4</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>hb_g_dl <span class="op">=</span> <span class="fl">8.9</span></span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a><span class="cf">if</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>    anemia_grade <span class="op">=</span> <span class="st">"Severe"</span></span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>    anemia_grade <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>    anemia_grade <span class="op">=</span> <span class="st">"Mild"</span></span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a><span class="cf">else</span>:</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>    anemia_grade <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a></span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a><span class="co"># To-Do 4.5</span></span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a>cases, population <span class="op">=</span> <span class="dv">15</span>, <span class="dv">0</span></span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>has_valid_pop <span class="op">=</span> population <span class="op">&gt;</span> <span class="dv">0</span>                 <span class="co"># False</span></span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>is_high_incidence <span class="op">=</span> (</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>    population <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> (cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span> <span class="op">&gt;=</span> <span class="fl">50.0</span></span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>)</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a><span class="cf">if</span> population <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>    incidence_per_100k <span class="op">=</span> <span class="bu">round</span>((cases <span class="op">/</span> population) <span class="op">*</span> <span class="dv">100000</span>, <span class="dv">2</span>)</span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a><span class="cf">else</span>:</span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>    incidence_per_100k <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a></span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a><span class="co"># To-Do 4.6</span></span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>raw_hb, sbp_mmhg <span class="op">=</span> <span class="dv">999</span>, <span class="dv">148</span></span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>hb_missing <span class="op">=</span> (raw_hb <span class="kw">is</span> <span class="va">None</span>) <span class="kw">or</span> (raw_hb <span class="op">==</span> <span class="dv">999</span>)</span>
+<span id="cb21-52"><a href="#cb21-52" aria-label="52"></a><span class="cf">if</span> hb_missing:</span>
+<span id="cb21-53"><a href="#cb21-53" aria-label="53"></a>    anemia_status <span class="op">=</span> <span class="st">"Missing"</span></span>
+<span id="cb21-54"><a href="#cb21-54" aria-label="54"></a><span class="cf">elif</span> raw_hb <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb21-55"><a href="#cb21-55" aria-label="55"></a>    anemia_status <span class="op">=</span> <span class="st">"Anemic"</span></span>
+<span id="cb21-56"><a href="#cb21-56" aria-label="56"></a><span class="cf">else</span>:</span>
+<span id="cb21-57"><a href="#cb21-57" aria-label="57"></a>    anemia_status <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb21-58"><a href="#cb21-58" aria-label="58"></a></span>
+<span id="cb21-59"><a href="#cb21-59" aria-label="59"></a><span class="cf">if</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">160</span> <span class="kw">or</span> (<span class="kw">not</span> hb_missing <span class="kw">and</span> raw_hb <span class="op">&lt;</span> <span class="fl">7.0</span>):</span>
+<span id="cb21-60"><a href="#cb21-60" aria-label="60"></a>    triage_priority <span class="op">=</span> <span class="st">"Urgent"</span></span>
+<span id="cb21-61"><a href="#cb21-61" aria-label="61"></a><span class="cf">elif</span> sbp_mmhg <span class="op">&gt;=</span> <span class="dv">140</span> <span class="kw">or</span> hb_missing:</span>
+<span id="cb21-62"><a href="#cb21-62" aria-label="62"></a>    triage_priority <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb21-63"><a href="#cb21-63" aria-label="63"></a><span class="cf">else</span>:</span>
+<span id="cb21-64"><a href="#cb21-64" aria-label="64"></a>    triage_priority <span class="op">=</span> <span class="st">"Routine"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-4-coding-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="4.8.3">
+<h3 data-number="4.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-4-coding-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">4.8.3</span> C. Annotated Solutions — Chapter 4 Coding Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a><span class="co"># Exam Task 4.1 (30 pts)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>weight_kg, height_m, hb_g_dl <span class="op">=</span> <span class="fl">46.0</span>, <span class="fl">1.60</span>, <span class="fl">6.7</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>bmi <span class="op">=</span> <span class="bu">round</span>(weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>), <span class="dv">2</span>)    <span class="co"># 17.97</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-label="5"></a><span class="cf">if</span> bmi <span class="op">&lt;</span> <span class="fl">18.5</span>:</span>
+<span id="cb22-6"><a href="#cb22-6" aria-label="6"></a>    bmi_category <span class="op">=</span> <span class="st">"Underweight"</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-label="7"></a><span class="cf">elif</span> bmi <span class="op">&lt;</span> <span class="fl">25.0</span>:</span>
+<span id="cb22-8"><a href="#cb22-8" aria-label="8"></a>    bmi_category <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-label="9"></a><span class="cf">elif</span> bmi <span class="op">&lt;</span> <span class="fl">30.0</span>:</span>
+<span id="cb22-10"><a href="#cb22-10" aria-label="10"></a>    bmi_category <span class="op">=</span> <span class="st">"Overweight"</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-label="11"></a><span class="cf">else</span>:</span>
+<span id="cb22-12"><a href="#cb22-12" aria-label="12"></a>    bmi_category <span class="op">=</span> <span class="st">"Obese"</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-label="13"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-label="14"></a><span class="cf">if</span> hb_g_dl <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> hb_g_dl <span class="op">==</span> <span class="dv">999</span>:</span>
+<span id="cb22-15"><a href="#cb22-15" aria-label="15"></a>    anemia_severity <span class="op">=</span> <span class="st">"Missing"</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-label="16"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">7.0</span>:</span>
+<span id="cb22-17"><a href="#cb22-17" aria-label="17"></a>    anemia_severity <span class="op">=</span> <span class="st">"Severe"</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-label="18"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">10.0</span>:</span>
+<span id="cb22-19"><a href="#cb22-19" aria-label="19"></a>    anemia_severity <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-label="20"></a><span class="cf">elif</span> hb_g_dl <span class="op">&lt;</span> <span class="fl">11.0</span>:</span>
+<span id="cb22-21"><a href="#cb22-21" aria-label="21"></a>    anemia_severity <span class="op">=</span> <span class="st">"Mild"</span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-label="22"></a><span class="cf">else</span>:</span>
+<span id="cb22-23"><a href="#cb22-23" aria-label="23"></a>    anemia_severity <span class="op">=</span> <span class="st">"Normal"</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-label="24"></a></span>
+<span id="cb22-25"><a href="#cb22-25" aria-label="25"></a>high_risk_nutrition <span class="op">=</span> (</span>
+<span id="cb22-26"><a href="#cb22-26" aria-label="26"></a>    bmi_category <span class="op">==</span> <span class="st">"Underweight"</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-label="27"></a>    <span class="kw">and</span> (anemia_severity <span class="op">==</span> <span class="st">"Severe"</span> <span class="kw">or</span> anemia_severity <span class="op">==</span> <span class="st">"Moderate"</span>)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-label="28"></a>)</span>
+<span id="cb22-29"><a href="#cb22-29" aria-label="29"></a></span>
+<span id="cb22-30"><a href="#cb22-30" aria-label="30"></a><span class="co"># Exam Task 4.2 (35 pts)</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-label="31"></a>temp_c, platelets_k <span class="op">=</span> <span class="fl">39.4</span>, <span class="dv">42</span></span>
+<span id="cb22-32"><a href="#cb22-32" aria-label="32"></a>has_bleeding, age_years <span class="op">=</span> <span class="va">False</span>, <span class="dv">9</span></span>
+<span id="cb22-33"><a href="#cb22-33" aria-label="33"></a>critical_thrombocytopenia <span class="op">=</span> platelets_k <span class="op">&lt;</span> <span class="dv">50</span></span>
+<span id="cb22-34"><a href="#cb22-34" aria-label="34"></a>pediatric_high_fever <span class="op">=</span> (age_years <span class="op">&lt;</span> <span class="dv">12</span>) <span class="kw">and</span> (temp_c <span class="op">&gt;=</span> <span class="fl">39.0</span>)</span>
+<span id="cb22-35"><a href="#cb22-35" aria-label="35"></a></span>
+<span id="cb22-36"><a href="#cb22-36" aria-label="36"></a><span class="cf">if</span> has_bleeding <span class="kw">or</span> critical_thrombocytopenia <span class="kw">or</span> temp_c <span class="op">&gt;=</span> <span class="fl">40.0</span>:</span>
+<span id="cb22-37"><a href="#cb22-37" aria-label="37"></a>    triage_priority <span class="op">=</span> <span class="st">"Urgent"</span></span>
+<span id="cb22-38"><a href="#cb22-38" aria-label="38"></a><span class="cf">elif</span> (<span class="dv">50</span> <span class="op">&lt;=</span> platelets_k <span class="op">&lt;</span> <span class="dv">100</span>) <span class="kw">or</span> (temp_c <span class="op">&gt;=</span> <span class="fl">38.5</span>):</span>
+<span id="cb22-39"><a href="#cb22-39" aria-label="39"></a>    triage_priority <span class="op">=</span> <span class="st">"Moderate"</span></span>
+<span id="cb22-40"><a href="#cb22-40" aria-label="40"></a><span class="cf">else</span>:</span>
+<span id="cb22-41"><a href="#cb22-41" aria-label="41"></a>    triage_priority <span class="op">=</span> <span class="st">"Routine"</span></span>
+<span id="cb22-42"><a href="#cb22-42" aria-label="42"></a></span>
+<span id="cb22-43"><a href="#cb22-43" aria-label="43"></a>admit_inpatient <span class="op">=</span> (</span>
+<span id="cb22-44"><a href="#cb22-44" aria-label="44"></a>    triage_priority <span class="op">==</span> <span class="st">"Urgent"</span></span>
+<span id="cb22-45"><a href="#cb22-45" aria-label="45"></a>    <span class="kw">or</span> (triage_priority <span class="op">==</span> <span class="st">"Moderate"</span> <span class="kw">and</span> age_years <span class="op">&lt;</span> <span class="dv">12</span>)</span>
+<span id="cb22-46"><a href="#cb22-46" aria-label="46"></a>)</span>
+<span id="cb22-47"><a href="#cb22-47" aria-label="47"></a></span>
+<span id="cb22-48"><a href="#cb22-48" aria-label="48"></a><span class="co"># Exam Task 4.3 (35 pts)</span></span>
+<span id="cb22-49"><a href="#cb22-49" aria-label="49"></a>cases_a, pop_a <span class="op">=</span> <span class="dv">28</span>, <span class="dv">40000</span></span>
+<span id="cb22-50"><a href="#cb22-50" aria-label="50"></a>cases_b, pop_b <span class="op">=</span> <span class="dv">999</span>, <span class="dv">0</span></span>
+<span id="cb22-51"><a href="#cb22-51" aria-label="51"></a></span>
+<span id="cb22-52"><a href="#cb22-52" aria-label="52"></a><span class="cf">if</span> pop_a <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> cases_a <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> cases_a <span class="op">!=</span> <span class="dv">999</span> <span class="kw">and</span> cases_a <span class="op">&gt;=</span> <span class="dv">0</span>:</span>
+<span id="cb22-53"><a href="#cb22-53" aria-label="53"></a>    rate_a <span class="op">=</span> <span class="bu">round</span>((cases_a <span class="op">/</span> pop_a) <span class="op">*</span> <span class="dv">100000</span>, <span class="dv">2</span>)   <span class="co"># 70.0</span></span>
+<span id="cb22-54"><a href="#cb22-54" aria-label="54"></a>    <span class="cf">if</span> rate_a <span class="op">&gt;=</span> <span class="fl">50.0</span>:</span>
+<span id="cb22-55"><a href="#cb22-55" aria-label="55"></a>        alert_a <span class="op">=</span> <span class="st">"Red"</span></span>
+<span id="cb22-56"><a href="#cb22-56" aria-label="56"></a>    <span class="cf">elif</span> rate_a <span class="op">&gt;=</span> <span class="fl">20.0</span>:</span>
+<span id="cb22-57"><a href="#cb22-57" aria-label="57"></a>        alert_a <span class="op">=</span> <span class="st">"Amber"</span></span>
+<span id="cb22-58"><a href="#cb22-58" aria-label="58"></a>    <span class="cf">else</span>:</span>
+<span id="cb22-59"><a href="#cb22-59" aria-label="59"></a>        alert_a <span class="op">=</span> <span class="st">"Green"</span></span>
+<span id="cb22-60"><a href="#cb22-60" aria-label="60"></a><span class="cf">else</span>:</span>
+<span id="cb22-61"><a href="#cb22-61" aria-label="61"></a>    rate_a <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb22-62"><a href="#cb22-62" aria-label="62"></a>    alert_a <span class="op">=</span> <span class="st">"Data Error"</span></span>
+<span id="cb22-63"><a href="#cb22-63" aria-label="63"></a></span>
+<span id="cb22-64"><a href="#cb22-64" aria-label="64"></a><span class="cf">if</span> pop_b <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> cases_b <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> cases_b <span class="op">!=</span> <span class="dv">999</span> <span class="kw">and</span> cases_b <span class="op">&gt;=</span> <span class="dv">0</span>:</span>
+<span id="cb22-65"><a href="#cb22-65" aria-label="65"></a>    rate_b <span class="op">=</span> <span class="bu">round</span>((cases_b <span class="op">/</span> pop_b) <span class="op">*</span> <span class="dv">100000</span>, <span class="dv">2</span>)</span>
+<span id="cb22-66"><a href="#cb22-66" aria-label="66"></a>    <span class="cf">if</span> rate_b <span class="op">&gt;=</span> <span class="fl">50.0</span>:</span>
+<span id="cb22-67"><a href="#cb22-67" aria-label="67"></a>        alert_b <span class="op">=</span> <span class="st">"Red"</span></span>
+<span id="cb22-68"><a href="#cb22-68" aria-label="68"></a>    <span class="cf">elif</span> rate_b <span class="op">&gt;=</span> <span class="fl">20.0</span>:</span>
+<span id="cb22-69"><a href="#cb22-69" aria-label="69"></a>        alert_b <span class="op">=</span> <span class="st">"Amber"</span></span>
+<span id="cb22-70"><a href="#cb22-70" aria-label="70"></a>    <span class="cf">else</span>:</span>
+<span id="cb22-71"><a href="#cb22-71" aria-label="71"></a>        alert_b <span class="op">=</span> <span class="st">"Green"</span></span>
+<span id="cb22-72"><a href="#cb22-72" aria-label="72"></a><span class="cf">else</span>:</span>
+<span id="cb22-73"><a href="#cb22-73" aria-label="73"></a>    rate_b <span class="op">=</span> <span class="va">None</span>                                   <span class="co"># None</span></span>
+<span id="cb22-74"><a href="#cb22-74" aria-label="74"></a>    alert_b <span class="op">=</span> <span class="st">"Data Error"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-4-failure-modes" class="level3" data-number="4.8.4">
+<h3 data-number="4.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-4-failure-modes"><span class="header-section-number">4.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 4 Failure Modes</h3>
+<ol type="1">
+<li><strong>Missing Parentheses Around Mixed <code>and</code> / <code>or</code> Clauses (Task 4.1):</strong> Writing <code>bmi_category == "Underweight" and anemia_severity == "Severe" or anemia_severity == "Moderate"</code> evaluates as <code>(Underweight and Severe) or Moderate</code> because <code>and</code> binds tighter than <code>or</code>—misclassifying a normal-weight mother with moderate anemia as high-risk malnutrition! Always wrap <code>or</code> clauses in explicit parentheses.</li>
+<li><strong>Unreachable Shadowed Branches (Question 8 &amp; Task 4.2):</strong> Checking a broad rule (<code>sbp &gt;= 140</code> or <code>temp_c &gt;= 38.5</code>) <em>above</em> a stricter critical rule (<code>sbp &gt;= 160</code> or <code>platelets_k &lt; 50</code>) permanently shadows the emergency branch. Always order triage ladders from <strong>highest urgency / strictest threshold</strong> down to routine.</li>
+<li><strong>Late Missing-Value &amp; Zero-Denominator Guards (Task 4.3):</strong> Checking <code>cases / pop</code> <em>before</em> <code>pop &gt; 0</code> triggers <code>ZeroDivisionError</code>, and checking <code>hb &lt; 11.0</code> <em>before</em> <code>hb is None or hb == 999</code> either crashes with <code>TypeError</code> or silently turns a missing survey code (<code>999</code>) into a <code>"Normal"</code> lab result. Notice also how repetitive writing Ward A and Ward B twice felt in Task 4.3—in <strong>Chapter 5 (Loops)</strong> and <strong>Chapter 6 (Functions)</strong>, we will eliminate that repetition forever!</li>
+</ol>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_01_python_foundations/ch03_strings_input.html" class="pagination-link" aria-label="Strings, Text Processing, Formatting, and User Input">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="pagination-link" aria-label="Loops, Iteration Patterns, Accumulators, and Execution Tracing">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

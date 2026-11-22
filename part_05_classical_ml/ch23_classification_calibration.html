@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>23&nbsp; Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" rel="next">
+<link href="../part_05_classical_ml/ch22_linear_regularized_regression.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch23_classification_calibration.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" id="toc-chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="nav-link active" data-scroll-target="#chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</a></li>
+  <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
+  <li><a href="#sec-ch23-intuition" id="toc-sec-ch23-intuition" class="nav-link" data-scroll-target="#sec-ch23-intuition"><span class="header-section-number">23.1</span> Stage 1 — First-Principles Intuition: Classification Is Probability Estimation First, Decision Second</a></li>
+  <li><a href="#sec-ch23-mental-model" id="toc-sec-ch23-mental-model" class="nav-link" data-scroll-target="#sec-ch23-mental-model"><span class="header-section-number">23.2</span> Stage 2 — Visual Mental Model: Probabilities <span class="math inline">\(\rightarrow\)</span> Calibration <span class="math inline">\(\rightarrow\)</span> Threshold Pipeline</a></li>
+  <li><a href="#sec-ch23-walkthrough" id="toc-sec-ch23-walkthrough" class="nav-link" data-scroll-target="#sec-ch23-walkthrough"><span class="header-section-number">23.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</a>
+  <ul class="collapse">
+  <li><a href="#sec-ch23-setup" id="toc-sec-ch23-setup" class="nav-link" data-scroll-target="#sec-ch23-setup"><span class="header-section-number">23.3.1</span> Setup: Loading &amp; Cleaning <code>mch_survey_sample</code> (Leak-Free Features)</a></li>
+  <li><a href="#sec-ch23-gd" id="toc-sec-ch23-gd" class="nav-link" data-scroll-target="#sec-ch23-gd"><span class="header-section-number">23.3.2</span> Sigmoid &amp; Binary Cross-Entropy (Log-Loss) from Scratch</a></li>
+  <li><a href="#sec-ch23-cm" id="toc-sec-ch23-cm" class="nav-link" data-scroll-target="#sec-ch23-cm"><span class="header-section-number">23.3.3</span> Clinical Confusion Matrix &amp; The Accuracy Paradox</a></li>
+  <li><a href="#sec-ch23-roc-pr" id="toc-sec-ch23-roc-pr" class="nav-link" data-scroll-target="#sec-ch23-roc-pr"><span class="header-section-number">23.3.4</span> ROC-AUC vs.&nbsp;PR-AUC on Imbalanced Clinical Outcomes</a></li>
+  <li><a href="#sec-ch23-calib" id="toc-sec-ch23-calib" class="nav-link" data-scroll-target="#sec-ch23-calib"><span class="header-section-number">23.3.5</span> Probability Calibration, Platt Scaling &amp; Expected Calibration Error (ECE)</a></li>
+  <li><a href="#sec-ch23-youden" id="toc-sec-ch23-youden" class="nav-link" data-scroll-target="#sec-ch23-youden"><span class="header-section-number">23.3.6</span> Decision Threshold Tuning &amp; Youden’s <span class="math inline">\(J\)</span> Statistic</a></li>
+  <li><a href="#sec-ch23-imbalance" id="toc-sec-ch23-imbalance" class="nav-link" data-scroll-target="#sec-ch23-imbalance"><span class="header-section-number">23.3.7</span> Handling Class Imbalance: <code>class_weight="balanced"</code> &amp; SMOTE Caveats</a></li>
+  <li><a href="#sec-ch23-errors" id="toc-sec-ch23-errors" class="nav-link" data-scroll-target="#sec-ch23-errors"><span class="header-section-number">23.3.8</span> Break It On Purpose! (Classification Error Anatomy)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch23-blueprint" id="toc-sec-ch23-blueprint" class="nav-link" data-scroll-target="#sec-ch23-blueprint"><span class="header-section-number">23.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</a>
+  <ul class="collapse">
+  <li><a href="#blueprint-completed-on-paper-before-coding" id="toc-blueprint-completed-on-paper-before-coding" class="nav-link" data-scroll-target="#blueprint-completed-on-paper-before-coding"><span class="header-section-number">23.4.1</span> Blueprint (Completed on Paper Before Coding)</a></li>
+  <li><a href="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb" id="toc-clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="nav-link" data-scroll-target="#clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">23.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</a></li>
+  </ul></li>
+  <li><a href="#sec-ch23-todos" id="toc-sec-ch23-todos" class="nav-link" data-scroll-target="#sec-ch23-todos"><span class="header-section-number">23.5</span> Stage 5 — Guided “To-Do” Practice Labs</a></li>
+  <li><a href="#sec-ch23-test" id="toc-sec-ch23-test" class="nav-link" data-scroll-target="#sec-ch23-test"><span class="header-section-number">23.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</a></li>
+  <li><a href="#sec-ch23-exam" id="toc-sec-ch23-exam" class="nav-link" data-scroll-target="#sec-ch23-exam"><span class="header-section-number">23.7</span> Stage 7 — Chapter 23 Coding Exam (100 Points)</a>
+  <ul class="collapse">
+  <li><a href="#exam-task-23.1-30-points-evaluate_screening_thresholdsy_true-y_prob-thresholds" id="toc-exam-task-23.1-30-points-evaluate_screening_thresholdsy_true-y_prob-thresholds" class="nav-link" data-scroll-target="#exam-task-23.1-30-points-evaluate_screening_thresholdsy_true-y_prob-thresholds"><span class="header-section-number">23.7.1</span> Exam Task 23.1 (30 Points): <code>evaluate_screening_thresholds(y_true, y_prob, thresholds)</code></a></li>
+  <li><a href="#exam-task-23.2-35-points-calibration_audit_binsy_true-y_prob-n_bins5" id="toc-exam-task-23.2-35-points-calibration_audit_binsy_true-y_prob-n_bins5" class="nav-link" data-scroll-target="#exam-task-23.2-35-points-calibration_audit_binsy_true-y_prob-n_bins5"><span class="header-section-number">23.7.2</span> Exam Task 23.2 (35 Points): <code>calibration_audit_bins(y_true, y_prob, n_bins=5)</code></a></li>
+  <li><a href="#exam-task-23.3-35-points-train_calibrated_anemia_classifiermch_df-seed42" id="toc-exam-task-23.3-35-points-train_calibrated_anemia_classifiermch_df-seed42" class="nav-link" data-scroll-target="#exam-task-23.3-35-points-train_calibrated_anemia_classifiermch_df-seed42"><span class="header-section-number">23.7.3</span> Exam Task 23.3 (35 Points): <code>train_calibrated_anemia_classifier(mch_df, seed=42)</code></a></li>
+  </ul></li>
+  <li><a href="#sec-ch23-solutions" id="toc-sec-ch23-solutions" class="nav-link" data-scroll-target="#sec-ch23-solutions"><span class="header-section-number">23.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</a>
+  <ul class="collapse">
+  <li><a href="#a.-concept-execution-trace-test-key" id="toc-a.-concept-execution-trace-test-key" class="nav-link" data-scroll-target="#a.-concept-execution-trace-test-key"><span class="header-section-number">23.8.1</span> A. Concept &amp; Execution Trace Test Key</a></li>
+  <li><a href="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" id="toc-b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="nav-link" data-scroll-target="#b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">23.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#c.-annotated-solutions-chapter-23-exam-mirrored-in-03_coding_exam_solution.ipynb" id="toc-c.-annotated-solutions-chapter-23-exam-mirrored-in-03_coding_exam_solution.ipynb" class="nav-link" data-scroll-target="#c.-annotated-solutions-chapter-23-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">23.8.3</span> C. Annotated Solutions — Chapter 23 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</a></li>
+  <li><a href="#d.-debugging-post-mortem-top-3-chapter-23-failure-modes" id="toc-d.-debugging-post-mortem-top-3-chapter-23-failure-modes" class="nav-link" data-scroll-target="#d.-debugging-post-mortem-top-3-chapter-23-failure-modes"><span class="header-section-number">23.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 23 Failure Modes</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</a></li><li class="breadcrumb-item"><a href="../part_05_classical_ml/ch23_classification_calibration.html"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-ch23" class="quarto-section-identifier"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Chapter Mission:</strong> Master binary classification as <strong>calibrated probability estimation followed by cost-aware decision making</strong>. Starting from pure NumPy sigmoid and binary cross-entropy gradient descent and progressing to leak-free Scikit-Learn pipelines on Bangladesh maternal and child health survey data (<code>mch_survey_sample</code>), you will unmask the <strong>Accuracy Paradox</strong>, evaluate rare-outcome classifiers with <strong>ROC-AUC</strong>, <strong>PR-AUC</strong>, <strong>Brier score</strong>, and <strong>Expected Calibration Error (ECE)</strong>, tune operating thresholds via <strong>Youden’s <span class="math inline">\(J\)</span></strong>, and handle class imbalance without silently destroying clinical probability calibration.</p>
+</blockquote>
+<section id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="chapter-companion-notebooks-1-to-1-mirrored-in-google-colab">Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab)</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 56%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Lab Type</th>
+<th style="text-align: left;">Interactive Colab Notebook</th>
+<th style="text-align: center;">Scan (Print)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Walkthrough</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb">ch23 / 01_walkthrough.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch23_classification_calibration__01_walkthrough.png" class="img-fluid" width="58" alt="QR code linking to Chapter 23 Walkthrough notebook in Google Colab"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Guided To-Dos</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb">ch23 / 02_guided_todos.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch23_classification_calibration__02_guided_todos.png" class="img-fluid" width="58" alt="QR code linking to Chapter 23 Guided To-Dos notebook in Google Colab"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Coding Exam</strong></td>
+<td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb">ch23 / 03_coding_exam.ipynb</a></td>
+<td style="text-align: center;"><img src="../assets/qr/part_05_classical_ml__ch23_classification_calibration__03_coding_exam.png" class="img-fluid" width="58" alt="QR code linking to Chapter 23 Coding Exam notebook in Google Colab"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="learning-objectives" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="learning-objectives">Learning Objectives</h2>
+<p>By the end of this chapter, you will be able to:</p>
+<ol type="1">
+<li>Implement numerically stable <strong>binary cross-entropy (log-loss)</strong> and <strong>batch gradient descent for logistic regression</strong> from scratch in pure NumPy.</li>
+<li>Translate confusion matrix counts into clinical metrics—<strong>Sensitivity (Recall)</strong>, <strong>Specificity</strong>, <strong>Precision (PPV)</strong>, <strong>Negative Predictive Value (NPV)</strong>, and <strong><span class="math inline">\(F_1\)</span></strong>—with clean zero-denominator guards, and diagnose the <strong>Accuracy Paradox</strong> on imbalanced cohorts.</li>
+<li>Contrast <strong>ROC-AUC</strong> against <strong>Precision-Recall AUC (PR-AUC)</strong> and explain why PR-AUC is essential when positive outcomes (such as child stunting or rare disease) have low prevalence.</li>
+<li>Audit <strong>probability calibration</strong> separately from ranking discrimination using the <strong>Brier score</strong>, equal-width reliability bins, <strong>Expected Calibration Error (ECE)</strong>, and Platt scaling (<code>CalibratedClassifierCV(..., method="sigmoid", cv=5)</code>).</li>
+<li>Optimize clinical decision thresholds using <strong>Youden’s <span class="math inline">\(J = \text{TPR} - \text{FPR}\)</span></strong> and build multi-threshold operating tables trading off case capture (<code>sensitivity</code>) against clinic workload (<code>flagged_pct</code>).</li>
+<li>Compare default vs.&nbsp;<code>class_weight="balanced"</code> logistic pipelines and explain why naive reweighting or SMOTE distorts predicted probabilities unless recalibrated or replaced by threshold tuning.</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch23-intuition" class="level2" data-number="23.1">
+<h2 data-number="23.1" class="anchored" data-anchor-id="sec-ch23-intuition"><span class="header-section-number">23.1</span> Stage 1 — First-Principles Intuition: Classification Is Probability Estimation First, Decision Second</h2>
+<p>New machine learning practitioners often treat classification as a black box that outputs hard <code>0</code> or <code>1</code> labels via <code>.predict(X)</code>—and then evaluate that model using a single number: <strong>accuracy</strong>. In clinical medicine, epidemiology, and policy science, that shortcut fails catastrophically.</p>
+<p>Consider predicting child stunting (<code>child_stunted</code>, 13.8% prevalence) in <code>mch_survey_sample</code>. A trivial model that predicts <code>0</code> (“not stunted”) for every single child achieves <strong>86.2% accuracy</strong> while missing <strong>100% of stunted children</strong>! Even worse, two models can achieve the <strong>exact same ROC-AUC</strong> while one outputs honest risks (<code>0.30</code> means 30% of similar mothers have anemia) and the other outputs dangerously overconfident scores (<code>0.70</code> when true risk is only 30%).</p>
+<p>Five first-principles pillars anchor every trustworthy classifier:</p>
+<ul>
+<li><strong>Log-Odds &amp; Sigmoid Mapping:</strong> Logistic regression computes a linear risk score <span class="math inline">\(z = \mathbf{w}^\top \mathbf{x} + b\)</span> and squashes it onto <span class="math inline">\((0, 1)\)</span> via the sigmoid function <span class="math inline">\(\sigma(z) = 1 / (1 + e^{-z})\)</span>. Minimizing <strong>binary cross-entropy (log-loss)</strong> directly rewards well-calibrated probabilities because confident wrong predictions incur unbounded penalty (<span class="math inline">\(-\ln(\varepsilon)\)</span>).</li>
+<li><strong>The Accuracy Paradox:</strong> When positive prevalence is low (14% stunting, or 2% sepsis), overall accuracy rewards ignoring the minority class. Clinical evaluation always inspects <strong>Sensitivity (Recall)</strong>, <strong>Specificity</strong>, <strong>Precision (PPV)</strong>, <strong>NPV</strong>, and <strong><span class="math inline">\(F_1\)</span></strong> alongside prevalence.</li>
+<li><strong>Discrimination vs.&nbsp;Calibration:</strong> <strong>ROC-AUC</strong> and <strong>PR-AUC</strong> measure <em>ranking</em> (whether true cases score higher than non-cases) across all thresholds. <strong>Brier score</strong> and <strong>Expected Calibration Error (ECE)</strong> measure <em>calibration</em> (whether predicted probabilities match observed event frequencies). You need <strong>both</strong>!</li>
+<li><strong>Thresholding Is a Clinical Policy Decision, Not a Law of Nature:</strong> Calling <code>.predict(X)</code> silently hardcodes threshold <span class="math inline">\(\tau = 0.50\)</span>. On a 14% prevalence outcome, almost no calibrated probability exceeds <code>0.50</code>, producing zero flags! Tuning <span class="math inline">\(\tau\)</span> via <strong>Youden’s <span class="math inline">\(J\)</span></strong> or a clinic capacity constraint preserves calibrated risk estimates while achieving target recall.</li>
+<li><strong>Imbalance Reweighting &amp; SMOTE Caveats:</strong> Passing <code>class_weight="balanced"</code> or oversampling with <strong>SMOTE</strong> forces the model to act as if prevalence were 50%. Recall jumps immediately, yet ranking (ROC-AUC / PR-AUC) barely changes—while <strong>predicted probabilities become severely inflated</strong> (Brier score more than doubles!). Prefer tuning the threshold on a calibrated model, or recalibrate after reweighting.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Mental Model — Two Separate Questions for Every Classifier
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Before deploying any clinical classifier, separate its evaluation into <strong>two distinct stages</strong>:</p>
+<ol type="1">
+<li><strong>Are the continuous probabilities <span class="math inline">\(\hat{p}\)</span> both discriminative and honest?</strong> Check <strong>ROC-AUC</strong>, <strong>PR-AUC</strong> (against baseline prevalence), <strong>Brier score</strong>, and <strong>ECE</strong>.</li>
+<li><strong>Given clinic costs and capacity, which cutoff <span class="math inline">\(\tau\)</span> converts <span class="math inline">\(\hat{p}\)</span> into action (<span class="math inline">\(\hat{y} = \mathbb{I}[\hat{p} \ge \tau]\)</span>)?</strong> Inspect the threshold operating table (<code>sensitivity</code>, <code>specificity</code>, <code>precision</code>, <code>flagged_pct</code>) and <strong>Youden’s <span class="math inline">\(J\)</span></strong>.</li>
+</ol>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch23-mental-model" class="level2" data-number="23.2">
+<h2 data-number="23.2" class="anchored" data-anchor-id="sec-ch23-mental-model"><span class="header-section-number">23.2</span> Stage 2 — Visual Mental Model: Probabilities <span class="math inline">\(\rightarrow\)</span> Calibration <span class="math inline">\(\rightarrow\)</span> Threshold Pipeline</h2>
+<p>Follow this leakage-free classification architecture whenever you move from raw survey or clinical records to an actionable screening tool:</p>
+<div class="cell" data-fig-width="5.4" data-layout-align="center">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+
+<pre class="mermaid mermaid-js" data-fig-alt="Diagram for Chapter 23 (Probabilities to Calibration to Threshold Pipeline) illustrating 1. Risk Model; Stratified Split (75/25) Drop Target Leaks (Hb); Scaled Pipeline (Train) Scaler + LogisticR...">flowchart TD
+    subgraph Model["1. Risk Model"]
+        direction LR
+        S1["Stratified Split (75/25)&lt;br/&gt;Drop Target Leaks (Hb)"]
+        S2["Scaled Pipeline (Train)&lt;br/&gt;Scaler + LogisticReg"]
+        S1 --&gt; S2
+    end
+    subgraph Calib["2. Calibration"]
+        direction LR
+        C1["Platt Scaling (cv=5)&lt;br/&gt;CalibratedClassifierCV"]
+        C2["Audit Probabilities&lt;br/&gt;ROC-AUC, PR-AUC, Brier, ECE"]
+        C1 --&gt; C2
+    end
+    subgraph Decision["3. Thresholding"]
+        direction LR
+        D1["Select Cutoff tau&lt;br/&gt;Youden J = max(TPR-FPR)"]
+        D2["Clinical Confusion Table&lt;br/&gt;Sens, Spec, PPV, NPV"]
+        D1 --&gt; D2
+    end
+    Model --&gt; Calib
+    Calib --&gt; Decision
+</pre>
+</div>
+<p></p><figcaption> Chapter 23 visual mental model: Probabilities to Calibration to Threshold Pipeline</figcaption> </figure><p></p>
+</div>
+</div>
+</div>
+<p>Notice how <strong>no step touches <code>X_test</code> during fitting</strong>: scaling, logistic regression weights, and 5-fold sigmoid calibration (<code>CalibratedClassifierCV</code>) all fit strictly inside the training split. Only after probabilities are calibrated and audited do we apply a clinical cutoff <span class="math inline">\(\tau\)</span> to flag high-risk patients.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Watch Out for Target Leakage in Clinical Datasets!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In <code>mch_survey_sample</code>, <code>maternal_anemia</code> is defined clinically as <code>maternal_hb_g_dl &lt; 11.0</code> (98% identical). Feeding <code>maternal_hb_g_dl</code> as a feature to “predict” <code>maternal_anemia</code> produces a fake <code>~0.99</code> ROC-AUC that collapses the moment you screen mothers <em>before</em> drawing a blood test. Always exclude diagnostic measurements that define the target!</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sec-ch23-walkthrough" class="level2" data-number="23.3">
+<h2 data-number="23.3" class="anchored" data-anchor-id="sec-ch23-walkthrough"><span class="header-section-number">23.3</span> Stage 3 — Line-by-Line Code Walkthrough &amp; Error Anatomy</h2>
+<p>Open <code>part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb</code> in Colab and execute every cell top-to-bottom alongside the dissections below.</p>
+<section id="sec-ch23-setup" class="level3" data-number="23.3.1">
+<h3 data-number="23.3.1" class="anchored" data-anchor-id="sec-ch23-setup"><span class="header-section-number">23.3.1</span> Setup: Loading &amp; Cleaning <code>mch_survey_sample</code> (Leak-Free Features)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">import</span> warnings</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a><span class="im">from</span> sklearn.calibration <span class="im">import</span> CalibratedClassifierCV</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a><span class="im">from</span> sklearn.exceptions <span class="im">import</span> UndefinedMetricWarning</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a>    average_precision_score,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a>    brier_score_loss,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>    confusion_matrix,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>    recall_score,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a>    roc_auc_score,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a>    roc_curve,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a><span class="im">import</span> sharukh_tutor <span class="im">as</span> tutor</span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>mch_raw <span class="op">=</span> tutor.load_data(<span class="st">"mch_survey_sample"</span>, as_pandas<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a>mch <span class="op">=</span> mch_raw.copy()</span>
+<span id="cb1-22"><a href="#cb1-22" aria-label="22"></a>mch[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb1-23"><a href="#cb1-23" aria-label="23"></a>    mch[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb1-24"><a href="#cb1-24" aria-label="24"></a>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-label="25"></a>mch[<span class="st">"anc_visits"</span>] <span class="op">=</span> mch[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-label="26"></a>mch[<span class="st">"is_urban"</span>] <span class="op">=</span> (mch[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-label="27"></a>wealth_map <span class="op">=</span> {</span>
+<span id="cb1-28"><a href="#cb1-28" aria-label="28"></a>    <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-label="29"></a>    <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-label="30"></a>}</span>
+<span id="cb1-31"><a href="#cb1-31" aria-label="31"></a>mch[<span class="st">"wealth_num"</span>] <span class="op">=</span> mch[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(wealth_map)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-label="32"></a>feat_cols <span class="op">=</span> [</span>
+<span id="cb1-33"><a href="#cb1-33" aria-label="33"></a>    <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>, <span class="st">"is_urban"</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-label="34"></a>]</span>
+<span id="cb1-35"><a href="#cb1-35" aria-label="35"></a>clean <span class="op">=</span> mch[[<span class="st">"maternal_anemia"</span>, <span class="st">"child_stunted"</span>] <span class="op">+</span> feat_cols].dropna()</span>
+<span id="cb1-36"><a href="#cb1-36" aria-label="36"></a><span class="bu">print</span>(<span class="ss">f"Raw shape: </span><span class="sc">{</span>mch_raw<span class="sc">.</span>shape<span class="sc">}</span><span class="ss"> | Complete rows: </span><span class="sc">{</span><span class="bu">len</span>(clean)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-label="37"></a><span class="bu">print</span>(</span>
+<span id="cb1-38"><a href="#cb1-38" aria-label="38"></a>    <span class="ss">f"Anemia rate: </span><span class="sc">{</span>clean[<span class="st">'maternal_anemia'</span>]<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-label="39"></a>    <span class="ss">f"Stunting rate: </span><span class="sc">{</span>clean[<span class="st">'child_stunted'</span>]<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-label="40"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a>Raw shape: (500, 12) | Complete rows: 492</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a>Anemia rate: 0.3537 | Stunting rate: 0.1382</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Working strictly on a <code>.copy()</code>, we standardize mixed casing in <code>residence</code>, replace field sentinel <code>anc_visits == 999</code> with <code>np.nan</code>, map ordinal <code>wealth_quintile</code> to integers <code>1..5</code>, and retain four non-leaking socio-demographic &amp; prenatal predictors across <code>492</code> complete records. Notice the two outcomes’ contrasting prevalence: maternal anemia is moderately common (<code>35.37%</code>), whereas child stunting is imbalanced (<code>13.82%</code>).</p>
+<hr>
+</section>
+<section id="sec-ch23-gd" class="level3" data-number="23.3.2">
+<h3 data-number="23.3.2" class="anchored" data-anchor-id="sec-ch23-gd"><span class="header-section-number">23.3.2</span> Sigmoid &amp; Binary Cross-Entropy (Log-Loss) from Scratch</h3>
+<p>Given standardized feature matrix <span class="math inline">\(\mathbf{X} \in \mathbb{R}^{N \times d}\)</span> and binary labels <span class="math inline">\(y_i \in \{0, 1\}\)</span>, logistic regression predicts <span class="math inline">\(\hat{p}_i = \sigma(\mathbf{x}_i^\top \mathbf{w} + b)\)</span> and minimizes clipped <strong>binary cross-entropy</strong>:</p>
+<p><span class="math display">\[\mathcal{L}(\mathbf{w}, b) = -\frac{1}{N} \sum_{i=1}^N \Big[ y_i \ln(\tilde{p}_i) + (1 - y_i)\ln(1 - \tilde{p}_i) \Big], \qquad \tilde{p}_i = \text{clip}(\hat{p}_i, \varepsilon, 1 - \varepsilon)\]</span></p>
+<p>The gradient takes the remarkably clean residual form <span class="math inline">\(\nabla_{\mathbf{w}} \mathcal{L} = \frac{1}{N}\mathbf{X}^\top (\hat{\mathbf{p}} - \mathbf{y})\)</span> and <span class="math inline">\(\frac{\partial \mathcal{L}}{\partial b} = \frac{1}{N}\sum_i (\hat{p}_i - y_i)\)</span>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="kw">def</span> sigmoid(z):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a>    <span class="cf">return</span> <span class="fl">1.0</span> <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">+</span> np.exp(<span class="op">-</span>np.clip(z, <span class="op">-</span><span class="fl">500.0</span>, <span class="fl">500.0</span>)))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a><span class="kw">def</span> bce_loss(y_true, y_prob, eps<span class="op">=</span><span class="fl">1e-15</span>):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>    y <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>    p <span class="op">=</span> np.clip(np.asarray(y_prob, dtype<span class="op">=</span><span class="bu">float</span>), eps, <span class="fl">1.0</span> <span class="op">-</span> eps)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a>    <span class="cf">return</span> <span class="bu">float</span>(<span class="op">-</span>np.mean(y <span class="op">*</span> np.log(p) <span class="op">+</span> (<span class="fl">1.0</span> <span class="op">-</span> y) <span class="op">*</span> np.log(<span class="fl">1.0</span> <span class="op">-</span> p)))</span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a><span class="co"># Standardized socio-demographic features -&gt; maternal_anemia</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>X_raw <span class="op">=</span> clean[[<span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>]].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>X_std <span class="op">=</span> (X_raw <span class="op">-</span> X_raw.mean(axis<span class="op">=</span><span class="dv">0</span>)) <span class="op">/</span> X_raw.std(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-label="12"></a>y_anem <span class="op">=</span> clean[<span class="st">"maternal_anemia"</span>].to_numpy(dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-label="13"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-label="14"></a>w <span class="op">=</span> np.zeros(X_std.shape[<span class="dv">1</span>], dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-label="15"></a>b <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-label="16"></a>losses <span class="op">=</span> []</span>
+<span id="cb3-17"><a href="#cb3-17" aria-label="17"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">400</span>):</span>
+<span id="cb3-18"><a href="#cb3-18" aria-label="18"></a>    p <span class="op">=</span> sigmoid(X_std <span class="op">@</span> w <span class="op">+</span> b)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-label="19"></a>    losses.append(bce_loss(y_anem, p))</span>
+<span id="cb3-20"><a href="#cb3-20" aria-label="20"></a>    err <span class="op">=</span> p <span class="op">-</span> y_anem</span>
+<span id="cb3-21"><a href="#cb3-21" aria-label="21"></a>    w <span class="op">-=</span> <span class="fl">0.1</span> <span class="op">*</span> (X_std.T <span class="op">@</span> err) <span class="op">/</span> <span class="bu">len</span>(y_anem)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-label="22"></a>    b <span class="op">-=</span> <span class="fl">0.1</span> <span class="op">*</span> <span class="bu">float</span>(np.mean(err))</span>
+<span id="cb3-23"><a href="#cb3-23" aria-label="23"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-label="24"></a><span class="bu">print</span>(<span class="ss">f"Initial log-loss: </span><span class="sc">{</span>losses[<span class="dv">0</span>]<span class="sc">:.5f}</span><span class="ss"> -&gt; Final: </span><span class="sc">{</span>losses[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.5f}</span><span class="ss">"</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-label="25"></a><span class="bu">print</span>(<span class="ss">f"Learned weights: </span><span class="sc">{</span>np<span class="sc">.</span><span class="bu">round</span>(w, <span class="dv">4</span>)<span class="sc">}</span><span class="ss"> | Intercept b: </span><span class="sc">{</span>b<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a>Initial log-loss: 0.69315 -&gt; Final: 0.63341</span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>Learned weights: [-0.0579 -0.3541] | Intercept b: -0.6248</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at three mathematical checks:</p>
+<ul>
+<li><strong>Initial loss <span class="math inline">\(= \ln(2) \approx 0.69315\)</span>:</strong> When <span class="math inline">\(\mathbf{w} = \mathbf{0}\)</span> and <span class="math inline">\(b = 0\)</span>, every patient gets <span class="math inline">\(\hat{p}_i = 0.50\)</span>, so <span class="math inline">\(-\ln(0.5) = 0.69315\)</span>!</li>
+<li><strong>Negative weights (<code>-0.0579</code>, <code>-0.3541</code>):</strong> Higher antenatal visits and higher household wealth both <em>reduce</em> the log-odds of maternal anemia.</li>
+<li><strong>Numerical safety guards:</strong> Clipping <code>z</code> to <code>[-500, 500]</code> prevents <code>np.exp</code> overflow, and clipping <code>p</code> to <code>[eps, 1 - eps]</code> prevents <code>np.log(0) -&gt; -inf</code> and <code>0 * -inf -&gt; nan</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-cm" class="level3" data-number="23.3.3">
+<h3 data-number="23.3.3" class="anchored" data-anchor-id="sec-ch23-cm"><span class="header-section-number">23.3.3</span> Clinical Confusion Matrix &amp; The Accuracy Paradox</h3>
+<p>Now train a leak-free scaled <code>LogisticRegression</code> on the imbalanced outcome <code>child_stunted</code> (13.82% prevalence) using a stratified 75/25 split and evaluate default <code>.predict(X_test)</code> (threshold <code>0.50</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a>X_all <span class="op">=</span> clean[feat_cols]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>y_stunt <span class="op">=</span> clean[<span class="st">"child_stunted"</span>].astype(<span class="bu">int</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>Xs_tr, Xs_te, ys_tr, ys_te <span class="op">=</span> train_test_split(</span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>    X_all, y_stunt, test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>y_stunt, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a>stunt_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>    (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>])</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>stunt_pipe.fit(Xs_tr, ys_tr)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-label="12"></a>ys_pred <span class="op">=</span> stunt_pipe.predict(Xs_te)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-label="13"></a>ys_prob <span class="op">=</span> stunt_pipe.predict_proba(Xs_te)[:, <span class="dv">1</span>]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-label="14"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-label="15"></a>tn, fp, fn, tp <span class="op">=</span> confusion_matrix(ys_te, ys_pred).ravel()</span>
+<span id="cb5-16"><a href="#cb5-16" aria-label="16"></a>acc <span class="op">=</span> (tp <span class="op">+</span> tn) <span class="op">/</span> <span class="bu">len</span>(ys_te)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-label="17"></a>sens <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fn) <span class="cf">if</span> (tp <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-label="18"></a>spec <span class="op">=</span> tn <span class="op">/</span> (tn <span class="op">+</span> fp) <span class="cf">if</span> (tn <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-label="19"></a>prec <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fp) <span class="cf">if</span> (tp <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-label="20"></a>npv <span class="op">=</span> tn <span class="op">/</span> (tn <span class="op">+</span> fn) <span class="cf">if</span> (tn <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-label="21"></a><span class="bu">print</span>(<span class="ss">f"Confusion Matrix -&gt; TN=</span><span class="sc">{</span>tn<span class="sc">}</span><span class="ss">, FP=</span><span class="sc">{</span>fp<span class="sc">}</span><span class="ss">, FN=</span><span class="sc">{</span>fn<span class="sc">}</span><span class="ss">, TP=</span><span class="sc">{</span>tp<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-label="22"></a><span class="bu">print</span>(<span class="ss">f"Accuracy=</span><span class="sc">{</span>acc<span class="sc">:.4f}</span><span class="ss"> | Sensitivity=</span><span class="sc">{</span>sens<span class="sc">:.4f}</span><span class="ss"> | Spec=</span><span class="sc">{</span>spec<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-label="23"></a><span class="bu">print</span>(<span class="ss">f"Precision (PPV)=</span><span class="sc">{</span>prec<span class="sc">:.4f}</span><span class="ss"> | NPV=</span><span class="sc">{</span>npv<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a>Confusion Matrix -&gt; TN=106, FP=0, FN=17, TP=0</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a>Accuracy=0.8618 | Sensitivity=0.0000 | Spec=1.0000</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a>Precision (PPV)=0.0000 | NPV=0.8618</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Behold the <strong>Accuracy Paradox</strong> in live clinical data:</p>
+<ul>
+<li>Overall accuracy is <strong><code>86.18%</code></strong>—yet <strong><code>TP = 0</code></strong> and <strong><code>FN = 17</code></strong>! Every single stunted child in the test set was missed (<code>Sensitivity = 0.0000</code>).</li>
+<li>Notice how our zero-denominator guard (<code>if (tp + fp) &gt; 0 else 0.0</code>) cleanly prevented a <code>ZeroDivisionError</code> when computing <code>Precision (PPV)</code>!</li>
+<li>Why did <code>.predict()</code> flag zero children? Because the underlying calibrated probabilities are realistic (mostly <code>0.02–0.42</code> on a 14% prevalence condition), so <strong>none crossed the arbitrary default <code>0.50</code> cutoff</strong>!</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-roc-pr" class="level3" data-number="23.3.4">
+<h3 data-number="23.3.4" class="anchored" data-anchor-id="sec-ch23-roc-pr"><span class="header-section-number">23.3.4</span> ROC-AUC vs.&nbsp;PR-AUC on Imbalanced Clinical Outcomes</h3>
+<p>Even though <code>.predict()</code> at <code>0.50</code> gave zero sensitivity, does <code>stunt_pipe</code> actually rank high-risk children above low-risk children? Threshold-free metrics reveal the truth:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a>roc_st <span class="op">=</span> roc_auc_score(ys_te, ys_prob)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>pr_st <span class="op">=</span> average_precision_score(ys_te, ys_prob)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>brier_st <span class="op">=</span> brier_score_loss(ys_te, ys_prob)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>prev_st <span class="op">=</span> <span class="bu">float</span>(ys_te.mean())</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a><span class="bu">print</span>(<span class="ss">f"Stunting test prevalence (PR baseline): </span><span class="sc">{</span>prev_st<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a><span class="bu">print</span>(</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    <span class="ss">f"ROC-AUC: </span><span class="sc">{</span>roc_st<span class="sc">:.4f}</span><span class="ss"> | PR-AUC: </span><span class="sc">{</span>pr_st<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>    <span class="ss">f"Brier Score: </span><span class="sc">{</span>brier_st<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a>Stunting test prevalence (PR baseline): 0.1382</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a>ROC-AUC: 0.7772 | PR-AUC: 0.3138 | Brier Score: 0.1066</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read these three numbers together:</p>
+<ul>
+<li><strong>ROC-AUC (<code>0.7772</code> vs.&nbsp;random baseline <code>0.50</code>):</strong> The model <em>does</em> separate stunted from non-stunted children well! If you pick one stunted child and one non-stunted child at random, the model assigns a higher risk probability to the stunted child 77.7% of the time.</li>
+<li><strong>PR-AUC (<code>0.3138</code> vs.&nbsp;prevalence baseline <code>0.1382</code>):</strong> Because <code>FPR = FP / (FP + TN)</code> is diluted by 106 true negatives, ROC-AUC stays high even when false positives outnumber true positives. <strong>PR-AUC</strong> (<code>average_precision_score</code>) focuses strictly on the minority class, comparing against random prevalence (<code>0.1382</code>)—showing a solid <code>2.3x</code> lift while keeping us realistic about precision.</li>
+<li><strong>Brier Score (<code>0.1066</code>):</strong> Mean squared probability error <span class="math inline">\(\frac{1}{N}\sum (y_i - \hat{p}_i)^2\)</span>—lower is better (<code>0.0</code> is perfect).</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-calib" class="level3" data-number="23.3.5">
+<h3 data-number="23.3.5" class="anchored" data-anchor-id="sec-ch23-calib"><span class="header-section-number">23.3.5</span> Probability Calibration, Platt Scaling &amp; Expected Calibration Error (ECE)</h3>
+<p>Ranking alone (<code>ROC-AUC</code>) cannot tell whether a predicted risk of <code>0.60</code> actually means a 60% event rate. Let’s compare raw <code>LogisticRegression</code>, 5-fold Platt scaling (<code>CalibratedClassifierCV(..., method="sigmoid", cv=5)</code>), and an artificially <strong>overconfident</strong> transformation (<span class="math inline">\(\hat{p}^{0.35}\)</span>) that preserves exact rank order:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a>y_anemia <span class="op">=</span> clean[<span class="st">"maternal_anemia"</span>].astype(<span class="bu">int</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a>Xa_tr, Xa_te, ya_tr, ya_te <span class="op">=</span> train_test_split(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a>    X_all, y_anemia, test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>y_anemia, random_state<span class="op">=</span><span class="dv">42</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a>anem_pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a>    (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a>    (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a>])</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a>anem_pipe.fit(Xa_tr, ya_tr)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a>p_raw <span class="op">=</span> anem_pipe.predict_proba(Xa_te)[:, <span class="dv">1</span>]</span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>anem_cal <span class="op">=</span> CalibratedClassifierCV(anem_pipe, method<span class="op">=</span><span class="st">"sigmoid"</span>, cv<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a>anem_cal.fit(Xa_tr, ya_tr)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a>p_cal <span class="op">=</span> anem_cal.predict_proba(Xa_te)[:, <span class="dv">1</span>]</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a><span class="co"># Same ranking, badly overconfident probabilities (p**0.35)</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>p_overconf <span class="op">=</span> np.clip(p_cal <span class="op">**</span> <span class="fl">0.35</span>, <span class="fl">0.0</span>, <span class="fl">1.0</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a><span class="kw">def</span> quick_ece(y_true, y_prob, n_bins<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a>    yp <span class="op">=</span> np.asarray(y_prob, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a>    edges <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, n_bins <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a>    ece <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_bins):</span>
+<span id="cb9-25"><a href="#cb9-25" aria-label="25"></a>        lo, hi <span class="op">=</span> edges[i], edges[i <span class="op">+</span> <span class="dv">1</span>]</span>
+<span id="cb9-26"><a href="#cb9-26" aria-label="26"></a>        m <span class="op">=</span> (yp <span class="op">&gt;=</span> lo) <span class="op">&amp;</span> (yp <span class="op">&lt;</span> hi) <span class="cf">if</span> i <span class="op">&lt;</span> n_bins <span class="op">-</span> <span class="dv">1</span> <span class="cf">else</span> (yp <span class="op">&gt;=</span> lo)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-label="27"></a>        <span class="cf">if</span> np.<span class="bu">any</span>(m):</span>
+<span id="cb9-28"><a href="#cb9-28" aria-label="28"></a>            ece <span class="op">+=</span> (np.<span class="bu">sum</span>(m) <span class="op">/</span> <span class="bu">len</span>(yt)) <span class="op">*</span> <span class="bu">abs</span>(yt[m].mean() <span class="op">-</span> yp[m].mean())</span>
+<span id="cb9-29"><a href="#cb9-29" aria-label="29"></a>    <span class="cf">return</span> <span class="bu">float</span>(ece)</span>
+<span id="cb9-30"><a href="#cb9-30" aria-label="30"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-label="31"></a><span class="cf">for</span> name, probs <span class="kw">in</span> [</span>
+<span id="cb9-32"><a href="#cb9-32" aria-label="32"></a>    (<span class="st">"Raw LogReg"</span>, p_raw),</span>
+<span id="cb9-33"><a href="#cb9-33" aria-label="33"></a>    (<span class="st">"Platt Calib"</span>, p_cal),</span>
+<span id="cb9-34"><a href="#cb9-34" aria-label="34"></a>    (<span class="st">"Overconfident"</span>, p_overconf),</span>
+<span id="cb9-35"><a href="#cb9-35" aria-label="35"></a>]:</span>
+<span id="cb9-36"><a href="#cb9-36" aria-label="36"></a>    <span class="bu">print</span>(</span>
+<span id="cb9-37"><a href="#cb9-37" aria-label="37"></a>        <span class="ss">f"</span><span class="sc">{</span>name<span class="sc">:13s}</span><span class="ss"> | ROC=</span><span class="sc">{</span>roc_auc_score(ya_te, probs)<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-label="38"></a>        <span class="ss">f"Brier=</span><span class="sc">{</span>brier_score_loss(ya_te, probs)<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-label="39"></a>        <span class="ss">f"ECE=</span><span class="sc">{</span>quick_ece(ya_te, probs)<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-label="40"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a>Raw LogReg    | ROC=0.6246 | Brier=0.2162 | ECE=0.0444</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a>Platt Calib   | ROC=0.6275 | Brier=0.2164 | ECE=0.0128</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a>Overconfident | ROC=0.6275 | Brier=0.3382 | ECE=0.3531</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Stare at the last two rows—this is one of the most important tables in applied clinical ML:</p>
+<ul>
+<li><strong>Platt scaling</strong> cut Expected Calibration Error (ECE) by more than 3x (<code>0.0444 -&gt; 0.0128</code>), meaning predicted probabilities deviate from observed bin frequencies by only <strong>1.3 percentage points</strong> on average!</li>
+<li><strong>The overconfident model</strong> has the <strong>exact same ROC-AUC (<code>0.6275</code>)</strong> as the calibrated model because <code>p ** 0.35</code> is strictly monotonic—yet its <strong>Brier score jumps from <code>0.2164</code> to <code>0.3382</code></strong> and its <strong>ECE explodes 27x to <code>0.3531</code></strong>! Never judge probability quality from ROC-AUC alone.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-youden" class="level3" data-number="23.3.6">
+<h3 data-number="23.3.6" class="anchored" data-anchor-id="sec-ch23-youden"><span class="header-section-number">23.3.6</span> Decision Threshold Tuning &amp; Youden’s <span class="math inline">\(J\)</span> Statistic</h3>
+<p>To rescue our stunting classifier from the <code>0.50</code> Accuracy Paradox without corrupting its calibrated probabilities, find the cutoff <span class="math inline">\(\tau^*\)</span> that maximizes <strong>Youden’s <span class="math inline">\(J\)</span></strong>:</p>
+<p><span class="math display">\[J(\tau) = \text{Sensitivity}(\tau) + \text{Specificity}(\tau) - 1 = \text{TPR}(\tau) - \text{FPR}(\tau)\]</span></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a>fpr, tpr, thresholds <span class="op">=</span> roc_curve(ys_te, ys_prob)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a>j_scores <span class="op">=</span> tpr <span class="op">-</span> fpr</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>best_idx <span class="op">=</span> <span class="bu">int</span>(np.argmax(j_scores))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>best_t <span class="op">=</span> <span class="bu">float</span>(thresholds[best_idx])</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>best_j <span class="op">=</span> <span class="bu">float</span>(j_scores[best_idx])</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a><span class="bu">print</span>(<span class="ss">f"Stunting Youden threshold: </span><span class="sc">{</span>best_t<span class="sc">:.4f}</span><span class="ss"> (J=</span><span class="sc">{</span>best_j<span class="sc">:.4f}</span><span class="ss">)"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>rows <span class="op">=</span> []</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a><span class="cf">for</span> t <span class="kw">in</span> [<span class="fl">0.10</span>, <span class="bu">round</span>(best_t, <span class="dv">4</span>), <span class="fl">0.25</span>, <span class="fl">0.50</span>]:</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>    pred_t <span class="op">=</span> (ys_prob <span class="op">&gt;=</span> t).astype(<span class="bu">int</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a>    tn_t, fp_t, fn_t, tp_t <span class="op">=</span> confusion_matrix(ys_te, pred_t).ravel()</span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    sens_t <span class="op">=</span> tp_t <span class="op">/</span> (tp_t <span class="op">+</span> fn_t) <span class="cf">if</span> (tp_t <span class="op">+</span> fn_t) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>    spec_t <span class="op">=</span> tn_t <span class="op">/</span> (tn_t <span class="op">+</span> fp_t) <span class="cf">if</span> (tn_t <span class="op">+</span> fp_t) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a>    prec_t <span class="op">=</span> tp_t <span class="op">/</span> (tp_t <span class="op">+</span> fp_t) <span class="cf">if</span> (tp_t <span class="op">+</span> fp_t) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a>    rows.append({</span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a>        <span class="st">"thresh"</span>: <span class="bu">round</span>(t, <span class="dv">4</span>),</span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a>        <span class="st">"sens"</span>: <span class="bu">round</span>(sens_t, <span class="dv">4</span>),</span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>        <span class="st">"spec"</span>: <span class="bu">round</span>(spec_t, <span class="dv">4</span>),</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a>        <span class="st">"prec"</span>: <span class="bu">round</span>(prec_t, <span class="dv">4</span>),</span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a>        <span class="st">"flagged_pct"</span>: <span class="bu">round</span>(<span class="fl">100.0</span> <span class="op">*</span> pred_t.mean(), <span class="dv">2</span>),</span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a>    })</span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a><span class="bu">print</span>(pd.DataFrame(rows).to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb12-1"><a href="#cb12-1" aria-label="1"></a>Stunting Youden threshold: 0.1918 (J=0.5477)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-label="2"></a> thresh   sens   spec   prec  flagged_pct</span>
+<span id="cb12-3"><a href="#cb12-3" aria-label="3"></a> 0.1000 0.8824 0.3962 0.1899        64.23</span>
+<span id="cb12-4"><a href="#cb12-4" aria-label="4"></a> 0.1918 0.7059 0.7830 0.3429        28.46</span>
+<span id="cb12-5"><a href="#cb12-5" aria-label="5"></a> 0.2500 0.4706 0.8962 0.4211        15.45</span>
+<span id="cb12-6"><a href="#cb12-6" aria-label="6"></a> 0.5000 0.0000 1.0000 0.0000         0.00</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look how actionable this operating table is for a district health officer:</p>
+<ul>
+<li>At Youden’s cutoff (<code>0.1918</code>), sensitivity leaps from <strong><code>0.00%</code> to <code>70.59%</code></strong> while specificity stays strong at <strong><code>78.30%</code></strong>, flagging <strong><code>28.46%</code></strong> of children for nutrition follow-up!</li>
+<li>If the district clinic can only afford to evaluate <code>~15%</code> of children, switching to <code>thresh = 0.2500</code> flags <code>15.45%</code> with <code>42.11%</code> precision—all without retraining a single weight!</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-imbalance" class="level3" data-number="23.3.7">
+<h3 data-number="23.3.7" class="anchored" data-anchor-id="sec-ch23-imbalance"><span class="header-section-number">23.3.7</span> Handling Class Imbalance: <code>class_weight="balanced"</code> &amp; SMOTE Caveats</h3>
+<p>What happens if instead of tuning the decision threshold, we train <code>LogisticRegression(class_weight="balanced")</code> on <code>child_stunted</code>? Let’s measure recall, PR-AUC, and Brier score side by side:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-label="1"></a><span class="cf">for</span> label, cw <span class="kw">in</span> [(<span class="st">"default"</span>, <span class="va">None</span>), (<span class="st">"balanced"</span>, <span class="st">"balanced"</span>)]:</span>
+<span id="cb13-2"><a href="#cb13-2" aria-label="2"></a>    model <span class="op">=</span> Pipeline([</span>
+<span id="cb13-3"><a href="#cb13-3" aria-label="3"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-label="4"></a>        (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>, class_weight<span class="op">=</span>cw)),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-label="5"></a>    ])</span>
+<span id="cb13-6"><a href="#cb13-6" aria-label="6"></a>    model.fit(Xs_tr, ys_tr)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-label="7"></a>    yp <span class="op">=</span> model.predict(Xs_te)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-label="8"></a>    yprob <span class="op">=</span> model.predict_proba(Xs_te)[:, <span class="dv">1</span>]</span>
+<span id="cb13-9"><a href="#cb13-9" aria-label="9"></a>    <span class="bu">print</span>(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-label="10"></a>        <span class="ss">f"</span><span class="sc">{</span>label<span class="sc">:8s}</span><span class="ss"> | acc=</span><span class="sc">{</span>(yp <span class="op">==</span> ys_te)<span class="sc">.</span>mean()<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-label="11"></a>        <span class="ss">f"recall=</span><span class="sc">{</span>recall_score(ys_te, yp)<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-label="12"></a>        <span class="ss">f"PR-AUC=</span><span class="sc">{</span>average_precision_score(ys_te, yprob)<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-label="13"></a>        <span class="ss">f"Brier=</span><span class="sc">{</span>brier_score_loss(ys_te, yprob)<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-label="14"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Expected Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb14-1"><a href="#cb14-1" aria-label="1"></a>default  | acc=0.8618 | recall=0.0000 | PR-AUC=0.3138 | Brier=0.1066</span>
+<span id="cb14-2"><a href="#cb14-2" aria-label="2"></a>balanced | acc=0.6260 | recall=0.8824 | PR-AUC=0.3124 | Brier=0.2289</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Look closely at what <code>class_weight="balanced"</code> actually did (the same mathematical caveat applies to <strong>SMOTE</strong> synthetic oversampling!):</p>
+<ul>
+<li><strong>Recall jumped from <code>0.0000</code> to <code>0.8824</code></strong> solely because upweighting positives shifted the intercept upward so more cases crossed <code>0.50</code>.</li>
+<li><strong>PR-AUC stayed virtually identical (<code>0.3138</code> vs.&nbsp;<code>0.3124</code>):</strong> Reweighting did <strong>not</strong> conjure new biological information out of thin air.</li>
+<li><strong>Brier score more than doubled (<code>0.1066 -&gt; 0.2289</code>):</strong> Because the model was trained on an artificially 50/50 reweighted objective, its predicted probabilities are now systematically overconfident! If you use <code>class_weight="balanced"</code> or SMOTE (and never apply SMOTE outside CV folds!), always recalibrate probabilities afterward—or better yet, fit an unweighted calibrated model and tune <span class="math inline">\(\tau\)</span>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-errors" class="level3" data-number="23.3.8">
+<h3 data-number="23.3.8" class="anchored" data-anchor-id="sec-ch23-errors"><span class="header-section-number">23.3.8</span> Break It On Purpose! (Classification Error Anatomy)</h3>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #1 — UndefinedMetricWarning / ValueError (Single-Class <code>y_true</code> in <code>roc_auc_score</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-label="1"></a><span class="cf">with</span> warnings.catch_warnings():</span>
+<span id="cb15-2"><a href="#cb15-2" aria-label="2"></a>    warnings.simplefilter(<span class="st">"error"</span>, UndefinedMetricWarning)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-label="3"></a>    roc_auc_score([<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>], [<span class="fl">0.1</span>, <span class="fl">0.4</span>, <span class="fl">0.7</span>, <span class="fl">0.9</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb16-1"><a href="#cb16-1" aria-label="1"></a>UndefinedMetricWarning: Only one class is present in y_true.</span>
+<span id="cb16-2"><a href="#cb16-2" aria-label="2"></a>ROC AUC score is not defined in that case.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Computing TPR vs.&nbsp;FPR requires at least one positive (<code>1</code>) and one negative (<code>0</code>) sample. In rare-disease subsamples or unstratified CV folds, a fold can accidentally contain only <code>0</code>s—raising <code>ValueError</code> in older Scikit-Learn and returning silent <code>nan</code> with <code>UndefinedMetricWarning</code> in Scikit-Learn 1.9+.<br>
+<strong>Fix:</strong> Always pass <code>stratify=y</code> to <code>train_test_split</code> and use <code>StratifiedKFold</code> for cross-validation, and check <code>len(np.unique(y_true)) == 2</code> before scoring.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #2 — ValueError (Passing Continuous Probabilities to <code>confusion_matrix</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-label="1"></a>confusion_matrix([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>], [<span class="fl">0.12</span>, <span class="fl">0.85</span>, <span class="fl">0.34</span>, <span class="fl">0.67</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb18-1"><a href="#cb18-1" aria-label="1"></a>ValueError: Classification metrics can't handle a mix of binary</span>
+<span id="cb18-2"><a href="#cb18-2" aria-label="2"></a>and continuous targets</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> <code>confusion_matrix</code>, <code>precision_score</code>, <code>recall_score</code>, and <code>f1_score</code> require discrete binary predictions (<code>0</code> or <code>1</code>), whereas <code>predict_proba(X)[:, 1]</code> returns continuous floats in <code>[0, 1]</code>. Conversely, passing hard <code>0/1</code> predictions into <code>roc_auc_score</code> throws away ranking information and severely underestimates AUC!<br>
+<strong>Fix:</strong> Threshold continuous probabilities explicitly via <code>y_pred = (y_prob &gt;= threshold).astype(int)</code> before calling discrete confusion metrics, and pass continuous <code>y_prob</code> to <code>roc_auc_score</code>, <code>average_precision_score</code>, and <code>brier_score_loss</code>.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Break It On Purpose #3 — ValueError (Out-of-Range Probability in <code>brier_score_loss</code> / Unclipped <code>log(0)</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-label="1"></a>brier_score_loss([<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>], [<span class="fl">0.2</span>, <span class="fl">1.35</span>, <span class="fl">0.1</span>, <span class="fl">0.8</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Python’s Traceback:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb20-1"><a href="#cb20-1" aria-label="1"></a>ValueError: y_prob contains values greater than 1: 1.35</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Diagnosis:</strong> Passing raw linear-model logits (<code>decision_function(X)</code>) or corrupted scores outside <code>[0, 1]</code> (or <code>NaN</code> values) violates the definition of a probability and crashes <code>brier_score_loss</code>. Similarly, passing exact <code>0.0</code> or <code>1.0</code> into an unclipped log-loss triggers <code>np.log(0) -&gt; -inf</code> and <code>0 * -inf -&gt; nan</code>.<br>
+<strong>Fix:</strong> Extract probabilities via <code>.predict_proba(X)[:, 1]</code> (or apply <code>sigmoid</code>), drop/impute <code>NaN</code>s inside a <code>Pipeline</code>, and clip probabilities to <code>[eps, 1 - eps]</code> inside custom cross-entropy code.</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="sec-ch23-blueprint" class="level2" data-number="23.4">
+<h2 data-number="23.4" class="anchored" data-anchor-id="sec-ch23-blueprint"><span class="header-section-number">23.4</span> Stage 4 — The Researcher’s Problem-Structuring Blueprint</h2>
+<p><strong>Scenario:</strong> Your maternal-health analytics team needs a single reusable function <code>build_clinical_triage_report(raw_df, target="maternal_anemia", seed=42)</code> that cleans <code>mch_survey_sample</code> without mutating it, avoids target leakage, trains both raw and 5-fold Platt-calibrated logistic pipelines on a stratified 75/25 split, and outputs test sample size, ROC-AUC, PR-AUC, raw vs.&nbsp;calibrated Brier score, 5-bin ECE, and Youden’s optimal threshold.</p>
+<section id="blueprint-completed-on-paper-before-coding" class="level3" data-number="23.4.1">
+<h3 data-number="23.4.1" class="anchored" data-anchor-id="blueprint-completed-on-paper-before-coding"><span class="header-section-number">23.4.1</span> Blueprint (Completed on Paper Before Coding)</h3>
+<ol type="1">
+<li><p><strong>Leak-Free Hygiene Layer:</strong></p>
+<ul>
+<li>Copy <code>raw_df</code> first (<code>df = raw_df.copy()</code>).</li>
+<li>Standardize <code>residence</code> casing, replace <code>anc_visits == 999</code> with <code>np.nan</code>, encode <code>is_urban</code> (<code>0/1</code>) and ordinal <code>wealth_num</code> (<code>1..5</code>), and keep only the 4 non-leaking features <code>["maternal_age_years", "anc_visits", "wealth_num", "is_urban"]</code>.</li>
+</ul></li>
+<li><p><strong>Stratified Split &amp; Dual Calibration Fit:</strong></p>
+<ul>
+<li>Split 75/25 with <code>stratify=sub[target]</code> and <code>random_state=seed</code>.</li>
+<li>Fit <code>base = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])</code> on <code>(X_tr, y_tr)</code> to obtain <code>p_raw</code>.</li>
+<li>Fit <code>CalibratedClassifierCV(base, method="sigmoid", cv=5)</code> on <code>(X_tr, y_tr)</code> to obtain <code>p_cal</code>.</li>
+</ul></li>
+<li><p><strong>Verification Plan:</strong></p>
+<ul>
+<li>Verify <code>n_test == 123</code> (25% of 492 complete rows) for both <code>maternal_anemia</code> and <code>child_stunted</code>.</li>
+<li>Confirm stunting’s Youden threshold (<code>~0.18</code>) sits well below <code>0.50</code>, matching its lower prevalence (<code>13.8%</code>), while anemia’s sits near <code>~0.30</code> (prevalence <code>35.4%</code>).</li>
+</ul></li>
+</ol>
+</section>
+<section id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb" class="level3" data-number="23.4.2">
+<h3 data-number="23.4.2" class="anchored" data-anchor-id="clean-python-implementation-verbatim-in-01_walkthrough.ipynb"><span class="header-section-number">23.4.2</span> Clean Python Implementation (Verbatim in <code>01_walkthrough.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-label="1"></a><span class="kw">def</span> build_clinical_triage_report(raw_df, target<span class="op">=</span><span class="st">"maternal_anemia"</span>, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb21-2"><a href="#cb21-2" aria-label="2"></a>    <span class="co">"""Train leak-free scaled + Platt-calibrated classifier &amp; audit it."""</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-label="3"></a>    df <span class="op">=</span> raw_df.copy()</span>
+<span id="cb21-4"><a href="#cb21-4" aria-label="4"></a>    df[<span class="st">"residence"</span>] <span class="op">=</span> df[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb21-5"><a href="#cb21-5" aria-label="5"></a>    df[<span class="st">"anc_visits"</span>] <span class="op">=</span> df[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-label="6"></a>    df[<span class="st">"is_urban"</span>] <span class="op">=</span> (df[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-label="7"></a>    w_map <span class="op">=</span> {</span>
+<span id="cb21-8"><a href="#cb21-8" aria-label="8"></a>        <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-label="9"></a>        <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-label="10"></a>    }</span>
+<span id="cb21-11"><a href="#cb21-11" aria-label="11"></a>    df[<span class="st">"wealth_num"</span>] <span class="op">=</span> df[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(w_map)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-label="12"></a>    cols <span class="op">=</span> [<span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>, <span class="st">"is_urban"</span>]</span>
+<span id="cb21-13"><a href="#cb21-13" aria-label="13"></a>    sub <span class="op">=</span> df[[target] <span class="op">+</span> cols].dropna()</span>
+<span id="cb21-14"><a href="#cb21-14" aria-label="14"></a>    X_tr, X_te, y_tr, y_te <span class="op">=</span> train_test_split(</span>
+<span id="cb21-15"><a href="#cb21-15" aria-label="15"></a>        sub[cols], sub[target].astype(<span class="bu">int</span>),</span>
+<span id="cb21-16"><a href="#cb21-16" aria-label="16"></a>        test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>sub[target], random_state<span class="op">=</span>seed,</span>
+<span id="cb21-17"><a href="#cb21-17" aria-label="17"></a>    )</span>
+<span id="cb21-18"><a href="#cb21-18" aria-label="18"></a>    base <span class="op">=</span> Pipeline([</span>
+<span id="cb21-19"><a href="#cb21-19" aria-label="19"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb21-20"><a href="#cb21-20" aria-label="20"></a>        (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb21-21"><a href="#cb21-21" aria-label="21"></a>    ])</span>
+<span id="cb21-22"><a href="#cb21-22" aria-label="22"></a>    base.fit(X_tr, y_tr)</span>
+<span id="cb21-23"><a href="#cb21-23" aria-label="23"></a>    p_raw <span class="op">=</span> base.predict_proba(X_te)[:, <span class="dv">1</span>]</span>
+<span id="cb21-24"><a href="#cb21-24" aria-label="24"></a>    cal <span class="op">=</span> CalibratedClassifierCV(base, method<span class="op">=</span><span class="st">"sigmoid"</span>, cv<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb21-25"><a href="#cb21-25" aria-label="25"></a>    cal.fit(X_tr, y_tr)</span>
+<span id="cb21-26"><a href="#cb21-26" aria-label="26"></a>    p_cal <span class="op">=</span> cal.predict_proba(X_te)[:, <span class="dv">1</span>]</span>
+<span id="cb21-27"><a href="#cb21-27" aria-label="27"></a>    fpr, tpr, th <span class="op">=</span> roc_curve(y_te, p_cal)</span>
+<span id="cb21-28"><a href="#cb21-28" aria-label="28"></a>    bi <span class="op">=</span> <span class="bu">int</span>(np.argmax(tpr <span class="op">-</span> fpr))</span>
+<span id="cb21-29"><a href="#cb21-29" aria-label="29"></a>    <span class="cf">return</span> {</span>
+<span id="cb21-30"><a href="#cb21-30" aria-label="30"></a>        <span class="st">"n_test"</span>: <span class="bu">int</span>(<span class="bu">len</span>(y_te)),</span>
+<span id="cb21-31"><a href="#cb21-31" aria-label="31"></a>        <span class="st">"roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_te, p_cal)), <span class="dv">4</span>),</span>
+<span id="cb21-32"><a href="#cb21-32" aria-label="32"></a>        <span class="st">"pr_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(average_precision_score(y_te, p_cal)), <span class="dv">4</span>),</span>
+<span id="cb21-33"><a href="#cb21-33" aria-label="33"></a>        <span class="st">"brier_raw"</span>: <span class="bu">round</span>(<span class="bu">float</span>(brier_score_loss(y_te, p_raw)), <span class="dv">4</span>),</span>
+<span id="cb21-34"><a href="#cb21-34" aria-label="34"></a>        <span class="st">"brier_cal"</span>: <span class="bu">round</span>(<span class="bu">float</span>(brier_score_loss(y_te, p_cal)), <span class="dv">4</span>),</span>
+<span id="cb21-35"><a href="#cb21-35" aria-label="35"></a>        <span class="st">"ece_cal"</span>: <span class="bu">round</span>(quick_ece(y_te, p_cal, n_bins<span class="op">=</span><span class="dv">5</span>), <span class="dv">4</span>),</span>
+<span id="cb21-36"><a href="#cb21-36" aria-label="36"></a>        <span class="st">"youden_t"</span>: <span class="bu">round</span>(<span class="bu">float</span>(th[bi]), <span class="dv">4</span>),</span>
+<span id="cb21-37"><a href="#cb21-37" aria-label="37"></a>    }</span>
+<span id="cb21-38"><a href="#cb21-38" aria-label="38"></a></span>
+<span id="cb21-39"><a href="#cb21-39" aria-label="39"></a><span class="cf">for</span> name, col <span class="kw">in</span> [</span>
+<span id="cb21-40"><a href="#cb21-40" aria-label="40"></a>    (<span class="st">"Anemia"</span>, <span class="st">"maternal_anemia"</span>),</span>
+<span id="cb21-41"><a href="#cb21-41" aria-label="41"></a>    (<span class="st">"Stunting"</span>, <span class="st">"child_stunted"</span>),</span>
+<span id="cb21-42"><a href="#cb21-42" aria-label="42"></a>]:</span>
+<span id="cb21-43"><a href="#cb21-43" aria-label="43"></a>    rep <span class="op">=</span> build_clinical_triage_report(mch_raw, target<span class="op">=</span>col)</span>
+<span id="cb21-44"><a href="#cb21-44" aria-label="44"></a>    <span class="bu">print</span>(</span>
+<span id="cb21-45"><a href="#cb21-45" aria-label="45"></a>        <span class="ss">f"</span><span class="sc">{</span>name<span class="sc">:8s}</span><span class="ss"> (n=</span><span class="sc">{</span>rep[<span class="st">'n_test'</span>]<span class="sc">}</span><span class="ss">) | ROC=</span><span class="sc">{</span>rep[<span class="st">'roc_auc'</span>]<span class="sc">:.4f}</span><span class="ss"> | "</span></span>
+<span id="cb21-46"><a href="#cb21-46" aria-label="46"></a>        <span class="ss">f"PR=</span><span class="sc">{</span>rep[<span class="st">'pr_auc'</span>]<span class="sc">:.4f}</span><span class="ss"> | Youden=</span><span class="sc">{</span>rep[<span class="st">'youden_t'</span>]<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb21-47"><a href="#cb21-47" aria-label="47"></a>    )</span>
+<span id="cb21-48"><a href="#cb21-48" aria-label="48"></a>    <span class="bu">print</span>(</span>
+<span id="cb21-49"><a href="#cb21-49" aria-label="49"></a>        <span class="ss">f"         Brier raw=</span><span class="sc">{</span>rep[<span class="st">'brier_raw'</span>]<span class="sc">:.4f}</span><span class="ss"> -&gt; "</span></span>
+<span id="cb21-50"><a href="#cb21-50" aria-label="50"></a>        <span class="ss">f"cal=</span><span class="sc">{</span>rep[<span class="st">'brier_cal'</span>]<span class="sc">:.4f}</span><span class="ss"> | ECE=</span><span class="sc">{</span>rep[<span class="st">'ece_cal'</span>]<span class="sc">:.4f}</span><span class="ss">"</span></span>
+<span id="cb21-51"><a href="#cb21-51" aria-label="51"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Output:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode numberSource text number-lines code-with-copy"><code class="sourceCode"><span id="cb22-1"><a href="#cb22-1" aria-label="1"></a>Anemia   (n=123) | ROC=0.6275 | PR=0.4880 | Youden=0.2968</span>
+<span id="cb22-2"><a href="#cb22-2" aria-label="2"></a>         Brier raw=0.2162 -&gt; cal=0.2164 | ECE=0.0128</span>
+<span id="cb22-3"><a href="#cb22-3" aria-label="3"></a>Stunting (n=123) | ROC=0.7722 | PR=0.3077 | Youden=0.1832</span>
+<span id="cb22-4"><a href="#cb22-4" aria-label="4"></a>         Brier raw=0.1066 -&gt; cal=0.1089 | ECE=0.0590</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-ch23-todos" class="level2" data-number="23.5">
+<h2 data-number="23.5" class="anchored" data-anchor-id="sec-ch23-todos"><span class="header-section-number">23.5</span> Stage 5 — Guided “To-Do” Practice Labs</h2>
+<p>Open <code>part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb</code> in Google Colab, run <strong>Step 0</strong> to activate <code>sharukh-tutor</code>, and implement all six classification &amp; calibration functions below. Pass each <strong>function name (without parentheses!)</strong> to <code>tutor.check(...)</code>.</p>
+<ul>
+<li><strong>To-Do 23.1 (<code>binary_cross_entropy(y_true, y_prob, eps=1e-15)</code>):</strong> Clip <code>y_prob</code> to <code>[eps, 1 - eps]</code> and return the mean binary cross-entropy as a <code>float</code> rounded to <strong>5 decimals</strong>.</li>
+<li><strong>To-Do 23.2 (<code>logistic_gd_from_scratch(X, y, lr=0.1, epochs=400)</code>):</strong> Implement pure NumPy sigmoid + batch gradient descent returning <code>(w_1d, b_float, loss_history)</code> where final loss is strictly lower than initial loss and training accuracy is <span class="math inline">\(\ge 0.85\)</span> on separable data.</li>
+<li><strong>To-Do 23.3 (<code>clinical_confusion_metrics(y_true, y_pred)</code>):</strong> Compute <code>{"sensitivity": round4, "specificity": round4, "precision": round4, "npv": round4, "f1": round4}</code>, guarding every zero denominator cleanly with <code>0.0</code>.</li>
+<li><strong>To-Do 23.4 (<code>roc_and_pr_auc(y_true, y_prob)</code>):</strong> Compute <code>{"roc_auc": round4, "pr_auc": round4, "brier_score": round4}</code> using <code>roc_auc_score</code>, <code>average_precision_score</code>, and <code>brier_score_loss</code>.</li>
+<li><strong>To-Do 23.5 (<code>find_youden_threshold(y_true, y_prob)</code>):</strong> Use <code>roc_curve</code> to find the threshold maximizing <span class="math inline">\(J = \text{TPR} - \text{FPR}\)</span>, returning <code>(best_thresh_round4, best_j_round4)</code>.</li>
+<li><strong>To-Do 23.6 (<code>compare_balanced_logistic(X_train, y_train, X_test, y_test)</code>):</strong> Fit default vs.&nbsp;<code>class_weight="balanced"</code> scaled <code>LogisticRegression(max_iter=500)</code> inside <code>Pipeline</code>s and return <code>{"default_recall": round4, "balanced_recall": round4, "default_pr_auc": round4, "balanced_pr_auc": round4}</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="sec-ch23-test" class="level2" data-number="23.6">
+<h2 data-number="23.6" class="anchored" data-anchor-id="sec-ch23-test"><span class="header-section-number">23.6</span> Stage 6 — Concept &amp; Execution Trace Test (No Computer Allowed!)</h2>
+<p>Work through all 10 classification, calibration, and imbalance reasoning questions on paper before checking Stage 8:</p>
+<ol type="1">
+<li><strong>Sigmoid &amp; Log-Odds:</strong> A logistic regression model outputs logit <span class="math inline">\(z = 0.0\)</span> for Patient A and <span class="math inline">\(z = \ln(3) \approx 1.0986\)</span> for Patient B. Compute the exact predicted probability <span class="math inline">\(\hat{p} = \sigma(z)\)</span> for both patients.</li>
+<li><strong>Why Clip Log-Loss?</strong> Suppose <code>y_true = [1, 0]</code> and an unclipped model outputs <code>y_prob = [1.0, 0.0]</code>. In IEEE 754 floating-point arithmetic, what happens when NumPy evaluates <code>y * np.log(p) + (1 - y) * np.log(1 - p)</code> without clipping?</li>
+<li><strong>The Accuracy Paradox:</strong> A rare congenital disorder affects <code>2%</code> of newborns (<span class="math inline">\(n = 1{,}000\)</span>, 20 cases, 980 non-cases). A classifier predicts <code>0</code> for all <code>1,000</code> infants. Compute its <strong>accuracy</strong>, <strong>sensitivity</strong>, <strong>specificity</strong>, and <strong>NPV</strong>.</li>
+<li><strong>Confusion Matrix Hand Calculation:</strong> A screening test produces <code>TP = 30</code>, <code>FP = 20</code>, <code>FN = 10</code>, and <code>TN = 140</code>. Compute <strong>Sensitivity</strong>, <strong>Specificity</strong>, <strong>Precision (PPV)</strong>, and <strong><span class="math inline">\(F_1\)</span></strong> by hand.</li>
+<li><strong>ROC-AUC vs.&nbsp;PR-AUC Under Class Imbalance:</strong> On a dataset with <code>1%</code> positive prevalence, what is the expected <strong>ROC-AUC</strong> of a random coin-flip classifier, and what is its expected <strong>PR-AUC</strong>?</li>
+<li><strong>Calibration vs.&nbsp;Discrimination:</strong> Suppose you replace every predicted probability <span class="math inline">\(\hat{p}\)</span> from a calibrated classifier with <span class="math inline">\(\hat{p}_{\text{bad}} = \hat{p}^{0.4}\)</span> (a strictly increasing transform on <span class="math inline">\([0, 1]\)</span>). How do <strong>ROC-AUC</strong>, <strong>Brier score</strong>, and <strong>ECE</strong> respond?</li>
+<li><strong>Youden’s <span class="math inline">\(J\)</span> Interpretation:</strong> If a clinical cutoff achieves <code>Sensitivity = 0.80</code> and <code>Specificity = 0.75</code>, what is its <strong>False Positive Rate (FPR)</strong> and its <strong>Youden’s <span class="math inline">\(J\)</span></strong> statistic?</li>
+<li><strong><code>class_weight="balanced"</code> &amp; SMOTE Side Effect:</strong> Why does training <code>LogisticRegression(class_weight="balanced")</code> or applying SMOTE on a 10%-prevalence disease dramatically <em>increase</em> the Brier score even when recall improves?</li>
+<li><strong>Target Leakage in <code>mch_survey_sample</code>:</strong> A teammate includes <code>maternal_hb_g_dl</code> as an input feature when predicting <code>maternal_anemia</code> and celebrates a <code>0.99</code> test ROC-AUC. Why is this model scientifically invalid for pre-blood-test community screening?</li>
+<li><strong>Calibration Bin Right-Endpoint Bug:</strong> When partitioning <span class="math inline">\([0, 1]\)</span> into 5 equal bins (<code>[0.0, 0.2)</code>, <code>[0.2, 0.4)</code>, …, <code>[0.8, 1.0)</code>), what silently goes wrong if a model outputs an exact probability <code>1.0</code>, and how do you fix the final bin condition?</li>
+</ol>
+<hr>
+</section>
+<section id="sec-ch23-exam" class="level2" data-number="23.7">
+<h2 data-number="23.7" class="anchored" data-anchor-id="sec-ch23-exam"><span class="header-section-number">23.7</span> Stage 7 — Chapter 23 Coding Exam (100 Points)</h2>
+<p>Open <code>part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb</code>, implement all three functions, and run <code>tutor.check_exam("ch23", exam_submissions)</code> to earn your Chapter 23 Exam score out of 100 points.</p>
+<section id="exam-task-23.1-30-points-evaluate_screening_thresholdsy_true-y_prob-thresholds" class="level3" data-number="23.7.1">
+<h3 data-number="23.7.1" class="anchored" data-anchor-id="exam-task-23.1-30-points-evaluate_screening_thresholdsy_true-y_prob-thresholds"><span class="header-section-number">23.7.1</span> Exam Task 23.1 (30 Points): <code>evaluate_screening_thresholds(y_true, y_prob, thresholds)</code></h3>
+<p>Given binary labels <code>y_true</code>, continuous probabilities <code>y_prob</code>, and an iterable of cutoffs <code>thresholds</code>:</p>
+<ul>
+<li>For each cutoff <code>t</code>, form <code>y_pred = (y_prob &gt;= t).astype(int)</code>.</li>
+<li>Compute <code>sensitivity</code>, <code>specificity</code>, <code>precision</code>, and <code>f1</code> (guarding zero denominators cleanly with <code>0.0</code>), plus <code>flagged_pct = 100.0 * mean(y_pred)</code> (percentage flagged on the <code>0–100</code> scale).</li>
+<li>Return a <code>pd.DataFrame</code> with exact columns <code>["threshold", "sensitivity", "specificity", "precision", "f1", "flagged_pct"]</code> rounded to <strong>4 decimals</strong>.</li>
+</ul>
+</section>
+<section id="exam-task-23.2-35-points-calibration_audit_binsy_true-y_prob-n_bins5" class="level3" data-number="23.7.2">
+<h3 data-number="23.7.2" class="anchored" data-anchor-id="exam-task-23.2-35-points-calibration_audit_binsy_true-y_prob-n_bins5"><span class="header-section-number">23.7.2</span> Exam Task 23.2 (35 Points): <code>calibration_audit_bins(y_true, y_prob, n_bins=5)</code></h3>
+<p>Audit probability calibration across equal-width bins on <code>[0, 1]</code>:</p>
+<ul>
+<li>Create bin edges with <code>np.linspace(0.0, 1.0, n_bins + 1)</code>. Use half-open <code>[lo, hi)</code> for bins <code>0..n_bins-2</code> and closed <code>[lo, hi]</code> for the final bin so <code>p == 1.0</code> is included.</li>
+<li>Skip empty bins (<code>count == 0</code>). For each non-empty bin, record <code>mean_pred</code> (4 decimals), <code>obs_rate</code> (4 decimals), and <code>count</code> (<code>int</code>).</li>
+<li>Compute Expected Calibration Error <span class="math inline">\(\text{ECE} = \sum_b (n_b / N) \cdot |\text{obs}_b - \text{pred}_b|\)</span> and <code>brier_score</code> (<code>brier_score_loss</code>), both rounded to <strong>4 decimals</strong>.</li>
+<li>Return <code>{"ece": round4, "brier_score": round4, "bins": DataFrame}</code> where <code>bins</code> has columns <code>["mean_pred", "obs_rate", "count"]</code>.</li>
+</ul>
+</section>
+<section id="exam-task-23.3-35-points-train_calibrated_anemia_classifiermch_df-seed42" class="level3" data-number="23.7.3">
+<h3 data-number="23.7.3" class="anchored" data-anchor-id="exam-task-23.3-35-points-train_calibrated_anemia_classifiermch_df-seed42"><span class="header-section-number">23.7.3</span> Exam Task 23.3 (35 Points): <code>train_calibrated_anemia_classifier(mch_df, seed=42)</code></h3>
+<p>Without mutating <code>mch_df</code>:</p>
+<ul>
+<li>Copy <code>mch_df</code>, clean <code>residence</code> casing (<code>str.strip().str.title()</code>), replace <code>anc_visits == 999</code> with <code>np.nan</code>, derive <code>is_urban = (residence == "Urban").astype(int)</code>, and map <code>wealth_quintile</code> (<code>Poorest</code> <span class="math inline">\(\rightarrow\)</span> 1 through <code>Richest</code> <span class="math inline">\(\rightarrow\)</span> 5) into <code>wealth_num</code>.</li>
+<li>Drop rows with missing values across <code>["maternal_anemia", "maternal_age_years", "anc_visits", "wealth_num", "is_urban"]</code> (excluding <code>maternal_hb_g_dl</code> to avoid target leakage!).</li>
+<li>Run a stratified 75/25 split (<code>test_size=0.25, stratify=y, random_state=seed</code>).</li>
+<li>Fit <code>pipe = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])</code> on <code>(X_tr, y_tr)</code> for <code>prob_raw</code>, and fit <code>CalibratedClassifierCV(pipe, method="sigmoid", cv=5)</code> on <code>(X_tr, y_tr)</code> for <code>prob_cal</code>.</li>
+<li>Return <code>{"roc_auc": round4, "pr_auc": round4, "brier_raw": round4, "brier_calibrated": round4, "youden_threshold": round4}</code> (computing <code>roc_auc</code>, <code>pr_auc</code>, <code>brier_calibrated</code>, and <code>youden_threshold</code> from <code>prob_cal</code>, and <code>brier_raw</code> from <code>prob_raw</code>).</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="sec-ch23-solutions" class="level2" data-number="23.8">
+<h2 data-number="23.8" class="anchored" data-anchor-id="sec-ch23-solutions"><span class="header-section-number">23.8</span> Stage 8 — Complete Annotated Solutions &amp; Debugging Post-Mortem</h2>
+<section id="a.-concept-execution-trace-test-key" class="level3" data-number="23.8.1">
+<h3 data-number="23.8.1" class="anchored" data-anchor-id="a.-concept-execution-trace-test-key"><span class="header-section-number">23.8.1</span> A. Concept &amp; Execution Trace Test Key</h3>
+<ol type="1">
+<li>Patient A: <span class="math inline">\(\sigma(0) = 1 / (1 + e^0) = \mathbf{0.50}\)</span>. Patient B: <span class="math inline">\(\sigma(\ln 3) = 1 / (1 + 1/3) = 3/4 = \mathbf{0.75}\)</span> (odds <span class="math inline">\(= 3:1\)</span>).</li>
+<li>Evaluating <code>0.0 * np.log(0.0)</code> produces <code>0.0 * (-inf) = nan</code>! Clipping probabilities to <code>[eps, 1 - eps]</code> guarantees finite logarithms for every observation.</li>
+<li><strong>Accuracy</strong> <span class="math inline">\(= 980 / 1000 = \mathbf{0.9800}\)</span> (98%), <strong>Sensitivity</strong> <span class="math inline">\(= 0 / 20 = \mathbf{0.0000}\)</span>, <strong>Specificity</strong> <span class="math inline">\(= 980 / 980 = \mathbf{1.0000}\)</span>, <strong>NPV</strong> <span class="math inline">\(= 980 / 1000 = \mathbf{0.9800}\)</span>.</li>
+<li><strong>Sensitivity</strong> <span class="math inline">\(= 30 / (30 + 10) = \mathbf{0.7500}\)</span>; <strong>Specificity</strong> <span class="math inline">\(= 140 / (140 + 20) = \mathbf{0.8750}\)</span>; <strong>Precision (PPV)</strong> <span class="math inline">\(= 30 / (30 + 20) = \mathbf{0.6000}\)</span>; <strong><span class="math inline">\(F_1\)</span></strong> <span class="math inline">\(= 2 \times 0.60 \times 0.75 / (0.60 + 0.75) = 0.90 / 1.35 \approx \mathbf{0.6667}\)</span>.</li>
+<li>A random classifier gets <strong>ROC-AUC <span class="math inline">\(= 0.50\)</span></strong> regardless of prevalence, whereas its <strong>PR-AUC equals the positive prevalence <span class="math inline">\(= 0.01\)</span></strong>!</li>
+<li>Because <span class="math inline">\(\hat{p}^{0.4}\)</span> is strictly monotonic, <strong>ROC-AUC stays completely unchanged</strong>—while <strong>Brier score and ECE worsen sharply</strong> because predicted probabilities are inflated far above true event rates.</li>
+<li><span class="math inline">\(\text{FPR} = 1 - \text{Specificity} = 1 - 0.75 = \mathbf{0.25}\)</span>, so Youden’s <span class="math inline">\(J = \text{TPR} - \text{FPR} = 0.80 - 0.25 = \mathbf{0.55}\)</span>.</li>
+<li>Both <code>class_weight="balanced"</code> and SMOTE train the model as if positive prevalence were <code>50%</code> instead of <code>10%</code>, shifting predicted probabilities upward away from real-world risks and inflating squared probability error (Brier score).</li>
+<li><code>maternal_anemia</code> is defined clinically by <code>maternal_hb_g_dl &lt; 11.0</code>—using hemoglobin to predict anemia is <strong>target leakage</strong>. At pre-blood-test screening time, hemoglobin has not been measured yet!</li>
+<li>An exact <code>p == 1.0</code> fails <code>p &lt; 1.0</code> and is silently dropped from all bins, causing <code>sum(count) &lt; N</code> and corrupting ECE. Fix: make the final bin right-closed (<code>(yp &gt;= lo) &amp; (yp &lt;= hi)</code>).</li>
+</ol>
+</section>
+<section id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb" class="level3" data-number="23.8.2">
+<h3 data-number="23.8.2" class="anchored" data-anchor-id="b.-annotated-solutions-guided-to-dos-mirrored-in-02_guided_todos_solution.ipynb"><span class="header-section-number">23.8.2</span> B. Annotated Solutions — Guided To-Dos (Mirrored in <code>02_guided_todos_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb23-2"><a href="#cb23-2" aria-label="2"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb23-3"><a href="#cb23-3" aria-label="3"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> (</span>
+<span id="cb23-4"><a href="#cb23-4" aria-label="4"></a>    average_precision_score,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-label="5"></a>    brier_score_loss,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-label="6"></a>    recall_score,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-label="7"></a>    roc_auc_score,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-label="8"></a>    roc_curve,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-label="9"></a>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-label="10"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb23-11"><a href="#cb23-11" aria-label="11"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb23-12"><a href="#cb23-12" aria-label="12"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-label="13"></a><span class="co"># To-Do 23.1</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-label="14"></a><span class="kw">def</span> binary_cross_entropy(y_true, y_prob, eps<span class="op">=</span><span class="fl">1e-15</span>):</span>
+<span id="cb23-15"><a href="#cb23-15" aria-label="15"></a>    <span class="co">"""Compute clipped mean binary cross-entropy rounded to 5 decimals."""</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-label="16"></a>    y <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-17"><a href="#cb23-17" aria-label="17"></a>    p <span class="op">=</span> np.clip(np.asarray(y_prob, dtype<span class="op">=</span><span class="bu">float</span>), eps, <span class="fl">1.0</span> <span class="op">-</span> eps)</span>
+<span id="cb23-18"><a href="#cb23-18" aria-label="18"></a>    loss <span class="op">=</span> <span class="op">-</span>np.mean(y <span class="op">*</span> np.log(p) <span class="op">+</span> (<span class="fl">1.0</span> <span class="op">-</span> y) <span class="op">*</span> np.log(<span class="fl">1.0</span> <span class="op">-</span> p))</span>
+<span id="cb23-19"><a href="#cb23-19" aria-label="19"></a>    <span class="cf">return</span> <span class="bu">round</span>(<span class="bu">float</span>(loss), <span class="dv">5</span>)</span>
+<span id="cb23-20"><a href="#cb23-20" aria-label="20"></a></span>
+<span id="cb23-21"><a href="#cb23-21" aria-label="21"></a><span class="co"># To-Do 23.2</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-label="22"></a><span class="kw">def</span> logistic_gd_from_scratch(X, y, lr<span class="op">=</span><span class="fl">0.1</span>, epochs<span class="op">=</span><span class="dv">400</span>):</span>
+<span id="cb23-23"><a href="#cb23-23" aria-label="23"></a>    <span class="co">"""Fit binary logistic regression via pure NumPy gradient descent."""</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-label="24"></a>    X_arr <span class="op">=</span> np.asarray(X, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-25"><a href="#cb23-25" aria-label="25"></a>    y_arr <span class="op">=</span> np.asarray(y, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-26"><a href="#cb23-26" aria-label="26"></a>    n_samples, n_features <span class="op">=</span> X_arr.shape</span>
+<span id="cb23-27"><a href="#cb23-27" aria-label="27"></a>    w <span class="op">=</span> np.zeros(n_features, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb23-28"><a href="#cb23-28" aria-label="28"></a>    b <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-label="29"></a>    loss_history <span class="op">=</span> []</span>
+<span id="cb23-30"><a href="#cb23-30" aria-label="30"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(epochs):</span>
+<span id="cb23-31"><a href="#cb23-31" aria-label="31"></a>        z <span class="op">=</span> np.clip(X_arr <span class="op">@</span> w <span class="op">+</span> b, <span class="op">-</span><span class="fl">500.0</span>, <span class="fl">500.0</span>)</span>
+<span id="cb23-32"><a href="#cb23-32" aria-label="32"></a>        p <span class="op">=</span> <span class="fl">1.0</span> <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">+</span> np.exp(<span class="op">-</span>z))</span>
+<span id="cb23-33"><a href="#cb23-33" aria-label="33"></a>        pc <span class="op">=</span> np.clip(p, <span class="fl">1e-15</span>, <span class="fl">1.0</span> <span class="op">-</span> <span class="fl">1e-15</span>)</span>
+<span id="cb23-34"><a href="#cb23-34" aria-label="34"></a>        loss <span class="op">=</span> <span class="op">-</span>np.mean(</span>
+<span id="cb23-35"><a href="#cb23-35" aria-label="35"></a>            y_arr <span class="op">*</span> np.log(pc) <span class="op">+</span> (<span class="fl">1.0</span> <span class="op">-</span> y_arr) <span class="op">*</span> np.log(<span class="fl">1.0</span> <span class="op">-</span> pc)</span>
+<span id="cb23-36"><a href="#cb23-36" aria-label="36"></a>        )</span>
+<span id="cb23-37"><a href="#cb23-37" aria-label="37"></a>        loss_history.append(<span class="bu">float</span>(loss))</span>
+<span id="cb23-38"><a href="#cb23-38" aria-label="38"></a>        err <span class="op">=</span> p <span class="op">-</span> y_arr</span>
+<span id="cb23-39"><a href="#cb23-39" aria-label="39"></a>        w <span class="op">-=</span> lr <span class="op">*</span> (X_arr.T <span class="op">@</span> err) <span class="op">/</span> n_samples</span>
+<span id="cb23-40"><a href="#cb23-40" aria-label="40"></a>        b <span class="op">-=</span> lr <span class="op">*</span> <span class="bu">float</span>(np.mean(err))</span>
+<span id="cb23-41"><a href="#cb23-41" aria-label="41"></a>    <span class="cf">return</span> (w, <span class="bu">float</span>(b), loss_history)</span>
+<span id="cb23-42"><a href="#cb23-42" aria-label="42"></a></span>
+<span id="cb23-43"><a href="#cb23-43" aria-label="43"></a><span class="co"># To-Do 23.3</span></span>
+<span id="cb23-44"><a href="#cb23-44" aria-label="44"></a><span class="kw">def</span> clinical_confusion_metrics(y_true, y_pred):</span>
+<span id="cb23-45"><a href="#cb23-45" aria-label="45"></a>    <span class="co">"""Compute clinical confusion metrics guarding zero denominators."""</span></span>
+<span id="cb23-46"><a href="#cb23-46" aria-label="46"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb23-47"><a href="#cb23-47" aria-label="47"></a>    yp <span class="op">=</span> np.asarray(y_pred, dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb23-48"><a href="#cb23-48" aria-label="48"></a>    tp <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">1</span>)))</span>
+<span id="cb23-49"><a href="#cb23-49" aria-label="49"></a>    fp <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">1</span>)))</span>
+<span id="cb23-50"><a href="#cb23-50" aria-label="50"></a>    tn <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">0</span>)))</span>
+<span id="cb23-51"><a href="#cb23-51" aria-label="51"></a>    fn <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">0</span>)))</span>
+<span id="cb23-52"><a href="#cb23-52" aria-label="52"></a>    sens <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fn) <span class="cf">if</span> (tp <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-53"><a href="#cb23-53" aria-label="53"></a>    spec <span class="op">=</span> tn <span class="op">/</span> (tn <span class="op">+</span> fp) <span class="cf">if</span> (tn <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-54"><a href="#cb23-54" aria-label="54"></a>    prec <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fp) <span class="cf">if</span> (tp <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-55"><a href="#cb23-55" aria-label="55"></a>    npv <span class="op">=</span> tn <span class="op">/</span> (tn <span class="op">+</span> fn) <span class="cf">if</span> (tn <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-56"><a href="#cb23-56" aria-label="56"></a>    f1 <span class="op">=</span> <span class="fl">2.0</span> <span class="op">*</span> prec <span class="op">*</span> sens <span class="op">/</span> (prec <span class="op">+</span> sens) <span class="cf">if</span> (prec <span class="op">+</span> sens) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb23-57"><a href="#cb23-57" aria-label="57"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-58"><a href="#cb23-58" aria-label="58"></a>        <span class="st">"sensitivity"</span>: <span class="bu">round</span>(sens, <span class="dv">4</span>),</span>
+<span id="cb23-59"><a href="#cb23-59" aria-label="59"></a>        <span class="st">"specificity"</span>: <span class="bu">round</span>(spec, <span class="dv">4</span>),</span>
+<span id="cb23-60"><a href="#cb23-60" aria-label="60"></a>        <span class="st">"precision"</span>: <span class="bu">round</span>(prec, <span class="dv">4</span>),</span>
+<span id="cb23-61"><a href="#cb23-61" aria-label="61"></a>        <span class="st">"npv"</span>: <span class="bu">round</span>(npv, <span class="dv">4</span>),</span>
+<span id="cb23-62"><a href="#cb23-62" aria-label="62"></a>        <span class="st">"f1"</span>: <span class="bu">round</span>(f1, <span class="dv">4</span>),</span>
+<span id="cb23-63"><a href="#cb23-63" aria-label="63"></a>    }</span>
+<span id="cb23-64"><a href="#cb23-64" aria-label="64"></a></span>
+<span id="cb23-65"><a href="#cb23-65" aria-label="65"></a><span class="co"># To-Do 23.4</span></span>
+<span id="cb23-66"><a href="#cb23-66" aria-label="66"></a><span class="kw">def</span> roc_and_pr_auc(y_true, y_prob):</span>
+<span id="cb23-67"><a href="#cb23-67" aria-label="67"></a>    <span class="co">"""Compute ROC-AUC, PR-AUC (average precision), and Brier score."""</span></span>
+<span id="cb23-68"><a href="#cb23-68" aria-label="68"></a>    <span class="cf">return</span> {</span>
+<span id="cb23-69"><a href="#cb23-69" aria-label="69"></a>        <span class="st">"roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_true, y_prob)), <span class="dv">4</span>),</span>
+<span id="cb23-70"><a href="#cb23-70" aria-label="70"></a>        <span class="st">"pr_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(average_precision_score(y_true, y_prob)), <span class="dv">4</span>),</span>
+<span id="cb23-71"><a href="#cb23-71" aria-label="71"></a>        <span class="st">"brier_score"</span>: <span class="bu">round</span>(<span class="bu">float</span>(brier_score_loss(y_true, y_prob)), <span class="dv">4</span>),</span>
+<span id="cb23-72"><a href="#cb23-72" aria-label="72"></a>    }</span>
+<span id="cb23-73"><a href="#cb23-73" aria-label="73"></a></span>
+<span id="cb23-74"><a href="#cb23-74" aria-label="74"></a><span class="co"># To-Do 23.5</span></span>
+<span id="cb23-75"><a href="#cb23-75" aria-label="75"></a><span class="kw">def</span> find_youden_threshold(y_true, y_prob):</span>
+<span id="cb23-76"><a href="#cb23-76" aria-label="76"></a>    <span class="co">"""Find probability threshold maximizing Youden's J = TPR - FPR."""</span></span>
+<span id="cb23-77"><a href="#cb23-77" aria-label="77"></a>    fpr, tpr, thresholds <span class="op">=</span> roc_curve(y_true, y_prob)</span>
+<span id="cb23-78"><a href="#cb23-78" aria-label="78"></a>    j_scores <span class="op">=</span> tpr <span class="op">-</span> fpr</span>
+<span id="cb23-79"><a href="#cb23-79" aria-label="79"></a>    best_idx <span class="op">=</span> <span class="bu">int</span>(np.argmax(j_scores))</span>
+<span id="cb23-80"><a href="#cb23-80" aria-label="80"></a>    <span class="cf">return</span> (</span>
+<span id="cb23-81"><a href="#cb23-81" aria-label="81"></a>        <span class="bu">round</span>(<span class="bu">float</span>(thresholds[best_idx]), <span class="dv">4</span>),</span>
+<span id="cb23-82"><a href="#cb23-82" aria-label="82"></a>        <span class="bu">round</span>(<span class="bu">float</span>(j_scores[best_idx]), <span class="dv">4</span>),</span>
+<span id="cb23-83"><a href="#cb23-83" aria-label="83"></a>    )</span>
+<span id="cb23-84"><a href="#cb23-84" aria-label="84"></a></span>
+<span id="cb23-85"><a href="#cb23-85" aria-label="85"></a><span class="co"># To-Do 23.6</span></span>
+<span id="cb23-86"><a href="#cb23-86" aria-label="86"></a><span class="kw">def</span> compare_balanced_logistic(X_train, y_train, X_test, y_test):</span>
+<span id="cb23-87"><a href="#cb23-87" aria-label="87"></a>    <span class="co">"""Compare default vs balanced scaled LogisticRegression on test."""</span></span>
+<span id="cb23-88"><a href="#cb23-88" aria-label="88"></a>    out <span class="op">=</span> {}</span>
+<span id="cb23-89"><a href="#cb23-89" aria-label="89"></a>    <span class="cf">for</span> prefix, cw <span class="kw">in</span> [(<span class="st">"default"</span>, <span class="va">None</span>), (<span class="st">"balanced"</span>, <span class="st">"balanced"</span>)]:</span>
+<span id="cb23-90"><a href="#cb23-90" aria-label="90"></a>        pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb23-91"><a href="#cb23-91" aria-label="91"></a>            (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb23-92"><a href="#cb23-92" aria-label="92"></a>            (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>, class_weight<span class="op">=</span>cw)),</span>
+<span id="cb23-93"><a href="#cb23-93" aria-label="93"></a>        ])</span>
+<span id="cb23-94"><a href="#cb23-94" aria-label="94"></a>        pipe.fit(X_train, y_train)</span>
+<span id="cb23-95"><a href="#cb23-95" aria-label="95"></a>        yp <span class="op">=</span> pipe.predict(X_test)</span>
+<span id="cb23-96"><a href="#cb23-96" aria-label="96"></a>        yprob <span class="op">=</span> pipe.predict_proba(X_test)[:, <span class="dv">1</span>]</span>
+<span id="cb23-97"><a href="#cb23-97" aria-label="97"></a>        out[<span class="ss">f"</span><span class="sc">{</span>prefix<span class="sc">}</span><span class="ss">_recall"</span>] <span class="op">=</span> <span class="bu">round</span>(<span class="bu">float</span>(recall_score(y_test, yp)), <span class="dv">4</span>)</span>
+<span id="cb23-98"><a href="#cb23-98" aria-label="98"></a>        out[<span class="ss">f"</span><span class="sc">{</span>prefix<span class="sc">}</span><span class="ss">_pr_auc"</span>] <span class="op">=</span> <span class="bu">round</span>(</span>
+<span id="cb23-99"><a href="#cb23-99" aria-label="99"></a>            <span class="bu">float</span>(average_precision_score(y_test, yprob)), <span class="dv">4</span></span>
+<span id="cb23-100"><a href="#cb23-100" aria-label="100"></a>        )</span>
+<span id="cb23-101"><a href="#cb23-101" aria-label="101"></a>    <span class="cf">return</span> out</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="c.-annotated-solutions-chapter-23-exam-mirrored-in-03_coding_exam_solution.ipynb" class="level3" data-number="23.8.3">
+<h3 data-number="23.8.3" class="anchored" data-anchor-id="c.-annotated-solutions-chapter-23-exam-mirrored-in-03_coding_exam_solution.ipynb"><span class="header-section-number">23.8.3</span> C. Annotated Solutions — Chapter 23 Exam (Mirrored in <code>03_coding_exam_SOLUTION.ipynb</code>)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-label="1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb24-2"><a href="#cb24-2" aria-label="2"></a><span class="im">from</span> sklearn.calibration <span class="im">import</span> CalibratedClassifierCV</span>
+<span id="cb24-3"><a href="#cb24-3" aria-label="3"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb24-4"><a href="#cb24-4" aria-label="4"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-label="5"></a><span class="co"># Exam Task 23.1 (30 pts)</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-label="6"></a><span class="kw">def</span> evaluate_screening_thresholds(y_true, y_prob, thresholds):</span>
+<span id="cb24-7"><a href="#cb24-7" aria-label="7"></a>    <span class="co">"""Evaluate clinical screening metrics across probability thresholds."""</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-label="8"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-label="9"></a>    yprob <span class="op">=</span> np.asarray(y_prob, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-label="10"></a>    rows <span class="op">=</span> []</span>
+<span id="cb24-11"><a href="#cb24-11" aria-label="11"></a>    <span class="cf">for</span> t <span class="kw">in</span> thresholds:</span>
+<span id="cb24-12"><a href="#cb24-12" aria-label="12"></a>        yp <span class="op">=</span> (yprob <span class="op">&gt;=</span> t).astype(<span class="bu">int</span>)</span>
+<span id="cb24-13"><a href="#cb24-13" aria-label="13"></a>        tp <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">1</span>)))</span>
+<span id="cb24-14"><a href="#cb24-14" aria-label="14"></a>        fp <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">1</span>)))</span>
+<span id="cb24-15"><a href="#cb24-15" aria-label="15"></a>        tn <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">0</span>)))</span>
+<span id="cb24-16"><a href="#cb24-16" aria-label="16"></a>        fn <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>((yt <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (yp <span class="op">==</span> <span class="dv">0</span>)))</span>
+<span id="cb24-17"><a href="#cb24-17" aria-label="17"></a>        sens <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fn) <span class="cf">if</span> (tp <span class="op">+</span> fn) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-label="18"></a>        spec <span class="op">=</span> tn <span class="op">/</span> (tn <span class="op">+</span> fp) <span class="cf">if</span> (tn <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-label="19"></a>        prec <span class="op">=</span> tp <span class="op">/</span> (tp <span class="op">+</span> fp) <span class="cf">if</span> (tp <span class="op">+</span> fp) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb24-20"><a href="#cb24-20" aria-label="20"></a>        f1 <span class="op">=</span> <span class="fl">2.0</span> <span class="op">*</span> prec <span class="op">*</span> sens <span class="op">/</span> (prec <span class="op">+</span> sens) <span class="cf">if</span> (prec <span class="op">+</span> sens) <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-label="21"></a>        rows.append({</span>
+<span id="cb24-22"><a href="#cb24-22" aria-label="22"></a>            <span class="st">"threshold"</span>: <span class="bu">round</span>(<span class="bu">float</span>(t), <span class="dv">4</span>),</span>
+<span id="cb24-23"><a href="#cb24-23" aria-label="23"></a>            <span class="st">"sensitivity"</span>: <span class="bu">round</span>(sens, <span class="dv">4</span>),</span>
+<span id="cb24-24"><a href="#cb24-24" aria-label="24"></a>            <span class="st">"specificity"</span>: <span class="bu">round</span>(spec, <span class="dv">4</span>),</span>
+<span id="cb24-25"><a href="#cb24-25" aria-label="25"></a>            <span class="st">"precision"</span>: <span class="bu">round</span>(prec, <span class="dv">4</span>),</span>
+<span id="cb24-26"><a href="#cb24-26" aria-label="26"></a>            <span class="st">"f1"</span>: <span class="bu">round</span>(f1, <span class="dv">4</span>),</span>
+<span id="cb24-27"><a href="#cb24-27" aria-label="27"></a>            <span class="st">"flagged_pct"</span>: <span class="bu">round</span>(<span class="fl">100.0</span> <span class="op">*</span> <span class="bu">float</span>(np.mean(yp)), <span class="dv">4</span>),</span>
+<span id="cb24-28"><a href="#cb24-28" aria-label="28"></a>        })</span>
+<span id="cb24-29"><a href="#cb24-29" aria-label="29"></a>    cols <span class="op">=</span> [</span>
+<span id="cb24-30"><a href="#cb24-30" aria-label="30"></a>        <span class="st">"threshold"</span>, <span class="st">"sensitivity"</span>, <span class="st">"specificity"</span>,</span>
+<span id="cb24-31"><a href="#cb24-31" aria-label="31"></a>        <span class="st">"precision"</span>, <span class="st">"f1"</span>, <span class="st">"flagged_pct"</span>,</span>
+<span id="cb24-32"><a href="#cb24-32" aria-label="32"></a>    ]</span>
+<span id="cb24-33"><a href="#cb24-33" aria-label="33"></a>    <span class="cf">return</span> pd.DataFrame(rows, columns<span class="op">=</span>cols)</span>
+<span id="cb24-34"><a href="#cb24-34" aria-label="34"></a></span>
+<span id="cb24-35"><a href="#cb24-35" aria-label="35"></a><span class="co"># Exam Task 23.2 (35 pts)</span></span>
+<span id="cb24-36"><a href="#cb24-36" aria-label="36"></a><span class="kw">def</span> calibration_audit_bins(y_true, y_prob, n_bins<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb24-37"><a href="#cb24-37" aria-label="37"></a>    <span class="co">"""Audit probability calibration via equal-width bins, ECE &amp; Brier."""</span></span>
+<span id="cb24-38"><a href="#cb24-38" aria-label="38"></a>    yt <span class="op">=</span> np.asarray(y_true, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb24-39"><a href="#cb24-39" aria-label="39"></a>    yp <span class="op">=</span> np.asarray(y_prob, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb24-40"><a href="#cb24-40" aria-label="40"></a>    edges <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, n_bins <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb24-41"><a href="#cb24-41" aria-label="41"></a>    rows <span class="op">=</span> []</span>
+<span id="cb24-42"><a href="#cb24-42" aria-label="42"></a>    ece <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb24-43"><a href="#cb24-43" aria-label="43"></a>    n_total <span class="op">=</span> <span class="bu">len</span>(yt)</span>
+<span id="cb24-44"><a href="#cb24-44" aria-label="44"></a>    <span class="cf">for</span> idx <span class="kw">in</span> <span class="bu">range</span>(n_bins):</span>
+<span id="cb24-45"><a href="#cb24-45" aria-label="45"></a>        lo, hi <span class="op">=</span> edges[idx], edges[idx <span class="op">+</span> <span class="dv">1</span>]</span>
+<span id="cb24-46"><a href="#cb24-46" aria-label="46"></a>        <span class="cf">if</span> idx <span class="op">&lt;</span> n_bins <span class="op">-</span> <span class="dv">1</span>:</span>
+<span id="cb24-47"><a href="#cb24-47" aria-label="47"></a>            mask <span class="op">=</span> (yp <span class="op">&gt;=</span> lo) <span class="op">&amp;</span> (yp <span class="op">&lt;</span> hi)</span>
+<span id="cb24-48"><a href="#cb24-48" aria-label="48"></a>        <span class="cf">else</span>:</span>
+<span id="cb24-49"><a href="#cb24-49" aria-label="49"></a>            mask <span class="op">=</span> (yp <span class="op">&gt;=</span> lo) <span class="op">&amp;</span> (yp <span class="op">&lt;=</span> hi)</span>
+<span id="cb24-50"><a href="#cb24-50" aria-label="50"></a>        cnt <span class="op">=</span> <span class="bu">int</span>(np.<span class="bu">sum</span>(mask))</span>
+<span id="cb24-51"><a href="#cb24-51" aria-label="51"></a>        <span class="cf">if</span> cnt <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb24-52"><a href="#cb24-52" aria-label="52"></a>            <span class="cf">continue</span></span>
+<span id="cb24-53"><a href="#cb24-53" aria-label="53"></a>        mp <span class="op">=</span> <span class="bu">float</span>(np.mean(yp[mask]))</span>
+<span id="cb24-54"><a href="#cb24-54" aria-label="54"></a>        obs <span class="op">=</span> <span class="bu">float</span>(np.mean(yt[mask]))</span>
+<span id="cb24-55"><a href="#cb24-55" aria-label="55"></a>        ece <span class="op">+=</span> (cnt <span class="op">/</span> n_total) <span class="op">*</span> <span class="bu">abs</span>(obs <span class="op">-</span> mp)</span>
+<span id="cb24-56"><a href="#cb24-56" aria-label="56"></a>        rows.append({</span>
+<span id="cb24-57"><a href="#cb24-57" aria-label="57"></a>            <span class="st">"mean_pred"</span>: <span class="bu">round</span>(mp, <span class="dv">4</span>),</span>
+<span id="cb24-58"><a href="#cb24-58" aria-label="58"></a>            <span class="st">"obs_rate"</span>: <span class="bu">round</span>(obs, <span class="dv">4</span>),</span>
+<span id="cb24-59"><a href="#cb24-59" aria-label="59"></a>            <span class="st">"count"</span>: cnt,</span>
+<span id="cb24-60"><a href="#cb24-60" aria-label="60"></a>        })</span>
+<span id="cb24-61"><a href="#cb24-61" aria-label="61"></a>    bins_df <span class="op">=</span> pd.DataFrame(rows, columns<span class="op">=</span>[<span class="st">"mean_pred"</span>, <span class="st">"obs_rate"</span>, <span class="st">"count"</span>])</span>
+<span id="cb24-62"><a href="#cb24-62" aria-label="62"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-63"><a href="#cb24-63" aria-label="63"></a>        <span class="st">"ece"</span>: <span class="bu">round</span>(ece, <span class="dv">4</span>),</span>
+<span id="cb24-64"><a href="#cb24-64" aria-label="64"></a>        <span class="st">"brier_score"</span>: <span class="bu">round</span>(<span class="bu">float</span>(brier_score_loss(yt, yp)), <span class="dv">4</span>),</span>
+<span id="cb24-65"><a href="#cb24-65" aria-label="65"></a>        <span class="st">"bins"</span>: bins_df,</span>
+<span id="cb24-66"><a href="#cb24-66" aria-label="66"></a>    }</span>
+<span id="cb24-67"><a href="#cb24-67" aria-label="67"></a></span>
+<span id="cb24-68"><a href="#cb24-68" aria-label="68"></a><span class="co"># Exam Task 23.3 (35 pts)</span></span>
+<span id="cb24-69"><a href="#cb24-69" aria-label="69"></a><span class="kw">def</span> train_calibrated_anemia_classifier(mch_df, seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb24-70"><a href="#cb24-70" aria-label="70"></a>    <span class="co">"""Train leak-free scaled + sigmoid-calibrated anemia classifier."""</span></span>
+<span id="cb24-71"><a href="#cb24-71" aria-label="71"></a>    work <span class="op">=</span> mch_df.copy()</span>
+<span id="cb24-72"><a href="#cb24-72" aria-label="72"></a>    work[<span class="st">"residence"</span>] <span class="op">=</span> (</span>
+<span id="cb24-73"><a href="#cb24-73" aria-label="73"></a>        work[<span class="st">"residence"</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.strip().<span class="bu">str</span>.title()</span>
+<span id="cb24-74"><a href="#cb24-74" aria-label="74"></a>    )</span>
+<span id="cb24-75"><a href="#cb24-75" aria-label="75"></a>    work[<span class="st">"anc_visits"</span>] <span class="op">=</span> work[<span class="st">"anc_visits"</span>].replace(<span class="dv">999</span>, np.nan)</span>
+<span id="cb24-76"><a href="#cb24-76" aria-label="76"></a>    work[<span class="st">"is_urban"</span>] <span class="op">=</span> (work[<span class="st">"residence"</span>] <span class="op">==</span> <span class="st">"Urban"</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb24-77"><a href="#cb24-77" aria-label="77"></a>    wealth_map <span class="op">=</span> {</span>
+<span id="cb24-78"><a href="#cb24-78" aria-label="78"></a>        <span class="st">"Poorest"</span>: <span class="dv">1</span>, <span class="st">"Poorer"</span>: <span class="dv">2</span>, <span class="st">"Middle"</span>: <span class="dv">3</span>,</span>
+<span id="cb24-79"><a href="#cb24-79" aria-label="79"></a>        <span class="st">"Richer"</span>: <span class="dv">4</span>, <span class="st">"Richest"</span>: <span class="dv">5</span>,</span>
+<span id="cb24-80"><a href="#cb24-80" aria-label="80"></a>    }</span>
+<span id="cb24-81"><a href="#cb24-81" aria-label="81"></a>    work[<span class="st">"wealth_num"</span>] <span class="op">=</span> work[<span class="st">"wealth_quintile"</span>].<span class="bu">map</span>(wealth_map)</span>
+<span id="cb24-82"><a href="#cb24-82" aria-label="82"></a>    feat_cols <span class="op">=</span> [</span>
+<span id="cb24-83"><a href="#cb24-83" aria-label="83"></a>        <span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"wealth_num"</span>, <span class="st">"is_urban"</span></span>
+<span id="cb24-84"><a href="#cb24-84" aria-label="84"></a>    ]</span>
+<span id="cb24-85"><a href="#cb24-85" aria-label="85"></a>    clean <span class="op">=</span> work[[<span class="st">"maternal_anemia"</span>] <span class="op">+</span> feat_cols].dropna()</span>
+<span id="cb24-86"><a href="#cb24-86" aria-label="86"></a>    X <span class="op">=</span> clean[feat_cols]</span>
+<span id="cb24-87"><a href="#cb24-87" aria-label="87"></a>    y <span class="op">=</span> clean[<span class="st">"maternal_anemia"</span>].astype(<span class="bu">int</span>)</span>
+<span id="cb24-88"><a href="#cb24-88" aria-label="88"></a>    X_tr, X_te, y_tr, y_te <span class="op">=</span> train_test_split(</span>
+<span id="cb24-89"><a href="#cb24-89" aria-label="89"></a>        X, y, test_size<span class="op">=</span><span class="fl">0.25</span>, stratify<span class="op">=</span>y, random_state<span class="op">=</span>seed</span>
+<span id="cb24-90"><a href="#cb24-90" aria-label="90"></a>    )</span>
+<span id="cb24-91"><a href="#cb24-91" aria-label="91"></a>    pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb24-92"><a href="#cb24-92" aria-label="92"></a>        (<span class="st">"scaler"</span>, StandardScaler()),</span>
+<span id="cb24-93"><a href="#cb24-93" aria-label="93"></a>        (<span class="st">"clf"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">500</span>)),</span>
+<span id="cb24-94"><a href="#cb24-94" aria-label="94"></a>    ])</span>
+<span id="cb24-95"><a href="#cb24-95" aria-label="95"></a>    pipe.fit(X_tr, y_tr)</span>
+<span id="cb24-96"><a href="#cb24-96" aria-label="96"></a>    prob_raw <span class="op">=</span> pipe.predict_proba(X_te)[:, <span class="dv">1</span>]</span>
+<span id="cb24-97"><a href="#cb24-97" aria-label="97"></a>    cal <span class="op">=</span> CalibratedClassifierCV(pipe, method<span class="op">=</span><span class="st">"sigmoid"</span>, cv<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb24-98"><a href="#cb24-98" aria-label="98"></a>    cal.fit(X_tr, y_tr)</span>
+<span id="cb24-99"><a href="#cb24-99" aria-label="99"></a>    prob_cal <span class="op">=</span> cal.predict_proba(X_te)[:, <span class="dv">1</span>]</span>
+<span id="cb24-100"><a href="#cb24-100" aria-label="100"></a>    fpr, tpr, thresholds <span class="op">=</span> roc_curve(y_te, prob_cal)</span>
+<span id="cb24-101"><a href="#cb24-101" aria-label="101"></a>    best_idx <span class="op">=</span> <span class="bu">int</span>(np.argmax(tpr <span class="op">-</span> fpr))</span>
+<span id="cb24-102"><a href="#cb24-102" aria-label="102"></a>    <span class="cf">return</span> {</span>
+<span id="cb24-103"><a href="#cb24-103" aria-label="103"></a>        <span class="st">"roc_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(roc_auc_score(y_te, prob_cal)), <span class="dv">4</span>),</span>
+<span id="cb24-104"><a href="#cb24-104" aria-label="104"></a>        <span class="st">"pr_auc"</span>: <span class="bu">round</span>(<span class="bu">float</span>(average_precision_score(y_te, prob_cal)), <span class="dv">4</span>),</span>
+<span id="cb24-105"><a href="#cb24-105" aria-label="105"></a>        <span class="st">"brier_raw"</span>: <span class="bu">round</span>(<span class="bu">float</span>(brier_score_loss(y_te, prob_raw)), <span class="dv">4</span>),</span>
+<span id="cb24-106"><a href="#cb24-106" aria-label="106"></a>        <span class="st">"brier_calibrated"</span>: <span class="bu">round</span>(</span>
+<span id="cb24-107"><a href="#cb24-107" aria-label="107"></a>            <span class="bu">float</span>(brier_score_loss(y_te, prob_cal)), <span class="dv">4</span></span>
+<span id="cb24-108"><a href="#cb24-108" aria-label="108"></a>        ),</span>
+<span id="cb24-109"><a href="#cb24-109" aria-label="109"></a>        <span class="st">"youden_threshold"</span>: <span class="bu">round</span>(<span class="bu">float</span>(thresholds[best_idx]), <span class="dv">4</span>),</span>
+<span id="cb24-110"><a href="#cb24-110" aria-label="110"></a>    }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="d.-debugging-post-mortem-top-3-chapter-23-failure-modes" class="level3" data-number="23.8.4">
+<h3 data-number="23.8.4" class="anchored" data-anchor-id="d.-debugging-post-mortem-top-3-chapter-23-failure-modes"><span class="header-section-number">23.8.4</span> D. Debugging Post-Mortem: Top 3 Chapter 23 Failure Modes</h3>
+<ol type="1">
+<li><strong>Trusting <code>.predict()</code> at Threshold <code>0.50</code> on Imbalanced Outcomes:</strong> On <code>child_stunted</code> (13.8% prevalence), default <code>.predict()</code> yielded <code>86.2%</code> accuracy with <strong><code>0.0%</code> sensitivity</strong>. Always inspect continuous probabilities (<code>predict_proba[:, 1]</code>), evaluate ROC-AUC/PR-AUC/Brier/ECE, and select a domain-appropriate cutoff such as Youden’s <span class="math inline">\(J\)</span>.</li>
+<li><strong>Treating Reweighting (<code>class_weight="balanced"</code>) or SMOTE as Free Calibration:</strong> Upweighting minority cases boosts recall at <code>0.50</code> but leaves PR-AUC unchanged while more than doubling Brier score (<code>0.1066 -&gt; 0.2289</code>). Either keep unweighted calibrated probabilities and tune the threshold, or apply post-hoc Platt/isotonic calibration after reweighting.</li>
+<li><strong>Mixing Continuous Probabilities and Binary Labels (or Dropping <code>p == 1.0</code>):</strong> Passing continuous scores to <code>confusion_matrix</code> raises <code>ValueError</code>, passing binary labels to <code>roc_auc_score</code> destroys ranking resolution, and using half-open <code>[lo, hi)</code> on the final calibration bin silently drops exact <code>1.0</code> probabilities.</li>
+</ol>
+<hr>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Bridge to Chapter 24 — Trees, Random Forests &amp; Gradient Boosting
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Now that you can rigorously evaluate <strong>discrimination (ROC-AUC, PR-AUC)</strong>, <strong>calibration (Brier, ECE)</strong>, and <strong>clinical decision thresholds (Youden’s <span class="math inline">\(J\)</span>)</strong> on linear classifiers, you have the exact yardstick needed for <strong>non-linear tree ensembles</strong> (Decision Trees, Random Forests, and Histogram/LightGBM/XGBoost Gradient Boosting) in Chapter 24—where flexible splits capture complex clinical interactions and post-hoc calibration becomes even more valuable!</p>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="pagination-link" aria-label="Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="pagination-link" aria-label="Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition">
+        <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

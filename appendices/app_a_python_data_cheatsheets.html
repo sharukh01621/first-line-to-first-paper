@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Appendix A — Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch – From First Line to First Paper</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../appendices/app_b_math_stats_refresher.html" rel="next">
+<link href="../part_07_research_capstone/ch36_flagship_research_capstone.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../appendices/app_a_python_data_cheatsheets.html">Appendices</a></li><li class="breadcrumb-item"><a href="../appendices/app_a_python_data_cheatsheets.html"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">From First Line to First Paper</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">How Computers Think, Google Colab, and Your Very First Program</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch02_variables_types.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Variables, Memory Models, Data Types, and Arithmetic Logic</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch03_strings_input.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Strings, Text Processing, Formatting, and User Input</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch04_conditionals_logic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Boolean Logic, Conditionals, and Decision Trees in Code</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch05_loops_tracing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Loops, Iteration Patterns, Accumulators, and Execution Tracing</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_01_python_foundations/ch06_functions_scope.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Functions, Scope, Decomposition, and Modular Problem Solving</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lists, Indexing, Slicing, Mutation, and Aliasing Traps</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch08_tuples_sets_dicts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Tuples, Sets, and Dictionaries — Structured &amp; Hash-Based Thinking</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch09_files_csv_json.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">File I/O, CSV/JSON Parsing, and Persistent Data</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch10_exceptions_testing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exceptions, Defensive Programming, Testing, and Systematic Debugging</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_02_data_structures_algorithms/ch11_algorithms_complexity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Algorithmic Thinking, Complexity Intuition, Searching, Sorting, and Recursion</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Object-Oriented Programming (OOP) for Data Scientists &amp; Researchers</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch13_jupyter_colab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Mastering Jupyter Notebooks &amp; Google Colab Engineering</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch14_vscode_packages.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Professional Engineering with VS Code, Virtual Environments, Modules, and Packages</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_03_engineering_workflow/ch15_git_clean_code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">Version Control with Git &amp; GitHub, Clean Code, Type Hints, and Research Project Templates</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">NumPy &amp; Vectorized Thinking — Arrays, Broadcasting, and Linear Algebra in Action</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch17_pandas_foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">Pandas Foundations — Series, DataFrames, Indexing, Filtering, and Reshaping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch18_data_wrangling_surveys.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Real-World Data Wrangling — Missing Data, Dirty Surveys, Joins, GroupBy, and Time Series</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch19_visualization_storytelling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">Statistical Visualization &amp; Publication-Ready Figures (Matplotlib &amp; Seaborn)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_04_data_science_math/ch20_biostatistics_inference.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Probability, Statistical Inference, Hypothesis Testing, and Epidemiological Metrics in Python</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">The Machine Learning Paradigm — Framing Problems, Data Leakage, Splits, and Bias-Variance Tradeoff</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch22_linear_regularized_regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Linear &amp; Regularized Regression (OLS, Ridge, Lasso, ElasticNet) — From Scratch and Scikit-Learn</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch23_classification_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">Classification Foundations — Logistic Regression, Calibration, ROC/PR Curves, and Class Imbalance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch24_trees_ensembles_interpretability.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">Tree-Based Models, Ensembles, and Interpretability — Decision Trees, Random Forests, Gradient Boosting, and SHAP Intuition</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch25_unsupervised_clustering_pca.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Unsupervised Learning — Clustering (K-Means, Hierarchical, DBSCAN) and Dimensionality Reduction (PCA)</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_05_classical_ml/ch26_pipelines_nested_cv.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">Production ML Workflows — Scikit-Learn Pipelines, ColumnTransformer, Nested Cross-Validation, and Hyperparameter Tuning</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">Neural Networks from Scratch in NumPy — Perceptrons, Activations, Backpropagation, and MLPs</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch28_pytorch_tensors_autograd.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">PyTorch Core — Tensors, Autograd, <code>nn.Module</code>, Datasets, and Training Loops</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch29_training_dynamics_regularization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch30_cnns_computer_vision.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">Convolutional Neural Networks (CNNs) and Medical Image Classification</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch31_sequences_rnns_time_series.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_06_deep_learning/ch32_attention_transformers_modern_ai.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">Attention, Transformers, Fine-Tuning, and Modern Foundation Models</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch34_error_analysis_fairness_calibration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch35_packaging_deployment_reproducibility.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_b_math_stats_refresher.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_c_error_decoder.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">The Top-50 Python, Data Science &amp; Deep Learning Error Decoder</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_d_master_colab_index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">D</span>&nbsp; <span class="chapter-title">Master Interactive Google Colab &amp; Companion Ecosystem Index</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../appendices/app_e_references_glossary_author.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">E</span>&nbsp; <span class="chapter-title">References, Glossary of Key Terms &amp; About the Author</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-app-a-python" id="toc-sec-app-a-python" class="nav-link active" data-scroll-target="#sec-app-a-python"><span class="header-section-number">A.1</span> Core Python &amp; Data Structures (Chapters 1–12)</a>
+  <ul class="collapse">
+  <li><a href="#essential-idioms-comprehensions-unpacking-formatting" id="toc-essential-idioms-comprehensions-unpacking-formatting" class="nav-link" data-scroll-target="#essential-idioms-comprehensions-unpacking-formatting"><span class="header-section-number">A.1.1</span> Essential Idioms: Comprehensions, Unpacking &amp; Formatting</a></li>
+  <li><a href="#core-data-structure-time-complexity-big-o-reference" id="toc-core-data-structure-time-complexity-big-o-reference" class="nav-link" data-scroll-target="#core-data-structure-time-complexity-big-o-reference"><span class="header-section-number">A.1.2</span> Core Data Structure Time Complexity (Big-<span class="math inline">\(O\)</span> Reference)</a></li>
+  <li><a href="#safe-file-io-pathlib-defensive-exceptions-dataclass" id="toc-safe-file-io-pathlib-defensive-exceptions-dataclass" class="nav-link" data-scroll-target="#safe-file-io-pathlib-defensive-exceptions-dataclass"><span class="header-section-number">A.1.3</span> Safe File I/O (<code>pathlib</code>), Defensive Exceptions &amp; <code>@dataclass</code></a></li>
+  </ul></li>
+  <li><a href="#sec-app-a-numpy" id="toc-sec-app-a-numpy" class="nav-link" data-scroll-target="#sec-app-a-numpy"><span class="header-section-number">A.2</span> NumPy Vectorization &amp; Linear Algebra (Chapter 16)</a>
+  <ul class="collapse">
+  <li><a href="#array-creation-reproducible-rng-vectorized-masking" id="toc-array-creation-reproducible-rng-vectorized-masking" class="nav-link" data-scroll-target="#array-creation-reproducible-rng-vectorized-masking"><span class="header-section-number">A.2.1</span> Array Creation, Reproducible RNG &amp; Vectorized Masking</a></li>
+  <li><a href="#broadcasting-rules-axis-reductions" id="toc-broadcasting-rules-axis-reductions" class="nav-link" data-scroll-target="#broadcasting-rules-axis-reductions"><span class="header-section-number">A.2.2</span> Broadcasting Rules &amp; Axis Reductions</a></li>
+  <li><a href="#linear-algebra-svd-core-idioms" id="toc-linear-algebra-svd-core-idioms" class="nav-link" data-scroll-target="#linear-algebra-svd-core-idioms"><span class="header-section-number">A.2.3</span> Linear Algebra &amp; SVD Core Idioms</a></li>
+  </ul></li>
+  <li><a href="#sec-app-a-pandas" id="toc-sec-app-a-pandas" class="nav-link" data-scroll-target="#sec-app-a-pandas"><span class="header-section-number">A.3</span> Pandas 3.x Copy-on-Write Wrangling (Chapters 17–18)</a>
+  <ul class="collapse">
+  <li><a href="#loading-cleaning-dirty-survey-codes-method-chaining" id="toc-loading-cleaning-dirty-survey-codes-method-chaining" class="nav-link" data-scroll-target="#loading-cleaning-dirty-survey-codes-method-chaining"><span class="header-section-number">A.3.1</span> Loading, Cleaning Dirty Survey Codes &amp; Method Chaining</a></li>
+  <li><a href="#groupby-aggregations-safe-merges-reshaping-panel-windows" id="toc-groupby-aggregations-safe-merges-reshaping-panel-windows" class="nav-link" data-scroll-target="#groupby-aggregations-safe-merges-reshaping-panel-windows"><span class="header-section-number">A.3.2</span> GroupBy Aggregations, Safe Merges, Reshaping &amp; Panel Windows</a></li>
+  </ul></li>
+  <li><a href="#sec-app-a-viz" id="toc-sec-app-a-viz" class="nav-link" data-scroll-target="#sec-app-a-viz"><span class="header-section-number">A.4</span> Matplotlib &amp; Seaborn Publication Recipe (Chapter 19)</a>
+  <ul class="collapse">
+  <li><a href="#okabe-ito-colorblind-safe-palette-8-canonical-hex-codes" id="toc-okabe-ito-colorblind-safe-palette-8-canonical-hex-codes" class="nav-link" data-scroll-target="#okabe-ito-colorblind-safe-palette-8-canonical-hex-codes"><span class="header-section-number">A.4.1</span> Okabe-Ito Colorblind-Safe Palette (8 Canonical Hex Codes)</a></li>
+  <li><a href="#object-oriented-300-dpi-dual-format-export-template" id="toc-object-oriented-300-dpi-dual-format-export-template" class="nav-link" data-scroll-target="#object-oriented-300-dpi-dual-format-export-template"><span class="header-section-number">A.4.2</span> Object-Oriented 300-DPI Dual-Format Export Template</a></li>
+  </ul></li>
+  <li><a href="#sec-app-a-sklearn" id="toc-sec-app-a-sklearn" class="nav-link" data-scroll-target="#sec-app-a-sklearn"><span class="header-section-number">A.5</span> Scikit-Learn Leakage-Free Pipelines &amp; Validation (Chapters 21–26)</a>
+  <ul class="collapse">
+  <li><a href="#choosing-the-right-cross-validation-splitter" id="toc-choosing-the-right-cross-validation-splitter" class="nav-link" data-scroll-target="#choosing-the-right-cross-validation-splitter"><span class="header-section-number">A.5.1</span> Choosing the Right Cross-Validation Splitter</a></li>
+  <li><a href="#complete-leakage-free-columntransformer-pipeline-calibration" id="toc-complete-leakage-free-columntransformer-pipeline-calibration" class="nav-link" data-scroll-target="#complete-leakage-free-columntransformer-pipeline-calibration"><span class="header-section-number">A.5.2</span> Complete Leakage-Free <code>ColumnTransformer</code> + <code>Pipeline</code> + Calibration</a></li>
+  </ul></li>
+  <li><a href="#sec-app-a-pytorch" id="toc-sec-app-a-pytorch" class="nav-link" data-scroll-target="#sec-app-a-pytorch"><span class="header-section-number">A.6</span> PyTorch Canonical 5-Step Loop &amp; Architectures (Chapters 28–32)</a>
+  <ul class="collapse">
+  <li><a href="#loss-optimizer-scheduler-quick-pick-table" id="toc-loss-optimizer-scheduler-quick-pick-table" class="nav-link" data-scroll-target="#loss-optimizer-scheduler-quick-pick-table"><span class="header-section-number">A.6.1</span> Loss, Optimizer &amp; Scheduler Quick-Pick Table</a></li>
+  <li><a href="#reproducible-dataset-dataloader-canonical-5-step-loop" id="toc-reproducible-dataset-dataloader-canonical-5-step-loop" class="nav-link" data-scroll-target="#reproducible-dataset-dataloader-canonical-5-step-loop"><span class="header-section-number">A.6.2</span> Reproducible <code>Dataset</code>, <code>DataLoader</code> &amp; Canonical 5-Step Loop</a></li>
+  <li><a href="#canonical-architecture-blocks-cnn-gru-attention-lora-safe-save" id="toc-canonical-architecture-blocks-cnn-gru-attention-lora-safe-save" class="nav-link" data-scroll-target="#canonical-architecture-blocks-cnn-gru-attention-lora-safe-save"><span class="header-section-number">A.6.3</span> Canonical Architecture Blocks (CNN, GRU, Attention, LoRA &amp; Safe Save)</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../appendices/app_a_python_data_cheatsheets.html">Appendices</a></li><li class="breadcrumb-item"><a href="../appendices/app_a_python_data_cheatsheets.html"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-appendix-a" class="quarto-section-identifier">Appendix A — Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn &amp; PyTorch</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>How to Use This Appendix:</strong> Keep these six desk-reference cards open whenever you write analysis scripts, build ML pipelines, or debug PyTorch experiments. Every idiom below reflects the modern, leakage-free standards enforced across Chapters 1–36 (Python 3.11+, NumPy 2.x, Pandas 3.x Copy-on-Write, Scikit-Learn 1.5+, and PyTorch 2.x).</p>
+</blockquote>
+<hr>
+<section id="sec-app-a-python" class="level2" data-number="A.1">
+<h2 data-number="A.1" class="anchored" data-anchor-id="sec-app-a-python"><span class="header-section-number">A.1</span> Core Python &amp; Data Structures (Chapters 1–12)</h2>
+<section id="essential-idioms-comprehensions-unpacking-formatting" class="level3" data-number="A.1.1">
+<h3 data-number="A.1.1" class="anchored" data-anchor-id="essential-idioms-comprehensions-unpacking-formatting"><span class="header-section-number">A.1.1</span> Essential Idioms: Comprehensions, Unpacking &amp; Formatting</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-label="1"></a><span class="im">from</span> collections <span class="im">import</span> Counter, defaultdict</span>
+<span id="cb1-2"><a href="#cb1-2" aria-label="2"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-label="3"></a><span class="co"># Comprehensions (list, dict, set)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-label="4"></a>high_bp <span class="op">=</span> [bp <span class="cf">for</span> bp <span class="kw">in</span> systolic_bps <span class="cf">if</span> bp <span class="op">&gt;=</span> <span class="dv">140</span>]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-label="5"></a>hb_by_id <span class="op">=</span> {r[<span class="st">"patient_id"</span>]: <span class="bu">float</span>(r[<span class="st">"hb"</span>]) <span class="cf">for</span> r <span class="kw">in</span> records}</span>
+<span id="cb1-6"><a href="#cb1-6" aria-label="6"></a>unique_districts <span class="op">=</span> {r[<span class="st">"district"</span>].strip().title() <span class="cf">for</span> r <span class="kw">in</span> records}</span>
+<span id="cb1-7"><a href="#cb1-7" aria-label="7"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-label="8"></a><span class="co"># Pythonic iteration: enumerate, zip, and tuple unpacking</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-label="9"></a><span class="cf">for</span> idx, (pid, temp) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(patient_ids, temps_c), start<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb1-10"><a href="#cb1-10" aria-label="10"></a>    flag <span class="op">=</span> <span class="st">"FEVER"</span> <span class="cf">if</span> temp <span class="op">&gt;=</span> <span class="fl">38.0</span> <span class="cf">else</span> <span class="st">"OK"</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-label="11"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>idx<span class="sc">:02d}</span><span class="ss"> | </span><span class="sc">{</span>pid<span class="sc">:&lt;8s}</span><span class="ss"> | </span><span class="sc">{</span>temp<span class="sc">:5.1f}</span><span class="ss"> C | </span><span class="sc">{</span>flag<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-label="12"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-label="13"></a><span class="co"># Frequency counts &amp; grouping without KeyError</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-label="14"></a>counts <span class="op">=</span> Counter(r[<span class="st">"district"</span>] <span class="cf">for</span> r <span class="kw">in</span> records)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-label="15"></a>by_dist <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-label="16"></a><span class="cf">for</span> r <span class="kw">in</span> records:</span>
+<span id="cb1-17"><a href="#cb1-17" aria-label="17"></a>    by_dist[r[<span class="st">"district"</span>]].append(<span class="bu">float</span>(r[<span class="st">"temp_c"</span>]))</span>
+<span id="cb1-18"><a href="#cb1-18" aria-label="18"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-label="19"></a><span class="co"># Safe dict lookup and f-string numeric specifiers</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-label="20"></a>rate <span class="op">=</span> counts.get(<span class="st">"Sylhet"</span>, <span class="dv">0</span>) <span class="op">/</span> <span class="bu">max</span>(<span class="bu">len</span>(records), <span class="dv">1</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-label="21"></a><span class="bu">print</span>(<span class="ss">f"Sylhet share: </span><span class="sc">{</span>rate<span class="sc">:6.2%}</span><span class="ss"> | Total N = </span><span class="sc">{</span><span class="bu">len</span>(records)<span class="sc">:,d}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="core-data-structure-time-complexity-big-o-reference" class="level3" data-number="A.1.2">
+<h3 data-number="A.1.2" class="anchored" data-anchor-id="core-data-structure-time-complexity-big-o-reference"><span class="header-section-number">A.1.2</span> Core Data Structure Time Complexity (Big-<span class="math inline">\(O\)</span> Reference)</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 17%">
+<col style="width: 19%">
+<col style="width: 13%">
+<col style="width: 18%">
+<col style="width: 19%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Structure</th>
+<th style="text-align: center;">Access / Lookup</th>
+<th style="text-align: center;">Insert / Append</th>
+<th style="text-align: center;">Delete</th>
+<th style="text-align: center;">Membership (<code>x in s</code>)</th>
+<th style="text-align: left;">Ordered / Mutable</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>list</code></td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> by index</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> end; <span class="math inline">\(O(n)\)</span> front</td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> linear scan</td>
+<td style="text-align: left;">Ordered, Mutable</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>tuple</code></td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> by index</td>
+<td style="text-align: center;">N/A (immutable)</td>
+<td style="text-align: center;">N/A</td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> linear scan</td>
+<td style="text-align: left;">Ordered, Immutable</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>dict</code></td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg by key</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg (keys)</td>
+<td style="text-align: left;">Insertion-ordered, Mutable</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>set</code></td>
+<td style="text-align: center;">N/A (no index)</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> avg (hash)</td>
+<td style="text-align: left;">Unordered, Mutable</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> by index</td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> concat</td>
+<td style="text-align: center;">N/A</td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> substring</td>
+<td style="text-align: left;">Ordered, Immutable</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>deque</code></td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> middle</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> both ends</td>
+<td style="text-align: center;"><span class="math inline">\(O(1)\)</span> ends</td>
+<td style="text-align: center;"><span class="math inline">\(O(n)\)</span> linear scan</td>
+<td style="text-align: left;">Ordered, Mutable</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>sorted()</code></td>
+<td style="text-align: center;">Timsort</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;"><span class="math inline">\(O(\log n)\)</span> via <code>bisect</code></td>
+<td style="text-align: left;"><span class="math inline">\(O(n \log n)\)</span> worst</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="safe-file-io-pathlib-defensive-exceptions-dataclass" class="level3" data-number="A.1.3">
+<h3 data-number="A.1.3" class="anchored" data-anchor-id="safe-file-io-pathlib-defensive-exceptions-dataclass"><span class="header-section-number">A.1.3</span> Safe File I/O (<code>pathlib</code>), Defensive Exceptions &amp; <code>@dataclass</code></h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-label="1"></a><span class="im">import</span> csv</span>
+<span id="cb2-2"><a href="#cb2-2" aria-label="2"></a><span class="im">import</span> json</span>
+<span id="cb2-3"><a href="#cb2-3" aria-label="3"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb2-4"><a href="#cb2-4" aria-label="4"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb2-5"><a href="#cb2-5" aria-label="5"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-label="6"></a><span class="co"># Cross-platform paths &amp; UTF-8 CSV/JSON I/O</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-label="7"></a>data_dir <span class="op">=</span> Path(<span class="st">"data"</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-label="8"></a>csv_path <span class="op">=</span> data_dir <span class="op">/</span> <span class="st">"clinic_triage.csv"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-label="9"></a><span class="cf">with</span> csv_path.<span class="bu">open</span>(<span class="st">"r"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>, newline<span class="op">=</span><span class="st">""</span>) <span class="im">as</span> f:</span>
+<span id="cb2-10"><a href="#cb2-10" aria-label="10"></a>    rows <span class="op">=</span> <span class="bu">list</span>(csv.DictReader(f))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-label="11"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-label="12"></a>out_path <span class="op">=</span> data_dir <span class="op">/</span> <span class="st">"summary.json"</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-label="13"></a>out_path.parent.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-label="14"></a><span class="cf">with</span> out_path.<span class="bu">open</span>(<span class="st">"w"</span>, encoding<span class="op">=</span><span class="st">"utf-8"</span>) <span class="im">as</span> f:</span>
+<span id="cb2-15"><a href="#cb2-15" aria-label="15"></a>    json.dump({<span class="st">"n_patients"</span>: <span class="bu">len</span>(rows)}, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-label="16"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-label="17"></a><span class="co"># Defensive exception handling (EAFP with narrow except clauses)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-label="18"></a><span class="kw">def</span> safe_bmi(weight_kg: <span class="bu">float</span>, height_cm: <span class="bu">float</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb2-19"><a href="#cb2-19" aria-label="19"></a>    <span class="cf">if</span> weight_kg <span class="op">&lt;=</span> <span class="dv">0</span> <span class="kw">or</span> height_cm <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb2-20"><a href="#cb2-20" aria-label="20"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"weight_kg and height_cm must be positive."</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-label="21"></a>    height_m <span class="op">=</span> height_cm <span class="op">/</span> <span class="fl">100.0</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-label="22"></a>    <span class="cf">return</span> weight_kg <span class="op">/</span> (height_m <span class="op">**</span> <span class="dv">2</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-label="23"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-label="24"></a><span class="co"># Structured OOP with @dataclass (clean __init__, __repr__, __eq__)</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-label="25"></a><span class="at">@dataclass</span>(frozen<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-label="26"></a><span class="kw">class</span> PatientRecord:</span>
+<span id="cb2-27"><a href="#cb2-27" aria-label="27"></a>    patient_id: <span class="bu">str</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-label="28"></a>    age_years: <span class="bu">int</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-label="29"></a>    hemoglobin_g_dl: <span class="bu">float</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-label="30"></a>    tags: <span class="bu">tuple</span>[<span class="bu">str</span>, ...] <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">tuple</span>)</span>
+<span id="cb2-31"><a href="#cb2-31" aria-label="31"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-label="32"></a>    <span class="at">@property</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-label="33"></a>    <span class="kw">def</span> is_anemic(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">bool</span>:</span>
+<span id="cb2-34"><a href="#cb2-34" aria-label="34"></a>        <span class="cf">return</span> <span class="va">self</span>.hemoglobin_g_dl <span class="op">&lt;</span> <span class="fl">12.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-app-a-numpy" class="level2" data-number="A.2">
+<h2 data-number="A.2" class="anchored" data-anchor-id="sec-app-a-numpy"><span class="header-section-number">A.2</span> NumPy Vectorization &amp; Linear Algebra (Chapter 16)</h2>
+<section id="array-creation-reproducible-rng-vectorized-masking" class="level3" data-number="A.2.1">
+<h3 data-number="A.2.1" class="anchored" data-anchor-id="array-creation-reproducible-rng-vectorized-masking"><span class="header-section-number">A.2.1</span> Array Creation, Reproducible RNG &amp; Vectorized Masking</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-label="2"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-label="3"></a>rng <span class="op">=</span> np.random.default_rng(seed<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-label="4"></a>X <span class="op">=</span> rng.normal(loc<span class="op">=</span><span class="fl">0.0</span>, scale<span class="op">=</span><span class="fl">1.0</span>, size<span class="op">=</span>(<span class="dv">100</span>, <span class="dv">4</span>))  <span class="co"># shape (100, 4)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-label="5"></a>grid <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, <span class="fl">1.0</span>, <span class="dv">11</span>)                   <span class="co"># 11 evenly spaced</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-label="6"></a>zeros <span class="op">=</span> np.zeros((<span class="dv">3</span>, <span class="dv">4</span>), dtype<span class="op">=</span>np.float64)         <span class="co"># explicit dtype</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-label="7"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-label="8"></a><span class="co"># Boolean masking &amp; vectorized conditional logic (no Python loops)</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-label="9"></a>fever_mask <span class="op">=</span> X[:, <span class="dv">0</span>] <span class="op">&gt;</span> <span class="fl">1.5</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-label="10"></a>clipped <span class="op">=</span> np.clip(X, <span class="op">-</span><span class="fl">3.0</span>, <span class="fl">3.0</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-label="11"></a>risk_tier <span class="op">=</span> np.where(X[:, <span class="dv">0</span>] <span class="op">&gt;</span> <span class="fl">1.0</span>, <span class="st">"High"</span>, <span class="st">"Standard"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="broadcasting-rules-axis-reductions" class="level3" data-number="A.2.2">
+<h3 data-number="A.2.2" class="anchored" data-anchor-id="broadcasting-rules-axis-reductions"><span class="header-section-number">A.2.2</span> Broadcasting Rules &amp; Axis Reductions</h3>
+<p>Two array shapes are <strong>broadcast-compatible</strong> when, aligning dimensions from <strong>right to left</strong>, every dimension pair <span class="math inline">\((a, b)\)</span> satisfies:</p>
+<ol type="1">
+<li><span class="math inline">\(a = b\)</span>, <strong>or</strong></li>
+<li>One of <span class="math inline">\(a\)</span> or <span class="math inline">\(b\)</span> equals <span class="math inline">\(1\)</span>, <strong>or</strong></li>
+<li>One array has fewer dimensions (implicitly padded with leading ones, <span class="math inline">\(1\)</span>).</li>
+</ol>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-label="1"></a><span class="co"># Standardize columns: X is (n, p); col_mean/col_std are (1, p)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-label="2"></a>col_mean <span class="op">=</span> np.nanmean(X, axis<span class="op">=</span><span class="dv">0</span>, keepdims<span class="op">=</span><span class="va">True</span>)   <span class="co"># down rows -&gt; (1, p)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-label="3"></a>col_std <span class="op">=</span> np.nanstd(X, axis<span class="op">=</span><span class="dv">0</span>, keepdims<span class="op">=</span><span class="va">True</span>)     <span class="co"># down rows -&gt; (1, p)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-label="4"></a>X_z <span class="op">=</span> (X <span class="op">-</span> col_mean) <span class="op">/</span> np.where(col_std <span class="op">==</span> <span class="dv">0</span>, <span class="fl">1.0</span>, col_std)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-label="5"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-label="6"></a><span class="co"># Row-wise L2 norm: axis=1 collapses across columns -&gt; (n, 1)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-label="7"></a>row_norms <span class="op">=</span> np.linalg.norm(X_z, <span class="bu">ord</span><span class="op">=</span><span class="dv">2</span>, axis<span class="op">=</span><span class="dv">1</span>, keepdims<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-label="8"></a>X_unit <span class="op">=</span> X_z <span class="op">/</span> np.maximum(row_norms, <span class="fl">1e-12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="linear-algebra-svd-core-idioms" class="level3" data-number="A.2.3">
+<h3 data-number="A.2.3" class="anchored" data-anchor-id="linear-algebra-svd-core-idioms"><span class="header-section-number">A.2.3</span> Linear Algebra &amp; SVD Core Idioms</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-label="1"></a><span class="co"># Matrix multiply (@), transpose (.T), solve, and thin SVD</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-label="2"></a>n, p <span class="op">=</span> X_z.shape</span>
+<span id="cb5-3"><a href="#cb5-3" aria-label="3"></a>cov <span class="op">=</span> (X_z.T <span class="op">@</span> X_z) <span class="op">/</span> (n <span class="op">-</span> <span class="dv">1</span>)                      <span class="co"># (p, p) covariance</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-label="4"></a>eigvals, eigvecs <span class="op">=</span> np.linalg.eigh(cov)             <span class="co"># symmetric matrix</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-label="5"></a>U, s, Vt <span class="op">=</span> np.linalg.svd(X_z, full_matrices<span class="op">=</span><span class="va">False</span>) <span class="co"># thin SVD</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-label="6"></a>explained_var_ratio <span class="op">=</span> (s <span class="op">**</span> <span class="dv">2</span>) <span class="op">/</span> np.<span class="bu">sum</span>(s <span class="op">**</span> <span class="dv">2</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-label="7"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-label="8"></a><span class="co"># Numerically stable Ridge solve: (X^T X + lam * I) w = X^T y</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-label="9"></a>lam <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-label="10"></a>A <span class="op">=</span> X_z.T <span class="op">@</span> X_z <span class="op">+</span> lam <span class="op">*</span> np.eye(p)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-label="11"></a>w_ridge <span class="op">=</span> np.linalg.solve(A, X_z.T <span class="op">@</span> y)            <span class="co"># never np.linalg.inv</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-app-a-pandas" class="level2" data-number="A.3">
+<h2 data-number="A.3" class="anchored" data-anchor-id="sec-app-a-pandas"><span class="header-section-number">A.3</span> Pandas 3.x Copy-on-Write Wrangling (Chapters 17–18)</h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Pandas 3.x Copy-on-Write (CoW) Golden Rule
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Never chain indexing on the left-hand side of an assignment (<code>df[mask]["col"] = val</code>). In Pandas 3.x CoW, chained assignments silently fail or raise <code>ChainedAssignmentError</code>. Always mutate via a single <code>.loc[row_mask, "col"] = val</code> call or return a new DataFrame with <code>.assign(...)</code>.</p>
+</div>
+</div>
+<section id="loading-cleaning-dirty-survey-codes-method-chaining" class="level3" data-number="A.3.1">
+<h3 data-number="A.3.1" class="anchored" data-anchor-id="loading-cleaning-dirty-survey-codes-method-chaining"><span class="header-section-number">A.3.1</span> Loading, Cleaning Dirty Survey Codes &amp; Method Chaining</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-label="1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-label="2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb6-3"><a href="#cb6-3" aria-label="3"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-label="4"></a>raw <span class="op">=</span> pd.read_csv(<span class="st">"mch_survey_sample.csv"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-label="5"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-label="6"></a>clean <span class="op">=</span> (</span>
+<span id="cb6-7"><a href="#cb6-7" aria-label="7"></a>    raw</span>
+<span id="cb6-8"><a href="#cb6-8" aria-label="8"></a>    .assign(</span>
+<span id="cb6-9"><a href="#cb6-9" aria-label="9"></a>        residence<span class="op">=</span><span class="kw">lambda</span> d: d[<span class="st">"residence"</span>].<span class="bu">str</span>.strip().<span class="bu">str</span>.title(),</span>
+<span id="cb6-10"><a href="#cb6-10" aria-label="10"></a>        anc_visits<span class="op">=</span><span class="kw">lambda</span> d: d[<span class="st">"anc_visits"</span>].replace({<span class="dv">999</span>: np.nan}),</span>
+<span id="cb6-11"><a href="#cb6-11" aria-label="11"></a>        maternal_hb<span class="op">=</span><span class="kw">lambda</span> d: pd.to_numeric(</span>
+<span id="cb6-12"><a href="#cb6-12" aria-label="12"></a>            d[<span class="st">"maternal_hb_g_dl"</span>], errors<span class="op">=</span><span class="st">"coerce"</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-label="13"></a>        ),</span>
+<span id="cb6-14"><a href="#cb6-14" aria-label="14"></a>    )</span>
+<span id="cb6-15"><a href="#cb6-15" aria-label="15"></a>    .dropna(subset<span class="op">=</span>[<span class="st">"maternal_hb"</span>, <span class="st">"child_haz"</span>])</span>
+<span id="cb6-16"><a href="#cb6-16" aria-label="16"></a>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-label="17"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-label="18"></a><span class="co"># Single-step safe conditional assignment via .loc</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-label="19"></a>clean.loc[clean[<span class="st">"maternal_hb"</span>] <span class="op">&lt;</span> <span class="fl">11.0</span>, <span class="st">"anemia_flag"</span>] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-label="20"></a>clean[<span class="st">"anemia_flag"</span>] <span class="op">=</span> clean[<span class="st">"anemia_flag"</span>].fillna(<span class="dv">0</span>).astype(<span class="bu">int</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="groupby-aggregations-safe-merges-reshaping-panel-windows" class="level3" data-number="A.3.2">
+<h3 data-number="A.3.2" class="anchored" data-anchor-id="groupby-aggregations-safe-merges-reshaping-panel-windows"><span class="header-section-number">A.3.2</span> GroupBy Aggregations, Safe Merges, Reshaping &amp; Panel Windows</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-label="1"></a><span class="co"># Named aggregation + group-wise z-score via .transform()</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-label="2"></a>summary <span class="op">=</span> (</span>
+<span id="cb7-3"><a href="#cb7-3" aria-label="3"></a>    clean.groupby([<span class="st">"division"</span>, <span class="st">"residence"</span>], observed<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-label="4"></a>    .agg(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-label="5"></a>        n_hh<span class="op">=</span>(<span class="st">"household_id"</span>, <span class="st">"count"</span>),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-label="6"></a>        mean_hb<span class="op">=</span>(<span class="st">"maternal_hb"</span>, <span class="st">"mean"</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-label="7"></a>        stunt_pct<span class="op">=</span>(<span class="st">"child_stunted"</span>, <span class="kw">lambda</span> s: <span class="fl">100.0</span> <span class="op">*</span> s.mean()),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-label="8"></a>    )</span>
+<span id="cb7-9"><a href="#cb7-9" aria-label="9"></a>    .reset_index()</span>
+<span id="cb7-10"><a href="#cb7-10" aria-label="10"></a>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-label="11"></a>clean <span class="op">=</span> clean.assign(</span>
+<span id="cb7-12"><a href="#cb7-12" aria-label="12"></a>    hb_div_z<span class="op">=</span>clean.groupby(<span class="st">"division"</span>)[<span class="st">"maternal_hb"</span>].transform(</span>
+<span id="cb7-13"><a href="#cb7-13" aria-label="13"></a>        <span class="kw">lambda</span> s: (s <span class="op">-</span> s.mean()) <span class="op">/</span> s.std(ddof<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-label="14"></a>    )</span>
+<span id="cb7-15"><a href="#cb7-15" aria-label="15"></a>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-label="16"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-label="17"></a><span class="co"># Defensive merge: ALWAYS specify validate= and check indicator=</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-label="18"></a>merged <span class="op">=</span> pd.merge(</span>
+<span id="cb7-19"><a href="#cb7-19" aria-label="19"></a>    clean,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-label="20"></a>    district_meta,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-label="21"></a>    on<span class="op">=</span><span class="st">"division"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-label="22"></a>    how<span class="op">=</span><span class="st">"left"</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-label="23"></a>    validate<span class="op">=</span><span class="st">"m:1"</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-label="24"></a>    indicator<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-label="25"></a>)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-label="26"></a><span class="cf">assert</span> (merged[<span class="st">"_merge"</span>] <span class="op">==</span> <span class="st">"both"</span>).<span class="bu">all</span>(), <span class="st">"Unmatched division keys!"</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-label="27"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-label="28"></a><span class="co"># Wide &lt;-&gt; Long reshaping</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-label="29"></a>long_df <span class="op">=</span> pd.melt(</span>
+<span id="cb7-30"><a href="#cb7-30" aria-label="30"></a>    epi_df,</span>
+<span id="cb7-31"><a href="#cb7-31" aria-label="31"></a>    id_vars<span class="op">=</span>[<span class="st">"year"</span>, <span class="st">"epi_week"</span>, <span class="st">"district"</span>],</span>
+<span id="cb7-32"><a href="#cb7-32" aria-label="32"></a>    value_vars<span class="op">=</span>[<span class="st">"dengue_cases"</span>, <span class="st">"respiratory_cases"</span>],</span>
+<span id="cb7-33"><a href="#cb7-33" aria-label="33"></a>    var_name<span class="op">=</span><span class="st">"syndrome"</span>,</span>
+<span id="cb7-34"><a href="#cb7-34" aria-label="34"></a>    value_name<span class="op">=</span><span class="st">"cases"</span>,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-label="35"></a>)</span>
+<span id="cb7-36"><a href="#cb7-36" aria-label="36"></a>wide_tbl <span class="op">=</span> clean.pivot_table(</span>
+<span id="cb7-37"><a href="#cb7-37" aria-label="37"></a>    index<span class="op">=</span><span class="st">"division"</span>,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-label="38"></a>    columns<span class="op">=</span><span class="st">"wealth_quintile"</span>,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-label="39"></a>    values<span class="op">=</span><span class="st">"child_stunted"</span>,</span>
+<span id="cb7-40"><a href="#cb7-40" aria-label="40"></a>    aggfunc<span class="op">=</span><span class="st">"mean"</span>,</span>
+<span id="cb7-41"><a href="#cb7-41" aria-label="41"></a>)</span>
+<span id="cb7-42"><a href="#cb7-42" aria-label="42"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-label="43"></a><span class="co"># Panel time-series lags &amp; rolling windows (sort FIRST!)</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-label="44"></a>epi <span class="op">=</span> epi_df.sort_values([<span class="st">"district"</span>, <span class="st">"year"</span>, <span class="st">"epi_week"</span>]).copy()</span>
+<span id="cb7-45"><a href="#cb7-45" aria-label="45"></a>grp <span class="op">=</span> epi.groupby(<span class="st">"district"</span>)[<span class="st">"dengue_cases"</span>]</span>
+<span id="cb7-46"><a href="#cb7-46" aria-label="46"></a>epi[<span class="st">"dengue_lag1"</span>] <span class="op">=</span> grp.shift(<span class="dv">1</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-label="47"></a>epi[<span class="st">"dengue_ma4"</span>] <span class="op">=</span> grp.transform(</span>
+<span id="cb7-48"><a href="#cb7-48" aria-label="48"></a>    <span class="kw">lambda</span> s: s.rolling(window<span class="op">=</span><span class="dv">4</span>, min_periods<span class="op">=</span><span class="dv">1</span>).mean()</span>
+<span id="cb7-49"><a href="#cb7-49" aria-label="49"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-app-a-viz" class="level2" data-number="A.4">
+<h2 data-number="A.4" class="anchored" data-anchor-id="sec-app-a-viz"><span class="header-section-number">A.4</span> Matplotlib &amp; Seaborn Publication Recipe (Chapter 19)</h2>
+<section id="okabe-ito-colorblind-safe-palette-8-canonical-hex-codes" class="level3" data-number="A.4.1">
+<h3 data-number="A.4.1" class="anchored" data-anchor-id="okabe-ito-colorblind-safe-palette-8-canonical-hex-codes"><span class="header-section-number">A.4.1</span> Okabe-Ito Colorblind-Safe Palette (8 Canonical Hex Codes)</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 18%">
+<col style="width: 57%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Color Name</th>
+<th style="text-align: center;">Hex Code</th>
+<th style="text-align: left;">Recommended Scientific Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Blue</strong></td>
+<td style="text-align: center;"><code>#0072B2</code></td>
+<td style="text-align: left;">Primary model / baseline curve</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Vermilion</strong></td>
+<td style="text-align: center;"><code>#D55E00</code></td>
+<td style="text-align: left;">Alert / threshold / flagship model</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Bluish Green</strong></td>
+<td style="text-align: center;"><code>#009E73</code></td>
+<td style="text-align: left;">Positive outcome / target region</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Orange</strong></td>
+<td style="text-align: center;"><code>#E69F00</code></td>
+<td style="text-align: left;">Secondary comparator series</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Sky Blue</strong></td>
+<td style="text-align: center;"><code>#56B4E9</code></td>
+<td style="text-align: left;">Confidence band / shaded interval</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Reddish Purple</strong></td>
+<td style="text-align: center;"><code>#CC79A7</code></td>
+<td style="text-align: left;">Subgroup / interaction contrast</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Yellow</strong></td>
+<td style="text-align: center;"><code>#F0E442</code></td>
+<td style="text-align: left;">Highlight accent (use dark border)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Black / Slate</strong></td>
+<td style="text-align: center;"><code>#000000</code></td>
+<td style="text-align: left;">Reference line, axes, typography</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="object-oriented-300-dpi-dual-format-export-template" class="level3" data-number="A.4.2">
+<h3 data-number="A.4.2" class="anchored" data-anchor-id="object-oriented-300-dpi-dual-format-export-template"><span class="header-section-number">A.4.2</span> Object-Oriented 300-DPI Dual-Format Export Template</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-label="1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-2"><a href="#cb8-2" aria-label="2"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb8-3"><a href="#cb8-3" aria-label="3"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-label="4"></a>OKABE_ITO <span class="op">=</span> {</span>
+<span id="cb8-5"><a href="#cb8-5" aria-label="5"></a>    <span class="st">"blue"</span>: <span class="st">"#0072B2"</span>, <span class="st">"vermilion"</span>: <span class="st">"#D55E00"</span>, <span class="st">"green"</span>: <span class="st">"#009E73"</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-label="6"></a>    <span class="st">"orange"</span>: <span class="st">"#E69F00"</span>, <span class="st">"sky"</span>: <span class="st">"#56B4E9"</span>, <span class="st">"purple"</span>: <span class="st">"#CC79A7"</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-label="7"></a>    <span class="st">"yellow"</span>: <span class="st">"#F0E442"</span>, <span class="st">"black"</span>: <span class="st">"#000000"</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-label="8"></a>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-label="9"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-label="10"></a>plt.rcParams.update({</span>
+<span id="cb8-11"><a href="#cb8-11" aria-label="11"></a>    <span class="st">"font.size"</span>: <span class="dv">10</span>, <span class="st">"axes.titlesize"</span>: <span class="dv">11</span>, <span class="st">"axes.labelsize"</span>: <span class="dv">10</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" aria-label="12"></a>    <span class="st">"legend.frameon"</span>: <span class="va">False</span>, <span class="st">"figure.dpi"</span>: <span class="dv">150</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-label="13"></a>})</span>
+<span id="cb8-14"><a href="#cb8-14" aria-label="14"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-label="15"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="fl">6.5</span>, <span class="fl">4.0</span>), constrained_layout<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-label="16"></a>sns.lineplot(</span>
+<span id="cb8-17"><a href="#cb8-17" aria-label="17"></a>    data<span class="op">=</span>epi_df, x<span class="op">=</span><span class="st">"epi_week"</span>, y<span class="op">=</span><span class="st">"dengue_cases"</span>, hue<span class="op">=</span><span class="st">"district"</span>,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-label="18"></a>    palette<span class="op">=</span><span class="bu">list</span>(OKABE_ITO.values())[:<span class="dv">4</span>], linewidth<span class="op">=</span><span class="fl">2.0</span>, ax<span class="op">=</span>ax,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-label="19"></a>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-label="20"></a>ax.set_title(<span class="st">"Weekly Dengue Surveillance by District (2024-2025)"</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-label="21"></a>ax.set_xlabel(<span class="st">"Epidemiological Week"</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-label="22"></a>ax.set_ylabel(<span class="st">"Confirmed Dengue Cases (Count)"</span>)</span>
+<span id="cb8-23"><a href="#cb8-23" aria-label="23"></a>ax.grid(axis<span class="op">=</span><span class="st">"y"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, alpha<span class="op">=</span><span class="fl">0.35</span>)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-label="24"></a>sns.despine(ax<span class="op">=</span>ax)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-label="25"></a></span>
+<span id="cb8-26"><a href="#cb8-26" aria-label="26"></a><span class="co"># Export raster (manuscript review) + vector (journal print)</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-label="27"></a>fig.savefig(<span class="st">"fig_dengue_trends.png"</span>, dpi<span class="op">=</span><span class="dv">300</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-label="28"></a>fig.savefig(<span class="st">"fig_dengue_trends.pdf"</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-label="29"></a>plt.close(fig)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-app-a-sklearn" class="level2" data-number="A.5">
+<h2 data-number="A.5" class="anchored" data-anchor-id="sec-app-a-sklearn"><span class="header-section-number">A.5</span> Scikit-Learn Leakage-Free Pipelines &amp; Validation (Chapters 21–26)</h2>
+<section id="choosing-the-right-cross-validation-splitter" class="level3" data-number="A.5.1">
+<h3 data-number="A.5.1" class="anchored" data-anchor-id="choosing-the-right-cross-validation-splitter"><span class="header-section-number">A.5.1</span> Choosing the Right Cross-Validation Splitter</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 38%">
+<col style="width: 32%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Data Structure</th>
+<th style="text-align: left;">Recommended Splitter</th>
+<th style="text-align: left;">Leakage Prevented</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Independent tabular, binary/multi-class</td>
+<td style="text-align: left;"><code>StratifiedKFold(n_splits=5, shuffle=True, random_state=42)</code></td>
+<td style="text-align: left;">Class-ratio drift across folds</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Repeated patients, clinics, or survey clusters</td>
+<td style="text-align: left;"><code>StratifiedGroupKFold(n_splits=5)</code> (or <code>GroupKFold</code>)</td>
+<td style="text-align: left;">Same patient/cluster in train &amp; val</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Epidemiological or clinical time series</td>
+<td style="text-align: left;"><code>TimeSeriesSplit(n_splits=5)</code></td>
+<td style="text-align: left;">Future observations leaking to past</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Small <span class="math inline">\(N\)</span> (<span class="math inline">\(&lt; 300\)</span>) high-variance tabular</td>
+<td style="text-align: left;"><code>RepeatedStratifiedKFold(n_splits=5, n_repeats=10)</code></td>
+<td style="text-align: left;">Single unlucky split variance</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="complete-leakage-free-columntransformer-pipeline-calibration" class="level3" data-number="A.5.2">
+<h3 data-number="A.5.2" class="anchored" data-anchor-id="complete-leakage-free-columntransformer-pipeline-calibration"><span class="header-section-number">A.5.2</span> Complete Leakage-Free <code>ColumnTransformer</code> + <code>Pipeline</code> + Calibration</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-label="1"></a><span class="im">import</span> joblib</span>
+<span id="cb9-2"><a href="#cb9-2" aria-label="2"></a><span class="im">from</span> sklearn.calibration <span class="im">import</span> CalibratedClassifierCV</span>
+<span id="cb9-3"><a href="#cb9-3" aria-label="3"></a><span class="im">from</span> sklearn.compose <span class="im">import</span> ColumnTransformer</span>
+<span id="cb9-4"><a href="#cb9-4" aria-label="4"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb9-5"><a href="#cb9-5" aria-label="5"></a><span class="im">from</span> sklearn.inspection <span class="im">import</span> permutation_importance</span>
+<span id="cb9-6"><a href="#cb9-6" aria-label="6"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
+<span id="cb9-7"><a href="#cb9-7" aria-label="7"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV, StratifiedGroupKFold</span>
+<span id="cb9-8"><a href="#cb9-8" aria-label="8"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb9-9"><a href="#cb9-9" aria-label="9"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> OneHotEncoder, StandardScaler</span>
+<span id="cb9-10"><a href="#cb9-10" aria-label="10"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-label="11"></a>num_cols <span class="op">=</span> [<span class="st">"maternal_age_years"</span>, <span class="st">"anc_visits"</span>, <span class="st">"maternal_hb_g_dl"</span>]</span>
+<span id="cb9-12"><a href="#cb9-12" aria-label="12"></a>cat_cols <span class="op">=</span> [<span class="st">"division"</span>, <span class="st">"residence"</span>, <span class="st">"wealth_quintile"</span>]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-label="13"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-label="14"></a>preprocessor <span class="op">=</span> ColumnTransformer(</span>
+<span id="cb9-15"><a href="#cb9-15" aria-label="15"></a>    transformers<span class="op">=</span>[</span>
+<span id="cb9-16"><a href="#cb9-16" aria-label="16"></a>        (<span class="st">"num"</span>, Pipeline([</span>
+<span id="cb9-17"><a href="#cb9-17" aria-label="17"></a>            (<span class="st">"imp"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"median"</span>)),</span>
+<span id="cb9-18"><a href="#cb9-18" aria-label="18"></a>            (<span class="st">"scl"</span>, StandardScaler()),</span>
+<span id="cb9-19"><a href="#cb9-19" aria-label="19"></a>        ]), num_cols),</span>
+<span id="cb9-20"><a href="#cb9-20" aria-label="20"></a>        (<span class="st">"cat"</span>, Pipeline([</span>
+<span id="cb9-21"><a href="#cb9-21" aria-label="21"></a>            (<span class="st">"imp"</span>, SimpleImputer(strategy<span class="op">=</span><span class="st">"most_frequent"</span>)),</span>
+<span id="cb9-22"><a href="#cb9-22" aria-label="22"></a>            (<span class="st">"ohe"</span>, OneHotEncoder(handle_unknown<span class="op">=</span><span class="st">"ignore"</span>)),</span>
+<span id="cb9-23"><a href="#cb9-23" aria-label="23"></a>        ]), cat_cols),</span>
+<span id="cb9-24"><a href="#cb9-24" aria-label="24"></a>    ],</span>
+<span id="cb9-25"><a href="#cb9-25" aria-label="25"></a>    remainder<span class="op">=</span><span class="st">"drop"</span>,</span>
+<span id="cb9-26"><a href="#cb9-26" aria-label="26"></a>)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-label="27"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-label="28"></a>pipe <span class="op">=</span> Pipeline([</span>
+<span id="cb9-29"><a href="#cb9-29" aria-label="29"></a>    (<span class="st">"prep"</span>, preprocessor),</span>
+<span id="cb9-30"><a href="#cb9-30" aria-label="30"></a>    (<span class="st">"model"</span>, LogisticRegression(max_iter<span class="op">=</span><span class="dv">1000</span>, random_state<span class="op">=</span><span class="dv">42</span>)),</span>
+<span id="cb9-31"><a href="#cb9-31" aria-label="31"></a>])</span>
+<span id="cb9-32"><a href="#cb9-32" aria-label="32"></a></span>
+<span id="cb9-33"><a href="#cb9-33" aria-label="33"></a>cv <span class="op">=</span> StratifiedGroupKFold(n_splits<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-label="34"></a>param_grid <span class="op">=</span> {<span class="st">"model__C"</span>: [<span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="fl">1.0</span>, <span class="fl">10.0</span>]}</span>
+<span id="cb9-35"><a href="#cb9-35" aria-label="35"></a>search <span class="op">=</span> GridSearchCV(</span>
+<span id="cb9-36"><a href="#cb9-36" aria-label="36"></a>    pipe, param_grid, cv<span class="op">=</span>cv, scoring<span class="op">=</span><span class="st">"roc_auc"</span>, refit<span class="op">=</span><span class="va">True</span></span>
+<span id="cb9-37"><a href="#cb9-37" aria-label="37"></a>)</span>
+<span id="cb9-38"><a href="#cb9-38" aria-label="38"></a>search.fit(X_train, y_train, groups<span class="op">=</span>clusters_train)</span>
+<span id="cb9-39"><a href="#cb9-39" aria-label="39"></a></span>
+<span id="cb9-40"><a href="#cb9-40" aria-label="40"></a><span class="co"># Post-hoc probability calibration &amp; permutation importance</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-label="41"></a>cal_model <span class="op">=</span> CalibratedClassifierCV(</span>
+<span id="cb9-42"><a href="#cb9-42" aria-label="42"></a>    search.best_estimator_, method<span class="op">=</span><span class="st">"sigmoid"</span>, cv<span class="op">=</span><span class="dv">5</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-label="43"></a>)</span>
+<span id="cb9-44"><a href="#cb9-44" aria-label="44"></a>cal_model.fit(X_train, y_train)</span>
+<span id="cb9-45"><a href="#cb9-45" aria-label="45"></a></span>
+<span id="cb9-46"><a href="#cb9-46" aria-label="46"></a>perm <span class="op">=</span> permutation_importance(</span>
+<span id="cb9-47"><a href="#cb9-47" aria-label="47"></a>    cal_model, X_test, y_test, n_repeats<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-label="48"></a>    scoring<span class="op">=</span><span class="st">"roc_auc"</span>, random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb9-49"><a href="#cb9-49" aria-label="49"></a>)</span>
+<span id="cb9-50"><a href="#cb9-50" aria-label="50"></a>joblib.dump(cal_model, <span class="st">"artifacts/anemia_risk_pipeline.joblib"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="sec-app-a-pytorch" class="level2" data-number="A.6">
+<h2 data-number="A.6" class="anchored" data-anchor-id="sec-app-a-pytorch"><span class="header-section-number">A.6</span> PyTorch Canonical 5-Step Loop &amp; Architectures (Chapters 28–32)</h2>
+<section id="loss-optimizer-scheduler-quick-pick-table" class="level3" data-number="A.6.1">
+<h3 data-number="A.6.1" class="anchored" data-anchor-id="loss-optimizer-scheduler-quick-pick-table"><span class="header-section-number">A.6.1</span> Loss, Optimizer &amp; Scheduler Quick-Pick Table</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 21%">
+<col style="width: 33%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Task</th>
+<th style="text-align: left;">Output Head</th>
+<th style="text-align: left;">Canonical Loss</th>
+<th style="text-align: left;">Recommended Optimizer / Scheduler</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Binary classification</td>
+<td style="text-align: left;">1 raw logit (no sigmoid)</td>
+<td style="text-align: left;"><code>nn.BCEWithLogitsLoss(pos_weight=...)</code></td>
+<td style="text-align: left;"><code>AdamW(lr=1e-3, weight_decay=1e-2)</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Multi-class (<span class="math inline">\(C\)</span> classes)</td>
+<td style="text-align: left;"><span class="math inline">\(C\)</span> raw logits (no softmax)</td>
+<td style="text-align: left;"><code>nn.CrossEntropyLoss(label_smoothing=0.05)</code></td>
+<td style="text-align: left;"><code>AdamW</code> + <code>CosineAnnealingLR</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Continuous regression</td>
+<td style="text-align: left;">1 linear scalar</td>
+<td style="text-align: left;"><code>nn.MSELoss()</code> or <code>nn.HuberLoss(delta=1.0)</code></td>
+<td style="text-align: left;"><code>AdamW</code> + <code>ReduceLROnPlateau</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sequence / Transformer</td>
+<td style="text-align: left;">Token or pooled logits</td>
+<td style="text-align: left;"><code>nn.CrossEntropyLoss(ignore_index=0)</code></td>
+<td style="text-align: left;"><code>AdamW(lr=3e-4)</code> + linear warmup</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="reproducible-dataset-dataloader-canonical-5-step-loop" class="level3" data-number="A.6.2">
+<h3 data-number="A.6.2" class="anchored" data-anchor-id="reproducible-dataset-dataloader-canonical-5-step-loop"><span class="header-section-number">A.6.2</span> Reproducible <code>Dataset</code>, <code>DataLoader</code> &amp; Canonical 5-Step Loop</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-label="1"></a><span class="im">import</span> random</span>
+<span id="cb10-2"><a href="#cb10-2" aria-label="2"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb10-3"><a href="#cb10-3" aria-label="3"></a><span class="im">import</span> torch</span>
+<span id="cb10-4"><a href="#cb10-4" aria-label="4"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb10-5"><a href="#cb10-5" aria-label="5"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> DataLoader, Dataset</span>
+<span id="cb10-6"><a href="#cb10-6" aria-label="6"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-label="7"></a><span class="kw">def</span> seed_everything(seed: <span class="bu">int</span> <span class="op">=</span> <span class="dv">42</span>) <span class="op">-&gt;</span> torch.device:</span>
+<span id="cb10-8"><a href="#cb10-8" aria-label="8"></a>    random.seed(seed)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-label="9"></a>    np.random.seed(seed)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-label="10"></a>    torch.manual_seed(seed)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-label="11"></a>    torch.cuda.manual_seed_all(seed)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-label="12"></a>    <span class="cf">if</span> torch.cuda.is_available():</span>
+<span id="cb10-13"><a href="#cb10-13" aria-label="13"></a>        <span class="cf">return</span> torch.device(<span class="st">"cuda"</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-label="14"></a>    <span class="cf">if</span> torch.backends.mps.is_available():</span>
+<span id="cb10-15"><a href="#cb10-15" aria-label="15"></a>        <span class="cf">return</span> torch.device(<span class="st">"mps"</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-label="16"></a>    <span class="cf">return</span> torch.device(<span class="st">"cpu"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-label="17"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-label="18"></a><span class="kw">class</span> TabularDataset(Dataset):</span>
+<span id="cb10-19"><a href="#cb10-19" aria-label="19"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, X: np.ndarray, y: np.ndarray) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb10-20"><a href="#cb10-20" aria-label="20"></a>        <span class="va">self</span>.X <span class="op">=</span> torch.as_tensor(X, dtype<span class="op">=</span>torch.float32)</span>
+<span id="cb10-21"><a href="#cb10-21" aria-label="21"></a>        <span class="va">self</span>.y <span class="op">=</span> torch.as_tensor(y, dtype<span class="op">=</span>torch.float32).unsqueeze(<span class="dv">1</span>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-label="22"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-label="23"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="cb10-24"><a href="#cb10-24" aria-label="24"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.y)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-label="25"></a></span>
+<span id="cb10-26"><a href="#cb10-26" aria-label="26"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, idx: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">tuple</span>[torch.Tensor, torch.Tensor]:</span>
+<span id="cb10-27"><a href="#cb10-27" aria-label="27"></a>        <span class="cf">return</span> <span class="va">self</span>.X[idx], <span class="va">self</span>.y[idx]</span>
+<span id="cb10-28"><a href="#cb10-28" aria-label="28"></a></span>
+<span id="cb10-29"><a href="#cb10-29" aria-label="29"></a><span class="kw">def</span> train_one_epoch(model, loader, criterion, optimizer, device):</span>
+<span id="cb10-30"><a href="#cb10-30" aria-label="30"></a>    model.train()</span>
+<span id="cb10-31"><a href="#cb10-31" aria-label="31"></a>    total_loss <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-label="32"></a>    <span class="cf">for</span> xb, yb <span class="kw">in</span> loader:</span>
+<span id="cb10-33"><a href="#cb10-33" aria-label="33"></a>        xb, yb <span class="op">=</span> xb.to(device), yb.to(device)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-label="34"></a>        optimizer.zero_grad()                     <span class="co"># 1. Clear stale grads</span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-label="35"></a>        logits <span class="op">=</span> model(xb)                        <span class="co"># 2. Forward pass</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-label="36"></a>        loss <span class="op">=</span> criterion(logits, yb)              <span class="co"># 3. Compute loss</span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-label="37"></a>        loss.backward()                           <span class="co"># 4. Backprop gradients</span></span>
+<span id="cb10-38"><a href="#cb10-38" aria-label="38"></a>        nn.utils.clip_grad_norm_(model.parameters(), max_norm<span class="op">=</span><span class="fl">1.0</span>)</span>
+<span id="cb10-39"><a href="#cb10-39" aria-label="39"></a>        optimizer.step()                          <span class="co"># 5. Update weights</span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-label="40"></a>        total_loss <span class="op">+=</span> loss.item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb10-41"><a href="#cb10-41" aria-label="41"></a>    <span class="cf">return</span> total_loss <span class="op">/</span> <span class="bu">len</span>(loader.dataset)</span>
+<span id="cb10-42"><a href="#cb10-42" aria-label="42"></a></span>
+<span id="cb10-43"><a href="#cb10-43" aria-label="43"></a><span class="at">@torch.inference_mode</span>()</span>
+<span id="cb10-44"><a href="#cb10-44" aria-label="44"></a><span class="kw">def</span> evaluate(model, loader, criterion, device):</span>
+<span id="cb10-45"><a href="#cb10-45" aria-label="45"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb10-46"><a href="#cb10-46" aria-label="46"></a>    total_loss <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb10-47"><a href="#cb10-47" aria-label="47"></a>    <span class="cf">for</span> xb, yb <span class="kw">in</span> loader:</span>
+<span id="cb10-48"><a href="#cb10-48" aria-label="48"></a>        xb, yb <span class="op">=</span> xb.to(device), yb.to(device)</span>
+<span id="cb10-49"><a href="#cb10-49" aria-label="49"></a>        loss <span class="op">=</span> criterion(model(xb), yb)</span>
+<span id="cb10-50"><a href="#cb10-50" aria-label="50"></a>        total_loss <span class="op">+=</span> loss.item() <span class="op">*</span> <span class="bu">len</span>(xb)</span>
+<span id="cb10-51"><a href="#cb10-51" aria-label="51"></a>    <span class="cf">return</span> total_loss <span class="op">/</span> <span class="bu">len</span>(loader.dataset)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="canonical-architecture-blocks-cnn-gru-attention-lora-safe-save" class="level3" data-number="A.6.3">
+<h3 data-number="A.6.3" class="anchored" data-anchor-id="canonical-architecture-blocks-cnn-gru-attention-lora-safe-save"><span class="header-section-number">A.6.3</span> Canonical Architecture Blocks (CNN, GRU, Attention, LoRA &amp; Safe Save)</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-label="1"></a><span class="co"># 1) Compact Medical CNN Block (expects NCHW: (B, C, H, W))</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-label="2"></a><span class="kw">class</span> ConvBlock(nn.Module):</span>
+<span id="cb11-3"><a href="#cb11-3" aria-label="3"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, c_in: <span class="bu">int</span>, c_out: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb11-4"><a href="#cb11-4" aria-label="4"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-5"><a href="#cb11-5" aria-label="5"></a>        <span class="va">self</span>.net <span class="op">=</span> nn.Sequential(</span>
+<span id="cb11-6"><a href="#cb11-6" aria-label="6"></a>            nn.Conv2d(c_in, c_out, kernel_size<span class="op">=</span><span class="dv">3</span>, padding<span class="op">=</span><span class="dv">1</span>, bias<span class="op">=</span><span class="va">False</span>),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-label="7"></a>            nn.BatchNorm2d(c_out),</span>
+<span id="cb11-8"><a href="#cb11-8" aria-label="8"></a>            nn.ReLU(inplace<span class="op">=</span><span class="va">True</span>),</span>
+<span id="cb11-9"><a href="#cb11-9" aria-label="9"></a>            nn.MaxPool2d(kernel_size<span class="op">=</span><span class="dv">2</span>),</span>
+<span id="cb11-10"><a href="#cb11-10" aria-label="10"></a>        )</span>
+<span id="cb11-11"><a href="#cb11-11" aria-label="11"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-label="12"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x: torch.Tensor) <span class="op">-&gt;</span> torch.Tensor:</span>
+<span id="cb11-13"><a href="#cb11-13" aria-label="13"></a>        <span class="cf">return</span> <span class="va">self</span>.net(x)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-label="14"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-label="15"></a><span class="co"># 2) Sequence Forecaster (expects (B, T, F) with batch_first=True)</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-label="16"></a><span class="kw">class</span> EpiGRU(nn.Module):</span>
+<span id="cb11-17"><a href="#cb11-17" aria-label="17"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, n_feat: <span class="bu">int</span>, hidden: <span class="bu">int</span> <span class="op">=</span> <span class="dv">32</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb11-18"><a href="#cb11-18" aria-label="18"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-19"><a href="#cb11-19" aria-label="19"></a>        <span class="va">self</span>.gru <span class="op">=</span> nn.GRU(n_feat, hidden, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-label="20"></a>        <span class="va">self</span>.head <span class="op">=</span> nn.Linear(hidden, <span class="dv">1</span>)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-label="21"></a></span>
+<span id="cb11-22"><a href="#cb11-22" aria-label="22"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x: torch.Tensor) <span class="op">-&gt;</span> torch.Tensor:</span>
+<span id="cb11-23"><a href="#cb11-23" aria-label="23"></a>        out, _ <span class="op">=</span> <span class="va">self</span>.gru(x)                      <span class="co"># out: (B, T, hidden)</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-label="24"></a>        <span class="cf">return</span> <span class="va">self</span>.head(out[:, <span class="op">-</span><span class="dv">1</span>, :])           <span class="co"># last time step</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-label="25"></a></span>
+<span id="cb11-26"><a href="#cb11-26" aria-label="26"></a><span class="co"># 3) Multi-Head Attention &amp; LoRA Adapter (Delta W = (alpha / r) * B @ A)</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-label="27"></a>attn <span class="op">=</span> nn.MultiheadAttention(embed_dim<span class="op">=</span><span class="dv">64</span>, num_heads<span class="op">=</span><span class="dv">4</span>, batch_first<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-label="28"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-label="29"></a><span class="kw">class</span> LoRALinear(nn.Module):</span>
+<span id="cb11-30"><a href="#cb11-30" aria-label="30"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, base: nn.Linear, r: <span class="bu">int</span> <span class="op">=</span> <span class="dv">4</span>, alpha: <span class="bu">float</span> <span class="op">=</span> <span class="fl">8.0</span>):</span>
+<span id="cb11-31"><a href="#cb11-31" aria-label="31"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb11-32"><a href="#cb11-32" aria-label="32"></a>        <span class="va">self</span>.base <span class="op">=</span> base</span>
+<span id="cb11-33"><a href="#cb11-33" aria-label="33"></a>        <span class="cf">for</span> p <span class="kw">in</span> <span class="va">self</span>.base.parameters():</span>
+<span id="cb11-34"><a href="#cb11-34" aria-label="34"></a>            p.requires_grad <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-label="35"></a>        <span class="va">self</span>.scale <span class="op">=</span> alpha <span class="op">/</span> r</span>
+<span id="cb11-36"><a href="#cb11-36" aria-label="36"></a>        <span class="va">self</span>.A <span class="op">=</span> nn.Parameter(torch.randn(r, base.in_features) <span class="op">*</span> <span class="fl">0.02</span>)</span>
+<span id="cb11-37"><a href="#cb11-37" aria-label="37"></a>        <span class="va">self</span>.B <span class="op">=</span> nn.Parameter(torch.zeros(base.out_features, r))</span>
+<span id="cb11-38"><a href="#cb11-38" aria-label="38"></a></span>
+<span id="cb11-39"><a href="#cb11-39" aria-label="39"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, x: torch.Tensor) <span class="op">-&gt;</span> torch.Tensor:</span>
+<span id="cb11-40"><a href="#cb11-40" aria-label="40"></a>        delta <span class="op">=</span> (x <span class="op">@</span> <span class="va">self</span>.A.T) <span class="op">@</span> <span class="va">self</span>.B.T</span>
+<span id="cb11-41"><a href="#cb11-41" aria-label="41"></a>        <span class="cf">return</span> <span class="va">self</span>.base(x) <span class="op">+</span> <span class="va">self</span>.scale <span class="op">*</span> delta</span>
+<span id="cb11-42"><a href="#cb11-42" aria-label="42"></a></span>
+<span id="cb11-43"><a href="#cb11-43" aria-label="43"></a><span class="co"># 4) Safe Checkpointing (weights_only=True prevents pickle exploits)</span></span>
+<span id="cb11-44"><a href="#cb11-44" aria-label="44"></a>torch.save(model.state_dict(), <span class="st">"artifacts/best_model.pt"</span>)</span>
+<span id="cb11-45"><a href="#cb11-45" aria-label="45"></a>state <span class="op">=</span> torch.load(</span>
+<span id="cb11-46"><a href="#cb11-46" aria-label="46"></a>    <span class="st">"artifacts/best_model.pt"</span>, map_location<span class="op">=</span><span class="st">"cpu"</span>, weights_only<span class="op">=</span><span class="va">True</span></span>
+<span id="cb11-47"><a href="#cb11-47" aria-label="47"></a>)</span>
+<span id="cb11-48"><a href="#cb11-48" aria-label="48"></a>model.load_state_dict(state)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../part_07_research_capstone/ch36_flagship_research_capstone.html" class="pagination-link" aria-label="Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper &amp; Reproducible Artifact</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../appendices/app_b_math_stats_refresher.html" class="pagination-link" aria-label="Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher">
+        <span class="nav-page-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">Essential Mathematics, Biostatistics &amp; Deep Learning Equations Refresher</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
