@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Open **Part VII (Research Capstone — From Code to Peer-Reviewed Paper)** by replacing fragile, hand-edited notebooks with **reproducible, reviewer-proof experimental pipelines**. Using `mch_survey_sample`, you will lock random state across Python, NumPy, and PyTorch (`set_all_seeds`), drive every run from validated YAML specifications (`load_and_validate_config`), log immutable results into append-only JSONL ledgers (`append_experiment_ledger`), expose single-seed variance with multi-seed cross-validation (`multi_seed_cv_benchmark`), test model differences rigorously via **non-parametric bootstrap CIs**, **paired bootstrap tests**, and **exact McNemar's tests**, and prove which clinical feature domains drive prediction via systematic **feature-group ablation studies**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch33 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch33 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch33 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch33 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb) | ![QR code linking to Chapter 33 Walkthrough notebook in Google Colab](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch33 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb) | ![QR code linking to Chapter 33 Guided To-Dos notebook in Google Colab](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch33 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb) | ![QR code linking to Chapter 33 Coding Exam notebook in Google Colab](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -59,6 +59,8 @@ Study the four stacked stages of a reproducible research harness—notice how va
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 33 visual mental model: Config-Driven Multi-Seed Experiment & Ablation Loop"
+%%| fig-alt: "Diagram for Chapter 33 (Config-Driven Multi-Seed Experiment & Ablation Loop) illustrating 1. Config & Seeds; YAML Spec safe_load + Check; Lock All RNGs Py + NumPy + Torch; 2. Multi-Seed CV; Fresh Pipeline Scale + Mode..."
 flowchart TD
     subgraph S1["1. Config & Seeds"]
         direction LR

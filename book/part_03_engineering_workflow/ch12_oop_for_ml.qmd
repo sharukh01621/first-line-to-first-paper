@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Launch **Part III (Engineering Workflow, Architecture & Reproducibility)** by demystifying **Object-Oriented Programming (OOP)** for scientific Python and machine learning. Master classes, `__init__`, `self`, `@dataclass`, dunder protocols (`__repr__`, `__len__`, `__call__`), and object composition—and see firsthand how every Scikit-Learn `.fit()` / `.transform()` estimator and PyTorch `nn.Module` (`forward` / `__call__`) is simply a clean Python class.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch12 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch12 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch12 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch12 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/01_walkthrough.ipynb) | ![QR code linking to Chapter 12 Walkthrough notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch12 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/02_guided_todos.ipynb) | ![QR code linking to Chapter 12 Guided To-Dos notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch12 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch12_oop_for_ml/03_coding_exam.ipynb) | ![QR code linking to Chapter 12 Coding Exam notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch12_oop_for_ml__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Trace how a single class blueprint stamps out isolated instances in memory—and
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 12 visual mental model: Class Blueprint, Live Instances & ML Bridge"
+%%| fig-alt: "Diagram for Chapter 12 (Class Blueprint, Live Instances & ML Bridge) illustrating Class Blueprint; class ClinicalSample __init__(self, id, w, h) bmi(self) / __repr__(self); Live Instances; s1 (self #1) id='P-101', w=6..."
 flowchart TD
     subgraph Blueprint["Class Blueprint"]
         C1["class ClinicalSample<br/>__init__(self, id, w, h)<br/>bmi(self) / __repr__(self)"]

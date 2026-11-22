@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Build your fluency with **Pandas**, the backbone of tabular data science in Python. Master `Series` and `DataFrame` architecture, explicit label vs. position indexing (`.loc` vs. `.iloc`), vectorized boolean masking (`&`, `|`, `~`, `.isin()`), mutation-safe Pandas 3.x **Copy-on-Write** transformations (`.copy()`, `.assign()`), deterministic multi-key sorting, and tidy data reshaping (`pd.melt`, `pd.crosstab`, and `pivot_table`) using a real bundled clinical triage dataset.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch17 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch17 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch17 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch17 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/01_walkthrough.ipynb) | ![QR code linking to Chapter 17 Walkthrough notebook in Google Colab](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch17 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/02_guided_todos.ipynb) | ![QR code linking to Chapter 17 Guided To-Dos notebook in Google Colab](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch17 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch17_pandas_foundations/03_coding_exam.ipynb) | ![QR code linking to Chapter 17 Coding Exam notebook in Google Colab](../assets/qr/part_04_data_science_math__ch17_pandas_foundations__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -56,6 +56,8 @@ Trace how a single `DataFrame` routes through `.loc`/`.iloc` indexing, boolean f
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 17 visual mental model: Indexing & Wide-to-Long Reshaping"
+%%| fig-alt: "Diagram for Chapter 17 (Indexing & Wide-to-Long Reshaping) illustrating DataFrame Anatomy; clinic_triage (120 x 11) Row Index: 0..119 | Columns: Series; Indexing & Masks; .loc[row_lbl, col_lbl] Inclusive label slices..."
 flowchart TD
     subgraph RawTable["DataFrame Anatomy"]
         DF["clinic_triage (120 x 11)<br/>Row Index: 0..119 | Columns: Series"]

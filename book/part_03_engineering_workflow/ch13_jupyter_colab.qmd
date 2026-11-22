@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Transform interactive notebooks from fragile scratchpads into publication-grade engineering instruments. Master the `.ipynb` JSON schema, eliminate hidden-state bugs via strict `Restart & Run All` discipline, manage Google Colab CPU/GPU runtimes, `drive.mount`, and IPython magics (`%timeit`, `%%writefile`) cleanly, build portable Drive/local path resolvers, protect long runs with atomic JSON checkpoints, and isolate randomness with `random.Random(seed)`.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch13 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch13 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch13 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch13 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/01_walkthrough.ipynb) | ![QR code linking to Chapter 13 Walkthrough notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch13 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/02_guided_todos.ipynb) | ![QR code linking to Chapter 13 Guided To-Dos notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch13 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch13_jupyter_colab/03_coding_exam.ipynb) | ![QR code linking to Chapter 13 Coding Exam notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch13_jupyter_colab__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -36,7 +36,7 @@ Almost every beginner assumes a Jupyter notebook executes top-to-bottom like a s
 Think of your `.ipynb` file as your **written lab protocol** and the Jupyter kernel as your **physical lab bench**:
 
 1. **Hidden State:** If you mix reagent `x = 10` in Cell 1, run Cell 2, then delete Cell 1 and run Cell 2 again, Cell 2 still succeeds because `x` is sitting on the bench (kernel RAM)—even though the protocol (`.ipynb`) no longer defines `x`. The moment a peer reviewer clicks **Restart & Run All**, your paper crashes with `NameError`.
-2. **Ephemeral Colab VMs:** Google Colab hands you a temporary Linux virtual machine (CPU for data cleaning and pandas; T4/L4/A100 GPU for deep learning). After an idle timeout or 12-hour cap, Google recycles the VM and wipes `/content/`. Only files saved to mounted Google Drive or downloaded to Git survive.
+2. **Ephemeral Colab VMs:** Google Colab hands you a temporary Linux virtual machine (CPU for data cleaning and Pandas; T4/L4/A100 GPU for deep learning). After an idle timeout or 12-hour cap, Google recycles the VM and wipes `/content/`. Only files saved to mounted Google Drive or downloaded to Git survive.
 3. **Magics Are Bench Tools, Not Pure Python:** Line magics (`%timeit`), cell magics (`%%writefile`), and shell escapes (`!pip install`) are conveniences parsed by IPython—not valid Python syntax. Before shipping reusable code into a `.py` module, every `!` and `%` line must be stripped.
 :::
 
@@ -58,12 +58,20 @@ Trace how a raw exploratory notebook matures into a crash-safe, Git-friendly, pe
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
-flowchart LR
-    A["1. Draft .ipynb<br/>Exploratory Edits"] --> B["2. Live Kernel RAM<br/>Out-of-Order Risk<br/>counts: 5, 2, 3"]
-    B -->|"Hidden State Trap"| B
-    B --> C["3. Restart & Run All<br/>Fresh Kernel RAM<br/>counts: 1, 2, 3"]
-    C --> D["4. Preflight Export<br/>Strip Outputs +<br/>Atomic .tmp Checkpt"]
-    D --> E["5. Reproducible Repo<br/>Clean Git Diff +<br/>Colab Badge URL"]
+%%| fig-cap: "Jupyter and Colab notebook reproducibility lifecycle from exploratory draft to clean Git artifact"
+%%| fig-alt: "Two-tier flowchart showing Draft and Live Kernel RAM hidden-state risks transitioning to Restart and Run All, Preflight Export, and Reproducible Repo"
+flowchart TD
+    subgraph S1["Draft & Debug"]
+        direction LR
+        A["1. Draft .ipynb<br/>Exploratory Edits"] --> B["2. Live Kernel RAM<br/>Out-of-Order Risk<br/>counts: 5, 2, 3"]
+        B -->|"Hidden State Trap"| B
+    end
+    subgraph S2["Verify & Publish"]
+        direction LR
+        C["3. Restart & Run All<br/>Fresh Kernel RAM<br/>counts: 1, 2, 3"] --> D["4. Preflight Export<br/>Strip Outputs +<br/>Atomic .tmp Ckpt"]
+        D --> E["5. Reproducible Repo<br/>Clean Git Diff +<br/>Colab Badge URL"]
+    end
+    S1 --> S2
 ```
 
 Notice the two engineering gates that separate fragile notebooks from reproducible research pipelines:
@@ -461,7 +469,7 @@ Test your understanding on paper before checking Stage 8:
 2. **Unexecuted Cell Risk:** A notebook has code cells with `execution_count` values `[1, None, 2]`. What does `detect_out_of_order_cells(nb_dict)` return, and why?
 3. **Shallow vs. Deep Copy Bug:** Why does `cleaned = nb_dict.copy()` fail to protect `nb_dict` when `strip_notebook_outputs` sets `cell["outputs"] = []`?
 4. **Colab Ephemeral Disk:** You save `cleaned_cohort.csv` directly to `/content/cleaned_cohort.csv` in Google Colab, close your laptop for 3 hours, and reconnect to a new runtime. What happened to `cleaned_cohort.csv`?
-5. **CPU vs. GPU Discipline:** Why is it poor practice to leave a Colab T4/A100 GPU runtime enabled while writing pandas data-cleaning code and reading documentation?
+5. **CPU vs. GPU Discipline:** Why is it poor practice to leave a Colab T4/A100 GPU runtime enabled while writing Pandas data-cleaning code and reading documentation?
 6. **Magic Syntax Error:** You copy a Colab cell containing `!pip install -q pandas` and `%timeit sum(range(1000))` straight into `utils.py` and run `import utils`. What Python exception occurs?
 7. **`.replace()` vs. Direct Write:** Suppose `train_state.json` currently holds a valid epoch-10 checkpoint, and your code writes epoch 11 using `save_checkpoint_atomic`. If `json.dump()` crashes halfway through with a `TypeError`, what is inside `train_state.json` afterward?
 8. **Global vs. Isolated RNG:** Why is `rng = random.Random(42); rng.shuffle(idx)` strictly safer inside a notebook than `random.seed(42); random.shuffle(idx)`?

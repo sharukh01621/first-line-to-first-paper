@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Transform fragile neural networks that either vanish, explode, or overfit small clinical datasets into **stable, reproducible, well-regularized deep learning pipelines**. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) in PyTorch, you will diagnose vanishing and exploding activation variance, pair **Kaiming (He)** and **Xavier (Glorot)** initialization with the right nonlinearities, benchmark **SGD**, **SGD + Momentum**, and **AdamW** from identical initial weights, combine **BatchNorm1d** and **Dropout** safely across `train()` vs. `eval()` modes, tame spikes with **gradient norm clipping**, schedule learning rates with **CosineAnnealingLR**, and halt overfitting with deep-copied **early-stopping checkpoint restoration**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch29 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch29 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch29 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch29 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb) | ![QR code linking to Chapter 29 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch29 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb) | ![QR code linking to Chapter 29 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch29 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb) | ![QR code linking to Chapter 29 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -58,6 +58,8 @@ Follow this disciplined training and validation loop whenever you train a PyTorc
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 29 visual mental model: Training Stabilization & Early-Stopping Diagnostic Loop"
+%%| fig-alt: "Diagram for Chapter 29 (Training Stabilization & Early-Stopping Diagnostic Loop) illustrating 1. Stabilize Init; 60/20/20 Split Train-Only Scaler; Kaiming + BN + Drop AdamW + CosineLR; 2. Train Epoch; model.train() ze..."
 flowchart TD
     subgraph Init["1. Stabilize Init"]
         direction LR

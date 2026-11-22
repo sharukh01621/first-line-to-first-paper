@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Master binary classification as **calibrated probability estimation followed by cost-aware decision making**. Starting from pure NumPy sigmoid and binary cross-entropy gradient descent and progressing to leak-free Scikit-Learn pipelines on Bangladesh maternal and child health survey data (`mch_survey_sample`), you will unmask the **Accuracy Paradox**, evaluate rare-outcome classifiers with **ROC-AUC**, **PR-AUC**, **Brier score**, and **Expected Calibration Error (ECE)**, tune operating thresholds via **Youden's $J$**, and handle class imbalance without silently destroying clinical probability calibration.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch23 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch23 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch23 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch23_classification_calibration__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch23 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/01_walkthrough.ipynb) | ![QR code linking to Chapter 23 Walkthrough notebook in Google Colab](../assets/qr/part_05_classical_ml__ch23_classification_calibration__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch23 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/02_guided_todos.ipynb) | ![QR code linking to Chapter 23 Guided To-Dos notebook in Google Colab](../assets/qr/part_05_classical_ml__ch23_classification_calibration__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch23 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch23_classification_calibration/03_coding_exam.ipynb) | ![QR code linking to Chapter 23 Coding Exam notebook in Google Colab](../assets/qr/part_05_classical_ml__ch23_classification_calibration__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -56,6 +56,8 @@ Follow this leakage-free classification architecture whenever you move from raw 
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 23 visual mental model: Probabilities to Calibration to Threshold Pipeline"
+%%| fig-alt: "Diagram for Chapter 23 (Probabilities to Calibration to Threshold Pipeline) illustrating 1. Risk Model; Stratified Split (75/25) Drop Target Leaks (Hb); Scaled Pipeline (Train) Scaler + LogisticR..."
 flowchart TD
     subgraph Model["1. Risk Model"]
         direction LR

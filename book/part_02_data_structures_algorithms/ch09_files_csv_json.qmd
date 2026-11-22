@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Bridge ephemeral Python memory and durable scientific storage. Master cross-platform `pathlib.Path` objects, leak-proof `with open(..., encoding="utf-8")` context managers, structured tabular parsing with `csv.DictReader` / `csv.DictWriter`, nested metadata persistence with `json.dump` / `json.load`, and clean `tempfile.TemporaryDirectory()` test sandboxes—turning in-memory scripts into reproducible file pipelines.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch09 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch09 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch09 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch09 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/01_walkthrough.ipynb) | ![QR code linking to Chapter 9 Walkthrough notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch09 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/02_guided_todos.ipynb) | ![QR code linking to Chapter 9 Guided To-Dos notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch09 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch09_files_csv_json/03_coding_exam.ipynb) | ![QR code linking to Chapter 9 Coding Exam notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch09_files_csv_json__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -54,6 +54,8 @@ Follow the exact lifecycle of a clean CSV-to-JSON surveillance pipeline from raw
 %%| echo: false
 %%| fig-width: 2.3
 %%| fig-align: center
+%%| fig-cap: "Chapter 9 visual mental model: Context-Manager & File-Pipeline Lifecycle"
+%%| fig-alt: "Diagram for Chapter 9 (Context-Manager & File-Pipeline Lifecycle) illustrating 1. Raw CSV on Disk raw_hb.csv (UTF-8); 2. with open(in_csv, 'r') csv.DictReader -> rows; 3. Clean & Aggregate skip '', 'N/A', '999'; 4. wi..."
 flowchart TD
     D1["1. Raw CSV on Disk<br/>raw_hb.csv (UTF-8)"]
     R1["2. with open(in_csv, 'r')<br/>csv.DictReader -> rows"]

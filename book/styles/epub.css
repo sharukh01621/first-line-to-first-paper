@@ -1,0 +1,150 @@
+/* Brand-aligned EPUB 3 stylesheet for "From First Line to First Paper" */
+/* Palette: Navy #1B3B6F | Deep Teal #0F5C6E | Amber #B45309 | Crimson #991B1B | Slate #334155 */
+
+body {
+  font-family: Georgia, "Liberation Serif", serif;
+  line-height: 1.55;
+  color: #1e293b;
+}
+
+h1, h2, h3, h4 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.25;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+h1 {
+  color: #1b3b6f;
+  border-bottom: 2px solid #0f5c6e;
+  padding-bottom: 0.35em;
+  margin-top: 1.4em;
+}
+
+h2 {
+  color: #0f5c6e;
+  margin-top: 1.35em;
+}
+
+h3 {
+  color: #334155;
+  margin-top: 1.15em;
+}
+
+a {
+  color: #0f5c6e;
+}
+
+blockquote {
+  border-left: 4px solid #0f5c6e;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  background-color: #f8fafc;
+  color: #334155;
+}
+
+/* Code blocks & inline monospace wrapping */
+code {
+  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+pre {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 3px solid #1b3b6f;
+  border-radius: 4px;
+  padding: 0.65em 0.85em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.84em;
+  line-height: 1.4;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Brand-aligned Quarto Callouts */
+div.callout {
+  border: 1px solid #cbd5e1;
+  border-left-width: 5px;
+  border-radius: 4px;
+  padding: 0.65em 0.9em;
+  margin: 1.1em 0;
+  background-color: #f8fafc;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+div.callout-note {
+  border-left-color: #1b3b6f;
+}
+
+div.callout-tip {
+  border-left-color: #0f5c6e;
+}
+
+div.callout-warning {
+  border-left-color: #b45309;
+}
+
+div.callout-important {
+  border-left-color: #991b1b;
+}
+
+div.callout-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  margin-bottom: 0.35em;
+}
+
+div.callout-note div.callout-title { color: #1b3b6f; }
+div.callout-tip div.callout-title { color: #0f5c6e; }
+div.callout-warning div.callout-title { color: #b45309; }
+div.callout-important div.callout-title { color: #991b1b; }
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.9em;
+}
+
+th {
+  background-color: #1b3b6f;
+  color: #ffffff;
+  text-align: left;
+  padding: 0.45em 0.6em;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+td {
+  border-bottom: 1px solid #cbd5e1;
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+}
+
+/* Figures & QR codes */
+figure {
+  text-align: center;
+  margin: 1.2em auto;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption {
+  font-size: 0.86em;
+  color: #475569;
+  font-style: italic;
+  margin-top: 0.4em;
+}

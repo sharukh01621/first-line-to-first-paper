@@ -18,9 +18,18 @@ Every single chapter in this textbook is paired **1-to-1** with interactive Goog
 - **Google Drive Mirror Folder (Full Curriculum & Datasets):** [Open Shared Google Drive Folder](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
 
 1. **Walkthrough Notebook (`01_walkthrough.ipynb`):** Contains every code snippet and "Break It On Purpose" error lab printed in the chapter verbatim.
-2. **Guided To-Do Notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and friendly diagnostic checks (`tutor.check(...)`) powered by our PyPI package `sharukh-tutor`.
+2. **Guided To-Do Notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and friendly diagnostic checks (`tutor.check(...)`) powered by our companion package `sharukh-tutor` (installed automatically from the GitHub repository in Step 0 of every notebook and packaged cleanly for PyPI distribution).
 3. **Chapter Coding Exam (`03_coding_exam.ipynb`):** A realistic 100-point assessment graded automatically with `tutor.check_exam(...)`.
 4. **Annotated Solution Notebooks (`solutions/.../*_SOLUTION.ipynb`):** Complete worked solutions paired with debugging post-mortems explaining the most common mistakes and how to avoid them.
+
+### Quick-Start Onboarding Hub (Click or Scan) {.unnumbered}
+
+| Onboarding Lab | Interactive Google Colab Launch Link | Scan (Print) |
+| :--- | :--- | :---: |
+| **Curriculum Index** | [00_START_HERE.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb) | ![QR code linking to the Master Start-Here Google Colab curriculum index notebook](assets/qr/00_START_HERE.png){width=58px} |
+| **2-Minute Setup** | [00_setup / 00_colab_orientation.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb) | ![QR code linking to the Colab Orientation and environment setup notebook](assets/qr/00_setup__00_colab_orientation.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
 
 ::: {.callout-tip title="First-Time Setup (Takes 2 Minutes)"}
 Before starting Chapter 1, open the **Colab Orientation Notebook** (`00_setup/00_colab_orientation.ipynb`), click **File $\rightarrow$ Save a copy in Drive**, and run its three welcome cells to verify your runtime and preview our Public Health spine datasets.
@@ -48,15 +57,17 @@ Beginners often stare at a blank code cell and freeze because they try to write 
 
 ---
 
-## Master 7-Part Curriculum Roadmap (~1,275 Pages)
+## Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)
 
-| Part | Chapters | Core Mastery Milestone | Est. Pages |
+| Part | Chapters | Core Mastery Milestone | Print Pages |
 | :--- | :---: | :--- | :---: |
-| **Part I** | Ch 1–6 | Computational Thinking & Python from Absolute Zero | ~195 |
-| **Part II** | Ch 7–11 | Core Data Structures, Algorithms & Defensive Programming | ~170 |
-| **Part III** | Ch 12–15 | OOP, Jupyter/Colab Engineering, VS Code & Git | ~125 |
-| **Part IV** | Ch 16–20 | NumPy, Pandas, Survey Cleaning, Visualization & Biostatistics | ~175 |
-| **Part V** | Ch 21–26 | Classical Machine Learning — Scratch Math to Leakage-Free Pipelines | ~205 |
-| **Part VI** | Ch 27–32 | Deep Learning — NumPy Backprop to PyTorch, CNNs & Transformers | ~200 |
-| **Part VII** | Ch 33–36 | Rigorous Experiments, Ablation Studies, Fairness & Capstone Paper | ~130 |
-| **Appendices** | A–D | Cheat Sheets, Math Refresher, Top-50 Error Decoder & Colab Index | ~50 |
+| **Part I** | Ch 1–6 | Computational Thinking & Python from Absolute Zero | ~110 |
+| **Part II** | Ch 7–11 | Core Data Structures, Algorithms & Defensive Programming | ~105 |
+| **Part III** | Ch 12–15 | OOP, Jupyter/Colab Engineering, VS Code & Git | ~90 |
+| **Part IV** | Ch 16–20 | NumPy, Pandas, Survey Cleaning, Visualization & Biostatistics | ~115 |
+| **Part V** | Ch 21–26 | Classical Machine Learning — Scratch Math to Leakage-Free Pipelines | ~140 |
+| **Part VI** | Ch 27–32 | Deep Learning — NumPy Backprop to PyTorch, CNNs & Transformers | ~145 |
+| **Part VII** | Ch 33–36 | Rigorous Experiments, Ablation Studies, Fairness & Capstone Paper | ~115 |
+| **Appendices** | A–E | Cheat Sheets, Math Refresher, Top-50 Errors, Colab Index & References | ~50 |
+
+: {tbl-colwidths="[16,14,56,14]"}

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Demystify what a computer program actually is, launch your first cloud Python environment in Google Colab without installing anything, write and dissect your first epidemiological calculations line-by-line, and lose all fear of Python error messages forever.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch01 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch01 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch01 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch01 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb) | ![QR code linking to Chapter 1 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch01_first_program__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch01 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/02_guided_todos.ipynb) | ![QR code linking to Chapter 1 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch01_first_program__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch01 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch01_first_program/03_coding_exam.ipynb) | ![QR code linking to Chapter 1 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch01_first_program__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -62,6 +62,8 @@ When you open one of this book's `.ipynb` notebooks in **Google Colab**, you are
 %%| echo: false
 %%| fig-width: 2.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 1 visual mental model: Inside Google Colab & the Python Interpreter"
+%%| fig-alt: "Diagram for Chapter 1 (Inside Google Colab & the Python Interpreter) illustrating 1. Your Browser (Google Colab Code Cell); 2. Python Interpreter (Checks Grammar / Syntax); 3. CPU & Working Memory (Stores Values & Com..."
 flowchart TD
     A["1. Your Browser<br/>(Google Colab Code Cell)"] -->|"Press Shift + Enter"| B["2. Python Interpreter<br/>(Checks Grammar / Syntax)"]
     B -->|"Evaluates Line by Line"| C["3. CPU & Working Memory<br/>(Stores Values & Computes Math)"]
@@ -86,7 +88,7 @@ Open `part_01_python_foundations/ch01_first_program/01_walkthrough.ipynb` in Col
 ### Your Very First `print()` Statements & Comments {#sec-ch01-print}
 
 ```python
-# Lines starting with '#' are comments — notes for humans, ignored by Python.
+# Lines starting with '#' are comments — ignored by Python.
 print("Upazila Health Complex — Morning Triage Started")
 print("Patients waiting in queue:", 14)
 ```
@@ -117,7 +119,7 @@ Every quantitative researcher needs exact command over Python's **seven arithmet
 print("Addition (+):", 120 + 45)
 print("Subtraction (-):", 120 - 45)
 print("Multiplication (*):", 14 * 3)
-print("True Division (/):", 10 / 4)        # Always returns a decimal (float): 2.5
+print("True Division (/):", 10 / 4)       # Always returns float: 2.5
 print("Floor Division (//):", 10 // 4)    # Whole groups only: 2
 print("Remainder / Modulo (%):", 10 % 4)  # Leftover after packing: 2
 print("Exponentiation (**):", 1.65 ** 2)  # Height squared for BMI: 2.7225
@@ -415,8 +417,8 @@ extra_packets = total_packets % carton_size             # 33
 total_mothers = 320
 anc_4plus = 218
 anemic_count = 96
-anc_coverage_pct = round((anc_4plus / total_mothers) * 100, 1)        # 68.1
-anemia_prevalence_pct = round((anemic_count / total_mothers) * 100, 1) # 30.0
+anc_coverage_pct = round((anc_4plus / total_mothers) * 100, 1)       # 68.1
+anemia_prevalence_pct = round((anemic_count / total_mothers) * 100, 1) # 30%
 summary_line = (
     f"ANC 4+ Coverage: {anc_coverage_pct}% | "
     f"Anemia Prevalence: {anemia_prevalence_pct}%"

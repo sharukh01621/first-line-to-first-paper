@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Build **Convolutional Neural Networks (CNNs)** from first principles for clinical and biomedical imaging. Starting from why flattened MLPs explode on high-resolution scans and verifying pure-NumPy 2D cross-correlation against `torch.nn.functional.conv2d`, you will master **output-shape arithmetic**, **pooling vs. resolution-agnostic `AdaptiveAvgPool2d`**, **ResNet-style skip connections (`ResidualConvBlock`)**, **offline synthetic medical lesion classification (`MedicalPatchCNN`)**, **transfer-learning backbone freezing**, **forward-hook shape auditing**, and **input-gradient saliency maps** that pinpoint lesion pixels.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch30 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch30 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch30 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch30 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb) | ![QR code linking to Chapter 30 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch30 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb) | ![QR code linking to Chapter 30 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch30 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb) | ![QR code linking to Chapter 30 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Trace how a single-channel medical patch moves from raw pixel intensities throug
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 30 visual mental model: CNN Spatial Feature Hierarchy & Residual Skip Architecture"
+%%| fig-alt: "Diagram for Chapter 30 (CNN Spatial Feature Hierarchy & Residual Skip Architecture) illustrating 1. Spatial Stem; Patch (B,1,16,16) Conv2d(1->8, 3x3); ReLU + MaxPool(2) Map (B,8,8,8); 2. Residual Block; Input Map x Co..."
 flowchart TD
     subgraph Stem["1. Spatial Stem"]
         direction LR

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Automate repetitive epidemiological calculations across hundreds or millions of patient records using `for` and `while` loops, master the **4 Universal Loop Patterns** (Accumulator, Counter, Filter, Running Max/Min), control iteration flow with `range()`, `enumerate()`, `continue`, and `break`, and trace every variable state on paper using **Loop Execution Trace Tables**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch05 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch05 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch05 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch05_loops_tracing__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch05 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/01_walkthrough.ipynb) | ![QR code linking to Chapter 5 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch05_loops_tracing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch05 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/02_guided_todos.ipynb) | ![QR code linking to Chapter 5 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch05_loops_tracing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch05 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch05_loops_tracing/03_coding_exam.ipynb) | ![QR code linking to Chapter 5 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch05_loops_tracing__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -55,6 +55,8 @@ Every loop in Python—whether processing 5 clinic rows or 50 million genomic re
 %%| echo: false
 %%| fig-width: 3.8
 %%| fig-align: center
+%%| fig-cap: "Chapter 5 visual mental model: The Loop Execution Cycle"
+%%| fig-alt: "Diagram for Chapter 5 (The Loop Execution Cycle) illustrating 1. Initialize State total = 0 | count = 0; 3. Run Loop Body Inspect current item; 4. Update State total += val | count += 1; 5. Loop Finished Use final state"
 flowchart TD
     Init["1. Initialize State<br/>total = 0 | count = 0"]
     Next{"2. Next item left<br/>or condition True?"}

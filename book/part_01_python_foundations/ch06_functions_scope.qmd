@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Complete Part I by transforming one-off scripts into reusable, crash-proof, peer-reviewable research functions. Master `def`, parameters, default arguments, `return` versus `print()`, local/global scope isolation, guard clauses, and top-down decomposition—the engineering habits that power every data pipeline from Part II through Part V.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch06 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch06 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch06 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch06 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/01_walkthrough.ipynb) | ![QR code linking to Chapter 6 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch06_functions_scope__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch06 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/02_guided_todos.ipynb) | ![QR code linking to Chapter 6 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch06_functions_scope__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch06 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch06_functions_scope/03_coding_exam.ipynb) | ![QR code linking to Chapter 6 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch06_functions_scope__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -69,6 +69,8 @@ lab_result = screen_temperature(38.6)
 %%| echo: false
 %%| fig-width: 5.8
 %%| fig-align: center
+%%| fig-cap: "Chapter 6 visual mental model: Call Frames & Local/Global Scope Isolation"
+%%| fig-alt: "Diagram for Chapter 6 (Call Frames & Local/Global Scope Isolation) illustrating Global Frame; FEVER_CUTOFF_C = 38.0 (read-only constant); patient_status = 'Waiting' (remains untouched!); lab_result = 'Febrile' (receiv..."
 flowchart TD
     subgraph Global["Global Frame"]
         G1["FEVER_CUTOFF_C = 38.0<br/>(read-only constant)"]

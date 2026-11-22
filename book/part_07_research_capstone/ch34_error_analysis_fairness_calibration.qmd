@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Learn why an impressive aggregate ROC-AUC is never enough to deploy a clinical or public-health model safely. Using Bangladesh maternal and child health survey data (`mch_survey_sample`), you will disaggregate performance across geographic and socioeconomic strata, quantify **Demographic Parity**, **Equal Opportunity**, and **Equalized Odds** disparities, audit **subgroup calibration (ECE & Brier)**, slice **worst false negatives and false positives** for qualitative root-cause analysis, reduce **Equal Opportunity** gaps via **validation-calibrated group thresholds** without retraining, and detect real-world covariate shift with the **Population Stability Index (PSI)**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch34 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch34 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch34 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch34 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb) | ![QR code linking to Chapter 34 Walkthrough notebook in Google Colab](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch34 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb) | ![QR code linking to Chapter 34 Guided To-Dos notebook in Google Colab](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch34 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb) | ![QR code linking to Chapter 34 Coding Exam notebook in Google Colab](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -56,6 +56,8 @@ Never ship a clinical classifier after a single train/test score. Run every cand
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 34 visual mental model: The Responsible Clinical AI Audit Loop"
+%%| fig-alt: "Diagram for Chapter 34 (The Responsible Clinical AI Audit Loop) illustrating 1. Subgroup Audit; Disaggregate Metrics AUC, TPR, FPR, Brier; Fairness & ECE Gaps DP, EO, EqOdds, ECE; 2. Error Slicing; Worst FN & FP Cases..."
 flowchart TD
     subgraph Audit["1. Subgroup Audit"]
         direction LR

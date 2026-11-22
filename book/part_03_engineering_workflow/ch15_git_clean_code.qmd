@@ -2,17 +2,17 @@
 
 > **Chapter Mission (Part III Capstone):** Transform personal analysis scripts into auditable, peer-review-ready scientific software. Master Git's three-zone architecture and feature branching, automated `.gitignore` and secret-leak guards, PEP 8 / Ruff code hygiene, Python type hints (`TypedDict`, `Optional`), structured `logging` with leak-proof `FileHandler` cleanup, cryptographic SHA-256 dataset provenance manifests, and standardized Cookiecutter research templates.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch15 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch15 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch15 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch15 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/01_walkthrough.ipynb) | ![QR code linking to Chapter 15 Walkthrough notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch15 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/02_guided_todos.ipynb) | ![QR code linking to Chapter 15 Guided To-Dos notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch15 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch15_git_clean_code/03_coding_exam.ipynb) | ![QR code linking to Chapter 15 Coding Exam notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch15_git_clean_code__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this Part III Capstone chapter, you will be able to:
 
@@ -48,18 +48,22 @@ Before memorizing commands, lock in the four physical spaces where your research
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 5.8
+%%| fig-width: 5.4
 %%| fig-align: center
-flowchart LR
-    W["1. Working Dir<br/>Edit scripts &<br/>notebooks"]
-    S["2. Staging Area<br/>Next snapshot<br/>(Index)"]
-    L["3. Local Repo<br/>Commit history<br/>(.git/ SHA-1)"]
-    R["4. GitHub Remote<br/>Shared origin<br/>(PR & Review)"]
-
-    W -->|"git add"| S
-    S -->|"git commit"| L
-    L -->|"git push"| R
-    R -. "git pull" .-> W
+%%| fig-cap: "Git three-zone local workflow and GitHub remote synchronization cycle"
+%%| fig-alt: "Two-tier flowchart showing Working Dir git add to Staging Area git commit to Local Repo pushing to GitHub Remote and pulling back"
+flowchart TD
+    subgraph Local["Local Machine"]
+        direction LR
+        W["1. Working Dir<br/>Edit scripts &<br/>notebooks"] -->|"git add"| S["2. Staging Area<br/>Next snapshot<br/>(Index)"]
+        S -->|"git commit"| L["3. Local Repo<br/>Commit history<br/>(.git/ SHA-1)"]
+    end
+    subgraph Remote["Shared Origin"]
+        direction LR
+        R["4. GitHub Remote<br/>Shared origin, Pull Requests & Peer Review"]
+    end
+    Local -->|"git push"| Remote
+    Remote -. "git pull" .-> Local
 ```
 
 Understanding those four zones explains almost every Git command you will ever run:

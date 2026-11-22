@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Bridge the final chasm between an experimental research notebook and a peer-reviewer-proof clinical AI release. Using `mch_survey_sample`, you will enforce strict physiological **inference input contracts**, wrap fitted Scikit-Learn pipelines inside a versioned **`ClinicalRiskService`** (with a clean FastAPI deployment blueprint), generate programmatic **Model Cards** directly from evaluation metrics, seal model weights with **SHA-256 cryptographic artifact manifests** inside isolated temporary directories, benchmark **p95 inference latency SLAs**, and run an automated **8-point TRIPOD+AI reporting compliance audit**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch35 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch35 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch35 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch35 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb) | ![QR code linking to Chapter 35 Walkthrough notebook in Google Colab](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch35 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb) | ![QR code linking to Chapter 35 Guided To-Dos notebook in Google Colab](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch35 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb) | ![QR code linking to Chapter 35 Coding Exam notebook in Google Colab](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -53,6 +53,8 @@ Trace how training, cryptographic packaging, and live clinical inference lock to
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 35 visual mental model: Reproducible Research Release & Inference Contract Pipeline"
+%%| fig-alt: "Diagram for Chapter 35 (Reproducible Research Release & Inference Contract Pipeline) illustrating 1. Train & Audit; Clean Survey Stratified 75/25; Fit Pipeline AUC & Brier; TRIPOD+AI 8-Pt Audit; 2. Release Bundle; mod..."
 flowchart TD
     subgraph TrainStage["1. Train & Audit"]
         direction LR

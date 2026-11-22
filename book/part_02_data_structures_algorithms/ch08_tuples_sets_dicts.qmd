@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Upgrade from sequential list scanning to constant-time, hash-based thinking. Master immutable **tuples** for fixed records and safe unpacking, **sets** for $O(1)$ deduplication and longitudinal cohort algebra, and **dictionaries** for safe `.get()` lookups, frequency tallying, `GROUP BY`-style bucketing, and non-mutating data merges.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch08 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch08 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch08 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch08 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/01_walkthrough.ipynb) | ![QR code linking to Chapter 8 Walkthrough notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch08 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/02_guided_todos.ipynb) | ![QR code linking to Chapter 8 Guided To-Dos notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch08 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch08_tuples_sets_dicts/03_coding_exam.ipynb) | ![QR code linking to Chapter 8 Coding Exam notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch08_tuples_sets_dicts__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -59,6 +59,8 @@ Before writing a single line of Part II code, ask two architectural questions: *
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 8 visual mental model: Hash Lookup & Data-Structure Selector"
+%%| fig-alt: "Diagram for Chapter 8 (Hash Lookup & Data-Structure Selector) illustrating dict {k: v} hash(key) -> slot Lookups, counts, groups; set {a, b} hash(item) -> slot Dedup, &, -, | cohorts; tuple (a, b) Locked sequence Unpa..."
 flowchart TD
     Q1{"Need fast O(1)<br/>lookup by key/ID?"}
     Q2{"Map key -> value<br/>or unique IDs only?"}

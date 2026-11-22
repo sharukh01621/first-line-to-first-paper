@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Discover hidden clinical phenotypes, district risk profiles, and low-dimensional latent biomarker axes **without target labels** ($y$). Using pure NumPy and Scikit-Learn on Bangladesh clinic triage records (`clinic_triage`), you will master why feature scaling governs Euclidean geometry, implement **K-Means** and **PCA via SVD** from scratch, compare **K-Means**, **Ward Hierarchical Clustering**, and **DBSCAN** anomaly flagging, and guard against common nonlinear-embedding traps in **t-SNE / UMAP**.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch25 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch25 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch25 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch25 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/01_walkthrough.ipynb) | ![QR code linking to Chapter 25 Walkthrough notebook in Google Colab](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch25 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/02_guided_todos.ipynb) | ![QR code linking to Chapter 25 Guided To-Dos notebook in Google Colab](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch25 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch25_unsupervised_clustering_pca/03_coding_exam.ipynb) | ![QR code linking to Chapter 25 Coding Exam notebook in Google Colab](../assets/qr/part_05_classical_ml__ch25_unsupervised_clustering_pca__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Use this decision map whenever you approach an unlabeled dataset $X$:
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 25 visual mental model: Unsupervised Method Selector"
+%%| fig-alt: "Diagram for Chapter 25 (Unsupervised Method Selector) illustrating Step 1: Scale; Standardize Numeric X StandardScaler() -> mean 0, SD 1; Step 2: Goal; Group Rows Clustering; Compress Columns Dim. Reduction; Clusterin..."
 flowchart TD
     subgraph Prep["Step 1: Scale"]
         S0["Standardize Numeric X<br/>StandardScaler() -> mean 0, SD 1"]

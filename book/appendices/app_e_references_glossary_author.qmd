@@ -1,0 +1,130 @@
+# References, Glossary of Key Terms & About the Author {#sec-appendix-e}
+
+> **Appendix Purpose:** Ground every algorithm, statistical estimator, deep learning architecture, and reporting checklist in Chapters 1–36 within its primary peer-reviewed literature, provide a fast A–Z reference glossary of 40 core terms, and document the author's credentials and open-science contact links.
+
+---
+
+## Selected Bibliography & Primary Literature {#sec-app-e-references}
+
+### Python, Scientific Computing & Software Engineering (Parts I–IV)
+
+- **Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020).** Array programming with NumPy. *Nature*, 585(7825), 357–362. https://doi.org/10.1038/s41586-020-2649-2
+- **Hunter, J. D. (2007).** Matplotlib: A 2D graphics environment. *Computing in Science & Engineering*, 9(3), 90–95. https://doi.org/10.1109/MCSE.2007.55
+- **McKinney, W. (2010).** Data structures for statistical computing in Python. *Proceedings of the 9th Python in Science Conference (SciPy)*, 56–61.
+- **Okabe, M., & Ito, K. (2008).** Color Universal Design (CUD): How to make figures and presentations that are friendly to colorblind people. J*FLY Data Depository for Drosophila Researchers.
+- **Virtanen, P., Gommers, R., Oliphant, T. E., et al. (2020).** SciPy 1.0: Fundamental algorithms for scientific computing in Python. *Nature Methods*, 17, 261–272. https://doi.org/10.1038/s41592-019-0686-2
+- **Waskom, M. L. (2021).** seaborn: Statistical data visualization. *Journal of Open Source Software*, 6(60), 3021. https://doi.org/10.21105/joss.03021
+- **Wilson, G., Bryan, J., Cranston, K., Kitzes, J., Nederbragt, L., & Teal, T. K. (2017).** Good enough practices in scientific computing. *PLOS Computational Biology*, 13(6), e1005510.
+
+### Biostatistics, Epidemiology & Classical Machine Learning (Parts IV–V)
+
+- **Benjamini, Y., & Hochberg, Y. (1995).** Controlling the false discovery rate: A practical and powerful approach to multiple testing. *Journal of the Royal Statistical Society: Series B*, 57(1), 289–300.
+- **Breiman, L. (2001).** Random forests. *Machine Learning*, 45(1), 5–32.
+- **Brier, G. W. (1950).** Verification of forecasts expressed in terms of probability. *Monthly Weather Review*, 78(1), 1–3.
+- **Efron, B., & Tibshirani, R. J. (1993).** *An Introduction to the Bootstrap*. Chapman & Hall/CRC.
+- **Ester, M., Kriegel, H.-P., Sander, J., & Xu, X. (1996).** A density-based algorithm for discovering clusters in large spatial databases with noise (DBSCAN). *Proceedings of KDD-96*, 226–231.
+- **Friedman, J. H. (2001).** Greedy function approximation: A gradient boosting machine. *Annals of Statistics*, 29(5), 1189–1232.
+- **Hastie, T., Tibshirani, R., & Friedman, J. (2009).** *The Elements of Statistical Learning* (2nd ed.). Springer.
+- **Lundberg, S. M., & Lee, S.-I. (2017).** A unified approach to interpreting model predictions (SHAP). *Advances in Neural Information Processing Systems (NeurIPS)*, 30.
+- **McNemar, Q. (1947).** Note on the sampling error of the difference between correlated proportions or percentages. *Psychometrika*, 12(2), 153–157.
+- **Pedregosa, F., Varoquaux, G., Gramfort, A., et al. (2011).** Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research*, 12, 2825–2830.
+- **Seabold, S., & Perktold, J. (2010).** statsmodels: Econometric and statistical modeling with Python. *Proceedings of the 9th Python in Science Conference*, 92–96.
+- **Tibshirani, R. (1996).** Regression shrinkage and selection via the lasso. *Journal of the Royal Statistical Society: Series B*, 58(1), 267–288.
+- **Welch, B. L. (1947).** The generalization of "Student's" problem when several different population variances are involved. *Biometrika*, 34(1–2), 28–35.
+- **Wilson, E. B. (1927).** Probable inference, the law of succession, and statistical inference. *Journal of the American Statistical Association*, 22(158), 209–212.
+- **Youden, W. J. (1950).** Index for rating diagnostic tests. *Cancer*, 3(1), 32–35.
+
+### Deep Learning, Responsible Clinical AI & Reproducible Publishing (Parts VI–VII)
+
+- **Cho, K., van Merriënboer, B., Gulcehre, C., et al. (2014).** Learning phrase representations using RNN encoder–decoder for statistical machine translation (GRU). *Proceedings of EMNLP*, 1724–1734.
+- **Collins, G. S., Moons, K. G. M., Dhiman, P., et al. (2024).** TRIPOD+AI statement: Updated guidance for reporting clinical prediction models that use regression or machine learning methods. *BMJ*, 385, e078378.
+- **He, K., Zhang, X., Ren, S., & Sun, J. (2015).** Delving deep into rectifiers: Surpassing human-level performance on ImageNet classification (Kaiming init). *Proceedings of ICCV*, 1026–1034.
+- **He, K., Zhang, X., Ren, S., & Sun, J. (2016).** Deep residual learning for image recognition (ResNet). *Proceedings of CVPR*, 770–778.
+- **Hochreiter, S., & Schmidhuber, J. (1997).** Long short-term memory (LSTM). *Neural Computation*, 9(8), 1735–1780.
+- **Hu, E. J., Shen, Y., Wallis, P., et al. (2022).** LoRA: Low-rank adaptation of large language models. *Proceedings of ICLR*.
+- **Ioffe, S., & Szegedy, C. (2015).** Batch normalization: Accelerating deep network training by reducing internal covariate shift. *Proceedings of ICML*, 448–456.
+- **Loshchilov, I., & Hutter, F. (2019).** Decoupled weight decay regularization (AdamW). *Proceedings of ICLR*.
+- **Mitchell, M., Wu, S., Zaldivar, A., et al. (2019).** Model cards for model reporting. *Proceedings of ACM FAccT*, 220–229.
+- **Paszke, A., Gross, S., Massa, F., et al. (2019).** PyTorch: An imperative style, high-performance deep learning library. *Advances in Neural Information Processing Systems (NeurIPS)*, 32.
+- **Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986).** Learning representations by back-propagating errors. *Nature*, 323, 533–536.
+- **Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014).** Dropout: A simple way to prevent neural networks from overfitting. *Journal of Machine Learning Research*, 15(56), 1929–1958.
+- **Vaswani, A., Shazeer, N., Parmar, N., et al. (2017).** Attention is all you need. *Advances in Neural Information Processing Systems (NeurIPS)*, 30.
+- **Vickers, A. J., & Elkin, E. B. (2006).** Decision curve analysis: A novel method for evaluating prediction models. *Medical Decision Making*, 26(6), 565–574.
+
+---
+
+## Glossary of 40 Core Terms (A–Z) {#sec-app-e-glossary}
+
+| Term | Concise Definition | Primary Ch. |
+| :--- | :--- | :---: |
+| **Ablation Study** | Systematic removal of one feature group or model component at a time to measure its true contribution to performance. | 33 |
+| **Adjusted Odds Ratio (aOR)** | Odds ratio estimated from a multivariable logistic regression holding all other covariates constant. | 20, 36 |
+| **Aliasing** | Two Python variable names pointing to the exact same mutable object in memory so mutating one mutates the other. | 7 |
+| **Autograd** | PyTorch's reverse-mode automatic differentiation engine that records tensor operations into a dynamic graph for `.backward()`. | 28 |
+| **Backpropagation** | Applying the multivariable chain rule backward from scalar loss to every weight tensor to compute exact gradients. | 27 |
+| **Batch Normalization** | Layer normalizing activations across each mini-batch during training and using running population stats during `.eval()`. | 29 |
+| **Benjamini-Hochberg (FDR)** | Step-up multiple-testing procedure controlling the expected proportion of false discoveries among rejected hypotheses. | 20 |
+| **Bias-Variance Tradeoff** | Tension between underfitting (high bias, overly rigid model) and overfitting (high variance, memorizing training noise). | 21 |
+| **Big-O Notation** | Asymptotic upper bound describing how an algorithm's runtime or memory grows as input size $n$ increases. | 11 |
+| **Bootstrap Confidence Interval** | Nonparametric uncertainty interval formed by resampling observations with replacement $B$ times. | 33 |
+| **Brier Score** | Mean squared error between predicted probabilities and binary outcomes; measures both calibration and discrimination. | 23, 34 |
+| **Broadcasting** | NumPy/PyTorch rule aligning trailing array dimensions of size $1$ without copying data in memory. | 16 |
+| **Calibration (ECE)** | Agreement between predicted probabilities and observed event frequencies; summarized by Expected Calibration Error. | 23, 34 |
+| **Causal Attention Mask** | Lower-triangular mask setting future token attention logits to $-\infty$ so autoregressive models cannot peek ahead. | 32 |
+| **ColumnTransformer** | Scikit-Learn meta-transformer routing numeric and categorical columns through separate leak-free preprocessing pipelines. | 26 |
+| **Copy-on-Write (CoW)** | Pandas 3.x memory discipline preventing chained-assignment bugs by ensuring slices never silently mutate parent DataFrames. | 17, 18 |
+| **Covariate Shift (PSI)** | Change in input feature distributions between training and deployment, quantified by Population Stability Index. | 34 |
+| **Cross-Entropy (Log-Loss)** | Proper scoring rule penalizing confident wrong probability predictions logarithmically. | 23, 27 |
+| **Data Leakage** | Contamination of training or preprocessing statistics (scaling, imputation, target encoding) by validation/test information. | 21, 26 |
+| **Decision Curve Analysis** | Vickers-Elkin framework quantifying clinical Net Benefit of a prediction model across decision thresholds vs. Treat-All/None. | 36 |
+| **Dropout** | Regularizer randomly zeroing neuron activations during `model.train()` and turning off automatically in `model.eval()`. | 29 |
+| **Early Stopping** | Halting neural training when validation loss fails to improve for `patience` epochs and restoring the best `state_dict`. | 29 |
+| **Equal Opportunity Gap** | Maximum difference in True Positive Rate (sensitivity) across protected or demographic subgroups. | 34 |
+| **Gradient Clipping** | Rescaling the global parameter gradient norm to $\le \text{max\_norm}$ to prevent exploding updates in RNNs and deep MLPs. | 29, 31 |
+| **GroupKFold** | Cross-validation splitter guaranteeing all rows from the same patient, hospital, or DHS cluster stay in a single fold. | 21, 26 |
+| **Hash Table** | Key-value structure (`dict`, `set`) providing $O(1)$ average lookup time by hashing keys to bucket addresses. | 8, 11 |
+| **Hidden State (Notebook)** | Stale variables left in Jupyter kernel RAM from deleted or out-of-order cells that break `Restart & Run All`. | 13 |
+| **LoRA (Low-Rank Adaptation)** | Parameter-efficient fine-tuning freezing base weight $W_0$ and learning a tiny rank-$r$ update $\Delta W = \frac{\alpha}{r}BA$. | 32 |
+| **McNemar's Test** | Exact paired nonparametric hypothesis test comparing discordant errors of two classifiers on the exact same test set. | 33 |
+| **Model Card** | Structured documentation specifying a model's intended use, training cohort, subgroup metrics, and clinical limitations. | 35 |
+| **Nested Cross-Validation** | Two-loop CV separating inner hyperparameter selection from outer unbiased generalization estimation. | 26 |
+| **Permutation Importance** | Model-agnostic importance measuring test-set metric drop when one feature column is randomly shuffled. | 24 |
+| **PR-AUC** | Area under the Precision-Recall curve; far more informative than ROC-AUC under severe class imbalance. | 23 |
+| **Regularization ($L_1$ / $L_2$)** | Penalty on coefficient magnitude (Lasso $L_1$ drives sparsity; Ridge $L_2$ shrinks correlated weights smoothly). | 22 |
+| **Residual Connection** | Identity shortcut $y = F(x) + x$ letting gradients flow unobstructed through deep CNNs and Transformers. | 30, 32 |
+| **Scaled Dot-Product Attention** | Core Transformer weighting $\operatorname{softmax}(QK^\top / \sqrt{d_k})V$ connecting every token to every relevant context token. | 32 |
+| **SHA-256 Manifest** | Cryptographic 64-character hex fingerprint proving a dataset or model artifact has not changed by a single byte. | 15, 35 |
+| **Shapley Value (SHAP)** | Game-theoretic attribution dividing a single prediction's deviation from baseline fairly across all input features. | 24 |
+| **TRIPOD+AI** | International reporting guideline ensuring transparent, reproducible clinical prediction model manuscripts. | 35 |
+| **Youden's $J$ Statistic** | Classification threshold criterion maximizing $\text{Sensitivity} + \text{Specificity} - 1$ on the ROC curve. | 23, 34 |
+
+: {tbl-colwidths="[24,62,14]"}
+
+---
+
+## About the Author {#sec-app-e-author}
+
+**Mezanur Rahman Sharukh** is an *M.Sc. Statistician* and *Public Health & Machine Learning Researcher* whose work bridges classical biostatistics, survey epidemiology, and reproducible machine learning engineering. His research focuses on maternal and child health disparities, infectious disease surveillance, probability calibration, subgroup fairness in clinical prediction models, and open-source educational tooling for quantitative researchers in low- and middle-income settings.
+
+*From First Line to First Paper* was written to close the gap between introductory Python tutorials that stop at toy syntax and graduate machine learning papers that assume years of undocumented software engineering fluency. Every dataset, diagnostic check, and notebook in this curriculum was built so a dedicated learner with nothing more than a browser and Google Colab can progress systematically from their very first `print()` statement to a peer-review-ready, cryptographically verified research artifact.
+
+### Connect, Cite & Contribute
+
+- **ORCID:** [https://orcid.org/0009-0006-8348-6123](https://orcid.org/0009-0006-8348-6123)
+- **GitHub Repository & Issue Tracker:** [https://github.com/sharukh01621/first-line-to-first-paper](https://github.com/sharukh01621/first-line-to-first-paper)
+- **Shared Google Drive Companion Folder:** [Open Google Drive Mirror](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
+- **Email:** [shahrukh01621@gmail.com](mailto:shahrukh01621@gmail.com)
+
+### Suggested Citation (BibTeX)
+
+```bibtex
+@book{sharukh2026firstline,
+  author    = {Sharukh, Mezanur Rahman},
+  title     = {From First Line to First Paper: Mastering Python,
+               Statistical Data Science, and Applied Deep Learning},
+  edition   = {1st},
+  year      = {2026},
+  publisher = {Open Scientific Edition},
+  url       = {https://github.com/sharukh01621/first-line-to-first-paper}
+}
+```

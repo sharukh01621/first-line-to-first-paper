@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Launch **Part IV (Data Science Foundations & Applied Mathematics)** by shifting from row-by-row Python loops to **vectorized array computation** with **NumPy**. Master contiguous `ndarray` memory, shapes, `axis=0` vs. `axis=1` reductions, view-vs-copy safety, boolean masking, `np.nanmean`, broadcasting rules, and matrix algebra (`@`, norms, and sigmoid scoring)—the numerical engine underneath Pandas, Scikit-Learn, and PyTorch.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch16 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch16 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch16 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch16 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/01_walkthrough.ipynb) | ![QR code linking to Chapter 16 Walkthrough notebook in Google Colab](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch16 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/02_guided_todos.ipynb) | ![QR code linking to Chapter 16 Guided To-Dos notebook in Google Colab](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch16 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch16_numpy_vectorization/03_coding_exam.ipynb) | ![QR code linking to Chapter 16 Coding Exam notebook in Google Colab](../assets/qr/part_04_data_science_math__ch16_numpy_vectorization__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -50,6 +50,8 @@ Trace the three mental models that govern 95% of real-world NumPy code—**conti
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 16 visual mental model: Contiguous Memory, Axes & Broadcasting"
+%%| fig-alt: "Diagram for Chapter 16 (Contiguous Memory, Axes & Broadcasting) illustrating Contiguous RAM; Python list: scattered PyObject pointers; NumPy ndarray: packed C float64 block (8 B each); 2D Axes (3, 4); axis=0 (down row..."
 flowchart TD
     subgraph Mem["Contiguous RAM"]
         L["Python list: scattered PyObject pointers"]

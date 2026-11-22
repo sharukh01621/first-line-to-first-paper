@@ -1,15 +1,15 @@
-% Publication-grade XeLaTeX typography & color-coded pedagogical callouts
+% Publication-grade XeLaTeX typography, cover, frontmatter & callout stability
 \usepackage[dvipsnames,svgnames]{xcolor}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 \usepackage{booktabs}
 \usepackage{microtype}
 \usepackage{fvextra}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
+\usepackage{graphicx}
+\usepackage{eso-pic}
+\usepackage[automark,headsepline=0.35pt]{scrlayer-scrpage}
 
-% Never distort figure aspect ratios in PDF builds; prevent overfull hboxes on long paths
-\AtBeginDocument{\setkeys{Gin}{keepaspectratio}}
-\emergencystretch=3em
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
 
 % Brand palette: Deep Teal (Researcher), Navy (Mental Model), Amber (Trap), Crimson (Break It)
 \definecolor{TealPrimary}{HTML}{0F5C6E}
@@ -18,7 +18,109 @@
 \definecolor{CrimsonBreak}{HTML}{991B1B}
 \definecolor{SlateNote}{HTML}{334155}
 
+% Keep figure aspect ratios; make tcolorbox callouts unbreakable so framed/Shaded
+% code blocks inside callouts never collapse or overprint across page boundaries
+\AtBeginDocument{%
+  \setkeys{Gin}{keepaspectratio}%
+  \tcbset{breakable/.code={}, before skip=10pt plus 2pt minus 2pt, after skip=10pt plus 2pt minus 2pt}%
+  \def\UrlBreaks{\do\/\do-\do_\do.\do=\do?\do&\do:}%
+}
+
+% Native XeTeX line-breaking inside inline monospace (\texttt) on code punctuation
+\XeTeXinterchartokenstate=1
+\newXeTeXintercharclass\ttbreakclass
+\XeTeXcharclass `\. \ttbreakclass
+\XeTeXcharclass `\_ \ttbreakclass
+\XeTeXcharclass `\/ \ttbreakclass
+\XeTeXcharclass `\( \ttbreakclass
+\XeTeXcharclass `\) \ttbreakclass
+\XeTeXcharclass `\[ \ttbreakclass
+\XeTeXcharclass `\] \ttbreakclass
+\XeTeXcharclass `\= \ttbreakclass
+\XeTeXcharclass `\, \ttbreakclass
+\XeTeXinterchartoks \ttbreakclass 0 = {\ifnum\hyphenchar\font=-1\allowbreak\fi}
+\XeTeXinterchartoks \ttbreakclass 4095 = {\ifnum\hyphenchar\font=-1\allowbreak\fi}
+
+\raggedbottom
+\emergencystretch=3em
+
+% Wrapped, crisp running headers & clean Part divider pages
+\clearpairofpagestyles
+\setkomafont{pageheadfoot}{\scriptsize\itshape\color{SlateNote}}
+\lehead{\parbox[b]{\textwidth}{\raggedright\headmark}}
+\rohead{\parbox[b]{\textwidth}{\raggedleft\headmark}}
+\ofoot[\pagemark]{\pagemark}
+\renewcommand*{\partpagestyle}{empty}
 \renewcommand{\chaptername}{Chapter}
+\setkomafont{partnumber}{\LARGE\bfseries\color{TealPrimary}}
+\setkomafont{part}{\Huge\bfseries\color{NavyAccent}}
 \setkomafont{chapter}{\Huge\bfseries\color{NavyAccent}}
 \setkomafont{section}{\Large\bfseries\color{TealPrimary}}
 \setkomafont{subsection}{\large\bfseries\color{SlateNote}}
+
+% Publication Frontmatter: Cover (p.1) -> Companion Card (p.2) -> Title Page (p.3) -> Copyright/Colophon (p.4)
+\renewcommand{\maketitle}{%
+  % Page 1 (Recto): Full-bleed front cover
+  \begin{titlepage}
+  \thispagestyle{empty}
+  \AddToShipoutPictureBG*{%
+    \AtPageLowerLeft{%
+      \includegraphics[width=\paperwidth,height=\paperheight]{assets/cover_pdf.png}%
+    }%
+  }
+  \null
+  \end{titlepage}
+
+  % Page 2 (Verso): Inside Front Cover & Companion Ecosystem Card
+  \thispagestyle{empty}
+  \vspace*{2.1in}
+  \begin{center}
+  {\large\bfseries\color{TealPrimary} FROM FIRST LINE TO FIRST PAPER}\\[0.6em]
+  {\normalsize\itshape\color{SlateNote} Mastering Python, Statistical Data Science, and Applied Deep Learning}\\[2.2em]
+  \begin{tcolorbox}[colback=NavyAccent!4,colframe=NavyAccent!35,boxrule=0.6pt,arc=4pt,width=0.88\textwidth,left=14pt,right=14pt,top=12pt,bottom=12pt]
+  \raggedright
+  {\small\bfseries\color{NavyAccent} Interactive Dual-Synced Companion Ecosystem}\\[0.55em]
+  {\footnotesize\color{SlateNote}
+  Every chapter in this edition pairs 1-to-1 with executable Google Colab notebooks, progressive 3-tier hints, and 324 automated verification checks powered by \texttt{sharukh-tutor}.\\[0.65em]
+  \textbf{GitHub Repository:} \url{https://github.com/sharukh01621/first-line-to-first-paper}\\[0.35em]
+  \textbf{Google Drive Mirror:} \url{https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link}}
+  \end{tcolorbox}
+  \end{center}
+  \clearpage
+
+  % Page 3 (Recto): Formal Typographic Title Page
+  \thispagestyle{empty}
+  \vspace*{1.0in}
+  \noindent{\color{TealPrimary}\rule{\textwidth}{2.2pt}}\\[1.5em]
+  {\small\bfseries\color{TealPrimary} FIRST EDITION \quad$\bullet$\quad INTERACTIVE GOOGLE COLAB LABS}\\[1.6em]
+  {\fontsize{30}{42}\selectfont\bfseries\color{NavyAccent} From First Line\\to First Paper\par}
+  \vspace{1.0em}
+  {\Large\color{SlateNote} Mastering Python, Statistical Data Science,\\and Applied Deep Learning\par}
+  \vspace{2.2em}
+  \noindent{\color{AmberTrap}\rule{0.35\textwidth}{1.6pt}}\\[2.2em]
+  {\Large\bfseries\color{NavyAccent} Mezanur Rahman Sharukh}\\[0.5em]
+  {\normalsize\itshape\color{SlateNote} M.Sc.\ Statistician \,|\, Public Health \& Machine Learning Researcher}\\[0.35em]
+  {\small\color{SlateNote} ORCID: \url{https://orcid.org/0009-0006-8348-6123}}
+  \vfill
+  \noindent{\color{TealPrimary}\rule{\textwidth}{0.8pt}}\\[0.7em]
+  {\small\color{SlateNote} \textbf{Open Scientific Edition} \hfill 2026}
+  \clearpage
+
+  % Page 4 (Verso): Copyright, Edition, License, Disclaimer & Colophon
+  \thispagestyle{empty}
+  \vspace*{\fill}
+  \begin{flushleft}
+  \footnotesize\color{SlateNote}
+  \textbf{From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning}\\
+  First Edition (v1.0.1) --- November 2026\\[0.9em]
+  \textbf{Copyright \copyright\ 2026 Mezanur Rahman Sharukh.} The narrative text and original figures are made freely available for educational and non-commercial research use under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0). All accompanying Python source code, Jupyter notebooks, and the \texttt{sharukh-tutor} package are released under the MIT License.\\[0.9em]
+  \textbf{Author:} Mezanur Rahman Sharukh (\textit{M.Sc.\ Statistician \,|\, Public Health \& Machine Learning Researcher})\\
+  \textbf{ORCID:} \url{https://orcid.org/0009-0006-8348-6123}\\
+  \textbf{Email:} \href{mailto:shahrukh01621@gmail.com}{\texttt{shahrukh01621@gmail.com}}\\
+  \textbf{Source \& Interactive Notebooks:} \url{https://github.com/sharukh01621/first-line-to-first-paper}\\
+  \textbf{Google Drive Mirror:} \url{https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link}\\[0.9em]
+  \textbf{Disclaimer:} All synthetic public health spine datasets (\texttt{clinic\_triage.csv}, \texttt{mch\_survey\_sample.csv}, and \texttt{epi\_surveillance.csv}) are programmatically generated for educational benchmarking and contain no real patient records or protected health information. Statistical models and clinical risk examples are intended strictly for teaching and research methodology, not direct medical diagnosis.\\[0.9em]
+  \textbf{Colophon:} Typeset in \LaTeX\ with \KOMAScript\ (\texttt{scrbook}), Quarto, and XeLaTeX. Companion notebooks (182/182) verified end-to-end against Python~3.12, NumPy~2.5, Pandas~3.1, SciPy~1.18, Statsmodels~0.15, Scikit-Learn~1.9, and PyTorch~2.15 (CPU).
+  \end{flushleft}
+  \clearpage
+}

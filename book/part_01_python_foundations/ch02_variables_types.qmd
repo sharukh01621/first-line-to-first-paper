@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Build a rock-solid mental model of how Python stores data in memory using **name bindings** (not boxes), master Python's core primitive types (`int`, `float`, `str`, `bool`, and `None`), conquer real-world survey type-casting traps, and solve the binary floating-point mystery from Chapter 1 once and for all.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch02 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch02 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch02 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch02_variables_types__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch02 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/01_walkthrough.ipynb) | ![QR code linking to Chapter 2 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch02_variables_types__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch02 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/02_guided_todos.ipynb) | ![QR code linking to Chapter 2 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch02_variables_types__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch02 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch02_variables_types/03_coding_exam.ipynb) | ![QR code linking to Chapter 2 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch02_variables_types__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -76,6 +76,8 @@ cases = cases + 250
 %%| echo: false
 %%| fig-width: 5.8
 %%| fig-align: center
+%%| fig-cap: "Chapter 2 visual mental model: Object Creation & Rebinding in Memory"
+%%| fig-alt: "Diagram for Chapter 2 (Object Creation & Rebinding in Memory) illustrating Name Tags (Namespace); cases; Python Object Memory; Object A (old) type: int | val: 1000; Object B (new) type: int | val: 1250"
 flowchart LR
     subgraph Names["Name Tags (Namespace)"]
         N1["cases"]
@@ -123,7 +125,7 @@ patient_id = "UHC-0042"    # str  (text)
 age_years = 29             # int  (exact whole number)
 hb_g_dl = 10.6             # float (decimal measurement)
 is_anemic = hb_g_dl < 11.0 # bool (True or False)
-follow_up_date = None      # NoneType (explicitly missing / not yet recorded)
+follow_up_date = None      # NoneType (explicitly missing / not recorded)
 
 print(patient_id,     "->", type(patient_id))
 print(age_years,      "->", type(age_years))
@@ -228,7 +230,7 @@ print("math.isclose()   ->", math.isclose(0.1 + 0.2, 0.3))
 # Paying off Chapter 1's ORS supply mystery:
 print("420 * 1.15       =", 420 * 1.15)
 print("int(420 * 1.15)  =", int(420 * 1.15), "  <-- chops decimal!")
-print("round(420 * 1.15)=", round(420 * 1.15), " <-- exact nearest integer!")
+print("round(420 * 1.15)=", round(420 * 1.15), " <-- nearest integer!")
 ```
 
 **Expected Output:**

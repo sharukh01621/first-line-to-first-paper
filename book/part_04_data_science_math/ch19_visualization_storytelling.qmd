@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Transform cleaned Pandas DataFrames into **camera-ready scientific figures** worthy of *The Lancet*, *BMJ Global Health*, or a top ML conference. Master Matplotlib's Object-Oriented (`Figure` $\rightarrow$ `Axes` $\rightarrow$ Artists) architecture, colorblind-safe Okabe-Ito palettes, reference thresholds and annotations, multi-panel `subplots` grids, Seaborn statistical heatmaps, and automated 300-DPI PNG + vector PDF export pipelines with zero figure memory leaks.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch19 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch19 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch19 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch19 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/01_walkthrough.ipynb) | ![QR code linking to Chapter 19 Walkthrough notebook in Google Colab](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch19 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/02_guided_todos.ipynb) | ![QR code linking to Chapter 19 Guided To-Dos notebook in Google Colab](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch19 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch19_visualization_storytelling/03_coding_exam.ipynb) | ![QR code linking to Chapter 19 Coding Exam notebook in Google Colab](../assets/qr/part_04_data_science_math__ch19_visualization_storytelling__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Trace how every Matplotlib and Seaborn visualization flows from a single `Figure
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 19 visual mental model: Matplotlib Object-Oriented Hierarchy"
+%%| fig-alt: "Diagram for Chapter 19 (Matplotlib Object-Oriented Hierarchy) illustrating Figure Canvas; fig = Figure figsize, suptitle, tight_layout; Axes Panels; axes[0] (Axes) set_title, set_xlabel, set_ylabel; axes[1] (Axes) sha..."
 flowchart TD
     subgraph FigCanvas["Figure Canvas"]
         F["fig = Figure<br/>figsize, suptitle, tight_layout"]

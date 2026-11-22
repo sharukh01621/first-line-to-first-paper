@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Launch **Part V (Classical Machine Learning with Scikit-Learn)** by mastering the scientific rules that separate trustworthy predictive models from retracted papers. Using Bangladesh maternal-child health survey records (`mch_survey_sample`) and weekly outbreak surveillance logs (`epi_surveillance`), you will reframe explanatory statistics into supervised prediction, engineer leak-free stratified, cluster-grouped, and chronological splits, benchmark against zero-skill baselines, and diagnose bias versus variance through learning curves.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch21 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch21 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch21 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch21 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/01_walkthrough.ipynb) | ![QR code linking to Chapter 21 Walkthrough notebook in Google Colab](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch21 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/02_guided_todos.ipynb) | ![QR code linking to Chapter 21 Guided To-Dos notebook in Google Colab](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch21 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch21_ml_paradigm_leakage/03_coding_exam.ipynb) | ![QR code linking to Chapter 21 Coding Exam notebook in Google Colab](../assets/qr/part_05_classical_ml__ch21_ml_paradigm_leakage__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -58,6 +58,8 @@ Follow this strict architectural firewall in every machine learning project—no
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 21 visual mental model: Leak-Free Split & Preprocessing Boundary"
+%%| fig-alt: "Diagram for Chapter 21 (Leak-Free Split & Preprocessing Boundary) illustrating 1. Raw Cohort; Clean Predictors X & Target y Drop Target Proxies (e.g. Hb); 2. Split Policy; Stratified 3-Way Independent Rows; GroupShuff..."
 flowchart TD
     subgraph S1["1. Raw Cohort"]
         A["Clean Predictors X & Target y<br/>Drop Target Proxies (e.g. Hb)"]

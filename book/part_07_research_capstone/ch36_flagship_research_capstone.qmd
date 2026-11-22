@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Complete the entire 36-chapter journey of *From First Line to First Paper* by executing one seamless, journal-grade applied research study on `mch_survey_sample`—from raw household survey CSV all the way to a peer-review-ready manuscript package and cryptographically verified release bundle. You will synthesize every skill from Parts I–VII: defensive survey cleaning, **Journal Table 1** hypothesis testing, multivariable **Adjusted Odds Ratios** (`statsmodels.Logit`), leak-free 5-fold **cluster-grouped (`GroupKFold`)** benchmarking across Logistic Regression, Random Forest, HistGradientBoosting, and a native **PyTorch MLP**, out-of-fold **Rural vs. Urban fairness auditing** at Youden's $J$, **Decision Curve Analysis** (Vickers & Elkin, 2006), automated Markdown results and a 300-word **structured journal abstract**, and a complete **SHA-256 verified artifact release** (`table1.csv`, `leaderboard.csv`, `fairness_audit.json`, `MODEL_CARD.md`, `model.joblib`, `config.json`, `manifest.json`).
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch36 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch36 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch36 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch36 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb) | ![QR code linking to Chapter 36 Walkthrough notebook in Google Colab](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch36 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb) | ![QR code linking to Chapter 36 Guided To-Dos notebook in Google Colab](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch36 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb) | ![QR code linking to Chapter 36 Coding Exam notebook in Google Colab](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this grand-finale chapter, you will be able to:
 
@@ -84,6 +84,8 @@ Trace how raw household survey rows flow through epidemiological cleaning, leak-
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 36 visual mental model: End-to-End 'From First Line to First Paper' Pipeline"
+%%| fig-alt: "Diagram for Chapter 36 (End-to-End 'From First Line to First Paper' Pipeline) illustrating 1. Survey & Epi; Raw Survey CSV (500 Rows, 50 Clusters); Clean Sentinels 999->NaN, Title Case; Table 1 + Logit Welch, Chi2, aO..."
 flowchart TD
     subgraph DataStage["1. Survey & Epi"]
         direction LR
@@ -678,7 +680,7 @@ model.joblib SHA-256 prefix: ded7357add2741f9
 Reloaded sample P(stunted): 0.2538
 ```
 
-Notice why we serialize a standard scikit-learn `Pipeline` (`SimpleImputer` + classifier) via `joblib.dump`: any reviewer or hospital IT team can run `joblib.load("model.joblib").predict_proba(X_new)` cleanly in one line with zero custom-class pickle conflicts, while the `manifest.json` SHA-256 digest guarantees bit-level integrity—and `tempfile.TemporaryDirectory()` cleans up automatically on exit!
+Notice why we serialize a standard Scikit-Learn `Pipeline` (`SimpleImputer` + classifier) via `joblib.dump`: any reviewer or hospital IT team can run `joblib.load("model.joblib").predict_proba(X_new)` cleanly in one line with zero custom-class pickle conflicts, while the `manifest.json` SHA-256 digest guarantees bit-level integrity—and `tempfile.TemporaryDirectory()` cleans up automatically on exit!
 
 ---
 
@@ -875,7 +877,7 @@ Work through all 10 end-to-end capstone synthesis questions on paper before chec
 7. **Hand-Computing Vickers & Elkin Net Benefit:** A cohort of $N = 100$ children has 20 stunted cases ($\pi = 0.20$). At probability threshold $t = 0.20$, a screening model yields $\text{TP} = 14$ and $\text{FP} = 20$. Compute $\text{NB}_{\text{model}}(0.20)$ and $\text{NB}_{\text{all}}(0.20)$ by hand—does the model beat both Treat-All and Treat-None?
 8. **Boundary Math in Decision Curve Analysis:** Why is `t = 1.0` mathematically invalid in `compute_clinical_net_benefit`, and what clinical preference does $t = 0.20$ (odds $0.20 / 0.80 = 0.25$) represent?
 9. **Programmatic Abstracts & Fail-Loud Dictionaries:** Why does `draft_structured_abstract` index `study_stats["eo_gap"]` directly instead of using `study_stats.get("eo_gap", 0.0)`?
-10. **Cryptographic Provenance & `joblib` Portability:** Why should your paper's submission release bundle serialize a standard scikit-learn `Pipeline` (`SimpleImputer` + scaler + estimator) to `model.joblib` and record its exact **SHA-256** digest inside `manifest.json`?
+10. **Cryptographic Provenance & `joblib` Portability:** Why should your paper's submission release bundle serialize a standard Scikit-Learn `Pipeline` (`SimpleImputer` + scaler + estimator) to `model.joblib` and record its exact **SHA-256** digest inside `manifest.json`?
 
 ---
 
@@ -908,7 +910,7 @@ Execute an end-to-end cluster-grouped ML/DL benchmark with out-of-fold fairness 
 Package and cryptographically verify a journal-ready artifact release inside `release_dir`:
 
 - Run `build_publication_table1(mch_df)` and `capstone_ml_dl_fairness_pipeline(mch_df, seed=seed)`.
-- Fit a standard scikit-learn `Pipeline` (`SimpleImputer` + `StandardScaler` + `LogisticRegression`) on the cleaned features and serialize it with `joblib.dump` to `release_dir / "model.joblib"`.
+- Fit a standard Scikit-Learn `Pipeline` (`SimpleImputer` + `StandardScaler` + `LogisticRegression`) on the cleaned features and serialize it with `joblib.dump` to `release_dir / "model.joblib"`.
 - Compute the exact SHA-256 hex digest of `model.joblib`.
 - Write all 7 release files (`table1.csv`, `leaderboard.csv`, `fairness_audit.json`, `MODEL_CARD.md`, `model.joblib`, `config.json`, `manifest.json` embedding the exact SHA-256) into `release_dir`.
 - Audit `release_dir` with `audit_manuscript_reproducibility(release_dir)` and return `{"ready_for_submission": bool, "winner": str, "winner_auc": round4, "artifact_sha256": str}`.
@@ -1411,7 +1413,7 @@ def execute_first_paper_release(mch_df, release_dir, seed=42):
 ::: {.callout-tip title="Author's Epilogue — You Have Arrived: From First Line to First Paper"}
 **Congratulations—you did it!**
 
-Thirty-six chapters ago, you opened a blank notebook and wrote your very first line of Python. Since then, you have climbed every rung of modern computational research without skipping a single foundation: clean Python architecture and error anatomy (**Parts I–II**), vectorized numerical computing and publication visualization (**Part III**), probability, biostatistics, and confounding-adjusted epidemiology (**Part IV**), leak-free scikit-learn pipelines and tree ensembles (**Part V**), PyTorch neural networks, CNNs, sequence models, Transformers, and LoRA (**Part VI**), and finally reproducible experiment engineering, fairness auditing, clinical Decision Curve Analysis, and cryptographic artifact releases (**Part VII**).
+Thirty-six chapters ago, you opened a blank notebook and wrote your very first line of Python. Since then, you have climbed every rung of modern computational research without skipping a single foundation: clean Python architecture and error anatomy (**Parts I–II**), vectorized numerical computing and publication visualization (**Part III**), probability, biostatistics, and confounding-adjusted epidemiology (**Part IV**), leak-free Scikit-Learn pipelines and tree ensembles (**Part V**), PyTorch neural networks, CNNs, sequence models, Transformers, and LoRA (**Part VI**), and finally reproducible experiment engineering, fairness auditing, clinical Decision Curve Analysis, and cryptographic artifact releases (**Part VII**).
 
 You are no longer merely a consumer of black-box libraries or a passive reader of research papers. You can inspect a raw, messy real-world survey CSV, uncover its hidden sentinels and confounders, benchmark classical statistics beside modern deep learning with zero data leakage, challenge your own model's equity across vulnerable subgroups, quantify its real clinical net benefit, and hand peer reviewers a self-verifying, SHA-256-backed scientific artifact they can reproduce with a single click.
 

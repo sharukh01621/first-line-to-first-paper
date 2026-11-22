@@ -363,7 +363,7 @@ joblib.dump(cal_model, "artifacts/anemia_risk_pipeline.joblib")
 | Continuous regression | 1 linear scalar | `nn.MSELoss()` or `nn.HuberLoss(delta=1.0)` | `AdamW` + `ReduceLROnPlateau` |
 | Sequence / Transformer | Token or pooled logits | `nn.CrossEntropyLoss(ignore_index=0)` | `AdamW(lr=3e-4)` + linear warmup |
 
-: {tbl-colwidths="[22,23,28,27]"}
+: {tbl-colwidths="[18,21,33,28]"}
 
 ### Reproducible `Dataset`, `DataLoader` & Canonical 5-Step Loop
 

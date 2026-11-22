@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Transform fragile scripts that crash—or worse, publish silent nonsense—into peer-reviewable, fault-tolerant research software. Master Python's full `try` / `except` / `else` / `finally` lifecycle, specific exception handling, explicit `raise ValueError` contracts, custom clinical exceptions, automated `assert` / `pytest`-style unit tests, and systematic debugging workflows.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch10 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch10 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch10 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch10 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/01_walkthrough.ipynb) | ![QR code linking to Chapter 10 Walkthrough notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch10 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/02_guided_todos.ipynb) | ![QR code linking to Chapter 10 Guided To-Dos notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch10 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch10_exceptions_testing/03_coding_exam.ipynb) | ![QR code linking to Chapter 10 Coding Exam notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch10_exceptions_testing__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Every `try` statement follows one exact deterministic path through its four clau
 %%| echo: false
 %%| fig-width: 4.2
 %%| fig-align: center
+%%| fig-cap: "Chapter 10 visual mental model: Exception Control-Flow & Systematic Debugging"
+%%| fig-alt: "Diagram for Chapter 10 (Exception Control-Flow & Systematic Debugging) illustrating Enter try: block (run risky code); Run else: block (only on clean success); Run matching except: handler; Uncaught exception queued t..."
 flowchart TD
     A["Enter try: block<br/>(run risky code)"] --> B{"Exception<br/>raised?"}
     B -- "No" --> C["Run else: block<br/>(only on clean success)"]

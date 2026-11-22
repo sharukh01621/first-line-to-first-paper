@@ -53,20 +53,24 @@ def main() -> None:
 
     for nb_path in notebooks:
         rel = nb_path.relative_to(COLAB_DIR)
+        is_solution = rel.parts[0] == "solutions"
         url = build_colab_url(rel, meta)
         slug = slug_for(rel)
         qr_rel = f"assets/qr/{slug}.png"
         qr_abs = QR_DIR / f"{slug}.png"
 
-        if qrcode is not None:
+        if is_solution:
+            if qr_abs.exists():
+                qr_abs.unlink()
+        elif qrcode is not None:
             img = qrcode.make(url)
             img.save(qr_abs)
             qr_count += 1
 
         manifest["notebooks"][rel.as_posix()] = {
             "colab_url": url,
-            "qr_path": qr_rel if qr_abs.exists() else None,
-            "is_solution": rel.parts[0] == "solutions",
+            "qr_path": qr_rel if (not is_solution and qr_abs.exists()) else None,
+            "is_solution": is_solution,
         }
 
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

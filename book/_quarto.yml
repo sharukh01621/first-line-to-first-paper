@@ -8,6 +8,8 @@ book:
   author: "Mezanur Rahman Sharukh"
   date: "2026-11-22"
   date-format: "YYYY"
+  cover-image: assets/cover.png
+  cover-image-alt: "Book cover for From First Line to First Paper by Mezanur Rahman Sharukh featuring a navy-to-teal geometric neural network brain and statistical distribution curves"
   chapters:
     - index.qmd
     - part: "Computational Thinking & Python from Absolute Zero"
@@ -65,6 +67,7 @@ book:
     - appendices/app_b_math_stats_refresher.qmd
     - appendices/app_c_error_decoder.qmd
     - appendices/app_d_master_colab_index.qmd
+    - appendices/app_e_references_glossary_author.qmd
 
 execute:
   freeze: auto
@@ -91,13 +94,17 @@ format:
       - bottom=1in
       - inner=1.1in
       - outer=0.9in
+      - headheight=24pt
     include-in-header: styles/preamble.tex
     toc: true
-    toc-depth: 3
+    toc-depth: 2
     number-sections: true
     colorlinks: true
     linkcolor: NavyBlue
     urlcolor: RoyalBlue
   epub:
     toc: true
+    toc-depth: 2
     number-sections: true
+    cover-image: assets/cover.png
+    css: styles/epub.css

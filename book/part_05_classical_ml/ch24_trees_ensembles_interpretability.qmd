@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Unlock the workhorse model family of modern tabular data science and clinical prediction. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) alongside Scikit-Learn's `DecisionTreeClassifier`, `RandomForestClassifier`, `HistGradientBoostingClassifier`, and `permutation_importance`, you will build impurity criteria and greedy decision stumps from scratch, tame overfitting with Bagging and Out-of-Bag (OOB) tuning, understand sequential residual Gradient Boosting (and how `HistGradientBoosting`, XGBoost, and LightGBM relate), expose default feature-importance bias, and code exact Shapley attributions from first principles.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch24 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch24 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch24 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch24 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/01_walkthrough.ipynb) | ![QR code linking to Chapter 24 Walkthrough notebook in Google Colab](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch24 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/02_guided_todos.ipynb) | ![QR code linking to Chapter 24 Guided To-Dos notebook in Google Colab](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch24 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch24_trees_ensembles_interpretability/03_coding_exam.ipynb) | ![QR code linking to Chapter 24 Coding Exam notebook in Google Colab](../assets/qr/part_05_classical_ml__ch24_trees_ensembles_interpretability__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -39,7 +39,7 @@ Modern machine learning solves single-tree fragility through two complementary *
 
 - **Bagging & Random Forests (Variance Reduction in Parallel):** Train $B$ deep trees independently on bootstrap resamples of the training rows, randomly restricting each split to a subset of features (`max_features="sqrt"`). Averaging decorrelated trees slashes variance dramatically, and the ~36.8% of rows omitted from each bootstrap sample provide near-free **Out-of-Bag (OOB)** validation!
 - **Gradient Boosting (Bias Reduction in Sequence):** Train shallow trees ("weak learners") one after another, where each new tree predicts the **residual error** left behind by the ensemble so far, scaled by a shrinkage **learning rate** $\eta$.
-- **Histogram Boosting, XGBoost & LightGBM:** Modern boosting libraries (`HistGradientBoostingClassifier`, XGBoost, and LightGBM) bin continuous features into ~255 quantile histograms (making split search $10\times$–$100\times$ faster), apply $L_2$ leaf regularization, and learn optimal split directions for missing (`NaN`) values natively.
+- **Histogram Boosting, XGBoost & LightGBM:** Modern engines such as XGBoost, LightGBM, and Scikit-Learn's `HistGradientBoostingClassifier` bin continuous features into ~255 quantile histograms (making split search $10\times$–$100\times$ faster), apply $L_2$ leaf regularization, and learn optimal split directions for missing (`NaN`) values natively.
 
 | Framework | Tree Growth | Native `NaN`? | Core Strengths in Research |
 | :--- | :--- | :---: | :--- |
@@ -68,6 +68,8 @@ Compare how **Bagging (Random Forests)** averages independent parallel trees to 
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 24 visual mental model: Bagging vs. Boosting & Interpretability"
+%%| fig-alt: "Diagram for Chapter 24 (Bagging vs. Boosting & Interpretability) illustrating Training Cohort; Clean Features X, Target y (Stratified 75/25 Split); Bagging: Parallel; Bootstrap 1 -> Tree 1 (max_features=sqrt); Bootstr..."
 flowchart TD
     subgraph Data["Training Cohort"]
         D0["Clean Features X, Target y<br/>(Stratified 75/25 Split)"]

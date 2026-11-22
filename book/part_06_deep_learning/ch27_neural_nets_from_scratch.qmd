@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Open Part VI (Deep Learning) by stripping away every ounce of framework magic. Before touching PyTorch in Chapter 28, you will build a complete multi-layer neural network in pure NumPy—starting from Rosenblatt's linear perceptron and its failure on XOR, deriving ReLU, Sigmoid, Tanh, and overflow-safe Softmax, assembling a two-layer MLP forward pass with He initialization, deriving reverse-mode backpropagation via the chain rule, verifying every analytical derivative to $< 10^{-10}$ against centered finite differences, solving XOR to `100.0%` accuracy, and benchmarking your scratch MLP against `LogisticRegression` on Bangladesh maternal and child health survey data (`mch_survey_sample`).
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch27 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch27 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch27 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch27 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/01_walkthrough.ipynb) | ![QR code linking to Chapter 27 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch27 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos.ipynb) | ![QR code linking to Chapter 27 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch27 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam.ipynb) | ![QR code linking to Chapter 27 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -55,6 +55,8 @@ Follow the exact tensor flow left-to-right during the **Forward Pass** and right
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 27 visual mental model: Forward & Backpropagation Computational Graph"
+%%| fig-alt: "Diagram for Chapter 27 (Forward & Backpropagation Computational Graph) illustrating Forward Pass; Linear 1 Z1 = X@W1 + b1 (n, h); ReLU Hidden A1 = max(0, Z1) (n, h); Linear 2 & Sigmoid Z2 = A1@W2 + b2 p = sig(Z2) (n..."
 flowchart TD
     subgraph Fwd["Forward Pass"]
         direction LR

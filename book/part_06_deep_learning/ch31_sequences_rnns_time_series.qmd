@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Master **temporal sequence modeling** from first principles—starting from chronological sliding windows and pure-NumPy recurrent hidden states, diagnosing **vanishing and exploding gradients** across long horizons, and advancing to PyTorch **`nn.GRU`** and **`nn.LSTM`** forecasters on real Bangladesh weekly dengue surveillance data (`epi_surveillance`). You will learn to eliminate **temporal data leakage**, handle **variable-length clinical vital-sign sequences** via padding and boolean masking, stabilize recurrent training with **gradient clipping**, and prove that gated neural models genuinely beat the **naive persistence baseline** ($\hat{y}_t = y_{t-1}$) before claiming forecasting skill.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch31 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch31 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch31 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch31 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb) | ![QR code linking to Chapter 31 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch31 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb) | ![QR code linking to Chapter 31 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch31 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb) | ![QR code linking to Chapter 31 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -51,6 +51,8 @@ Trace how a chronological epidemiological series flows from raw weekly surveilla
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 31 visual mental model: Sliding Window to Unrolled GRU/LSTM to Forecast Audit"
+%%| fig-alt: "Diagram for Chapter 31 (Sliding Window to Unrolled GRU/LSTM to Forecast Audit) illustrating 1. Temporal Split; Sort by Year, Week Fit Scaler (< 2025); Sliding Windows X: (B, T=8, F=3); 2. Recurre..."
 flowchart TD
     subgraph Split["1. Temporal Split"]
         direction LR

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Master Python's `str` type from first principles—zero-based and negative indexing, half-open slicing, string immutability, method chaining, splitting delimited clinical records, publication-grade f-string formatting, and safe handling of interactive `input()`—so messy real-world health records never break your analysis pipeline.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch03 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch03 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch03 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch03_strings_input__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch03 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/01_walkthrough.ipynb) | ![QR code linking to Chapter 3 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch03_strings_input__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch03 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/02_guided_todos.ipynb) | ![QR code linking to Chapter 3 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch03_strings_input__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch03 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch03_strings_input/03_coding_exam.ipynb) | ![QR code linking to Chapter 3 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch03_strings_input__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -55,6 +55,8 @@ Watch what happens in memory when you chain `.strip().replace("_", " ").title()`
 %%| echo: false
 %%| fig-width: 3.0
 %%| fig-align: center
+%%| fig-cap: "Chapter 3 visual mental model: Immutable String Transformation Pipeline"
+%%| fig-alt: "Diagram for Chapter 3 (Immutable String Transformation Pipeline) illustrating raw_clinic = ' dhaka_med ' (Immutable Original str); .strip() -> New str: 'dhaka_med'; .replace('_', ' ') -> New str: 'dhaka med'; .title()..."
 flowchart TD
     R["raw_clinic = '  dhaka_med  '<br/>(Immutable Original str)"]
     S1[".strip() -> New str: 'dhaka_med'"]
@@ -371,6 +373,7 @@ Predict every output on paper before peeking at Stage 8:
    print(repr(city))
    ```
    What exact string prints, and why?
+
 4. **In-Place Edit Trap:** Why does `tag = "uhc-01"; tag[0] = "U"` fail, and what exact exception name does Python raise?
 5. **Leading Zero Preservation:** What is the difference between `serial_str = "0042"` and `serial_int = int("0042")`?
 6. **Split Return Type:** What exact list does `"148/92".split("/")` produce—are the elements integers or strings?

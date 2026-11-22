@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Launch **Part II (Data Structures & Algorithms)** by mastering Python's workhorse ordered container: the `list`. Learn zero-based and negative indexing, slicing windows, in-place mutation methods versus non-mutating functions, list comprehensions, and—above all—the **aliasing, shallow-copy, and deep-copy memory traps** that silently corrupt real scientific datasets when programmers overlook object references.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch07 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch07 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch07 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch07 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/01_walkthrough.ipynb) | ![QR code linking to Chapter 7 Walkthrough notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch07 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/02_guided_todos.ipynb) | ![QR code linking to Chapter 7 Guided To-Dos notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch07 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch07_lists_aliasing/03_coding_exam.ipynb) | ![QR code linking to Chapter 7 Coding Exam notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch07_lists_aliasing__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -62,6 +62,8 @@ deep_w = copy.deepcopy(wards)   # New outer list, NEW inner rows!
 %%| echo: false
 %%| fig-width: 6.2
 %%| fig-align: center
+%%| fig-cap: "Chapter 7 visual mental model: Aliasing vs. Shallow Copy vs. Deep Copy"
+%%| fig-alt: "Diagram for Chapter 7 (Aliasing vs. Shallow Copy vs. Deep Copy) illustrating Variable Name Tags; wards; alias_w = wards; shallow_w = wards.copy(); deep_w = copy.deepcopy(wards); Outer List Objects"
 flowchart TD
     subgraph Names["Variable Name Tags"]
         N1["wards"]

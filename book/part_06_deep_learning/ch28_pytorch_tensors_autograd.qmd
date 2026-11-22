@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Build an airtight engineering command of **PyTorch's core deep-learning engine** from raw tensors to reproducible, checkpointed neural networks. Working on Bangladesh maternal and child health records (`mch_survey_sample`), you will master **`torch.float32` memory safety and device portability**, trace **reverse-mode automatic differentiation (`autograd`)** and its gradient-accumulation trap, author custom **`Dataset`/`DataLoader`** pipelines and raw-logit **`nn.Module`** architectures paired with **`BCEWithLogitsLoss`**, execute the **canonical 5-step training loop**, enforce **`eval()` + `torch.no_grad()`** inference discipline, and persist portable **`state_dict`** checkpoints safely with `weights_only=True`.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch28 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch28 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch28 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch28 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb) | ![QR code linking to Chapter 28 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch28 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb) | ![QR code linking to Chapter 28 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch28 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb) | ![QR code linking to Chapter 28 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -57,6 +57,8 @@ Follow this architecture whenever you wire a tabular clinical cohort into a repr
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 28 visual mental model: Data Pipeline, Autograd DAG & 5-Step Loop"
+%%| fig-alt: "Diagram for Chapter 28 (Data Pipeline, Autograd DAG & 5-Step Loop) illustrating 1. Data Pipeline; Dataset (float32) X: (n,p), y: (n,1); DataLoader Mini-Batch (xb, yb); 2. Forward Graph; 1. zero_grad() Clear Stale Grad..."
 flowchart TD
     subgraph Data["1. Data Pipeline"]
         direction LR

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Complete **Part IV (The Scientific Data Stack & Mathematical Foundations)** by uniting probability theory, statistical inference, hypothesis testing, multiple-testing control, and multivariable logistic regression in Python. Using `scipy.stats` and `statsmodels.api` on Bangladesh maternal and child health survey data (`mch_survey_sample`), you will move from descriptive tables to publication-grade confidence intervals, effect sizes, risk/odds ratios, and adjusted epidemiological models.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch20 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch20 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch20 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch20 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/01_walkthrough.ipynb) | ![QR code linking to Chapter 20 Walkthrough notebook in Google Colab](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch20 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/02_guided_todos.ipynb) | ![QR code linking to Chapter 20 Guided To-Dos notebook in Google Colab](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch20 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch20_biostatistics_inference/03_coding_exam.ipynb) | ![QR code linking to Chapter 20 Coding Exam notebook in Google Colab](../assets/qr/part_04_data_science_math__ch20_biostatistics_inference__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -58,6 +58,8 @@ Use this decision map whenever you move from exploratory data analysis (EDA) to 
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 20 visual mental model: Statistical Test Selector"
+%%| fig-alt: "Diagram for Chapter 20 (Statistical Test Selector) illustrating Outcome Type; Identify Outcome Continuous, Skewed, or Binary; Hypothesis Tests; Continuous (Normal) 2 grps: Welch t + Cohen d k>=3: One-Way ANOVA; Skewed..."
 flowchart TD
     subgraph Outcome["Outcome Type"]
         Q0["Identify Outcome<br/>Continuous, Skewed, or Binary"]

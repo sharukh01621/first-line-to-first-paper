@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Bridge the gap between clean textbook tables and real-world research datasets. Master **missing-data diagnostics (MCAR / MAR / MNAR)**, **dirty DHS survey cleaning** (sentinels like `999`, casing typos like `"rural"`/`"Rural"`, and safe numeric coercion), **guarded relational joins** (`pd.merge(..., validate="one_to_one")`), **Split-Apply-Combine named `.agg()`**, and **leak-free panel time-series features** (`shift` and `rolling` per district)—all written in modern, non-mutating **Pandas 3.x Copy-on-Write** style.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch18 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch18 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch18 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb) | ![](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch18 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/01_walkthrough.ipynb) | ![QR code linking to Chapter 18 Walkthrough notebook in Google Colab](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch18 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/02_guided_todos.ipynb) | ![QR code linking to Chapter 18 Guided To-Dos notebook in Google Colab](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch18 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_04_data_science_math/ch18_data_wrangling_surveys/03_coding_exam.ipynb) | ![QR code linking to Chapter 18 Coding Exam notebook in Google Colab](../assets/qr/part_04_data_science_math__ch18_data_wrangling_surveys__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -61,6 +61,8 @@ Trace the exact order of operations that protects research tables from sentinel 
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 18 visual mental model: Safe Merge & Split-Apply-Combine Pipeline"
+%%| fig-alt: "Diagram for Chapter 18 (Safe Merge & Split-Apply-Combine Pipeline) illustrating 1. Clean & Audit; Raw Survey Copy strip/title, 999->NaN to_numeric coerce; Group Impute groupby.transform per-stratum median; 2. Safe Mer..."
 flowchart TD
     subgraph Intake["1. Clean & Audit"]
         R1["Raw Survey Copy<br/>strip/title, 999->NaN<br/>to_numeric coerce"]

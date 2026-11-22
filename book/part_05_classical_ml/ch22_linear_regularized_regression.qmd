@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Master continuous-outcome supervised learning from mathematical first principles to leak-free Scikit-Learn production pipelines. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) to predict Child Height-for-Age Z-score (`child_haz`), you will derive and implement Ordinary Least Squares (Normal Equation and Batch Gradient Descent) in pure NumPy, diagnose multicollinearity collapse, control overfitting via Ridge ($L_2$), Lasso ($L_1$), and ElasticNet regularization, tune $\alpha$ via leak-free $K$-fold cross-validation, and audit test residuals.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch22 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch22 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch22 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb) | ![](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch22 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/01_walkthrough.ipynb) | ![QR code linking to Chapter 22 Walkthrough notebook in Google Colab](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch22 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/02_guided_todos.ipynb) | ![QR code linking to Chapter 22 Guided To-Dos notebook in Google Colab](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch22 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_05_classical_ml/ch22_linear_regularized_regression/03_coding_exam.ipynb) | ![QR code linking to Chapter 22 Coding Exam notebook in Google Colab](../assets/qr/part_05_classical_ml__ch22_linear_regularized_regression__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -55,6 +55,8 @@ Use this two-part roadmap to connect how linear models optimize MSE under the ho
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 22 visual mental model: Gradient Descent Loop & Regularization Selector"
+%%| fig-alt: "Diagram for Chapter 22 (Gradient Descent Loop & Regularization Selector) illustrating Batch GD Loop; Init w = 0, b = 0 Standardize X_train; Forward & MSE Loss err = Xw + b - y; Update Step w -= lr * dw b -= lr * db; P..."
 flowchart TD
     subgraph GDLoop["Batch GD Loop"]
         G1["Init w = 0, b = 0<br/>Standardize X_train"]

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Complete **Part VI (Deep Learning & PyTorch)** by building the entire modern **Transformer** and **Low-Rank Adaptation (LoRA)** stack from scratch in native PyTorch—100% offline on CPU with zero external downloads. You will derive and verify **Scaled Dot-Product Attention** (and why $\sqrt{d_k}$ prevents softmax gradient saturation), **causal autoregressive masking**, **Sinusoidal Positional Encoding**, **Multi-Head Self-Attention**, a **Transformer Encoder Block**, an end-to-end **Clinical Triage Note Classifier** with interpretable attention inspection, and **LoRA ($\Delta W = B A$)** parameter-efficient fine-tuning—while mapping every module cleanly onto BERT, BioClinicalBERT, GPT, Gemini, and Hugging Face `transformers` / `peft` workflows.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch32 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch32 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch32 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch32 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb) | ![QR code linking to Chapter 32 Walkthrough notebook in Google Colab](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch32 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb) | ![QR code linking to Chapter 32 Guided To-Dos notebook in Google Colab](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch32 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb) | ![QR code linking to Chapter 32 Coding Exam notebook in Google Colab](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -78,6 +78,8 @@ Study how tokens flow through embeddings, sinusoidal positions, multi-head self-
 %%| echo: false
 %%| fig-width: 5.4
 %%| fig-align: center
+%%| fig-cap: "Chapter 32 visual mental model: Transformer Encoder & LoRA Fine-Tuning Architecture"
+%%| fig-alt: "Diagram for Chapter 32 (Transformer Encoder & LoRA Fine-Tuning Architecture) illustrating Input Pipeline; Clinical Note Token IDs + Pad Mask; nn.Embedding + Sinusoidal PE; Encoder Block; Multi-Head Self-Attention; Add..."
 flowchart TD
     subgraph InputPipe["Input Pipeline"]
         direction LR

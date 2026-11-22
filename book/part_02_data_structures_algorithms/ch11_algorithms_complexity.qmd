@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Complete Part II by learning to think like an algorithmic scientist. Build sharp intuition for Big-O scaling ( $O(1)$ , $O(\log n)$ , $O(n)$ , $O(n \log n)$ , $O(n^2)$ ), master linear search, iterative binary search, multi-key custom sorting, hash-table joins, and recursive problem solving on epidemiological trees—turning fragile notebook loops into fast, scalable research engines ready for Part III's data-science stack.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch11 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch11 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch11 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb) | ![](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch11 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/01_walkthrough.ipynb) | ![QR code linking to Chapter 11 Walkthrough notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch11 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/02_guided_todos.ipynb) | ![QR code linking to Chapter 11 Guided To-Dos notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch11 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_02_data_structures_algorithms/ch11_algorithms_complexity/03_coding_exam.ipynb) | ![QR code linking to Chapter 11 Coding Exam notebook in Google Colab](../assets/qr/part_02_data_structures_algorithms__ch11_algorithms_complexity__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -56,23 +56,27 @@ Two ideas unlock all of Chapter 11: **halving a sorted search space** ( $O(\log 
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 6.0
+%%| fig-width: 3.4
 %%| fig-align: center
-flowchart LR
-    B1["8 sorted IDs<br/>low=0, high=7<br/>mid=3 ('P-040' &lt; 'P-070')"]
-    B2["4 IDs left<br/>low=4, high=7<br/>mid=5 ('P-060' &lt; 'P-070')"]
-    B3["2 IDs left<br/>low=6, high=7<br/>mid=6 ('P-070' Found!)"]
-    B1 -->|"discard left"| B2
-    B2 -->|"discard left"| B3
+%%| fig-cap: "Iterative binary search halving an 8-element sorted ID list in three comparisons"
+%%| fig-alt: "Vertical flowchart showing binary search narrowing from 8 sorted IDs to 4 IDs and finally finding P-070 at index 6"
+flowchart TD
+    B1["Step 1: 8 sorted IDs<br/>low=0, high=7, mid=3 ('P-040' &lt; 'P-070')"]
+    B2["Step 2: 4 IDs left<br/>low=4, high=7, mid=5 ('P-060' &lt; 'P-070')"]
+    B3["Step 3: 2 IDs left<br/>low=6, high=7, mid=6 ('P-070' Found!)"]
+    B1 -->|"discard left half"| B2
+    B2 -->|"discard left half"| B3
 ```
 
 **B. Recursion Call Stack (`outbreak(10, 1.5, 2)`):**
 
 ```{mermaid}
 %%| echo: false
-%%| fig-width: 6.0
+%%| fig-width: 3.6
 %%| fig-align: center
-flowchart LR
+%%| fig-cap: "Recursive call stack pushing frames down to the base case and unwinding return values upward"
+%%| fig-alt: "Vertical call stack diagram showing Frame gen=2 calling gen=1 calling Base Case gen=0 returning 10.0, unwinding to 15.0 and 22.5"
+flowchart TD
     R2["Frame gen=2<br/>waits for gen=1"]
     R1["Frame gen=1<br/>waits for gen=0"]
     R0["Base Case gen=0<br/>returns 10.0"]
@@ -552,5 +556,5 @@ def trace_exposure_depth(contact_tree, person_id):
 ---
 
 ::: {.callout-note title="Part II Milestone Complete!"}
-Congratulations—you have completed **Part II: Data Structures & Algorithms**! You now command Python's core collections (`list`, `tuple`, `dict`, `set`), file I/O and defensive parsing, and the algorithmic pillars of Big-O complexity, hash joins, binary search, custom sorting, and recursion. In **Part III**, you will put these exact instincts to work inside NumPy, pandas, and publication-grade scientific visualization!
+Congratulations—you have completed **Part II: Data Structures & Algorithms**! You now command Python's core collections (`list`, `tuple`, `dict`, `set`), file I/O and defensive parsing, and the algorithmic pillars of Big-O complexity, hash joins, binary search, custom sorting, and recursion. In **Part III**, you will put these exact instincts to work inside NumPy, Pandas, and publication-grade scientific visualization!
 :::

@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Turn clinical guidelines and epidemiological criteria into watertight Python decision trees using **chained comparisons**, **Boolean algebra** (`and`, `or`, `not`), mutually exclusive **`if` / `elif` / `else` ladders**, and **short-circuit guard clauses** that defend your research scripts against `ZeroDivisionError`, `None`, and DHS missing-value sentinels like `999`.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch04 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch04 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch04 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb) | ![](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch04 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/01_walkthrough.ipynb) | ![QR code linking to Chapter 4 Walkthrough notebook in Google Colab](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch04 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/02_guided_todos.ipynb) | ![QR code linking to Chapter 4 Guided To-Dos notebook in Google Colab](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch04 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_01_python_foundations/ch04_conditionals_logic/03_coding_exam.ipynb) | ![QR code linking to Chapter 4 Coding Exam notebook in Google Colab](../assets/qr/part_01_python_foundations__ch04_conditionals_logic__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -74,6 +74,8 @@ Watch how Python evaluates a guarded **WHO Maternal Anemia & Triage Decision Tre
 %%| echo: false
 %%| fig-width: 4.0
 %%| fig-align: center
+%%| fig-cap: "Chapter 4 visual mental model: Clinical Decision Tree Flowchart"
+%%| fig-alt: "Diagram for Chapter 4 (Clinical Decision Tree Flowchart) illustrating Start: Receive raw_hb; anemia = 'Missing' (Guard exits early); anemia = 'Severe' Triage: Urgent; anemia = 'Moderate' Triage: Moderate; anemia = 'Mi..."
 flowchart TD
     S["Start: Receive raw_hb"] --> G{"raw_hb is None<br/>or raw_hb == 999?"}
     G -->|Yes| M["anemia = 'Missing'<br/>(Guard exits early)"]

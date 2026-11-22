@@ -2,17 +2,17 @@
 
 > **Chapter Mission:** Graduate from single-notebook prototypes to installable, peer-review-ready Python software. Master VS Code interpreter selection and breakpoint debugging, isolated virtual environments (`venv` and `uv`), exact dependency pinning (`requirements.txt` and `pyproject.toml`), the standard `src/` package layout, `if __name__ == "__main__":` module guards, `.env` secret hygiene, and testable command-line interfaces with `argparse`.
 
-### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+## Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
 
 | Lab Type | Interactive Colab Notebook | Scan (Print) |
 | :--- | :--- | :---: |
-| **Walkthrough** | [ch14 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__01_walkthrough.png){width=58px} |
-| **Guided To-Dos** | [ch14 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__02_guided_todos.png){width=58px} |
-| **Coding Exam** | [ch14 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb) | ![](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__03_coding_exam.png){width=58px} |
+| **Walkthrough** | [ch14 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/01_walkthrough.ipynb) | ![QR code linking to Chapter 14 Walkthrough notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch14 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/02_guided_todos.ipynb) | ![QR code linking to Chapter 14 Guided To-Dos notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch14 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_03_engineering_workflow/ch14_vscode_packages/03_coding_exam.ipynb) | ![QR code linking to Chapter 14 Coding Exam notebook in Google Colab](../assets/qr/part_03_engineering_workflow__ch14_vscode_packages__03_coding_exam.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-### Learning Objectives {.unnumbered}
+## Learning Objectives {.unnumbered}
 
 By the end of this chapter, you will be able to:
 
@@ -55,6 +55,8 @@ Trace how an exploratory notebook matures into an installable `src/` package run
 %%| echo: false
 %%| fig-width: 5.6
 %%| fig-align: center
+%%| fig-cap: "Chapter 14 visual mental model: Notebook-to-Package & Environment Isolation"
+%%| fig-alt: "Diagram for Chapter 14 (Notebook-to-Package & Environment Isolation) illustrating 1. Explore; Jupyter / Colab Notebook Prototype & Inspect; 2. src/ Package; pyproject.toml & requirements.txt; src/pkg/ __init__.py & cl..."
 flowchart TD
     subgraph S1["1. Explore"]
         N1["Jupyter / Colab Notebook<br/>Prototype & Inspect"]
