@@ -46,7 +46,15 @@ book:
         - part_05_classical_ml/ch24_trees_ensembles_interpretability.qmd
         - part_05_classical_ml/ch25_unsupervised_clustering_pca.qmd
         - part_05_classical_ml/ch26_pipelines_nested_cv.qmd
-    # Subsequent Parts (Part VI Ch 27–32, Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
+    - part: "Deep Learning — NumPy Backprop to PyTorch, CNNs & Transformers"
+      chapters:
+        - part_06_deep_learning/ch27_neural_nets_from_scratch.qmd
+        - part_06_deep_learning/ch28_pytorch_tensors_autograd.qmd
+        - part_06_deep_learning/ch29_training_dynamics_regularization.qmd
+        - part_06_deep_learning/ch30_cnns_computer_vision.qmd
+        - part_06_deep_learning/ch31_sequences_rnns_time_series.qmd
+        - part_06_deep_learning/ch32_attention_transformers_modern_ai.qmd
+    # Subsequent Parts (Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
     # as each chapter is authored and verified by scripts/verify_all.py.
 
 execute:

@@ -1,0 +1,927 @@
+# Convolutional Neural Networks (CNNs) and Medical Image Classification {#sec-ch30}
+
+> **Chapter Mission:** Build **Convolutional Neural Networks (CNNs)** from first principles for clinical and biomedical imaging. Starting from why flattened MLPs explode on high-resolution scans and verifying pure-NumPy 2D cross-correlation against `torch.nn.functional.conv2d`, you will master **output-shape arithmetic**, **pooling vs. resolution-agnostic `AdaptiveAvgPool2d`**, **ResNet-style skip connections (`ResidualConvBlock`)**, **offline synthetic medical lesion classification (`MedicalPatchCNN`)**, **transfer-learning backbone freezing**, **forward-hook shape auditing**, and **input-gradient saliency maps** that pinpoint lesion pixels.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch30 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch30 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch30 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Explain why dense MLPs fail on medical images (parameter explosion and loss of spatial locality) and how **local receptive fields**, **weight sharing**, and **translation equivariance** solve both problems.
+2. Compute exact 2D convolution output dimensions using $\lfloor (H_{\text{in}} + 2P - K) / S \rfloor + 1$ with defensive `ValueError` validation, and implement pure-NumPy 2D cross-correlation matching `F.conv2d` to $< 10^{-5}$.
+3. Design resolution-agnostic CNN classifiers (`MedicalPatchCNN`) combining `Conv2d`, `MaxPool2d`, and `AdaptiveAvgPool2d(1)`, and build **ResNet-style residual blocks (`ResidualConvBlock`)** with identity skip connections.
+4. Train and evaluate a compact CNN on deterministic synthetic medical lesion patches with `BCEWithLogitsLoss`, `Adam`, and stratified splits, achieving $\text{ROC-AUC} \ge 0.90$ offline on CPU.
+5. Implement **transfer-learning backbone freezing** by toggling `requires_grad` via `named_parameters()` and auditing trainable vs. frozen parameter counts (`p.numel()`).
+6. Debug and interpret vision models using **cleanly removed forward hooks** (`audit_cnn_feature_map_shapes`) and **input-gradient saliency maps** (`|d(logit)/dx|`) that localize bright focal lesions.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Images Need Convolution, Not Flattening {#sec-ch30-intuition}
+
+Suppose a radiology clinic hands you a modest $256 \times 256$ grayscale chest X-ray ($65{,}536$ pixels) and asks a standard Multi-Layer Perceptron (MLP) to detect pulmonary nodules. Flattening that image into a 1D vector and connecting it to a single hidden layer of `256` neurons creates **$16{,}777{,}472$ trainable parameters in layer 1 alone**! Even worse, if a nodule shifts 5 pixels to the right between two patients, a dense MLP treats it as a completely unrelated feature vector and must relearn the pattern at every pixel coordinate.
+
+**Convolutional Neural Networks (CNNs)** replace brute-force dense connectivity with five biological and mathematical inductive biases:
+
+- **Local Receptive Fields & Weight Sharing:** A $3 \times 3$ kernel inspects only a local neighborhood at a time and slides those *exact same* 9 weights across every spatial coordinate. A `Conv2d(1, 8, kernel_size=3, padding=1)` layer requires only **`80` parameters** regardless of whether the X-ray is $16 \times 16$ or $1024 \times 1024$—a **`209,718x` parameter reduction**!
+- **Translation Equivariance:** Because the same filter slides everywhere, shifting a bright focal lesion nodule by $(\Delta y, \Delta x)$ shifts its feature-map activation by $(\Delta y, \Delta x)$ without destroying detection.
+- **Hierarchical Spatial Abstraction:** Early layers detect low-level edges and intensity gradients; mid-level layers after `MaxPool2d(2)` assemble contours and circular blobs; deep layers after `AdaptiveAvgPool2d(1)` summarize global lesion presence for any input resolution.
+- **Residual Skip Highways (`out + x`):** Stacking dozens of plain convolutions causes vanishing gradients and degradation. Adding the identity shortcut $y = \text{ReLU}(F(x) + x)$ lets gradients flow unimpeded straight through deep vision backbones such as ResNet.
+- **Transfer Learning & Pixel Attribution:** Clinical cohorts rarely contain millions of labeled scans. Freezing pretrained convolutional filters while fine-tuning a lightweight head (`self.fc`) prevents overfitting, and input-gradient **saliency maps** ($|\partial \text{logit} / \partial x|$) verify that the CNN focuses on the actual lesion rather than scanner borders or text markers.
+
+::: {.callout-note title="Mental Model — PyTorch NCHW Tensor Contract"}
+Every PyTorch 2D CNN layer strictly expects **4D channel-first tensors** shaped `(N, C, H, W)`:
+
+- `N` = batch size (number of scans or patches processed together),
+- `C` = channels (`1` for grayscale X-ray / CT slice / microscopy, `3` for RGB histology),
+- `H` = image height (rows), and `W` = image width (columns).
+
+Forgetting `N` or `C` (passing 2D `(H, W)`), passing RGB `C=3` to a grayscale `Conv2d(1, ...)`, or leaving NumPy/OpenCV channel-last `(N, H, W, C)` order causes instant `RuntimeError` crashes!
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: CNN Spatial Feature Hierarchy & Residual Skip Architecture {#sec-ch30-mental-model}
+
+Trace how a single-channel medical patch moves from raw pixel intensities through shared $3 \times 3$ convolutions, an identity residual highway, resolution-agnostic global pooling, and pixel-level saliency attribution:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Stem["1. Spatial Stem"]
+        direction LR
+        S1["Patch (B,1,16,16)<br/>Conv2d(1->8, 3x3)"]
+        S2["ReLU + MaxPool(2)<br/>Map (B,8,8,8)"]
+        S1 --> S2
+    end
+    subgraph Res["2. Residual Block"]
+        direction LR
+        R1["Input Map x<br/>Conv-BN-ReLU-Conv-BN"]
+        R2["Add Skip (out + x)<br/>Post-Add ReLU"]
+        R1 -->|"F(x)"| R2
+        R1 -->|"Identity x"| R2
+    end
+    subgraph Head["3. Global Head"]
+        direction LR
+        H1["Conv2d(8->16, 3x3)<br/>AdaptiveAvgPool(1)"]
+        H2["Flatten + self.fc<br/>Logit & Saliency"]
+        H1 --> H2
+    end
+    Stem --> Res
+    Res --> Head
+```
+
+Notice the elegance of separating **spatial feature extraction** (Stages 1–2) from **resolution-agnostic classification** (Stage 3): `AdaptiveAvgPool2d(1)` collapses any `(H, W)` feature map to `(B, 16, 1, 1)` before `Flatten` and `self.fc`, so one network seamlessly scores `16x16` or `24x24` patches—and during transfer learning, you can freeze Stages 1–2 while retraining only `self.fc`.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch30-walkthrough}
+
+Open `part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below. Everything runs 100% offline on CPU in under 3 seconds.
+
+### Setup: Why Flattened MLPs Explode on Medical Scans {#sec-ch30-setup}
+
+```python
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+import sharukh_tutor as tutor
+
+# Why flattened MLPs explode on medical images (e.g., 256x256 X-ray):
+mlp_first_layer = nn.Linear(256 * 256, 256)
+conv_first_layer = nn.Conv2d(1, 8, kernel_size=3, padding=1)
+mlp_params = sum(p.numel() for p in mlp_first_layer.parameters())
+conv_params = sum(p.numel() for p in conv_first_layer.parameters())
+print(f"PyTorch {torch.__version__} | Device: cpu")
+print(f"MLP layer-1 params (256x256 -> 256): {mlp_params:,}")
+print(f"Conv2d(1->8, 3x3) params (any HxW):  {conv_params:,}")
+ratio = mlp_params / conv_params
+print(f"Parameter reduction:                 {ratio:,.0f}x")
+```
+
+**Expected Output:**
+
+```text
+PyTorch 2.15.0+cpu | Device: cpu
+MLP layer-1 params (256x256 -> 256): 16,777,472
+Conv2d(1->8, 3x3) params (any HxW):  80
+Parameter reduction:                 209,718x
+```
+
+A single dense layer on a $256 \times 256$ chest X-ray burns **16.78 million weights** ($65{,}536 \times 256 + 256$), whereas eight $3 \times 3$ convolutional filters need only **`80` parameters** ($8 \times (1 \times 3 \times 3 + 1)$)—a **209,718x reduction** while preserving 2D spatial geometry!
+
+---
+
+### Pure-NumPy 2D Cross-Correlation Verified Against `F.conv2d` {#sec-ch30-conv2d}
+
+Deep learning frameworks call `conv2d` a "convolution," though mathematically it computes **2D cross-correlation** (sliding kernel $\mathbf{K}$ across padded image $\tilde{\mathbf{I}}$ *without* flipping $\mathbf{K}$ by $180^\circ$):
+
+$$Y[i, j] = \sum_{u=0}^{K_h - 1} \sum_{v=0}^{K_w - 1} \tilde{I}[i \cdot S + u,\; j \cdot S + v] \cdot K[u, v]$$
+
+Let's code it in 15 lines of pure NumPy and verify floating-point parity against `torch.nn.functional.conv2d`:
+
+```python
+def conv2d_numpy(image_2d, kernel_2d, stride=1, padding=0):
+    img = np.asarray(image_2d, dtype=np.float32)
+    ker = np.asarray(kernel_2d, dtype=np.float32)
+    if padding > 0:
+        img = np.pad(
+            img, ((padding, padding), (padding, padding)), mode="constant"
+        )
+    kh, kw = ker.shape
+    h_out = (img.shape[0] - kh) // stride + 1
+    w_out = (img.shape[1] - kw) // stride + 1
+    out = np.zeros((h_out, w_out), dtype=np.float32)
+    for i in range(h_out):
+        for j in range(w_out):
+            patch = img[
+                i * stride : i * stride + kh,
+                j * stride : j * stride + kw,
+            ]
+            out[i, j] = np.sum(patch * ker)
+    return out
+
+rng = np.random.default_rng(42)
+sample_img = rng.normal(size=(6, 6)).astype(np.float32)
+sobel_x = np.array(
+    [[1.0, 0.0, -1.0], [2.0, 0.0, -2.0], [1.0, 0.0, -1.0]],
+    dtype=np.float32,
+)
+np_out = conv2d_numpy(sample_img, sobel_x, stride=1, padding=1)
+pt_out = F.conv2d(
+    torch.from_numpy(sample_img).unsqueeze(0).unsqueeze(0),
+    torch.from_numpy(sobel_x).unsqueeze(0).unsqueeze(0),
+    stride=1,
+    padding=1,
+).squeeze().numpy()
+max_err = float(np.max(np.abs(np_out - pt_out)))
+print(f"Output shape: {np_out.shape} | Max diff vs F.conv2d: {max_err:.2e}")
+```
+
+**Expected Output:**
+
+```text
+Output shape: (6, 6) | Max diff vs F.conv2d: 2.38e-07
+```
+
+Three details deserve close attention:
+
+- **Zero input mutation:** `np.asarray` and `np.pad` leave `sample_img` and `sobel_x` untouched.
+- **No kernel flip:** Multiplying `patch * ker` directly matches `F.conv2d` to `2.38e-07` (single-precision machine epsilon!). Flipping `ker[::-1, ::-1]` would disagree on asymmetric kernels.
+- **Why `.unsqueeze(0).unsqueeze(0)`?** PyTorch's `F.conv2d` requires 4D `(N, C, H, W)` tensors, so we prepend batch size `N=1` and channel count `C=1` to both the image and the filter.
+
+---
+
+### Output-Shape Arithmetic & `MaxPool2d` vs. `AdaptiveAvgPool2d` {#sec-ch30-shapes}
+
+Every 2D convolution transforms height $H_{\text{in}}$ and width $W_{\text{in}}$ according to:
+
+$$H_{\text{out}} = \left\lfloor \frac{H_{\text{in}} + 2P - K}{S} \right\rfloor + 1, \qquad W_{\text{out}} = \left\lfloor \frac{W_{\text{in}} + 2P - K}{S} \right\rfloor + 1$$
+
+Let's verify this formula and contrast fixed spatial downsampling (`MaxPool2d(2)`) against resolution-agnostic global pooling (`AdaptiveAvgPool2d(1)`):
+
+```python
+def conv2d_shape(h_in, w_in, kernel_size, stride=1, padding=0):
+    if stride <= 0:
+        raise ValueError("stride must be positive")
+    h_out = (h_in + 2 * padding - kernel_size) // stride + 1
+    w_out = (w_in + 2 * padding - kernel_size) // stride + 1
+    if h_out <= 0 or w_out <= 0:
+        raise ValueError("output dimensions must be positive")
+    return (int(h_out), int(w_out))
+
+for label, args in [
+    ("Valid 3x3 (16x16)", (16, 16, 3, 1, 0)),
+    ("Same 3x3  (16x16)", (16, 16, 3, 1, 1)),
+    ("Stride-2  (32x24)", (32, 24, 5, 2, 2)),
+]:
+    print(f"{label} -> {conv2d_shape(*args)}")
+
+x_16 = torch.randn(2, 8, 16, 16)
+x_24 = torch.randn(2, 8, 24, 24)
+mp = nn.MaxPool2d(kernel_size=2)
+gap = nn.AdaptiveAvgPool2d(1)
+print(f"MaxPool2d(2) on 16x16: {tuple(mp(x_16).shape)}")
+print(f"MaxPool2d(2) on 24x24: {tuple(mp(x_24).shape)}")
+print(f"AdaptiveAvgPool2d(1) on 16x16: {tuple(gap(x_16).shape)}")
+print(f"AdaptiveAvgPool2d(1) on 24x24: {tuple(gap(x_24).shape)}")
+```
+
+**Expected Output:**
+
+```text
+Valid 3x3 (16x16) -> (14, 14)
+Same 3x3  (16x16) -> (16, 16)
+Stride-2  (32x24) -> (16, 12)
+MaxPool2d(2) on 16x16: (2, 8, 8, 8)
+MaxPool2d(2) on 24x24: (2, 8, 12, 12)
+AdaptiveAvgPool2d(1) on 16x16: (2, 8, 1, 1)
+AdaptiveAvgPool2d(1) on 24x24: (2, 8, 1, 1)
+```
+
+Notice the architectural superpower of `AdaptiveAvgPool2d(1)`: whereas `MaxPool2d(2)` outputs different spatial grids for `16x16` vs. `24x24` inputs (`8x8` vs. `12x12`), `AdaptiveAvgPool2d(1)` always produces `(B, C, 1, 1)`—so your final `nn.Linear(C, num_classes)` head never crashes on variable image sizes!
+
+---
+
+### Building `MedicalPatchCNN` & `ResidualConvBlock` Skip Connections {#sec-ch30-models}
+
+Now assemble both core vision modules: our compact classifier `MedicalPatchCNN` (with its classification head cleanly named `self.fc`) and a ResNet-style `ResidualConvBlock` combining two `Conv2d + BatchNorm2d` stages with an identity skip path `F.relu(out + x)`:
+
+```python
+class MedicalPatchCNN(nn.Module):
+    """Compact 2D CNN for single-channel medical patch classification."""
+
+    def __init__(self, num_classes=1):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(8, 16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+        )
+        self.fc = nn.Linear(16, num_classes)
+
+    def forward(self, x):
+        return self.fc(self.features(x))
+
+class ResidualConvBlock(nn.Module):
+    """Two-layer Conv+BN residual block with identity skip connection."""
+
+    def __init__(self, channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn1 = nn.BatchNorm2d(channels)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn2 = nn.BatchNorm2d(channels)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        return F.relu(out + x)
+
+demo_cnn = MedicalPatchCNN(num_classes=1)
+res_blk = ResidualConvBlock(channels=8)
+total_p = sum(p.numel() for p in demo_cnn.parameters())
+print(f"MedicalPatchCNN total params: {total_p:,}")
+s16 = tuple(demo_cnn(torch.zeros(4, 1, 16, 16)).shape)
+s24 = tuple(demo_cnn(torch.zeros(2, 1, 24, 24)).shape)
+print(f"Output on 16x16: {s16} | on 24x24: {s24}")
+res_in = torch.randn(3, 8, 16, 16)
+print(
+    f"ResidualConvBlock: {tuple(res_in.shape)} -> "
+    f"{tuple(res_blk(res_in).shape)}"
+)
+```
+
+**Expected Output:**
+
+```text
+MedicalPatchCNN total params: 1,265
+Output on 16x16: (4, 1) | on 24x24: (2, 1)
+ResidualConvBlock: (3, 8, 16, 16) -> (3, 8, 16, 16)
+```
+
+Our entire `MedicalPatchCNN` contains only **`1,265` parameters** (`80` in conv1 + `1,168` in conv2 + `17` in `fc`), yet processes both `16x16` and `24x24` medical patches cleanly! Meanwhile, `ResidualConvBlock` preserves `(3, 8, 16, 16)` identically because `padding=1` with `kernel_size=3` keeps spatial dimensions intact so `out + x` adds elementwise without shape errors.
+
+---
+
+### Synthetic Medical Lesion Patches & Training `MedicalPatchCNN` {#sec-ch30-train}
+
+To keep every experiment 100% offline, deterministic, and fast on CPU, we synthesize $16 \times 16$ single-channel medical imaging patches mimicking chest X-ray or fluorescence microscopy nodules:
+
+- **Class `0` (Healthy tissue):** Random exposure baseline (`0.15..0.30`) plus Gaussian tissue noise ($\sigma = 0.12$).
+- **Class `1` (Focal lesion):** Healthy tissue background plus a bright localized circular 2D Gaussian nodule placed at a **randomized interior coordinate** `(cy, cx)`—rewarding true CNN translation equivariance!
+
+```python
+def generate_synthetic_lesion_dataset(n_samples=160, img_size=16, seed=42):
+    rng = np.random.default_rng(seed)
+    n_neg = n_samples // 2
+    n_pos = n_samples - n_neg
+    labels = np.array([0] * n_neg + [1] * n_pos, dtype=np.float32)
+    rng.shuffle(labels)
+    yy, xx = np.meshgrid(
+        np.arange(img_size), np.arange(img_size), indexing="ij"
+    )
+    images = np.zeros((n_samples, 1, img_size, img_size), dtype=np.float32)
+    for i, lbl in enumerate(labels):
+        base = rng.uniform(0.15, 0.30)
+        patch = rng.normal(base, 0.12, size=(img_size, img_size))
+        if lbl == 1.0:
+            cy = rng.integers(3, img_size - 3)
+            cx = rng.integers(3, img_size - 3)
+            amp = rng.uniform(0.95, 1.25)
+            dist_sq = (yy - cy) ** 2 + (xx - cx) ** 2
+            patch = patch + amp * np.exp(-dist_sq / (2.0 * 1.5 ** 2))
+        images[i, 0] = np.clip(patch, 0.0, 2.0)
+    return torch.from_numpy(images), torch.from_numpy(labels)
+
+X_all, y_all = generate_synthetic_lesion_dataset(200, img_size=16, seed=42)
+idx = np.arange(len(y_all))
+tr_i, va_i = train_test_split(
+    idx, test_size=0.25, stratify=y_all.numpy(), random_state=42
+)
+X_tr, y_tr = X_all[tr_i], y_all[tr_i]
+X_va, y_va = X_all[va_i], y_all[va_i]
+
+torch.manual_seed(42)
+cnn = MedicalPatchCNN(num_classes=1)
+opt = torch.optim.Adam(cnn.parameters(), lr=0.01)
+loss_fn = nn.BCEWithLogitsLoss()
+
+for epoch in range(1, 16):
+    cnn.train()
+    perm = torch.randperm(len(X_tr))
+    ep_loss = 0.0
+    for start in range(0, len(X_tr), 32):
+        b = perm[start : start + 32]
+        opt.zero_grad()
+        loss = loss_fn(cnn(X_tr[b]).squeeze(-1), y_tr[b])
+        loss.backward()
+        opt.step()
+        ep_loss += loss.item() * len(b)
+    ep_loss /= len(X_tr)
+    if epoch in (1, 5, 10, 15):
+        print(f"Epoch {epoch:2d} | Train BCE Loss: {ep_loss:.5f}")
+
+cnn.eval()
+with torch.no_grad():
+    va_probs = torch.sigmoid(cnn(X_va).squeeze(-1)).numpy()
+va_pred = (va_probs >= 0.5).astype(np.float32)
+va_acc = float((va_pred == y_va.numpy()).mean())
+va_auc = float(roc_auc_score(y_va.numpy(), va_probs))
+print(f"Val Accuracy: {va_acc:.4f} | Val ROC-AUC: {va_auc:.4f}")
+```
+
+**Expected Output:**
+
+```text
+Epoch  1 | Train BCE Loss: 0.71271
+Epoch  5 | Train BCE Loss: 0.60868
+Epoch 10 | Train BCE Loss: 0.26909
+Epoch 15 | Train BCE Loss: 0.09162
+Val Accuracy: 1.0000 | Val ROC-AUC: 1.0000
+```
+
+Look how cleanly the mini-batch training loop converges in just 15 epochs on CPU: binary cross-entropy drops from `0.71271` (near random guessing $\ln 2 \approx 0.693$) down to `0.09162`, reaching **`1.0000` validation ROC-AUC** on held-out patches whose lesion coordinates were never seen during training!
+
+---
+
+### Transfer Learning: Freezing the Convolutional Backbone {#sec-ch30-transfer}
+
+When adapting a pretrained vision backbone (such as ImageNet-pretrained ResNet or a hospital-pretrained chest X-ray encoder) to a small specialty cohort, we **freeze** the convolutional backbone (`requires_grad = False`) and optimize only the task-specific linear head (`self.fc`):
+
+```python
+def freeze_backbone(model, head_name="fc"):
+    prefix = f"{head_name}."
+    trainable, frozen = 0, 0
+    for name, p in model.named_parameters():
+        p.requires_grad = name.startswith(prefix)
+        if p.requires_grad:
+            trainable += p.numel()
+        else:
+            frozen += p.numel()
+    return {"trainable_params": trainable, "frozen_params": frozen}
+
+transfer_net = MedicalPatchCNN(num_classes=1)
+transfer_net.load_state_dict(cnn.state_dict())
+counts = freeze_backbone(transfer_net, head_name="fc")
+w_conv0 = transfer_net.features[0].weight.detach().clone()
+w_fc0 = transfer_net.fc.weight.detach().clone()
+
+head_opt = torch.optim.Adam(
+    [p for p in transfer_net.parameters() if p.requires_grad], lr=0.05
+)
+head_opt.zero_grad()
+loss_fn(transfer_net(X_tr[:16]).squeeze(-1), y_tr[:16]).backward()
+head_opt.step()
+
+conv_changed = not torch.equal(w_conv0, transfer_net.features[0].weight)
+fc_changed = not torch.equal(w_fc0, transfer_net.fc.weight)
+print(f"Transfer counts: {counts}")
+print(f"Conv1 changed? {conv_changed} | Head fc changed? {fc_changed}")
+```
+
+**Expected Output:**
+
+```text
+Transfer counts: {'trainable_params': 17, 'frozen_params': 1248}
+Conv1 changed? False | Head fc changed? True
+```
+
+Passing `[p for p in model.parameters() if p.requires_grad]` to `Adam` guarantees that only the `17` head parameters (`fc.weight` + `fc.bias`) receive optimizer steps while all `1,248` convolutional backbone weights remain bit-for-bit frozen!
+
+---
+
+### Input-Gradient Saliency Map: Locating the Lesion Pixel {#sec-ch30-saliency}
+
+In clinical AI, a high ROC-AUC is never enough—radiologists must verify *which pixels* drove the prediction. By cloning a single patch `(1, 1, H, W)` with `requires_grad_(True)` in `model.eval()` and backpropagating the raw logit, the absolute input gradient $|\partial \text{logit} / \partial x|$ yields an instant **pixel saliency attribution map**:
+
+```python
+pos_idx = int(np.where(y_va.numpy() == 1.0)[0][0])
+x_single = X_va[pos_idx : pos_idx + 1]
+
+cnn.eval()
+cnn.zero_grad()
+x_grad = x_single.clone().detach().requires_grad_(True)
+logit = cnn(x_grad).squeeze()
+logit.backward()
+
+saliency = x_grad.grad.detach().abs().squeeze().cpu().numpy()
+sal_peak = tuple(
+    int(v) for v in np.unravel_index(int(np.argmax(saliency)), (16, 16))
+)
+patch_2d = x_single.squeeze().numpy()
+true_peak = tuple(
+    int(v) for v in np.unravel_index(int(np.argmax(patch_2d)), (16, 16))
+)
+dy = sal_peak[0] - true_peak[0]
+dx = sal_peak[1] - true_peak[1]
+dist_px = float(np.hypot(dy, dx))
+prob = float(torch.sigmoid(logit.detach()).item())
+print(f"Predicted lesion probability: {prob:.4f}")
+print(f"Saliency peak: {sal_peak} | Brightest lesion pixel: {true_peak}")
+print(f"Localization offset: {dist_px:.2f} px")
+```
+
+**Expected Output:**
+
+```text
+Predicted lesion probability: 0.9884
+Saliency peak: (6, 6) | Brightest lesion pixel: (7, 6)
+Localization offset: 1.00 px
+```
+
+Even though our CNN was trained *only* with image-level binary labels (`0` or `1`) and **never received a single bounding box or pixel mask**, its gradient saliency peak `(6, 6)` lands just **1.00 pixel** away from the brightest lesion center `(7, 6)`!
+
+---
+
+### Break It On Purpose! (CNN Error Anatomy) {#sec-ch30-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — RuntimeError (Channel Count Mismatch: RGB 3 Channels into Grayscale Conv2d)"}
+```python
+gray_conv = nn.Conv2d(1, 8, kernel_size=3, padding=1)
+rgb_batch = torch.zeros(2, 3, 16, 16)
+gray_conv(rgb_batch)
+```
+
+**Python's Traceback:**
+
+```text
+RuntimeError: Given groups=1, weight of size [8, 1, 3, 3], expected
+input[2, 3, 16, 16] to have 1 channels, but got 3 channels instead
+```
+
+**Diagnosis:** PyTorch stores `Conv2d` weights as `[out_channels, in_channels, kH, kW]`. Here `weight` expects `in_channels = 1` (single-channel grayscale scan), but `rgb_batch` supplied `3` channels (common when PNG X-rays are accidentally loaded in RGB mode via PIL/OpenCV, or when an NHWC `(B, H, W, C)` array is not permuted to NCHW!).  
+**Fix:** Convert grayscale images to 1 channel (`x.mean(dim=1, keepdim=True)`), permute channel-last tensors via `x.permute(0, 3, 1, 2)`, or construct `Conv2d(3, ...)` when true RGB color is needed.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — RuntimeError (Missing Batch & Channel Dimensions: 2D Input to Conv2d)"}
+```python
+gray_conv = nn.Conv2d(1, 8, kernel_size=3, padding=1)
+flat_2d = torch.zeros(16, 16)
+gray_conv(flat_2d)
+```
+
+**Python's Traceback:**
+
+```text
+RuntimeError: Expected 3D (unbatched) or 4D (batched) input to conv2d,
+but got input of size: [16, 16]
+```
+
+**Diagnosis:** Passing a raw 2D NumPy/PyTorch image `(H, W)` into `nn.Conv2d` omits both the batch axis `N` and channel axis `C`. Similarly, passing channel-last `(B, 16, 16, 1)` triggers a channel mismatch because PyTorch reads dimension `1` (`16`) as `in_channels`!  
+**Fix:** Add batch and channel dimensions cleanly via `flat_2d.unsqueeze(0).unsqueeze(0)` (yielding `(1, 1, 16, 16)`), and always verify `x.ndim == 4` with `(N, C, H, W)` layout before calling a CNN.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — RuntimeError (Calling `backward()` When All Parameters Are Frozen)"}
+```python
+frozen_net = MedicalPatchCNN(num_classes=1)
+for p in frozen_net.parameters():
+    p.requires_grad = False
+out = frozen_net(torch.zeros(2, 1, 16, 16)).squeeze(-1)
+nn.BCEWithLogitsLoss()(out, torch.ones(2)).backward()
+```
+
+**Python's Traceback:**
+
+```text
+RuntimeError: element 0 of tensors does not require grad and does not
+have a grad_fn
+```
+
+**Diagnosis:** During transfer learning, if you misspell `head_name` (e.g., passing `"classifier"` when the head attribute is `"fc"`), **zero** parameters match `name.startswith(prefix)`, so every weight gets `requires_grad = False`. PyTorch builds no autograd graph for `out`, and `.backward()` crashes immediately!  
+**Fix:** Always assert `counts["trainable_params"] > 0` right after calling `freeze_backbone_for_transfer(model, head_name=...)`, and confirm `head_name` matches `model.named_parameters()`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch30-blueprint}
+
+**Scenario:** Your biomedical vision lab wants a single reproducible function `run_lesion_cnn_audit(n_samples=200, epochs=15, seed=42)` that generates synthetic lesion patches, audits every `Conv2d` and `Linear` feature-map shape via clean forward hooks (zero leaked hooks!), trains `MedicalPatchCNN`, and runs gradient saliency attribution on a held-out lesion patch to report `shapes`, `val_auc`, and `peak_coord`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Deterministic Data & Stratified Split:**
+
+   - Generate `(X, y)` via `generate_synthetic_lesion_dataset(n_samples, 16, seed)`.
+   - Split indices 75/25 with `stratify=y.numpy()` and `random_state=seed`.
+
+2. **Safe Forward-Hook Shape Audit:**
+
+   - Register a forward hook on every `nn.Conv2d` and `nn.Linear` module from `model.named_modules()`.
+   - Run a dummy batch `torch.zeros(4, 1, 16, 16)` in `model.eval()` + `torch.no_grad()` inside `try:`, and call `handle.remove()` on every handle inside `finally:`.
+
+3. **Mini-Batch Training & Saliency Verification:**
+
+   - Seed PyTorch (`torch.manual_seed(seed)`), train for `epochs` epochs with `BCEWithLogitsLoss` + `Adam(lr=0.01)` (`batch_size=32`).
+   - Evaluate validation `ROC-AUC` in `model.eval()` + `torch.no_grad()`, then clone the first positive validation patch with `requires_grad_(True)` and extract the peak saliency coordinate.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_lesion_cnn_audit(n_samples=200, epochs=15, seed=42):
+    """Audit shapes, train MedicalPatchCNN & locate lesion via saliency."""
+    X, y = generate_synthetic_lesion_dataset(n_samples, 16, seed)
+    idx = np.arange(len(y))
+    tr, va = train_test_split(
+        idx, test_size=0.25, stratify=y.numpy(), random_state=seed
+    )
+    torch.manual_seed(seed)
+    model = MedicalPatchCNN(num_classes=1)
+    shapes, handles = [], []
+
+    def _make_hook(layer_name):
+        def _hook(_mod, _inp, out):
+            shapes.append((layer_name, tuple(out.shape)))
+        return _hook
+
+    for name, mod in model.named_modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            handles.append(mod.register_forward_hook(_make_hook(name)))
+    try:
+        model.eval()
+        with torch.no_grad():
+            model(torch.zeros(4, 1, 16, 16))
+    finally:
+        for h in handles:
+            h.remove()
+
+    opt = torch.optim.Adam(model.parameters(), lr=0.01)
+    loss_fn = nn.BCEWithLogitsLoss()
+    for _ in range(epochs):
+        model.train()
+        perm = torch.randperm(len(tr))
+        for s in range(0, len(tr), 32):
+            b = tr[perm[s : s + 32].numpy()]
+            opt.zero_grad()
+            loss = loss_fn(model(X[b]).squeeze(-1), y[b])
+            loss.backward()
+            opt.step()
+
+    model.eval()
+    with torch.no_grad():
+        probs = torch.sigmoid(model(X[va]).squeeze(-1)).numpy()
+    val_auc = round(float(roc_auc_score(y[va].numpy(), probs)), 4)
+    pos_i = int(np.where(y[va].numpy() == 1.0)[0][0])
+    x_one = X[va][pos_i : pos_i + 1].clone().detach().requires_grad_(True)
+    model.zero_grad()
+    logit = model(x_one).squeeze()
+    logit.backward()
+    sal = x_one.grad.detach().abs().squeeze().cpu().numpy()
+    peak_rc = np.unravel_index(int(np.argmax(sal)), sal.shape)
+    peak = (int(peak_rc[0]), int(peak_rc[1]))
+    return {"shapes": shapes, "val_auc": val_auc, "peak_coord": peak}
+
+rep = run_lesion_cnn_audit(n_samples=200, epochs=15, seed=42)
+for layer_name, shp in rep["shapes"]:
+    print(f"  {layer_name:10s} -> {shp}")
+print(
+    f"Val ROC-AUC: {rep['val_auc']:.4f} | "
+    f"Saliency peak: {rep['peak_coord']}"
+)
+```
+
+**Output:**
+
+```text
+  features.0 -> (4, 8, 16, 16)
+  features.3 -> (4, 16, 8, 8)
+  fc         -> (4, 1)
+Val ROC-AUC: 1.0000 | Saliency peak: (6, 6)
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch30-todos}
+
+Open `part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six CNN building blocks below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 30.1 (`conv2d_output_shape(h_in, w_in, kernel_size, stride=1, padding=0)`):** Compute `(int_h_out, int_w_out)` via `(dim + 2 * padding - kernel_size) // stride + 1`, raising `ValueError` if `stride <= 0` or either output dimension is `<= 0`.
+- **To-Do 30.2 (`conv2d_single_channel_numpy(image_2d, kernel_2d, stride=1, padding=0)`):** Implement pure-NumPy 2D cross-correlation matching `torch.nn.functional.conv2d` to `< 1e-5` without mutating caller arrays.
+- **To-Do 30.3 (`MedicalPatchCNN`):** Build an `nn.Module` (`__init__(self, num_classes=1)`) stacking `Conv2d(1, 8, 3, padding=1) -> ReLU -> MaxPool2d(2) -> Conv2d(8, 16, 3, padding=1) -> ReLU -> AdaptiveAvgPool2d(1) -> Flatten -> self.fc` (`nn.Linear(16, num_classes)`).
+- **To-Do 30.4 (`ResidualConvBlock`):** Build an `nn.Module` (`__init__(self, channels)`) with `Conv2d(c, c, 3, padding=1) -> BatchNorm2d(c) -> ReLU -> Conv2d(c, c, 3, padding=1) -> BatchNorm2d(c)` plus identity skip connection `F.relu(out + x)` preserving exact `(B, C, H, W)` shape.
+- **To-Do 30.5 (`freeze_backbone_for_transfer(model, head_name="fc")`):** Set `p.requires_grad = name.startswith(f"{head_name}.")` across `model.named_parameters()` and return `{"trainable_params": int, "frozen_params": int}` counted with `p.numel()`.
+- **To-Do 30.6 (`generate_synthetic_lesion_dataset(n_samples=160, img_size=16, seed=42)`):** Deterministic generator returning `(X_tensor[n, 1, H, W], y_tensor[n])` (`float32`) with balanced classes (`0` = noisy healthy tissue, `1` = noisy tissue + bright localized circular Gaussian lesion nodule at a randomized interior coordinate).
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch30-test}
+
+Work through all 10 CNN architecture, shape-arithmetic, and debugging questions on paper before checking Stage 8:
+
+1. **Parameter Count Hand Calculation:** How many total trainable parameters (weights + biases) does `nn.Conv2d(in_channels=3, out_channels=16, kernel_size=5, padding=2)` have?
+2. **Spatial Output Shape Formula:** A `Conv2d` layer with `kernel_size=7`, `stride=2`, and `padding=3` receives an input feature map of shape `(4, 3, 224, 224)`. What is the exact output tensor shape `(N, C, H, W)` if `out_channels=64`?
+3. **Why `padding = K // 2`?** With `stride = 1` and an odd kernel size `K = 5`, what `padding` value preserves $H_{\text{out}} = H_{\text{in}}$ exactly?
+4. **Cross-Correlation vs. Mathematical Convolution:** You implement a pure-NumPy 2D convolution using an asymmetric $3 \times 3$ kernel and notice it disagrees with `F.conv2d`, even though both match on a symmetric Gaussian blur filter. What subtle mistake did you make?
+5. **`MaxPool2d(2)` vs. `AdaptiveAvgPool2d(1)`:** A hospital deploys your `MedicalPatchCNN` trained on `16x16` patches, and a new scanner sends `(8, 1, 32, 32)` patches. What tensor shape enters `self.fc` after `AdaptiveAvgPool2d(1)` and `Flatten()`?
+6. **Residual Skip-Connection Math:** In `ResidualConvBlock`, suppose the second `BatchNorm2d` weights and biases are initialized to `0.0` in `.eval()` mode, so the residual branch outputs $F(x) = \mathbf{0}$. What does `F.relu(out + x)` output for an input pixel of $+3.0$, and for an input pixel of $-3.0$?
+7. **NHWC vs. NCHW Layout Bug:** A teammate loads a batch of 10 grayscale microscopy patches from OpenCV with shape `(10, 64, 64, 1)` and passes it directly into `nn.Conv2d(1, 8, kernel_size=3, padding=1)`. What error occurs and which PyTorch tensor method fixes it?
+8. **Transfer-Learning Parameter Freeze Crash:** After calling `freeze_backbone_for_transfer(model, head_name="classifier")` on `MedicalPatchCNN` (whose head is named `self.fc`), calling `loss.backward()` raises `RuntimeError: element 0 of tensors does not require grad`. Why?
+9. **Forward-Hook Memory Leak:** Why must every `handle = module.register_forward_hook(...)` call be paired with `handle.remove()` inside a `try ... finally` block when auditing shapes?
+10. **Pre-Sigmoid Logit vs. Post-Sigmoid Saliency:** Why do we compute `logit.backward()` rather than `torch.sigmoid(logit).backward()` when generating a gradient saliency map for a high-confidence lesion (`pred_prob = 0.999`)?
+
+---
+
+## Stage 7 — Chapter 30 Coding Exam (100 Points) {#sec-ch30-exam}
+
+Open `part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch30", exam_submissions)` to earn your Chapter 30 Exam score out of 100 points.
+
+### Exam Task 30.1 (30 Points): `audit_cnn_feature_map_shapes(model, input_shape)`
+
+Build a leak-free forward-hook shape auditor:
+
+- Iterate through `model.named_modules()` and attach a forward hook to every `nn.Conv2d` and `nn.Linear` module recording `(module_name, tuple(output.shape))`.
+- Switch `model.eval()`, run `model(torch.zeros(input_shape))` inside `torch.no_grad()`, and remove **all** registered hooks cleanly inside a `finally:` block.
+- Return the ordered `list` of `(module_name, tuple_shape)` pairs.
+
+### Exam Task 30.2 (35 Points): `train_medical_patch_cnn(n_samples=200, epochs=15, seed=42)`
+
+Train `MedicalPatchCNN` offline on synthetic lesion patches:
+
+- Generate `(X, y)` via `generate_synthetic_lesion_dataset(n_samples=n_samples, img_size=16, seed=seed)` and run a stratified 75/25 split (`random_state=seed`).
+- Call `torch.manual_seed(seed)`, instantiate `MedicalPatchCNN(num_classes=1)`, and train for `epochs` epochs using `nn.BCEWithLogitsLoss()` and `torch.optim.Adam(..., lr=0.01)` on CPU (mini-batch size 32).
+- Evaluate on the validation split in `model.eval()` + `torch.no_grad()` and return `{"val_acc": round4, "val_auc": round4, "final_train_loss": round5}` achieving `val_auc >= 0.90`.
+
+### Exam Task 30.3 (35 Points): `compute_saliency_attribution_map(model, x_single)`
+
+Compute an input-gradient pixel attribution map without mutating `x_single`:
+
+- Switch `model.eval()`, clear parameter gradients with `model.zero_grad()`, and clone `x_single` `(1, 1, H, W)` with `x = x_single.clone().detach().requires_grad_(True)`.
+- Compute `logit = model(x).squeeze()`, call `logit.backward()`, and compute `saliency = x.grad.detach().abs().squeeze().cpu().numpy()`.
+- Return `{"saliency_map": saliency, "peak_coord": (int_row, int_col), "pred_prob": round4}` where `pred_prob` applies `torch.sigmoid` to `logit.detach()`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch30-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Each of the `16` output filters has `3 * 5 * 5 = 75` weights plus `1` bias $= 76$ parameters, so $16 \times 76 = \mathbf{1{,}216}$ parameters total.
+2. $H_{\text{out}} = W_{\text{out}} = \lfloor (224 + 2 \times 3 - 7) / 2 \rfloor + 1 = \lfloor 223 / 2 \rfloor + 1 = 111 + 1 = 112$, giving **`(4, 64, 112, 112)`**.
+3. **`padding = 2`** ($5 // 2 = 2$), because $(H + 2(2) - 5) // 1 + 1 = H$.
+4. You **flipped the kernel $180^\circ$** (`kernel[::-1, ::-1]`). Symmetric kernels look identical when flipped, but PyTorch's `F.conv2d` performs **cross-correlation** without flipping.
+5. `AdaptiveAvgPool2d(1)` always reduces spatial dimensions to `(1, 1)` regardless of input resolution, so `Flatten()` feeds **`(8, 16)`** into `self.fc`.
+6. For $+3.0$: $\text{ReLU}(0 + 3.0) = \mathbf{3.0}$ (identity highway!). For $-3.0$: $\text{ReLU}(0 - 3.0) = \mathbf{0.0}$ (post-addition ReLU zeroes negative values).
+7. PyTorch interprets dimension 1 (`64`) as `in_channels`, raising `RuntimeError: expected input[10, 64, 64, 1] to have 1 channels, but got 64 channels instead`. Fix with `x.permute(0, 3, 1, 2)` to convert NHWC $\rightarrow$ NCHW.
+8. No parameter name starts with `"classifier."`, so `freeze_backbone_for_transfer` set `requires_grad = False` on **every** parameter in `MedicalPatchCNN`—leaving no trainable leaf tensors in the autograd graph.
+9. Unremoved hooks stay attached to module instances forever, firing on every subsequent training batch, silently growing Python lists, and leaking GPU/CPU memory—even if an exception occurs mid-forward.
+10. Near `pred_prob = 0.999`, the sigmoid derivative $\sigma(z)(1 - \sigma(z)) \approx 0.001$ scales all pixel gradients down by `1000x` (saturation!). Backpropagating from the raw pre-sigmoid `logit` preserves full gradient contrast.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# To-Do 30.1
+def conv2d_output_shape(h_in, w_in, kernel_size, stride=1, padding=0):
+    """Compute Conv2d output (h_out, w_out) with ValueError guards."""
+    if stride <= 0:
+        raise ValueError("stride must be positive")
+    h_out = (h_in + 2 * padding - kernel_size) // stride + 1
+    w_out = (w_in + 2 * padding - kernel_size) // stride + 1
+    if h_out <= 0 or w_out <= 0:
+        raise ValueError("output spatial dimensions must be positive")
+    return (int(h_out), int(w_out))
+
+# To-Do 30.2
+def conv2d_single_channel_numpy(image_2d, kernel_2d, stride=1, padding=0):
+    """Pure-NumPy 2D cross-correlation matching PyTorch F.conv2d."""
+    img = np.asarray(image_2d, dtype=np.float32)
+    ker = np.asarray(kernel_2d, dtype=np.float32)
+    if padding > 0:
+        img = np.pad(
+            img, ((padding, padding), (padding, padding)), mode="constant"
+        )
+    kh, kw = ker.shape
+    h_out = (img.shape[0] - kh) // stride + 1
+    w_out = (img.shape[1] - kw) // stride + 1
+    out = np.zeros((h_out, w_out), dtype=np.float32)
+    for i in range(h_out):
+        for j in range(w_out):
+            patch = img[
+                i * stride : i * stride + kh,
+                j * stride : j * stride + kw,
+            ]
+            out[i, j] = np.sum(patch * ker)
+    return out
+
+# To-Do 30.3
+class MedicalPatchCNN(nn.Module):
+    """Compact 2D CNN for single-channel medical patch classification."""
+
+    def __init__(self, num_classes=1):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2),
+            nn.Conv2d(8, 16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+        )
+        self.fc = nn.Linear(16, num_classes)
+
+    def forward(self, x):
+        return self.fc(self.features(x))
+
+# To-Do 30.4
+class ResidualConvBlock(nn.Module):
+    """Two-conv residual block with BatchNorm2d and identity skip."""
+
+    def __init__(self, channels):
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn1 = nn.BatchNorm2d(channels)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn2 = nn.BatchNorm2d(channels)
+
+    def forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        return F.relu(out + x)
+
+# To-Do 30.5
+def freeze_backbone_for_transfer(model, head_name="fc"):
+    """Freeze all parameters outside `head_name.` and tally p.numel()."""
+    prefix = f"{head_name}."
+    trainable = 0
+    frozen = 0
+    for name, param in model.named_parameters():
+        param.requires_grad = name.startswith(prefix)
+        if param.requires_grad:
+            trainable += param.numel()
+        else:
+            frozen += param.numel()
+    return {
+        "trainable_params": int(trainable),
+        "frozen_params": int(frozen),
+    }
+
+# To-Do 30.6
+def generate_synthetic_lesion_dataset(n_samples=160, img_size=16, seed=42):
+    """Generate deterministic (X[N,1,H,W], y[N]) lesion patch tensors."""
+    rng = np.random.default_rng(seed)
+    n_neg = n_samples // 2
+    n_pos = n_samples - n_neg
+    labels = np.array([0] * n_neg + [1] * n_pos, dtype=np.float32)
+    rng.shuffle(labels)
+    yy, xx = np.meshgrid(
+        np.arange(img_size), np.arange(img_size), indexing="ij"
+    )
+    images = np.zeros((n_samples, 1, img_size, img_size), dtype=np.float32)
+    for i, lbl in enumerate(labels):
+        base = rng.uniform(0.15, 0.30)
+        patch = rng.normal(base, 0.12, size=(img_size, img_size))
+        if lbl == 1.0:
+            cy = rng.integers(3, img_size - 3)
+            cx = rng.integers(3, img_size - 3)
+            amp = rng.uniform(0.95, 1.25)
+            dist_sq = (yy - cy) ** 2 + (xx - cx) ** 2
+            patch = patch + amp * np.exp(-dist_sq / (2.0 * 1.5 ** 2))
+        images[i, 0] = np.clip(patch, 0.0, 2.0)
+    return torch.from_numpy(images), torch.from_numpy(labels)
+```
+
+### C. Annotated Solutions — Chapter 30 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+
+# Exam Task 30.1 (30 pts)
+def audit_cnn_feature_map_shapes(model, input_shape):
+    """Audit Conv2d and Linear output shapes via clean forward hooks."""
+    shapes = []
+    handles = []
+
+    def _make_hook(layer_name):
+        def _hook(_mod, _inp, out):
+            shapes.append((layer_name, tuple(out.shape)))
+        return _hook
+
+    for name, mod in model.named_modules():
+        if isinstance(mod, (nn.Conv2d, nn.Linear)):
+            handles.append(mod.register_forward_hook(_make_hook(name)))
+    try:
+        model.eval()
+        with torch.no_grad():
+            model(torch.zeros(input_shape))
+    finally:
+        for handle in handles:
+            handle.remove()
+    return shapes
+
+# Exam Task 30.2 (35 pts)
+def train_medical_patch_cnn(n_samples=200, epochs=15, seed=42):
+    """Train MedicalPatchCNN on synthetic lesions & return val metrics."""
+    X, y = generate_synthetic_lesion_dataset(
+        n_samples=n_samples, img_size=16, seed=seed
+    )
+    idx = np.arange(len(y))
+    tr_i, va_i = train_test_split(
+        idx, test_size=0.25, stratify=y.numpy(), random_state=seed
+    )
+    X_tr, y_tr = X[tr_i], y[tr_i]
+    X_va, y_va = X[va_i], y[va_i]
+
+    torch.manual_seed(seed)
+    model = MedicalPatchCNN(num_classes=1)
+    opt = torch.optim.Adam(model.parameters(), lr=0.01)
+    loss_fn = nn.BCEWithLogitsLoss()
+    final_loss = 0.0
+
+    for _ in range(epochs):
+        model.train()
+        perm = torch.randperm(len(X_tr))
+        ep_loss = 0.0
+        for start in range(0, len(X_tr), 32):
+            b = perm[start : start + 32]
+            opt.zero_grad()
+            loss = loss_fn(model(X_tr[b]).squeeze(-1), y_tr[b])
+            loss.backward()
+            opt.step()
+            ep_loss += loss.item() * len(b)
+        final_loss = ep_loss / len(X_tr)
+
+    model.eval()
+    with torch.no_grad():
+        va_probs = torch.sigmoid(model(X_va).squeeze(-1)).numpy()
+    va_pred = (va_probs >= 0.5).astype(np.float32)
+    val_acc = float((va_pred == y_va.numpy()).mean())
+    val_auc = float(roc_auc_score(y_va.numpy(), va_probs))
+    return {
+        "val_acc": round(val_acc, 4),
+        "val_auc": round(val_auc, 4),
+        "final_train_loss": round(float(final_loss), 5),
+    }
+
+# Exam Task 30.3 (35 pts)
+def compute_saliency_attribution_map(model, x_single):
+    """Compute |d(logit)/dx| saliency map, peak (row, col), and prob."""
+    model.eval()
+    model.zero_grad()
+    x = x_single.clone().detach().requires_grad_(True)
+    logit = model(x).squeeze()
+    logit.backward()
+    saliency = x.grad.detach().abs().squeeze().cpu().numpy()
+    peak_rc = np.unravel_index(int(np.argmax(saliency)), saliency.shape)
+    peak_coord = (int(peak_rc[0]), int(peak_rc[1]))
+    pred_prob = round(float(torch.sigmoid(logit.detach()).item()), 4)
+    return {
+        "saliency_map": saliency,
+        "peak_coord": peak_coord,
+        "pred_prob": pred_prob,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 30 Failure Modes
+
+1. **Channel & Dimension Mismatches (`NCHW` vs. `2D` or `NHWC`):** Passing `(H, W)` without batch/channel axes, feeding 3-channel RGB PNGs into a 1-channel medical `Conv2d(1, ...)`, or forgetting `.permute(0, 3, 1, 2)` on OpenCV arrays triggers immediate `RuntimeError`. Audit tensor shapes early with `audit_cnn_feature_map_shapes`.
+2. **Silent Transfer-Learning Freeze & Hook Leaks:** Misspelling `head_name` freezes 100% of parameters and crashes `loss.backward()` with `does not require grad`; forgetting `handle.remove()` in `finally:` permanently leaks forward hooks into subsequent training epochs.
+3. **Saturated Saliency & Mutated Inputs:** Calling `x_single.requires_grad_(True)` directly mutates caller validation tensors, and calling `torch.sigmoid(logit).backward()` attenuates gradients on confident predictions. Always `.clone().detach().requires_grad_(True)` and backpropagate the raw `logit`.
+
+---
+
+::: {.callout-tip title="Bridge to Chapter 31 — Sequence Modeling, Attention & Transformers"}
+Convolutional Neural Networks exploit **2D spatial locality and translation equivariance** to read pixels in medical images with tiny parameter budgets. In Chapter 31, you will extend deep learning from spatial grids to **ordered sequences**—clinical time series, genomic strings, and biomedical text—moving from recurrent hidden states to **scaled dot-product self-attention** and modern **Transformer** architectures!
+:::

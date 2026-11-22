@@ -18,7 +18,7 @@ from .engine import (
 )
 from .datasets import list_datasets, load_data
 
-# Auto-load registered chapter check modules (Parts I–V Complete: Chapters 1–26)
+# Auto-load registered chapter check modules (Parts I–VI Complete: Chapters 1–32)
 from .checks import ch01 as _ch01  # noqa: F401
 from .checks import ch02 as _ch02  # noqa: F401
 from .checks import ch03 as _ch03  # noqa: F401
@@ -45,8 +45,14 @@ from .checks import ch23 as _ch23  # noqa: F401
 from .checks import ch24 as _ch24  # noqa: F401
 from .checks import ch25 as _ch25  # noqa: F401
 from .checks import ch26 as _ch26  # noqa: F401
+from .checks import ch27 as _ch27  # noqa: F401
+from .checks import ch28 as _ch28  # noqa: F401
+from .checks import ch29 as _ch29  # noqa: F401
+from .checks import ch30 as _ch30  # noqa: F401
+from .checks import ch31 as _ch31  # noqa: F401
+from .checks import ch32 as _ch32  # noqa: F401
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
     "CheckResult",

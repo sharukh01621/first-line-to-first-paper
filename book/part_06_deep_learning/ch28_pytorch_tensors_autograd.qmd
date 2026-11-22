@@ -1,0 +1,868 @@
+# PyTorch Core — Tensors, Autograd, `nn.Module`, Datasets, and Training Loops {#sec-ch28}
+
+> **Chapter Mission:** Build an airtight engineering command of **PyTorch's core deep-learning engine** from raw tensors to reproducible, checkpointed neural networks. Working on Bangladesh maternal and child health records (`mch_survey_sample`), you will master **`torch.float32` memory safety and device portability**, trace **reverse-mode automatic differentiation (`autograd`)** and its gradient-accumulation trap, author custom **`Dataset`/`DataLoader`** pipelines and raw-logit **`nn.Module`** architectures paired with **`BCEWithLogitsLoss`**, execute the **canonical 5-step training loop**, enforce **`eval()` + `torch.no_grad()`** inference discipline, and persist portable **`state_dict`** checkpoints safely with `weights_only=True`.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch28 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch28 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch28 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Convert NumPy arrays into detached **`torch.float32` copies** without hidden memory aliasing (`torch.tensor` vs. `torch.from_numpy`), and write device-agnostic code (`cuda`, `mps`, `cpu`) via a clean `get_device()` helper.
+2. Trace PyTorch's dynamic **autograd computation graph** (`requires_grad=True`, `.grad_fn`, `.backward()`), explain why gradients accumulate by default, and prevent silent corruption with `zero_grad()`.
+3. Subclass **`torch.utils.data.Dataset`** (`__init__`, `__len__`, `__getitem__`) and wrap it in a mini-batch **`DataLoader`** with `(batch, 1)` binary target alignment and leak-free feature scaling.
+4. Author modular **`nn.Module`** networks (`Linear -> ReLU -> Linear`) that output **raw logits** paired with **`nn.BCEWithLogitsLoss()`**, avoiding the double-sigmoid trap, and audit trainable vs. frozen parameter counts.
+5. Implement the **canonical 5-step PyTorch training loop** (`zero_grad` $\rightarrow$ `forward` $\rightarrow$ `loss` $\rightarrow$ `backward` $\rightarrow$ `step`) with sample-weighted epoch averaging and deterministic CPU seeding.
+6. Switch cleanly to inference mode using **both `model.eval()` and `with torch.no_grad():`**, and save/reload portable **`model.state_dict()`** checkpoints safely via `torch.load(..., weights_only=True)`.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why PyTorch Replaces Hand-Coded Gradients {#sec-ch28-intuition}
+
+In Chapter 27, deriving chain-rule gradients by hand for a two-layer MLP revealed how neural networks learn—and also showed how fragile manual backpropagation becomes the moment you add a residual skip connection, dropout mask, or third hidden layer. **PyTorch** automates that entire calculus engine while keeping Python completely interactive and debuggable.
+
+Five mental models unlock 95% of everyday PyTorch engineering:
+
+- **Tensors Are Hardware-Portable, Autograd-Aware Arrays:** Like NumPy `ndarray`s, PyTorch tensors store contiguous multi-dimensional numbers—but PyTorch layers default to **`torch.float32`** (half the memory and far faster on GPUs than NumPy's `float64`), can migrate cleanly across `cpu`, `cuda`, and Apple `mps` via `.to(device)`, and can record every arithmetic operation for differentiation.
+- **Define-by-Run Autograd Graphs:** Whenever an operation touches a tensor with `requires_grad=True`, PyTorch builds a fresh **Directed Acyclic Graph (DAG)** on the fly. Calling `loss.backward()` traverses that DAG in reverse using the chain rule, stores gradients inside each leaf tensor's `.grad` attribute, and immediately frees intermediate activations to save memory.
+- **Gradients Accumulate by Design:** PyTorch *adds* new gradients onto existing `.grad` buffers (`+=`) rather than overwriting them—which enables multi-step gradient accumulation for giant batches, but silently doubles or corrupts updates if you forget `optimizer.zero_grad()`!
+- **Raw Logits + `BCEWithLogitsLoss` Beat `Sigmoid + BCELoss`:** Returning raw unbounded logits $z \in (-\infty, +\infty)$ from `nn.Module.forward()` lets `BCEWithLogitsLoss` fuse sigmoid and binary cross-entropy using the log-sum-exp identity, avoiding floating-point underflow ($\ln(0)$) while keeping gradients crisp.
+- **`model.eval()` and `torch.no_grad()` Solve Two Different Problems:** `model.eval()` changes *layer behavior* (turning off Dropout noise and freezing BatchNorm running statistics), whereas `with torch.no_grad():` turns off *autograd graph construction* (cutting validation memory and speeding up inference). Always pair both!
+
+::: {.callout-note title="Mental Model — The 5-Step Heartbeat of Every PyTorch Training Loop"}
+Whether you train a 97-parameter tabular MLP or a 7-billion-parameter transformer, every single mini-batch repeats the exact same five lines:
+
+1. **`optimizer.zero_grad()`** — wipe stale gradients from the previous batch.
+2. **`logits = model(xb)`** — run the forward pass and record the dynamic graph.
+3. **`loss = criterion(logits, yb)`** — compute the scalar objective.
+4. **`loss.backward()`** — differentiate the graph in reverse to populate `.grad`.
+5. **`optimizer.step()`** — update every parameter with `requires_grad=True`.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Data Pipeline, Autograd DAG & 5-Step Loop {#sec-ch28-mental-model}
+
+Follow this architecture whenever you wire a tabular clinical cohort into a reproducible PyTorch training and checkpointing workflow:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Data["1. Data Pipeline"]
+        direction LR
+        D1["Dataset (float32)<br/>X: (n,p), y: (n,1)"]
+        D2["DataLoader<br/>Mini-Batch (xb, yb)"]
+        D1 --> D2
+    end
+    subgraph Forward["2. Forward Graph"]
+        direction LR
+        F1["1. zero_grad()<br/>Clear Stale Grads"]
+        F2["2. model(xb)<br/>Raw Logits (b,1)"]
+        F3["3. BCEWithLogits<br/>Build Autograd DAG"]
+        F1 --> F2 --> F3
+    end
+    subgraph Backward["3. Backprop & Eval"]
+        direction LR
+        B1["4. loss.backward()<br/>Compute dL/dW"]
+        B2["5. optimizer.step()<br/>Update Weights"]
+        B3["eval() + no_grad()<br/>Save state_dict()"]
+        B1 --> B2 --> B3
+    end
+    Data --> Forward
+    Forward --> Backward
+```
+
+Notice the strict separation of concerns across all three tiers: **Data** converts cleaned, leak-free scaled NumPy matrices into `float32` mini-batches (`(batch, p)` and `(batch, 1)`), **Forward** clears old gradients and constructs the dynamic computation graph through raw logits, and **Backprop & Eval** updates parameters before validating gradient-free and saving portable `state_dict` weights.
+
+::: {.callout-warning title="Watch Out for the `torch.from_numpy()` Aliasing Trap!"}
+Calling `torch.from_numpy(arr)` (or `torch.as_tensor(arr, dtype=torch.float32)` when `arr` is already `np.float32`) creates a tensor that **shares the exact same CPU memory buffer** as `arr`. Mutating the NumPy array later silently overwrites your PyTorch training tensor! Use `torch.tensor(arr, dtype=torch.float32)` whenever you want a guaranteed, safe copy.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch28-walkthrough}
+
+Open `part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Device Portability Helper & Cleaning `mch_survey_sample` {#sec-ch28-setup}
+
+```python
+import os
+import tempfile
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from torch.utils.data import DataLoader, Dataset
+import sharukh_tutor as tutor
+
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+device = get_device()
+torch.manual_seed(42)
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+wealth_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+mch["wealth_num"] = mch["wealth_quintile"].map(wealth_map)
+feat_cols = [
+    "maternal_age_years", "anc_visits", "wealth_num", "is_urban"
+]
+clean = mch[["maternal_anemia", "child_stunted"] + feat_cols].dropna()
+print(f"PyTorch: {torch.__version__} | Active device: {device}")
+print(f"Complete MCH rows: {len(clean)} | Features: {len(feat_cols)}")
+```
+
+**Expected Output:**
+
+```text
+PyTorch: 2.15.0+cpu | Active device: cpu
+Complete MCH rows: 492 | Features: 4
+```
+
+Writing `get_device()` once at the top of every notebook ensures identical code runs seamlessly on an NVIDIA Colab GPU (`cuda`), Apple Silicon laptop (`mps`), or deterministic CPU container (`cpu`). Setting `torch.manual_seed(42)` locks initial weights and `DataLoader` shuffling for reproducible science.
+
+---
+
+### Tensors vs. NumPy, `float32`, Aliasing & Device Portability {#sec-ch28-tensors}
+
+```python
+# NumPy defaults to float64; PyTorch layers expect float32
+arr_f64 = np.array([[24.0, 4.0], [31.0, 2.0]])
+arr_f32 = arr_f64.astype(np.float32)
+
+t_alias = torch.from_numpy(arr_f32)            # shares memory!
+t_copy = torch.tensor(arr_f32, dtype=torch.float32)  # safe copy
+
+arr_f32[0, 0] = 999.0
+print(f"NumPy default dtype: {arr_f64.dtype} | PyTorch: {t_copy.dtype}")
+print(f"from_numpy (aliased) [0,0]: {t_alias[0, 0].item():.1f}")
+print(f"torch.tensor (safe)  [0,0]: {t_copy[0, 0].item():.1f}")
+
+t_dev = t_copy.to(device)
+print(f"Shape: {tuple(t_dev.shape)} | Device: {t_dev.device}")
+```
+
+**Expected Output:**
+
+```text
+NumPy default dtype: float64 | PyTorch: torch.float32
+from_numpy (aliased) [0,0]: 999.0
+torch.tensor (safe)  [0,0]: 24.0
+Shape: (2, 2) | Device: cpu
+```
+
+Look closely at lines 2 and 3 of the output:
+
+- Changing `arr_f32[0, 0] = 999.0` *after* calling `torch.from_numpy(arr_f32)` silently mutated `t_alias[0, 0]` to **`999.0`** because both objects point to the same underlying RAM!
+- By contrast, `torch.tensor(arr_f32, dtype=torch.float32)` allocated an independent `float32` copy, preserving **`24.0`** untouched.
+
+---
+
+### Dynamic Autograd Graph & the `.grad.zero_()` Accumulation Trap {#sec-ch28-autograd}
+
+Consider the scalar quadratic function $y(x) = 3x^2 - 4x + 5$, whose analytical derivative is $\frac{dy}{dx} = 6x - 4$. At $x = 2.0$, exact calculus gives $y = 9.0$ and $\frac{dy}{dx} = 8.0$:
+
+```python
+# y = 3x^2 - 4x + 5  =>  dy/dx = 6x - 4  (at x=2: y=9, dy/dx=8)
+x = torch.tensor(2.0, requires_grad=True)
+y = 3.0 * x**2 - 4.0 * x + 5.0
+print(f"Forward y={y.item():.1f} | grad_fn={type(y.grad_fn).__name__}")
+
+y.backward()
+print(f"After 1st backward()       -> x.grad = {x.grad.item():.1f}")
+
+# Trap: PyTorch ACCUMULATES gradients unless you zero them!
+y2 = 3.0 * x**2 - 4.0 * x + 5.0
+y2.backward()
+print(f"After 2nd (NO zero_grad!)  -> x.grad = {x.grad.item():.1f}")
+
+x.grad.zero_()
+y3 = 3.0 * x**2 - 4.0 * x + 5.0
+y3.backward()
+print(f"After x.grad.zero_() + 3rd -> x.grad = {x.grad.item():.1f}")
+```
+
+**Expected Output:**
+
+```text
+Forward y=9.0 | grad_fn=AddBackward0
+After 1st backward()       -> x.grad = 8.0
+After 2nd (NO zero_grad!)  -> x.grad = 16.0
+After x.grad.zero_() + 3rd -> x.grad = 8.0
+```
+
+Three crucial autograd lessons live in those four lines:
+
+- **`y.grad_fn = AddBackward0`:** Every computed tensor remembers the backward operator that created it, forming a chain back to leaf `x`.
+- **Silent accumulation (`8.0 -> 16.0`):** Calling `y2.backward()` without resetting `x.grad` *added* `8.0` on top of the old `8.0`! In a training loop, forgetting `optimizer.zero_grad()` turns every mini-batch gradient into a snowballing sum of all previous batches.
+- **In-place underscore convention (`zero_()`):** Trailing underscores in PyTorch (`zero_()`, `add_()`, `fill_()`) mutate tensors in place; resetting `x.grad.zero_()` restores the exact derivative **`8.0`**.
+
+---
+
+### Custom `Dataset` & Mini-Batch `DataLoader` on `mch_survey_sample` {#sec-ch28-dataset}
+
+Before constructing tensors, split `mch_survey_sample` stratified 75/25 on `child_stunted` and fit `StandardScaler` **strictly on `X_train`** (preventing validation leakage!), then package both splits into a reusable `Dataset` and `DataLoader`:
+
+```python
+X_all = clean[feat_cols].to_numpy(dtype=np.float32)
+y_all = clean["child_stunted"].to_numpy(dtype=np.float32)
+X_tr, X_va, y_tr, y_va = train_test_split(
+    X_all, y_all, test_size=0.25, stratify=y_all, random_state=42
+)
+
+# Fit StandardScaler strictly on X_train to prevent leakage
+scaler = StandardScaler()
+X_tr_s = scaler.fit_transform(X_tr)
+X_va_s = scaler.transform(X_va)
+
+class ClinicalTabularDataset(Dataset):
+    def __init__(self, X, y):
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.float32).reshape(-1, 1)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+torch.manual_seed(42)
+train_ds = ClinicalTabularDataset(X_tr_s, y_tr)
+val_ds = ClinicalTabularDataset(X_va_s, y_va)
+train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_ds, batch_size=32, shuffle=False)
+
+xb, yb = next(iter(train_loader))
+print(f"Train n={len(train_ds)} | Val n={len(val_ds)}")
+print(
+    f"First batch X: {tuple(xb.shape)} ({xb.dtype}) | "
+    f"y: {tuple(yb.shape)} ({yb.dtype})"
+)
+```
+
+**Expected Output:**
+
+```text
+Train n=369 | Val n=123
+First batch X: (32, 4) (torch.float32) | y: (32, 1) (torch.float32)
+```
+
+Notice two subtle best practices:
+
+- **`.reshape(-1, 1)` on `self.y`:** Storing targets as 2D `(n, 1)` rather than 1D `(n,)` ensures every mini-batch `yb` has shape `(32, 1)`, matching the `(32, 1)` logits returned by `nn.Linear(..., 1)` with zero broadcasting surprises!
+- **`shuffle=True` for training, `shuffle=False` for validation:** Shuffling training batches breaks sample-order correlations every epoch, while keeping validation unshuffled preserves deterministic row alignment for diagnostics and auditing.
+
+---
+
+### Defining `nn.Module` (`ClinicalRiskMLP`) & Pairing Raw Logits with `BCEWithLogitsLoss` {#sec-ch28-module}
+
+```python
+class ClinicalRiskMLP(nn.Module):
+    def __init__(self, in_dim, hidden_dim=16):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, x):
+        # Return raw logits — NO sigmoid! BCEWithLogitsLoss fuses it.
+        return self.net(x)
+
+torch.manual_seed(42)
+model = ClinicalRiskMLP(in_dim=4, hidden_dim=16).to(device)
+n_params = sum(p.numel() for p in model.parameters())
+logits_0 = model(xb.to(device))
+criterion = nn.BCEWithLogitsLoss()
+init_loss = criterion(logits_0, yb.to(device)).item()
+print(f"Total trainable parameters: {n_params}")
+print(
+    f"Logits shape: {tuple(logits_0.shape)} | "
+    f"Initial batch BCE loss: {init_loss:.5f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Total trainable parameters: 97
+Logits shape: (32, 1) | Initial batch BCE loss: 0.77285
+```
+
+Check the parameter arithmetic by hand:
+
+- Layer 1 (`nn.Linear(4, 16)`): $4 \times 16 = 64$ weights $+ 16$ biases $= \mathbf{80}$ parameters.
+- Activation (`nn.ReLU()`): $\mathbf{0}$ parameters.
+- Layer 2 (`nn.Linear(16, 1)`): $16 \times 1 = 16$ weights $+ 1$ bias $= \mathbf{17}$ parameters.
+- Total: $80 + 17 = \mathbf{97}$ trainable scalar parameters! Calling `super().__init__()` inside `__init__` is mandatory so `nn.Module` registers every sub-layer's parameters into `model.parameters()` and `model.state_dict()`.
+
+---
+
+### The Canonical 5-Step PyTorch Training Loop {#sec-ch28-trainloop}
+
+Now wire `ClinicalRiskMLP`, `BCEWithLogitsLoss`, and `Adam(lr=0.02)` together over 30 epochs, monitoring both sample-weighted training loss and validation ROC-AUC:
+
+```python
+torch.manual_seed(42)
+model = ClinicalRiskMLP(in_dim=4, hidden_dim=16).to(device)
+criterion = nn.BCEWithLogitsLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.02)
+
+for epoch in range(1, 31):
+    model.train()
+    tr_sum, tr_n = 0.0, 0
+    for xb, yb in train_loader:
+        xb, yb = xb.to(device), yb.to(device)
+        optimizer.zero_grad()          # 1. Clear stale gradients
+        logits = model(xb)             # 2. Forward pass (raw logits)
+        loss = criterion(logits, yb)   # 3. Compute scalar BCE loss
+        loss.backward()                # 4. Backprop via autograd
+        optimizer.step()               # 5. Update weights
+        tr_sum += loss.item() * len(xb)
+        tr_n += len(xb)
+    tr_loss = tr_sum / tr_n
+
+    if epoch in (1, 10, 20, 30):
+        model.eval()
+        va_sum, va_n, p_list, y_list = 0.0, 0, [], []
+        with torch.no_grad():
+            for xb, yb in val_loader:
+                xb, yb = xb.to(device), yb.to(device)
+                lg = model(xb)
+                va_sum += criterion(lg, yb).item() * len(xb)
+                va_n += len(xb)
+                p_list.append(torch.sigmoid(lg).cpu().numpy().ravel())
+                y_list.append(yb.cpu().numpy().ravel())
+        auc = roc_auc_score(
+            np.concatenate(y_list), np.concatenate(p_list)
+        )
+        print(
+            f"Epoch {epoch:2d} | train_loss={tr_loss:.4f} | "
+            f"val_loss={va_sum / va_n:.4f} | val_auc={auc:.4f}"
+        )
+```
+
+**Expected Output:**
+
+```text
+Epoch  1 | train_loss=0.5409 | val_loss=0.3655 | val_auc=0.7861
+Epoch 10 | train_loss=0.3614 | val_loss=0.3325 | val_auc=0.7905
+Epoch 20 | train_loss=0.3560 | val_loss=0.3326 | val_auc=0.7861
+Epoch 30 | train_loss=0.3547 | val_loss=0.3364 | val_auc=0.7811
+```
+
+Read those four epochs like an experienced deep-learning researcher:
+
+- Training loss drops cleanly from **`0.5409` to `0.3547`**, while validation ROC-AUC reaches **`0.7905`** at Epoch 10—edging past Chapter 23's linear logistic regression (`0.7772`) on the exact same 4 non-leaking features!
+- Notice also how after Epoch 10, `train_loss` keeps drifting downward (`0.3614 -> 0.3547`) while `val_loss` ticks slightly upward (`0.3325 -> 0.3364`). That gentle divergence is early overfitting—precisely why Chapter 29 introduces dropout, weight decay, learning-rate schedules, and early stopping!
+- Multiplying `loss.item() * len(xb)` and dividing by `tr_n` computes the **exact sample-weighted epoch mean**, even though the final mini-batch of 369 rows contains only `369 % 32 = 17` samples!
+
+---
+
+### Inference Mode (`eval()` + `torch.no_grad()`) & Safe `state_dict` Checkpointing {#sec-ch28-checkpoint}
+
+Never save a whole PyTorch model object via `torch.save(model, path)`—Python pickle couples the file to your exact class path and creates arbitrary-code-execution risks. Instead, persist only **`model.state_dict()`** and reload with **`weights_only=True`**:
+
+```python
+X_sample = torch.tensor(X_va_s[:8], dtype=torch.float32).to(device)
+with tempfile.TemporaryDirectory() as tmpdir:
+    ckpt_path = os.path.join(tmpdir, "stunting_mlp.pt")
+    torch.save(model.state_dict(), ckpt_path)
+    file_bytes = os.path.getsize(ckpt_path)
+
+    reloaded = ClinicalRiskMLP(in_dim=4, hidden_dim=16).to(device)
+    state = torch.load(
+        ckpt_path, map_location=device, weights_only=True
+    )
+    reloaded.load_state_dict(state)
+
+    model.eval()
+    reloaded.eval()
+    with torch.no_grad():
+        p_orig = torch.sigmoid(model(X_sample))
+        p_load = torch.sigmoid(reloaded(X_sample))
+    exact = bool(torch.allclose(p_orig, p_load, atol=1e-6))
+    print(f"Checkpoint size: {file_bytes} bytes | Match: {exact}")
+    print(f"First 4 probs: {np.round(p_load.cpu().numpy().ravel()[:4], 4)}")
+```
+
+**Expected Output:**
+
+```text
+Checkpoint size: 2959 bytes | Match: True
+First 4 probs: [0.1303 0.244  0.3101 0.0673]
+```
+
+Wrapping temporary checkpoint experiments inside `with tempfile.TemporaryDirectory() as tmpdir:` guarantees zero stray `.pt` artifacts pollute your repository, while `map_location=device` and `weights_only=True` make your checkpoint portable across CPU/GPU machines and safe in PyTorch 2.x!
+
+---
+
+### Break It On Purpose! (PyTorch Error Anatomy) {#sec-ch28-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — RuntimeError (Float64 Input into Float32 `nn.Linear`)"}
+```python
+layer = nn.Linear(4, 1)
+x_double = torch.tensor([[1.0, 2.0, 3.0, 4.0]], dtype=torch.float64)
+layer(x_double)
+```
+**Python's Traceback:**
+
+```text
+RuntimeError: mat1 and mat2 must have the same dtype,
+but got Double and Float
+```
+**Diagnosis:** NumPy arrays default to `float64` (`Double`), whereas PyTorch layers initialize weights in `torch.float32` (`Float`). Converting a NumPy matrix via `torch.from_numpy(arr)` without casting triggers this exact crash on the first forward pass.  
+**Fix:** Always convert features and binary targets with `torch.tensor(arr, dtype=torch.float32)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — RuntimeError (Feature Dimension Mismatch in `nn.Linear`)"}
+```python
+layer4 = nn.Linear(4, 16)
+x_wrong = torch.randn(8, 3)
+layer4(x_wrong)
+```
+**Python's Traceback:**
+
+```text
+RuntimeError: addmm: mat1 and mat2 shapes cannot be multiplied
+(8x3 and 4x16)
+```
+**Diagnosis:** Matrix multiplication `X @ W^T + b` requires `X.shape[-1] == layer.in_features`. Here the batch has `3` columns while `layer4` expects `4`.  
+**Fix:** Inspect `X.shape` before model instantiation and pass `in_dim=X_train.shape[1]` programmatically instead of hardcoding magic integers.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — RuntimeError (Double `.backward()` on a Freed Graph)"}
+```python
+w = torch.tensor(3.0, requires_grad=True)
+loss = (w - 1.0) ** 2
+loss.backward()
+loss.backward()
+```
+**Python's Traceback:**
+
+```text
+RuntimeError: Trying to backward through the graph a second time
+(or directly access saved tensors after they have already been freed).
+Specify retain_graph=True if you need to backward through the graph
+a second time...
+```
+**Diagnosis:** To keep GPU/CPU memory low, PyTorch frees intermediate autograd buffers immediately after `loss.backward()` completes. Calling `.backward()` again on the *same* `loss` tensor—or reusing a cached tensor from a previous epoch without `.detach()`—hits this error.  
+**Fix:** Recompute the forward pass inside each training step (one fresh graph per `.backward()`), or detach logged scalars with `.item()` / `.detach()`. Only pass `retain_graph=True` for specialized multi-loss research algorithms.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch28-blueprint}
+
+**Scenario:** Your health-analytics lab wants a single reproducible pipeline `train_and_checkpoint_mch_mlp(raw_df, target="child_stunted", epochs=30, seed=42)` that cleans `mch_survey_sample` without mutating it, applies leak-free `StandardScaler` inside a stratified 75/25 split, trains `ClinicalRiskMLP` with `DataLoader` + `BCEWithLogitsLoss` + `Adam`, evaluates validation loss and ROC-AUC under `eval()` + `torch.no_grad()`, verifies a `state_dict` checkpoint round-trip in `TemporaryDirectory()`, and returns a structured audit dictionary.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Deterministic Seed & Leak-Free Hygiene:**
+
+   - Call `torch.manual_seed(seed)` at entry and work strictly on `df = raw_df.copy()`.
+   - Clean `residence` casing, replace `anc_visits == 999` with `np.nan`, derive `is_urban` and `wealth_num`, drop missing rows across the 4 non-leaking features plus `target`, and split stratified 75/25.
+   - Fit `StandardScaler()` strictly on `X_tr`, transform `X_va`, and wrap both in `ClinicalTabularDataset` + `DataLoader(batch_size=32)`.
+
+2. **5-Step Training & Gradient-Free Evaluation:**
+
+   - Train `ClinicalRiskMLP(in_dim=4, hidden_dim=16)` for `epochs` epochs with `BCEWithLogitsLoss()` and `Adam(lr=0.02)`.
+   - Switch to `net.eval()` + `with torch.no_grad():` to compute sample-weighted `val_loss` and `val_auc` from `torch.sigmoid(logits)`.
+
+3. **Safe Checkpointing Verification:**
+
+   - Inside `with tempfile.TemporaryDirectory() as tmpdir:`, save `net.state_dict()`, reload into a fresh `ClinicalRiskMLP(4, 16)` via `torch.load(p, weights_only=True)`, switch both to `.eval()`, and assert `torch.allclose(net(x0), fresh(x0), atol=1e-6)`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def train_and_checkpoint_mch_mlp(
+    raw_df, target="child_stunted", epochs=30, seed=42
+):
+    """Leak-free PyTorch MLP training + weights_only checkpoint audit."""
+    torch.manual_seed(seed)
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    df["wealth_num"] = df["wealth_quintile"].map(w_map)
+    cols = ["maternal_age_years", "anc_visits", "wealth_num", "is_urban"]
+    sub = df[[target] + cols].dropna()
+    X_tr, X_va, y_tr, y_va = train_test_split(
+        sub[cols].to_numpy(dtype=np.float32),
+        sub[target].to_numpy(dtype=np.float32),
+        test_size=0.25, stratify=sub[target], random_state=seed,
+    )
+    sc = StandardScaler()
+    tr_ld = DataLoader(
+        ClinicalTabularDataset(sc.fit_transform(X_tr), y_tr),
+        batch_size=32, shuffle=True,
+    )
+    va_ld = DataLoader(
+        ClinicalTabularDataset(sc.transform(X_va), y_va),
+        batch_size=32, shuffle=False,
+    )
+    net = ClinicalRiskMLP(in_dim=4, hidden_dim=16)
+    crit = nn.BCEWithLogitsLoss()
+    opt = torch.optim.Adam(net.parameters(), lr=0.02)
+    for _ in range(epochs):
+        net.train()
+        for xb, yb in tr_ld:
+            opt.zero_grad()
+            loss = crit(net(xb), yb)
+            loss.backward()
+            opt.step()
+    net.eval()
+    va_sum, va_n, ps, ys = 0.0, 0, [], []
+    with torch.no_grad():
+        for xb, yb in va_ld:
+            lg = net(xb)
+            va_sum += crit(lg, yb).item() * len(xb)
+            va_n += len(xb)
+            ps.append(torch.sigmoid(lg).numpy().ravel())
+            ys.append(yb.numpy().ravel())
+    auc = round(
+        float(roc_auc_score(np.concatenate(ys), np.concatenate(ps))), 4
+    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        p = os.path.join(tmpdir, f"{target}.pt")
+        torch.save(net.state_dict(), p)
+        fresh = ClinicalRiskMLP(in_dim=4, hidden_dim=16)
+        fresh.load_state_dict(torch.load(p, weights_only=True))
+        fresh.eval()
+        x0 = torch.tensor(sc.transform(X_va[:8]), dtype=torch.float32)
+        with torch.no_grad():
+            ok = bool(torch.allclose(net(x0), fresh(x0), atol=1e-6))
+        ckpt_bytes = int(os.path.getsize(p))
+    return {
+        "val_loss": round(va_sum / va_n, 4),
+        "val_auc": auc,
+        "ckpt_bytes": ckpt_bytes,
+        "ckpt_match": ok,
+    }
+
+for label, col in [
+    ("Stunting", "child_stunted"),
+    ("Anemia", "maternal_anemia"),
+]:
+    rep = train_and_checkpoint_mch_mlp(mch_raw, target=col)
+    print(
+        f"{label:8s} | val_loss={rep['val_loss']:.4f} | "
+        f"val_auc={rep['val_auc']:.4f} | "
+        f"ckpt={rep['ckpt_bytes']}B (match={rep['ckpt_match']})"
+    )
+```
+
+**Output:**
+
+```text
+Stunting | val_loss=0.3360 | val_auc=0.7811 | ckpt=2969B (match=True)
+Anemia   | val_loss=0.6295 | val_auc=0.6179 | ckpt=2989B (match=True)
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch28-todos}
+
+Open `part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six PyTorch core functions and classes below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 28.1 (`numpy_to_float_tensor(arr)`):** Return a detached `torch.float32` tensor copy (`torch.tensor(arr, dtype=torch.float32)`) that does **not** share memory with or mutate the input NumPy array.
+- **To-Do 28.2 (`autograd_quadratic_grad(x_val)`):** Create `x = torch.tensor(float(x_val), requires_grad=True)`, evaluate $y = 3x^2 - 4x + 5$, call `y.backward()`, and return `(round(y.item(), 4), round(x.grad.item(), 4))`.
+- **To-Do 28.3 (`ClinicalTabularDataset`):** Subclass `torch.utils.data.Dataset` storing `float32` `X` `(n, p)` and `y` `(n, 1)` tensors, with `__len__` and `__getitem__(idx)` returning `(self.X[idx], self.y[idx])`.
+- **To-Do 28.4 (`ClinicalRiskMLP`):** Subclass `nn.Module` with `__init__(self, in_dim, hidden_dim=16)` stacking `Linear(in_dim, hidden_dim) -> ReLU -> Linear(hidden_dim, 1)`, and `forward(x)` returning raw logits of shape `(batch, 1)` (NO sigmoid!).
+- **To-Do 28.5 (`train_one_epoch(model, loader, optimizer, criterion)`):** Switch to `model.train()`, execute the 5-step training loop on every batch, and return the mean float loss rounded to **5 decimals**.
+- **To-Do 28.6 (`evaluate_binary_logits(model, loader)`):** Switch to `model.eval()`, evaluate inside `with torch.no_grad():` with `BCEWithLogitsLoss()`, convert logits via `torch.sigmoid`, and return `{"loss": round5, "roc_auc": round4, "accuracy": round4}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch28-test}
+
+Work through all 10 PyTorch tensor, autograd, and training-loop reasoning questions on paper before checking Stage 8:
+
+1. **Memory Aliasing Trace:** You run `a = np.array([1.0, 2.0], dtype=np.float32)`, `t1 = torch.from_numpy(a)`, `t2 = torch.tensor(a, dtype=torch.float32)`, and then `a[0] = 50.0`. What are `t1[0].item()` and `t2[0].item()`?
+2. **Hand-Differentiation Check:** For $y = 3x^2 - 4x + 5$ evaluated at $x = -1.5$, what exact values does `autograd_quadratic_grad(-1.5)` return for `(y, dy/dx)`?
+3. **Gradient Accumulation Bug:** Suppose `x = torch.tensor(1.0, requires_grad=True)`. In a `for` loop of 3 iterations, you compute `y = 2.0 * x**2` and call `y.backward()` **without** calling `x.grad.zero_()`. What is `x.grad.item()` after iteration 3?
+4. **Parameter Count by Hand:** Compute the exact total number of scalar parameters in `ClinicalRiskMLP(in_dim=6, hidden_dim=10)` (`Linear(6, 10) -> ReLU -> Linear(10, 1)`).
+5. **Double-Sigmoid Hazard:** Why does adding `nn.Sigmoid()` at the end of `ClinicalRiskMLP.forward()` break training when paired with `nn.BCEWithLogitsLoss()`?
+6. **Target Shape Alignment:** A mini-batch of logits from `ClinicalRiskMLP` has shape `(32, 1)`. Why do we reshape `self.y` to `(n, 1)` inside `ClinicalTabularDataset` instead of leaving it as 1D `(n,)`?
+7. **`model.eval()` vs. `torch.no_grad()`:** A teammate wraps validation in `with torch.no_grad():` but forgets `model.eval()` on a network containing `nn.Dropout(0.5)`. Why do validation metrics still jitter randomly from run to run?
+8. **Memory Leak in Loss Logging:** Why should you accumulate `total_loss += loss.item() * len(xb)` instead of `total_loss += loss * len(xb)` across thousands of batches?
+9. **Uneven Final Mini-Batch:** A dataset has `369` training samples and `batch_size=32` (`drop_last=False`). How many batches does `DataLoader` yield per epoch, what is the size of the final batch, and why is sample-weighted loss more accurate than plain batch averaging?
+10. **Safe Checkpointing in PyTorch 2.x:** Give two reasons why `torch.save(model.state_dict(), path)` + `torch.load(path, weights_only=True)` is strongly preferred over `torch.save(model, path)`.
+
+---
+
+## Stage 7 — Chapter 28 Coding Exam (100 Points) {#sec-ch28-exam}
+
+Open `part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch28", exam_submissions)` to earn your Chapter 28 Exam score out of 100 points.
+
+### Exam Task 28.1 (30 Points): `count_model_parameters(model)`
+
+Inspect `model.parameters()` without modifying any `requires_grad` flags:
+
+- Count total scalar elements (`p.numel()`), split into `trainable_params` (`p.requires_grad == True`) and `frozen_params` (`p.requires_grad == False`), satisfying `total_params == trainable_params + frozen_params`.
+- Return `{"total_params": int, "trainable_params": int, "frozen_params": int}`.
+
+### Exam Task 28.2 (35 Points): `train_pytorch_tabular_model(X_train, y_train, X_val, y_val, hidden_dim=16, epochs=40, lr=0.02, batch_size=32, seed=42)`
+
+Build a deterministic end-to-end PyTorch tabular binary classifier:
+
+- Call `torch.manual_seed(seed)`, wrap `X_train`/`y_train` and `X_val`/`y_val` into `float32` tensors (`y` shaped `(n, 1)`) and `DataLoader`s (`batch_size=batch_size`, `shuffle=True` for train, `False` for val).
+- Train a 2-layer ReLU MLP (`Linear(in_dim, hidden_dim) -> ReLU -> Linear(hidden_dim, 1)`) using `BCEWithLogitsLoss()` and `Adam(lr=lr)` for `epochs` epochs, recording `train_losses` and `val_losses` every epoch.
+- Evaluate final validation ROC-AUC (`val_auc`, rounded to 4 decimals) under `model.eval()` + `torch.no_grad()`, and return `{"train_losses": list, "val_losses": list, "val_auc": round4, "model": trained_model}` achieving `val_auc >= 0.85` on a synthetic clinical cohort.
+
+### Exam Task 28.3 (35 Points): `save_and_verify_state_dict(model, fresh_model, X_sample, ckpt_path)`
+
+Persist and verify model weights safely in PyTorch 2.x:
+
+- Save `model.state_dict()` to `ckpt_path` via `torch.save(...)` and reload into `fresh_model` via `fresh_model.load_state_dict(torch.load(ckpt_path, weights_only=True))`.
+- Set **both** `model.eval()` and `fresh_model.eval()` (critical when Dropout or BatchNorm is present!), run both on `X_sample` under `with torch.no_grad():`, and verify `torch.allclose(preds_orig, preds_reloaded, atol=1e-6)`.
+- Return `{"file_bytes": int, "predictions_match": bool}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch28-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `t1[0].item()` is **`50.0`** (because `torch.from_numpy` shares memory with `float32` NumPy arrays), whereas `t2[0].item()` remains **`1.0`** (because `torch.tensor` copies the buffer).
+2. $y(-1.5) = 3(2.25) - 4(-1.5) + 5 = 6.75 + 6.0 + 5.0 = \mathbf{17.75}$; $\frac{dy}{dx}(-1.5) = 6(-1.5) - 4 = \mathbf{-13.0}$. Returns **`(17.75, -13.0)`**.
+3. Each backward pass computes $\frac{dy}{dx} = 4x = 4.0$ and *adds* it onto `x.grad`. After 3 unzeroed iterations, `x.grad.item()` $= 4.0 + 4.0 + 4.0 = \mathbf{12.0}$.
+4. Layer 1: $6 \times 10 + 10 = 70$; ReLU: $0$; Layer 2: $10 \times 1 + 1 = 11$; Total $= 70 + 11 = \mathbf{81}$ parameters.
+5. `BCEWithLogitsLoss` applies sigmoid internally; adding `nn.Sigmoid()` in `forward()` applies sigmoid *twice* ($\sigma(\sigma(z)) \in (0.50, 0.731)$), making probabilities below `0.50` impossible and crushing gradients!
+6. `BCEWithLogitsLoss` expects predictions and targets to share exact shape `(batch, 1)`. Leaving `y` as 1D `(32,)` raises a shape-mismatch `ValueError` (or causes unintended `(32, 32)` outer broadcasting in some tensor operations).
+7. `torch.no_grad()` only disables autograd tracking; it does **not** disable `Dropout` randomness! You must call `model.eval()` to turn off Dropout and freeze BatchNorm statistics.
+8. Adding the live tensor `loss` retains a pointer to every batch's entire autograd computation graph in Python RAM/VRAM until the epoch finishes (classic OOM memory leak!). Calling `loss.item()` extracts a plain Python `float` and lets PyTorch free the graph immediately.
+9. `ceil(369 / 32) = 12` batches: eleven batches of `32` (`352` samples) plus one final batch of **`17`** samples. Plain batch averaging gives those 17 patients the same weight as 32 patients, whereas sample-weighted averaging computes the exact per-patient mean loss.
+10. Saving `state_dict()` decouples learned weights from Python class/module file paths (so refactoring code never breaks old checkpoints) and lets `torch.load(..., weights_only=True)` load pure tensors without executing arbitrary untrusted pickle code.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import torch
+import torch.nn as nn
+from sklearn.metrics import roc_auc_score
+from torch.utils.data import DataLoader, Dataset
+
+# To-Do 28.1
+def numpy_to_float_tensor(arr):
+    """Return a detached torch.float32 copy with no shared memory."""
+    return torch.tensor(arr, dtype=torch.float32)
+
+# To-Do 28.2
+def autograd_quadratic_grad(x_val):
+    """Compute y = 3x^2 - 4x + 5 and dy/dx via PyTorch autograd."""
+    x = torch.tensor(float(x_val), requires_grad=True)
+    y = 3.0 * x**2 - 4.0 * x + 5.0
+    y.backward()
+    return (round(y.item(), 4), round(x.grad.item(), 4))
+
+# To-Do 28.3
+class ClinicalTabularDataset(Dataset):
+    """PyTorch Dataset storing float32 tabular X (n, p) and y (n, 1)."""
+
+    def __init__(self, X, y):
+        self.X = torch.tensor(X, dtype=torch.float32)
+        self.y = torch.tensor(y, dtype=torch.float32).reshape(-1, 1)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+# To-Do 28.4
+class ClinicalRiskMLP(nn.Module):
+    """Two-layer ReLU MLP outputting raw binary logits (batch, 1)."""
+
+    def __init__(self, in_dim, hidden_dim=16):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+# To-Do 28.5
+def train_one_epoch(model, loader, optimizer, criterion):
+    """Run one canonical 5-step training epoch and return mean loss."""
+    model.train()
+    total_loss, total_n = 0.0, 0
+    for xb, yb in loader:
+        optimizer.zero_grad()
+        logits = model(xb)
+        loss = criterion(logits, yb)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item() * len(xb)
+        total_n += len(xb)
+    return round(total_loss / total_n, 5)
+
+# To-Do 28.6
+def evaluate_binary_logits(model, loader):
+    """Evaluate raw-logit binary classifier under eval() + no_grad()."""
+    model.eval()
+    criterion = nn.BCEWithLogitsLoss()
+    total_loss, total_n = 0.0, 0
+    probs_list, y_list = [], []
+    with torch.no_grad():
+        for xb, yb in loader:
+            logits = model(xb)
+            total_loss += criterion(logits, yb).item() * len(xb)
+            total_n += len(xb)
+            probs_list.append(torch.sigmoid(logits).cpu().numpy().ravel())
+            y_list.append(yb.cpu().numpy().ravel())
+    probs = np.concatenate(probs_list)
+    y_true = np.concatenate(y_list).astype(int)
+    preds = (probs >= 0.5).astype(int)
+    return {
+        "loss": round(total_loss / total_n, 5),
+        "roc_auc": round(float(roc_auc_score(y_true, probs)), 4),
+        "accuracy": round(float(np.mean(preds == y_true)), 4),
+    }
+```
+
+### C. Annotated Solutions — Chapter 28 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import os
+from torch.utils.data import TensorDataset
+
+# Exam Task 28.1 (30 pts)
+def count_model_parameters(model):
+    """Count total, trainable, and frozen scalar parameters in model."""
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(
+        p.numel() for p in model.parameters() if p.requires_grad
+    )
+    frozen = total - trainable
+    return {
+        "total_params": int(total),
+        "trainable_params": int(trainable),
+        "frozen_params": int(frozen),
+    }
+
+# Exam Task 28.2 (35 pts)
+def train_pytorch_tabular_model(
+    X_train, y_train, X_val, y_val,
+    hidden_dim=16, epochs=40, lr=0.02, batch_size=32, seed=42,
+):
+    """Train a 2-layer ReLU MLP with DataLoader, Adam & BCEWithLogits."""
+    torch.manual_seed(seed)
+    X_tr_t = torch.tensor(X_train, dtype=torch.float32)
+    y_tr_t = torch.tensor(y_train, dtype=torch.float32).reshape(-1, 1)
+    X_va_t = torch.tensor(X_val, dtype=torch.float32)
+    y_va_t = torch.tensor(y_val, dtype=torch.float32).reshape(-1, 1)
+
+    tr_loader = DataLoader(
+        TensorDataset(X_tr_t, y_tr_t), batch_size=batch_size, shuffle=True
+    )
+    va_loader = DataLoader(
+        TensorDataset(X_va_t, y_va_t), batch_size=batch_size, shuffle=False
+    )
+
+    model = nn.Sequential(
+        nn.Linear(X_tr_t.shape[1], hidden_dim),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, 1),
+    )
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    train_losses, val_losses = [], []
+
+    for _ in range(epochs):
+        model.train()
+        tr_sum, tr_n = 0.0, 0
+        for xb, yb in tr_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(xb), yb)
+            loss.backward()
+            optimizer.step()
+            tr_sum += loss.item() * len(xb)
+            tr_n += len(xb)
+        train_losses.append(round(tr_sum / tr_n, 5))
+
+        model.eval()
+        va_sum, va_n = 0.0, 0
+        with torch.no_grad():
+            for xb, yb in va_loader:
+                va_sum += criterion(model(xb), yb).item() * len(xb)
+                va_n += len(xb)
+        val_losses.append(round(va_sum / va_n, 5))
+
+    model.eval()
+    with torch.no_grad():
+        probs = torch.sigmoid(model(X_va_t)).cpu().numpy().ravel()
+    val_auc = round(float(roc_auc_score(y_val, probs)), 4)
+    return {
+        "train_losses": train_losses,
+        "val_losses": val_losses,
+        "val_auc": val_auc,
+        "model": model,
+    }
+
+# Exam Task 28.3 (35 pts)
+def save_and_verify_state_dict(model, fresh_model, X_sample, ckpt_path):
+    """Save model.state_dict(), reload with weights_only=True & verify."""
+    torch.save(model.state_dict(), ckpt_path)
+    state = torch.load(ckpt_path, weights_only=True)
+    fresh_model.load_state_dict(state)
+    model.eval()
+    fresh_model.eval()
+    with torch.no_grad():
+        preds_orig = model(X_sample)
+        preds_reloaded = fresh_model(X_sample)
+    match = bool(torch.allclose(preds_orig, preds_reloaded, atol=1e-6))
+    return {
+        "file_bytes": int(os.path.getsize(ckpt_path)),
+        "predictions_match": match,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 28 Failure Modes
+
+1. **Forgetting `optimizer.zero_grad()` Inside the Batch Loop:** Because PyTorch accumulates gradients (`+=`) by default, omitting `optimizer.zero_grad()` causes stale batch gradients to stack up across steps—exploding or stalling updates even when your model architecture and loss function are 100% correct.
+2. **Double-Sigmoid (`nn.Sigmoid` + `BCEWithLogitsLoss`) or Float64 Dtype Crashes:** Putting `nn.Sigmoid()` inside `forward()` while training with `BCEWithLogitsLoss()` traps outputs in `(0.5, 0.73)`, while feeding default NumPy `float64` arrays into `nn.Linear` raises `RuntimeError: expected Double and Float`. Always cast inputs to `torch.float32` and emit raw logits.
+3. **Omitting `model.eval()` During Validation or Checkpoint Verification:** Running under `torch.no_grad()` alone leaves `nn.Dropout` active, injecting random noise into validation AUC and breaking `torch.allclose` checkpoint equivalence checks. Always pair `model.eval()` with `with torch.no_grad():` and reload `state_dict` with `weights_only=True`.
+
+---
+
+::: {.callout-tip title="Bridge to Chapter 29 — Training Deep Networks: Optimization, Regularization & Diagnostics"}
+You now command PyTorch's complete core engine—`float32` tensors, autograd, custom `Dataset`/`DataLoader`, `nn.Module`, the 5-step training loop, and safe `state_dict` checkpointing. In Chapter 29, you will diagnose why deep networks overfit or stall, and master **SGD + Momentum vs. AdamW**, **learning-rate schedules**, **BatchNorm/LayerNorm**, **Dropout & Weight Decay**, **gradient clipping**, and **early stopping with best-checkpoint restoration**!
+:::

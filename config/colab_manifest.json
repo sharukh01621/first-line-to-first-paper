@@ -402,6 +402,96 @@
       "qr_path": "assets/qr/part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam.png",
       "is_solution": false
     },
+    "part_06_deep_learning/ch27_neural_nets_from_scratch/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch27_neural_nets_from_scratch__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch30_cnns_computer_vision__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -660,6 +750,66 @@
     "solutions/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_05_classical_ml/ch26_pipelines_nested_cv/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_05_classical_ml__ch26_pipelines_nested_cv__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch27_neural_nets_from_scratch/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch27_neural_nets_from_scratch__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch27_neural_nets_from_scratch/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch27_neural_nets_from_scratch__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch28_pytorch_tensors_autograd/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch28_pytorch_tensors_autograd__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch28_pytorch_tensors_autograd/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch28_pytorch_tensors_autograd__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch29_training_dynamics_regularization__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch29_training_dynamics_regularization__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch30_cnns_computer_vision/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch30_cnns_computer_vision__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch30_cnns_computer_vision/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch30_cnns_computer_vision__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch32_attention_transformers_modern_ai__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }

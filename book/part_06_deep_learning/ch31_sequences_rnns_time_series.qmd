@@ -1,0 +1,836 @@
+# Sequence Modeling — RNNs, LSTMs, GRUs, and Epidemiological Time-Series Forecasting {#sec-ch31}
+
+> **Chapter Mission:** Master **temporal sequence modeling** from first principles—starting from chronological sliding windows and pure-NumPy recurrent hidden states, diagnosing **vanishing and exploding gradients** across long horizons, and advancing to PyTorch **`nn.GRU`** and **`nn.LSTM`** forecasters on real Bangladesh weekly dengue surveillance data (`epi_surveillance`). You will learn to eliminate **temporal data leakage**, handle **variable-length clinical vital-sign sequences** via padding and boolean masking, stabilize recurrent training with **gradient clipping**, and prove that gated neural models genuinely beat the **naive persistence baseline** ($\hat{y}_t = y_{t-1}$) before claiming forecasting skill.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch31 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch31 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch31 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch31_sequences_rnns_time_series__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Construct **leakage-free chronological train/test splits** and `(N, seq_len, F)` sliding-window tensors where `StandardScaler` is fit strictly on past (`year < cutoff_year`) observations.
+2. Implement the **Elman RNN recurrence** $h_t = \tanh(x_t W_{xh} + h_{t-1} W_{hh} + b_h)$ in pure NumPy and prove mathematically why repeated matrix multiplication causes **vanishing** ($0.5^{30} \approx 10^{-9}$) or **exploding** ($1.5^{30} \approx 1.9 \times 10^5$) gradients across long sequences.
+3. Explain how **LSTM** (additive cell-state highway $c_t$ with forget, input, and output gates) and **GRU** (merged reset and update gates) preserve long-range temporal memory without vanishing gradients.
+4. Build PyTorch **`EpiGRUForecaster`** and **`EpiLSTMForecaster`** `nn.Module` classes using `batch_first=True`, tracking `(B, T, F)` inputs, `(B, T, H)` outputs, and nested `(out, (h_n, c_n))` LSTM return tuples.
+5. Batch **variable-length clinical vital-sign sequences** cleanly with `nn.utils.rnn.pad_sequence(..., batch_first=True, padding_value=0.0)` and boolean `valid_mask` tensors so zero-padded tail steps never corrupt clinical averages or losses.
+6. Stabilize recurrent training with **`clip_grad_norm_(..., 1.0)`** and benchmark GRU and LSTM forecasts directly against the **naive persistence baseline** ($\hat{y}_t = y_{t-1}$) on held-out 2025 Bangladesh dengue surveillance weeks.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Order, Memory, and Time Arrows Matter {#sec-ch31-intuition}
+
+In Chapters 28–30, every row of a clinical dataset was independent (an MLP on tabular vitals) or spatially local (a CNN on a chest X-ray). Shuffling patient rows with `train_test_split(..., shuffle=True)` was harmless—even encouraged.
+
+Now step into an epidemiological surveillance unit tracking weekly dengue admissions (`dengue_cases`), monsoon rainfall (`rainfall_mm`), and temperature (`mean_temp_c`) in Dhaka. Two fundamental laws immediately break the tabular assumptions:
+
+- **Time Has a One-Way Arrow (No Random Shuffling!):** If you randomly split 2024–2025 weekly surveillance rows 80/20, Week 31 of 2025 lands in your training set while Week 30 lands in your test set! Your neural network "predicts" the past using the future—and fitting `StandardScaler` across both years leaks 2025 monsoon peaks into 2024 training inputs. Always split chronologically (`year < cutoff_year` vs. `year >= cutoff_year`) and fit scalers strictly on the past.
+- **Lagged Biological Causality Requires Sequence Memory:** Heavy monsoon rain does not create dengue hospitalizations tomorrow morning. Standing water breeds *Aedes* larvae, which mature, bite, incubate, and drive clinic admissions **2 to 6 weeks later**. A model needs an explicit lookback window `(T = 8 weeks)` and an internal **hidden state** $h_t$ that carries recent outbreak momentum and rainfall history forward step by step.
+- **Weight Sharing Across Time & The Vanishing Gradient Trap:** A vanilla Recurrent Neural Network (RNN) applies the exact same recurrent weight matrix $W_{hh}$ at every timestep $t = 1, \dots, T$. During Backpropagation Through Time (BPTT), the gradient flowing backward across $T$ steps multiplies by $W_{hh}$ $T$ times. If the dominant singular value is $0.5$, the gradient shrinks by $0.5^{30} \approx 9.31 \times 10^{-10}$ (vanishing—early rainfall is forgotten!); if it is $1.5$, it blows up by $1.5^{30} \approx 1.92 \times 10^5$ (exploding—`NaN` weights!).
+- **Gated Recurrence (LSTM & GRU) + Gradient Clipping:** **Long Short-Term Memory (LSTM)** introduces an additive **cell-state highway** $c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t$ so gradients flow backward through addition rather than repeated squashing. **Gated Recurrent Units (GRUs)** streamline this into two gates (reset $r_t$ and update $z_t$) with ~25% fewer parameters. Pairing gated cells with **`clip_grad_norm_(model.parameters(), 1.0)`** tames both vanishing and exploding gradients simultaneously.
+- **The Persistence Litmus Test:** Weekly disease counts are strongly autocorrelated—next week often looks close to this week. Therefore, **every neural time-series model MUST beat the zero-effort persistence baseline** ($\hat{y}_t = y_{t-1}$) on the exact same chronological test weeks!
+
+::: {.callout-note title="Mental Model — Recurrent State as an Epidemiologist's Running Notebook"}
+Picture an epidemiologist reviewing Dhaka's dengue dashboard week by week over an 8-week window. At week $t$, they read the new report $x_t$ (cases, rainfall, temperature), glance at their running summary notes $h_{t-1}$ from the previous week, decide via **gates** what stale noise to forget and what new monsoon surge to write down, and update their summary state $h_t$. After reading week $t = 8$, a linear readout layer translates $h_8$ into next week's dengue forecast $\hat{y}_{9}$.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Sliding Window $\rightarrow$ Unrolled GRU/LSTM $\rightarrow$ Forecast Audit {#sec-ch31-mental-model}
+
+Trace how a chronological epidemiological series flows from raw weekly surveillance rows into leak-free windows, through an unrolled gated recurrent cell, and finally into a fair comparison against the persistence baseline:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Split["1. Temporal Split"]
+        direction LR
+        S1["Sort by Year, Week<br/>Fit Scaler (< 2025)"]
+        S2["Sliding Windows<br/>X: (B, T=8, F=3)"]
+        S1 --> S2
+    end
+    subgraph Core["2. Recurrent Core"]
+        direction LR
+        R1["Unroll t=1..T<br/>GRU / LSTM Cell"]
+        R2["Final Hidden h_T<br/>Linear Head -> (B,1)"]
+        R1 --> R2
+    end
+    subgraph Audit["3. Forecast Audit"]
+        direction LR
+        A1["Clip Grad (1.0)<br/>Adam + MSELoss"]
+        A2["Held-Out 2025 Test<br/>vs Persistence y_t-1"]
+        A1 --> A2
+    end
+    Split --> Core
+    Core --> Audit
+```
+
+Notice the strict causal firewall between Block 1 and Block 3: `StandardScaler` sees **only 2024 rows**, every training window stays strictly inside 2024, and every 2025 test forecast reads only its 8 immediately preceding weeks before being graded side by side against naive persistence.
+
+::: {.callout-warning title="The #1 Silent Bug in PyTorch RNNs: Missing `batch_first=True`!"}
+By historical PyTorch default, `nn.RNN`, `nn.GRU`, and `nn.LSTM` expect input shape **`(T, B, F)`** (sequence length first!), whereas `DataLoader`, NumPy sliding windows, and every other layer in this book use **`(B, T, F)`** (batch first!). If you forget `batch_first=True`, PyTorch will **not crash**—it will silently treat your batch dimension as time and your time dimension as separate patients, producing garbage forecasts! Always write `batch_first=True` explicitly.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch31-walkthrough}
+
+Open `part_06_deep_learning/ch31_sequences_rnns_time_series/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Loading `epi_surveillance` Chronologically {#sec-ch31-setup}
+
+```python
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from sklearn.preprocessing import StandardScaler
+import sharukh_tutor as tutor
+
+torch.set_num_threads(1)
+epi_raw = tutor.load_data("epi_surveillance", as_pandas=True)
+dhaka = (
+    epi_raw[epi_raw["district"] == "Dhaka"]
+    .sort_values(["year", "epi_week"])
+    .reset_index(drop=True)
+)
+n24 = int((dhaka["year"] == 2024).sum())
+n25 = int((dhaka["year"] == 2025).sum())
+print(f"Dataset shape: {epi_raw.shape} | Dhaka weeks: {len(dhaka)}")
+print(f"2024 weeks: {n24} | 2025 weeks: {n25}")
+print(
+    f"Dhaka dengue cases -> min={dhaka['dengue_cases'].min()}, "
+    f"median={dhaka['dengue_cases'].median():.1f}, "
+    f"max={dhaka['dengue_cases'].max()}"
+)
+```
+
+**Expected Output:**
+
+```text
+Dataset shape: (416, 8) | Dhaka weeks: 104
+2024 weeks: 52 | 2025 weeks: 52
+Dhaka dengue cases -> min=21, median=57.5, max=395
+```
+
+Let's inspect three hygiene details right at the top:
+
+- **`torch.set_num_threads(1)`:** For compact recurrent tensors `(44, 8, 3)` on CPU, single-threaded execution avoids multi-core OpenMP barrier overhead and runs nearly **10x faster** with identical numerical precision.
+- **Explicit chronological sorting:** Never assume an epidemiological CSV arrives pre-sorted. `.sort_values(["year", "epi_week"]).reset_index(drop=True)` guarantees strictly monotone weekly order across 2024 (`52` weeks) and 2025 (`52` weeks).
+- **Strong monsoon seasonality:** Dhaka weekly dengue counts swing nearly 19-fold from winter lows (`21` cases) to monsoon peaks (`395` cases), making multivariate weather + case history essential.
+
+---
+
+### Leak-Free Temporal Splitting & Sliding Windows {#sec-ch31-windows}
+
+We reserve all 52 weeks of `2024` for fitting `StandardScaler` and training, and hold out all 52 weeks of `2025` for evaluation. Notice how each 2025 test window uses **only the 8 immediately preceding weeks** (including late-2024 history for early-2025 weeks) with zero target leakage:
+
+```python
+feat_cols = ["dengue_cases", "rainfall_mm", "mean_temp_c"]
+raw_vals = dhaka[feat_cols].to_numpy(dtype=np.float32)
+n_train = int((dhaka["year"] < 2025).sum())
+
+# Fit StandardScaler strictly on 2024 training rows (zero future leak!)
+scaler = StandardScaler()
+scaler.fit(raw_vals[:n_train])
+scaled = scaler.transform(raw_vals).astype(np.float32)
+
+seq_len = 8
+X_tr = np.stack(
+    [scaled[t - seq_len : t] for t in range(seq_len, n_train)]
+)
+y_tr = scaled[seq_len:n_train, 0]
+X_te = np.stack(
+    [scaled[t - seq_len : t] for t in range(n_train, len(dhaka))]
+)
+y_te = scaled[n_train:, 0]
+
+print(f"Train scaler mean (2024 only): {np.round(scaler.mean_, 2)}")
+print(f"Full-series mean (LEAKY!):     {np.round(raw_vals.mean(0), 2)}")
+print(f"X_train: {X_tr.shape}, y_train: {y_tr.shape}")
+print(f"X_test:  {X_te.shape}, y_test:  {y_te.shape}")
+```
+
+**Expected Output:**
+
+```text
+Train scaler mean (2024 only): [126.6   77.53  21.5 ]
+Full-series mean (LEAKY!):     [128.4   80.83  21.44]
+X_train: (44, 8, 3), y_train: (44,)
+X_test:  (52, 8, 3), y_test:  (52,)
+```
+
+Examine the tensor dimensions carefully:
+
+- **Why `44` training windows instead of `52`?** With `seq_len = 8`, the first valid target strictly inside 2024 is Week 9 (index `8`), which reads Weeks 1–8 (`indices 0..7`). That yields $52 - 8 = 44$ leak-free training sequences of shape `(44, 8, 3)`.
+- **Why `52` test windows?** Every week in 2025 (`t = 52 .. 103`) already has 8 strictly preceding weeks available (`t - 8 .. t - 1`), so we evaluate on **all 52 weeks of 2025**!
+- **Why standardize both features and target?** Keeping `y_tr` and `y_te` on the training-fitted z-score scale lets a linear output head converge cleanly in 40 epochs with `lr=0.02` and `clip_grad_norm_(..., 1.0)`. To recover raw case counts at reporting time, simply invert via `cases = z * scaler.scale_[0] + scaler.mean_[0]`.
+
+---
+
+### Pure-NumPy Elman RNN Cell & Vanishing/Exploding Gradients {#sec-ch31-rnn-step}
+
+Before touching PyTorch's built-in layers, inspect a single Elman RNN timestep in pure NumPy:
+
+$$h_t = \tanh\big(x_t W_{xh} + h_{t-1} W_{hh} + b_h\big)$$
+
+where $x_t \in \mathbb{R}^{B \times F}$, $h_{t-1} \in \mathbb{R}^{B \times H}$, $W_{xh} \in \mathbb{R}^{F \times H}$, $W_{hh} \in \mathbb{R}^{H \times H}$, and $b_h \in \mathbb{R}^{H}$:
+
+```python
+rng = np.random.default_rng(42)
+x_t = np.array([[0.5, -0.2, 1.1], [-0.4, 0.8, 0.3]])
+h_prev = np.zeros((2, 4))
+W_xh = rng.normal(0.0, 0.3, size=(3, 4))
+W_hh = rng.normal(0.0, 0.3, size=(4, 4))
+b_h = np.zeros(4)
+
+h_next = np.tanh(x_t @ W_xh + h_prev @ W_hh + b_h)
+print(f"RNN step output shape: {h_next.shape}")
+print(f"h_next[0]: {np.round(h_next[0], 4)}")
+
+# Why vanilla RNN gradients vanish or explode over long horizons:
+for steps in [5, 10, 20, 30]:
+    print(
+        f"After {steps:2d} steps -> "
+        f"0.5^{steps:2d} = {0.5 ** steps:.2e} | "
+        f"1.5^{steps:2d} = {1.5 ** steps:.2e}"
+    )
+```
+
+**Expected Output:**
+
+```text
+RNN step output shape: (2, 4)
+h_next[0]: [ 0.1559 -0.3447  0.3757  0.3942]
+After  5 steps -> 0.5^ 5 = 3.12e-02 | 1.5^ 5 = 7.59e+00
+After 10 steps -> 0.5^10 = 9.77e-04 | 1.5^10 = 5.77e+01
+After 20 steps -> 0.5^20 = 9.54e-07 | 1.5^20 = 3.33e+03
+After 30 steps -> 0.5^30 = 9.31e-10 | 1.5^30 = 1.92e+05
+```
+
+That tiny loop exposes the entire mathematical motivation behind LSTMs and GRUs:
+
+- **Vanishing gradients ($0.5^{30} = 9.31 \times 10^{-10}$):** Since $\tanh'(z) = 1 - \tanh^2(z) \le 1$, backpropagating across 30 timesteps shrinks error signals by **nine orders of magnitude**, erasing memory of early monsoon rainfall.
+- **Exploding gradients ($1.5^{30} = 1.92 \times 10^5$):** Conversely, if eigenvalues of $W_{hh}$ exceed `1.0`, gradients skyrocket exponentially, destabilizing SGD/Adam updates unless capped by **gradient clipping** (`clip_grad_norm_`).
+
+---
+
+### PyTorch `nn.GRU` & `nn.LSTM` `batch_first=True` Tensor Shapes {#sec-ch31-shapes}
+
+Both `nn.GRU` and `nn.LSTM` consume 3D `(B, T, F)` batches when `batch_first=True`, but inspect the subtle difference in their **return tuples**:
+
+```python
+torch.manual_seed(42)
+sample_x = torch.tensor(X_tr[:4], dtype=torch.float32)
+
+gru = nn.GRU(input_size=3, hidden_size=16, batch_first=True)
+gru_out, gru_hn = gru(sample_x)
+
+lstm = nn.LSTM(input_size=3, hidden_size=16, batch_first=True)
+lstm_out, (lstm_hn, lstm_cn) = lstm(sample_x)
+
+print(f"Input x:  {tuple(sample_x.shape)}  (B, T, F)")
+print(f"GRU out:  {tuple(gru_out.shape)} | h_n: {tuple(gru_hn.shape)}")
+print(
+    f"LSTM out: {tuple(lstm_out.shape)} | "
+    f"h_n: {tuple(lstm_hn.shape)} | c_n: {tuple(lstm_cn.shape)}"
+)
+```
+
+**Expected Output:**
+
+```text
+Input x:  (4, 8, 3)  (B, T, F)
+GRU out:  (4, 8, 16) | h_n: (1, 4, 16)
+LSTM out: (4, 8, 16) | h_n: (1, 4, 16) | c_n: (1, 4, 16)
+```
+
+Memorize these three shape invariants—they eliminate 90% of PyTorch RNN debugging time:
+
+- **`out` is `(B, T, H)`:** Contains the top-layer hidden state at **every timestep** (`0..T-1`). Slicing `out[:, -1, :]` extracts the `(B, H)` final-step summary ready for `nn.Linear(H, 1)`.
+- **`h_n` (and LSTM's `c_n`) is ALWAYS `(num_layers, B, H)`:** Even with `batch_first=True`, PyTorch puts `num_layers` first in the final hidden/cell state tensors!
+- **GRU returns 2 tensors `(out, h_n)`; LSTM returns a nested 2-tuple `(out, (h_n, c_n))`:** Unpacking `out, _ = self.lstm(x)` works identically for both when you only need `out[:, -1, :]`.
+
+---
+
+### Variable-Length Clinical Vital Sequences: Padding & Masking {#sec-ch31-padding}
+
+Fixed 8-week windows work cleanly for weekly epidemiology, but hospitalized ICU patients stay for **different lengths of time** (3 hours, 5 hours, 2 hours). To batch variable-length 2D tensors `(T_i, F)` onto a GPU/CPU without fabricating fake `0.0` vital signs, we combine `pad_sequence` with a boolean `valid_mask`:
+
+```python
+vitals = [
+    torch.tensor([[98.0, 120.0], [97.5, 118.0], [96.0, 115.0]]),
+    torch.tensor([
+        [99.0, 110.0], [98.5, 112.0], [98.0, 114.0],
+        [97.0, 116.0], [96.5, 119.0],
+    ]),
+    torch.tensor([[95.0, 130.0], [94.0, 135.0]]),
+]
+lengths = torch.tensor([s.shape[0] for s in vitals], dtype=torch.long)
+padded = nn.utils.rnn.pad_sequence(
+    vitals, batch_first=True, padding_value=0.0
+)
+max_len = padded.shape[1]
+valid_mask = torch.arange(max_len).unsqueeze(0) < lengths.unsqueeze(1)
+
+print(f"Padded shape: {tuple(padded.shape)} | lengths: {lengths.tolist()}")
+print("Valid mask:", valid_mask.int().tolist())
+```
+
+**Expected Output:**
+
+```text
+Padded shape: (3, 5, 2) | lengths: [3, 5, 2]
+Valid mask: [[1, 1, 1, 0, 0], [1, 1, 1, 1, 1], [1, 1, 0, 0, 0]]
+```
+
+Look how clean that broadcasting idiom is: `torch.arange(max_len).unsqueeze(0)` has shape `(1, 5)`, `lengths.unsqueeze(1)` has shape `(3, 1)`, and `<` broadcasts them into a `(3, 5)` boolean tensor where `True` marks genuine clinical measurements and `False` marks artificial zero padding (ready for masked mean pooling, masked loss, or `pack_padded_sequence`).
+
+---
+
+### Persistence vs. GRU vs. LSTM on Held-Out 2025 Dhaka Dengue Weeks {#sec-ch31-bench}
+
+Now put everything together on Dhaka's 52 held-out 2025 weeks—comparing the zero-effort **Persistence baseline** ($\hat{y}_t = y_{t-1} = \text{X\_te}[:, -1, 0]$) against `EpiGRUForecaster` and `EpiLSTMForecaster` trained with `MSELoss`, `Adam(lr=0.02)`, and `clip_grad_norm_(..., 1.0)`:
+
+```python
+class EpiGRUForecaster(nn.Module):
+    def __init__(self, input_size, hidden_size=16):
+        super().__init__()
+        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+        self.head = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out, _ = self.gru(x)
+        return self.head(out[:, -1, :])
+
+class EpiLSTMForecaster(nn.Module):
+    def __init__(self, input_size, hidden_size=16):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.head = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :])
+
+def fit_forecaster(
+    model_cls, X_train, y_train, X_test,
+    hidden_size=16, epochs=40, lr=0.02, seed=42,
+):
+    torch.manual_seed(seed)
+    model = model_cls(X_train.shape[-1], hidden_size=hidden_size)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.MSELoss()
+    xt = torch.tensor(X_train, dtype=torch.float32)
+    yt = torch.tensor(y_train, dtype=torch.float32).unsqueeze(-1)
+    xe = torch.tensor(X_test, dtype=torch.float32)
+    model.train()
+    for _ in range(epochs):
+        opt.zero_grad()
+        loss = loss_fn(model(xt), yt)
+        loss.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        opt.step()
+    model.eval()
+    with torch.no_grad():
+        preds = model(xe).squeeze(-1).numpy()
+    return preds, float(loss.item())
+
+pers_preds = X_te[:, -1, 0]
+gru_preds, _ = fit_forecaster(EpiGRUForecaster, X_tr, y_tr, X_te)
+lstm_preds, _ = fit_forecaster(EpiLSTMForecaster, X_tr, y_tr, X_te)
+
+rows = []
+for name, p in [
+    ("Persistence", pers_preds),
+    ("GRU", gru_preds),
+    ("LSTM", lstm_preds),
+]:
+    rmse_z = float(np.sqrt(np.mean((y_te - p) ** 2)))
+    mae_z = float(np.mean(np.abs(y_te - p)))
+    rows.append({
+        "model": name,
+        "rmse_z": round(rmse_z, 4),
+        "mae_z": round(mae_z, 4),
+        "rmse_cases": round(rmse_z * float(scaler.scale_[0]), 2),
+    })
+lb = pd.DataFrame(rows).sort_values("rmse_z").reset_index(drop=True)
+print(lb.to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+      model  rmse_z  mae_z  rmse_cases
+       LSTM  0.2287 0.1748       25.24
+        GRU  0.2477 0.1754       27.34
+Persistence  0.2796 0.2103       30.86
+```
+
+Read those held-out 2025 numbers like a peer reviewer:
+
+- **Persistence (`rmse_z = 0.2796`, `30.86` cases/week):** Simply repeating last week's dengue count is already a strong baseline—proving why reporting an unbenchmarked neural RMSE is meaningless.
+- **GRU (`rmse_z = 0.2477`, `27.34` cases/week):** Cuts forecast RMSE by **11.4%** over persistence by combining 8 weeks of case trajectory with lagged rainfall and temperature signals.
+- **LSTM (`rmse_z = 0.2287`, `25.24` cases/week):** Cuts forecast RMSE by **18.2%** over persistence (`5.6` fewer mispredicted cases per week across all 52 weeks of 2025!), leveraging its additive cell-state highway $c_t$ to track multi-week monsoon buildup cleanly.
+
+---
+
+### Break It On Purpose! (Sequence Modeling Error Anatomy) {#sec-ch31-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — RuntimeError (2D `(B, F)` Input Passed Instead of 3D `(B, T, F)` into `nn.GRU`)"}
+```python
+bad_x_2d = torch.zeros(4, 3)
+h0_batched = torch.zeros(1, 4, 16)
+nn.GRU(3, 16, batch_first=True)(bad_x_2d, h0_batched)
+```
+**Python's Traceback:**
+
+```text
+RuntimeError: For unbatched 2-D input, hx should also be 2-D
+but got 3-D tensor
+```
+**Diagnosis:** Recurrent layers expect 3D batched tensors `(B, T, F)`. When you accidentally omit the sequence-length axis and pass a 2D tabular matrix `(B, F)`, PyTorch interprets it as a single *unbatched* sequence `(T, F)`, immediately crashing against a 3D batched hidden state `(1, B, H)` (or raising `IndexError` on `out[:, -1, :]`).  
+**Fix:** Always shape inputs as 3D `(B, T, F)` via `build_sliding_windows` (or `x.unsqueeze(1)` for a 1-step window) before calling `nn.GRU` or `nn.LSTM`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — RuntimeError (Mismatched `input_size` in `nn.LSTM`)"}
+```python
+bad_x_feat = torch.zeros(4, 8, 5)
+nn.LSTM(input_size=3, hidden_size=16, batch_first=True)(bad_x_feat)
+```
+**Python's Traceback:**
+
+```text
+RuntimeError: input.size(-1) must be equal to input_size.
+Expected 3, got 5
+```
+**Diagnosis:** The last axis `x.shape[-1]` (`F = 5`) must match the `input_size` declared in `nn.LSTM(input_size=3, ...)`. This commonly happens when you add new weather or demographic columns to your feature list without updating the model's `input_size`, or when you forget `batch_first=True` and accidentally place `T` on the wrong axis.  
+**Fix:** Pass `input_size=X_train.shape[-1]` dynamically instead of hardcoding `3`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Unpacking `nn.LSTM` Output Into 3 Flat Variables)"}
+```python
+x_ok = torch.zeros(4, 8, 3)
+out, h_n, c_n = nn.LSTM(3, 16, batch_first=True)(x_ok)
+```
+**Python's Traceback:**
+
+```text
+ValueError: not enough values to unpack (expected 3, got 2)
+```
+**Diagnosis:** Unlike `nn.GRU`, which returns `(out, h_n)`, `nn.LSTM` returns a **2-element tuple whose second element is itself a tuple**: `(out, (h_n, c_n))`. Attempting flat 3-way unpacking `out, h_n, c_n = lstm(x)` always fails with `ValueError`.  
+**Fix:** Unpack as `out, (h_n, c_n) = self.lstm(x)` (or simply `out, _ = self.lstm(x)` when reading `out[:, -1, :]`).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch31-blueprint}
+
+**Scenario:** Before recommending a national dengue early-warning architecture to Bangladesh's Directorate General of Health Services (DGHS), your team must test whether gated recurrent models beat the naive persistence baseline **consistently across multiple climate zones**—not just Dhaka! Design a reusable function `forecast_district_suite(epi_df, districts=("Dhaka", "Chattogram", "Sylhet"), seq_len=8, cutoff_year=2025, seed=42)` that produces a clean multi-district comparison table.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Per-District Isolation & Causal Split:**
+
+   - Filter each district independently (`epi_df[epi_df["district"] == dist]`), sort chronologically by `["year", "epi_week"]`, and fit a fresh `StandardScaler` exclusively on `year < cutoff_year` rows.
+   - Construct standardized `(N_tr, seq_len, 3)` training windows strictly within 2024 and `(52, seq_len, 3)` test windows covering all 52 weeks of 2025.
+
+2. **Apples-to-Apples Multi-Model Audit:**
+
+   - Evaluate Persistence (`X_te[:, -1, 0]`), `EpiGRUForecaster`, and `EpiLSTMForecaster` on the exact same held-out 2025 targets `y_te` using identical hyperparameters (`hidden_size=16, epochs=40, lr=0.02, seed=seed`).
+
+3. **Verification Plan:**
+
+   - Confirm both GRU and LSTM beat Persistence across all three districts (`Dhaka`, `Chattogram`, `Sylhet`) and verify runtime stays under 3 seconds on CPU with `torch.set_num_threads(1)`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def forecast_district_suite(
+    epi_df,
+    districts=("Dhaka", "Chattogram", "Sylhet"),
+    seq_len=8,
+    cutoff_year=2025,
+    seed=42,
+):
+    """Benchmark Persistence, GRU & LSTM across Bangladesh districts."""
+    rows = []
+    cols = ["dengue_cases", "rainfall_mm", "mean_temp_c"]
+    for dist in districts:
+        sub = (
+            epi_df[epi_df["district"] == dist]
+            .sort_values(["year", "epi_week"])
+            .reset_index(drop=True)
+        )
+        raw = sub[cols].to_numpy(dtype=np.float32)
+        n_tr = int((sub["year"] < cutoff_year).sum())
+        sc = StandardScaler().fit(raw[:n_tr])
+        z = sc.transform(raw).astype(np.float32)
+        X_tr = np.stack(
+            [z[t - seq_len : t] for t in range(seq_len, n_tr)]
+        )
+        y_tr = z[seq_len:n_tr, 0]
+        X_te = np.stack(
+            [z[t - seq_len : t] for t in range(n_tr, len(sub))]
+        )
+        y_te = z[n_tr:, 0]
+        p_pers = X_te[:, -1, 0]
+        p_gru, _ = fit_forecaster(
+            EpiGRUForecaster, X_tr, y_tr, X_te, seed=seed
+        )
+        p_lstm, _ = fit_forecaster(
+            EpiLSTMForecaster, X_tr, y_tr, X_te, seed=seed
+        )
+        rmses = {
+            "Persistence": float(np.sqrt(np.mean((y_te - p_pers) ** 2))),
+            "GRU": float(np.sqrt(np.mean((y_te - p_gru) ** 2))),
+            "LSTM": float(np.sqrt(np.mean((y_te - p_lstm) ** 2))),
+        }
+        winner = min(rmses, key=rmses.get)
+        rows.append({
+            "district": dist,
+            "pers_rmse": round(rmses["Persistence"], 4),
+            "gru_rmse": round(rmses["GRU"], 4),
+            "lstm_rmse": round(rmses["LSTM"], 4),
+            "winner": winner,
+        })
+    return pd.DataFrame(rows)
+
+print(forecast_district_suite(epi_raw).to_string(index=False))
+```
+
+**Output:**
+
+```text
+  district  pers_rmse  gru_rmse  lstm_rmse winner
+     Dhaka     0.2796    0.2477     0.2287   LSTM
+Chattogram     0.4301    0.3320     0.3197   LSTM
+    Sylhet     0.3883    0.3589     0.3522   LSTM
+```
+
+Across all three districts—megacity Dhaka, coastal Chattogram, and high-rainfall Sylhet—both GRU and LSTM beat the naive persistence baseline cleanly (cutting Chattogram RMSE by more than **25%**!), with LSTM leading every district.
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch31-todos}
+
+Open `part_06_deep_learning/ch31_sequences_rnns_time_series/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six sequence modeling components below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 31.1 (`build_sliding_windows(series_2d, seq_len=8, target_col=0)`):** Convert a 2D `(T, F)` array into `(X_seq, y_next)` of shapes `(T - seq_len, seq_len, F)` and `(T - seq_len,)` where `X_seq[i] = series_2d[i : i + seq_len]` and `y_next[i] = series_2d[i + seq_len, target_col]`, raising `ValueError` if `len(series_2d) <= seq_len`.
+- **To-Do 31.2 (`rnn_cell_step_numpy(x_t, h_prev, W_xh, W_hh, b_h)`):** Compute one pure-NumPy recurrent step `np.tanh(x_t @ W_xh + h_prev @ W_hh + b_h)` returning a `(B, H)` float ndarray without mutating inputs.
+- **To-Do 31.3 (`EpiGRUForecaster`):** Build an `nn.Module` (`__init__(self, input_size, hidden_size=16)`) with `nn.GRU(input_size, hidden_size, batch_first=True)` and `nn.Linear(hidden_size, 1)`, returning the `(B, 1)` forecast from the final timestep `out[:, -1, :]`.
+- **To-Do 31.4 (`EpiLSTMForecaster`):** Build an `nn.Module` (`__init__(self, input_size, hidden_size=16)`) with `nn.LSTM(input_size, hidden_size, batch_first=True)` and `nn.Linear(hidden_size, 1)`, unpacking `out, _ = self.lstm(x)` and returning `(B, 1)` from `out[:, -1, :]`.
+- **To-Do 31.5 (`pad_variable_vital_sequences(seq_list)`):** Take a list of 2D `(T_i, F)` tensors, compute `lengths` (`torch.long`), zero-pad with `nn.utils.rnn.pad_sequence(..., batch_first=True, padding_value=0.0)`, build boolean `valid_mask` `(B, max_len)`, and return `(padded, lengths, valid_mask)`.
+- **To-Do 31.6 (`naive_persistence_forecast_rmse(y_seq_last, y_true)`):** Return the persistence baseline RMSE `round(float(sqrt(mean((y_true - y_seq_last) ** 2))), 4)`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch31-test}
+
+Work through all 10 sequence modeling, tensor shape, and temporal hygiene questions on paper before checking Stage 8:
+
+1. **Sliding-Window Count:** A weekly district surveillance table has `T = 52` rows and `F = 3` features. If you call `build_sliding_windows(series_2d, seq_len=8, target_col=0)`, what are the exact shapes of `X_seq` and `y_next`?
+2. **Why Not Random `train_test_split`?** Suppose a colleague runs `train_test_split(X_all, y_all, test_size=0.2, shuffle=True)` on sliding windows built from Dhaka 2024–2025 dengue data and reports a dazzling test RMSE of `0.09`. Explain the **two distinct forms of temporal leakage** inflating that score.
+3. **Scaling Leakage Diagnosis:** In `epi_surveillance`, fitting `StandardScaler` on all 104 Dhaka weeks gives a dengue mean of `128.40`, whereas fitting strictly on 2024 gives `126.60`. Why is fitting `StandardScaler` before splitting chronologically scientifically invalid even though it does not touch the model weights directly?
+4. **Pure-NumPy RNN Shape Trace:** Given `x_t` of shape `(4, 3)`, `h_prev` of shape `(4, 16)`, `W_xh` of shape `(3, 16)`, `W_hh` of shape `(16, 16)`, and `b_h` of shape `(16,)`, what is the output shape of `np.tanh(x_t @ W_xh + h_prev @ W_hh + b_h)` and what numeric interval bounds every entry?
+5. **Vanishing vs. Exploding Gradients:** During Backpropagation Through Time across `T = 20` weeks, if the Jacobian factor per step is `0.5`, roughly how large is $0.5^{20}$? What happens instead if the factor is `1.5`, and which single PyTorch line prevents weight overflow from the exploding case?
+6. **LSTM vs. GRU Architecture:** What extra internal state tensor does `nn.LSTM` maintain that `nn.GRU` does not, and how does its additive update equation help gradients survive long sequences?
+7. **The `batch_first=True` Shape Audit:** You pass a tensor `x` of shape `(12, 8, 3)` into `nn.LSTM(input_size=3, hidden_size=24, num_layers=1, batch_first=True)`. What are the exact shapes of `out`, `h_n`, and `c_n` in `out, (h_n, c_n) = lstm(x)`?
+8. **Final Timestep vs. Full Sequence Output:** Inside `EpiGRUForecaster.forward(self, x)`, why do we pass `out[:, -1, :]` (shape `(B, H)`) instead of the entire 3D `out` tensor (shape `(B, T, H)`) into `self.head = nn.Linear(hidden_size, 1)` for next-week forecasting?
+9. **Padding & Boolean Mask Trace:** Three ICU patients have sequence lengths `[2, 4, 1]` with `F = 3` vitals. After `pad_variable_vital_sequences(seq_list)`, what are the shapes of `padded`, `lengths`, and `valid_mask`, and how many `True` entries exist in `valid_mask`?
+10. **Persistence Hand Calculation:** Over four test weeks, `y_seq_last = [10, 20, 30, 40]` and `y_true = [12, 18, 33, 37]`. Compute the exact **naive persistence MSE and RMSE** by hand.
+
+---
+
+## Stage 7 — Chapter 31 Coding Exam (100 Points) {#sec-ch31-exam}
+
+Open `part_06_deep_learning/ch31_sequences_rnns_time_series/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch31", exam_submissions)` to earn your Chapter 31 Exam score out of 100 points.
+
+### Exam Task 31.1 (30 Points): `temporal_district_window_split(epi_df, district, seq_len=8, cutoff_year=2025)`
+
+Without mutating `epi_df`:
+
+- Filter `epi_df[epi_df["district"] == district]` and sort chronologically by `["year", "epi_week"]`.
+- Extract the 3 numeric columns in exact order `["dengue_cases", "rainfall_mm", "mean_temp_c"]` (`target_col=0` is `dengue_cases`).
+- Fit `StandardScaler()` **strictly on rows with `year < cutoff_year`**, then transform the full sorted feature matrix `scaled = scaler.transform(raw)`.
+- Build standardized sliding windows on `scaled` (so `y_train` and `y_test` are on the training-fitted standardized `dengue_cases` scale):
+  - **Train windows** strictly inside `year < cutoff_year`: indices `t in range(seq_len, n_train)` with `X_train` window `scaled[t - seq_len : t]` and target `scaled[t, 0]`.
+  - **Test windows** for `year >= cutoff_year`: indices `t in range(n_train, len(sub))` with `X_test` window `scaled[t - seq_len : t]` (strictly preceding history!) and target `scaled[t, 0]`.
+- Return `{"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test, "scaler": scaler}`.
+
+### Exam Task 31.2 (35 Points): `train_epi_gru_forecaster(X_train, y_train, X_test, y_test, hidden_size=16, epochs=40, lr=0.02, seed=42)`
+
+Train a PyTorch GRU forecaster cleanly with gradient clipping:
+
+- Call `torch.manual_seed(seed)` and instantiate a GRU forecaster (`nn.GRU(input_size, hidden_size, batch_first=True)` + `nn.Linear(hidden_size, 1)` projecting `out[:, -1, :]`).
+- Train for `epochs` epochs with `nn.MSELoss()`, `torch.optim.Adam(model.parameters(), lr=lr)`, and `nn.utils.clip_grad_norm_(model.parameters(), 1.0)` before each `optimizer.step()`.
+- Evaluate in `model.eval()` and `torch.no_grad()` to obtain 1D float NumPy array `preds` on `X_test`.
+- Return `{"test_rmse": round4, "test_mae": round4, "final_train_loss": round5, "preds": preds}`.
+
+### Exam Task 31.3 (35 Points): `compare_gru_lstm_persistence_epi(epi_df, district="Dhaka", seq_len=8, seed=42)`
+
+Without mutating `epi_df`:
+
+- Call `temporal_district_window_split(epi_df, district=district, seq_len=seq_len, cutoff_year=2025)`.
+- Benchmark three models on the **exact same** held-out test weeks `(X_test, y_test)`:
+  - `"Persistence"`: predicts `X_test[:, -1, 0]` (previous week's standardized dengue count).
+  - `"GRU"`: `EpiGRUForecaster` trained with `hidden_size=16, epochs=40, lr=0.02, seed=seed`, `MSELoss`, `Adam`, and `clip_grad_norm_(..., 1.0)`.
+  - `"LSTM"`: `EpiLSTMForecaster` trained with the identical setup (`hidden_size=16, epochs=40, lr=0.02, seed=seed`).
+- Return `{"leaderboard": df, "best_model": str}` where `leaderboard` is a `pd.DataFrame` with exact columns `["model", "test_rmse", "test_mae"]` (rounded to 4 decimals), sorted ascending by `test_rmse` (`reset_index(drop=True)`), and `best_model` equals `leaderboard.loc[0, "model"]`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch31-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `X_seq` has shape **`(44, 8, 3)`** (`52 - 8 = 44` windows) and `y_next` has shape **`(44,)`**.
+2. First, adjacent sliding windows share **7 out of 8 overlapping weeks**, so randomly splitting windows places nearly identical copies in train and test! Second, future windows (`t + 1`) leak directly into training to "predict" past targets (`t`), violating the arrow of time.
+3. Computing `mean` and `std` across 2024 + 2025 peeks at 2025's monsoon peak height before forecasting 2025—a subtle form of **preprocessing leakage** that would be impossible in live real-time deployment.
+4. Output shape is **`(4, 16)`**, and because $\tanh(\cdot)$ squashes all real numbers strictly between $-1$ and $+1$, every entry lies in **`(-1, 1)`** (bounded in `[-1, 1]` in floating point).
+5. $0.5^{20} \approx \mathbf{9.54 \times 10^{-7}}$ (vanishing by a factor of one million!). Conversely, $1.5^{20} \approx \mathbf{3{,}325}$ (exploding!). Calling `nn.utils.clip_grad_norm_(model.parameters(), 1.0)` after `loss.backward()` and before `optimizer.step()` prevents exploding weight updates.
+6. `nn.LSTM` maintains a separate **cell state** $c_t$ updated additively via $c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t$. When the forget gate $f_t \approx 1$, $\partial c_t / \partial c_{t-1} \approx 1$, giving gradients an unobstructed linear highway across many timesteps.
+7. `out`: **`(12, 8, 24)`** (`(B, T, H)`); `h_n`: **`(1, 12, 24)`** (`(num_layers, B, H)`); `c_n`: **`(1, 12, 24)`** (`(num_layers, B, H)`).
+8. Passing `out` of shape `(B, T, H)` into `nn.Linear(H, 1)` produces `(B, T, 1)` (one prediction per input week), whereas next-week forecasting needs a single scalar prediction `(B, 1)` summarizing the entire 8-week lookback—which is precisely `out[:, -1, :]`.
+9. `padded`: **`(3, 4, 3)`**, `lengths`: **`(3,)`** (`tensor([2, 4, 1])`), `valid_mask`: **`(3, 4)`** with $2 + 4 + 1 = \mathbf{7}$ `True` entries (and 5 `False` padded positions).
+10. Residuals are `[12-10, 18-20, 33-30, 37-40] = [2, -2, 3, -3]`; squared errors are `[4, 4, 9, 9]`; **MSE** $= 26 / 4 = \mathbf{6.5}$; **RMSE** $= \sqrt{6.5} \approx \mathbf{2.5495}$.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import torch
+import torch.nn as nn
+
+# To-Do 31.1
+def build_sliding_windows(series_2d, seq_len=8, target_col=0):
+    """Convert (T, F) series into (X_seq, y_next) sliding windows."""
+    arr = np.asarray(series_2d, dtype=float)
+    if arr.ndim != 2 or seq_len <= 0 or len(arr) <= seq_len:
+        raise ValueError("series_2d must be 2D with len > seq_len")
+    n_win = len(arr) - seq_len
+    X_seq = np.stack([arr[i : i + seq_len] for i in range(n_win)])
+    y_next = np.array(
+        [arr[i + seq_len, target_col] for i in range(n_win)],
+        dtype=float,
+    )
+    return (X_seq, y_next)
+
+# To-Do 31.2
+def rnn_cell_step_numpy(x_t, h_prev, W_xh, W_hh, b_h):
+    """Compute pure-NumPy RNN step tanh(x_t @ W_xh + h_prev @ W_hh + b)."""
+    x = np.asarray(x_t, dtype=float)
+    h = np.asarray(h_prev, dtype=float)
+    wx = np.asarray(W_xh, dtype=float)
+    wh = np.asarray(W_hh, dtype=float)
+    b = np.asarray(b_h, dtype=float)
+    return np.tanh(x @ wx + h @ wh + b)
+
+# To-Do 31.3
+class EpiGRUForecaster(nn.Module):
+    """PyTorch GRU forecaster mapping (B, T, F) windows to (B, 1)."""
+
+    def __init__(self, input_size, hidden_size=16):
+        super().__init__()
+        self.gru = nn.GRU(input_size, hidden_size, batch_first=True)
+        self.head = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out, _ = self.gru(x)
+        return self.head(out[:, -1, :])
+
+# To-Do 31.4
+class EpiLSTMForecaster(nn.Module):
+    """PyTorch LSTM forecaster mapping (B, T, F) windows to (B, 1)."""
+
+    def __init__(self, input_size, hidden_size=16):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.head = nn.Linear(hidden_size, 1)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :])
+
+# To-Do 31.5
+def pad_variable_vital_sequences(seq_list):
+    """Zero-pad variable-length (T_i, F) tensors and build valid mask."""
+    lengths = torch.tensor(
+        [s.shape[0] for s in seq_list], dtype=torch.long
+    )
+    padded = nn.utils.rnn.pad_sequence(
+        seq_list, batch_first=True, padding_value=0.0
+    )
+    max_len = padded.shape[1]
+    valid_mask = (
+        torch.arange(max_len).unsqueeze(0) < lengths.unsqueeze(1)
+    )
+    return (padded, lengths, valid_mask)
+
+# To-Do 31.6
+def naive_persistence_forecast_rmse(y_seq_last, y_true):
+    """Compute RMSE of naive persistence forecast y_hat_t = y_{t-1}."""
+    yl = np.asarray(y_seq_last, dtype=float)
+    yt = np.asarray(y_true, dtype=float)
+    rmse = float(np.sqrt(np.mean((yt - yl) ** 2)))
+    return round(rmse, 4)
+```
+
+### C. Annotated Solutions — Chapter 31 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# Exam Task 31.1 (30 pts)
+def temporal_district_window_split(
+    epi_df, district, seq_len=8, cutoff_year=2025
+):
+    """Leak-free temporal train/test sliding windows (standardized)."""
+    sub = (
+        epi_df[epi_df["district"] == district]
+        .sort_values(["year", "epi_week"])
+        .reset_index(drop=True)
+    )
+    feat_cols = ["dengue_cases", "rainfall_mm", "mean_temp_c"]
+    raw = sub[feat_cols].to_numpy(dtype=np.float32)
+    n_train = int((sub["year"] < cutoff_year).sum())
+    scaler = StandardScaler()
+    scaler.fit(raw[:n_train])
+    scaled = scaler.transform(raw).astype(np.float32)
+    X_train = np.stack(
+        [scaled[t - seq_len : t] for t in range(seq_len, n_train)]
+    )
+    y_train = scaled[seq_len:n_train, 0].astype(np.float32)
+    X_test = np.stack(
+        [scaled[t - seq_len : t] for t in range(n_train, len(sub))]
+    )
+    y_test = scaled[n_train:, 0].astype(np.float32)
+    return {
+        "X_train": X_train,
+        "y_train": y_train,
+        "X_test": X_test,
+        "y_test": y_test,
+        "scaler": scaler,
+    }
+
+# Exam Task 31.2 (35 pts)
+def train_epi_gru_forecaster(
+    X_train, y_train, X_test, y_test,
+    hidden_size=16, epochs=40, lr=0.02, seed=42,
+):
+    """Train GRU forecaster with MSELoss, Adam & gradient clipping."""
+    torch.manual_seed(seed)
+    x_tr = torch.tensor(np.asarray(X_train, dtype=np.float32))
+    y_tr = torch.tensor(
+        np.asarray(y_train, dtype=np.float32)
+    ).unsqueeze(-1)
+    x_te = torch.tensor(np.asarray(X_test, dtype=np.float32))
+    y_te = np.asarray(y_test, dtype=float)
+    model = EpiGRUForecaster(x_tr.shape[-1], hidden_size=hidden_size)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.MSELoss()
+    model.train()
+    final_loss = 0.0
+    for _ in range(epochs):
+        opt.zero_grad()
+        loss = loss_fn(model(x_tr), y_tr)
+        loss.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        opt.step()
+        final_loss = float(loss.item())
+    model.eval()
+    with torch.no_grad():
+        preds = model(x_te).squeeze(-1).numpy().astype(float)
+    test_rmse = round(float(np.sqrt(np.mean((y_te - preds) ** 2))), 4)
+    test_mae = round(float(np.mean(np.abs(y_te - preds))), 4)
+    return {
+        "test_rmse": test_rmse,
+        "test_mae": test_mae,
+        "final_train_loss": round(final_loss, 5),
+        "preds": preds,
+    }
+
+# Exam Task 31.3 (35 pts)
+def compare_gru_lstm_persistence_epi(
+    epi_df, district="Dhaka", seq_len=8, seed=42
+):
+    """Benchmark Persistence vs GRU vs LSTM on held-out test weeks."""
+    split = temporal_district_window_split(
+        epi_df, district=district, seq_len=seq_len, cutoff_year=2025
+    )
+    X_tr, y_tr = split["X_train"], split["y_train"]
+    X_te, y_te = split["X_test"], split["y_test"].astype(float)
+    pers = X_te[:, -1, 0].astype(float)
+    gru_res = train_epi_gru_forecaster(
+        X_tr, y_tr, X_te, y_te,
+        hidden_size=16, epochs=40, lr=0.02, seed=seed,
+    )
+    torch.manual_seed(seed)
+    lstm_model = EpiLSTMForecaster(X_tr.shape[-1], hidden_size=16)
+    opt = torch.optim.Adam(lstm_model.parameters(), lr=0.02)
+    loss_fn = nn.MSELoss()
+    xt = torch.tensor(X_tr, dtype=torch.float32)
+    yt = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(-1)
+    xe = torch.tensor(X_te, dtype=torch.float32)
+    lstm_model.train()
+    for _ in range(40):
+        opt.zero_grad()
+        loss = loss_fn(lstm_model(xt), yt)
+        loss.backward()
+        nn.utils.clip_grad_norm_(lstm_model.parameters(), 1.0)
+        opt.step()
+    lstm_model.eval()
+    with torch.no_grad():
+        lstm_preds = lstm_model(xe).squeeze(-1).numpy().astype(float)
+    rows = [
+        {
+            "model": "Persistence",
+            "test_rmse": round(
+                float(np.sqrt(np.mean((y_te - pers) ** 2))), 4
+            ),
+            "test_mae": round(float(np.mean(np.abs(y_te - pers))), 4),
+        },
+        {
+            "model": "GRU",
+            "test_rmse": gru_res["test_rmse"],
+            "test_mae": gru_res["test_mae"],
+        },
+        {
+            "model": "LSTM",
+            "test_rmse": round(
+                float(np.sqrt(np.mean((y_te - lstm_preds) ** 2))), 4
+            ),
+            "test_mae": round(
+                float(np.mean(np.abs(y_te - lstm_preds))), 4
+            ),
+        },
+    ]
+    lb = (
+        pd.DataFrame(rows, columns=["model", "test_rmse", "test_mae"])
+        .sort_values("test_rmse")
+        .reset_index(drop=True)
+    )
+    return {"leaderboard": lb, "best_model": str(lb.loc[0, "model"])}
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 31 Failure Modes
+
+1. **Temporal Leakage via Shuffled Splits or Full-Series Scaling:** Calling `train_test_split(..., shuffle=True)` on overlapping sliding windows or fitting `StandardScaler` on both 2024 and 2025 leaks future outbreaks directly into training. Always sort by `["year", "epi_week"]`, split strictly by `year < cutoff_year`, and fit scalers exclusively on past training rows.
+2. **Tensor Axis & Tuple-Unpacking Traps (`batch_first=True` and `(out, (h_n, c_n))`):** Forgetting `batch_first=True` silently swaps batch and time axes without raising an error, while flat 3-way unpacking `out, h_n, c_n = lstm(x)` immediately triggers `ValueError`. Always specify `batch_first=True`, verify `(B, T, F)` inputs, and unpack `out, _ = self.lstm(x)`.
+3. **Publishing Unbenchmarked Neural RMSEs (Skipping Persistence):** On smooth weekly disease curves, even an undertrained model can look deceptively accurate until compared against $\hat{y}_t = y_{t-1}$. Always evaluate Persistence, GRU, and LSTM on identical held-out windows and apply `clip_grad_norm_(..., 1.0)` so recurrent gradients stay stable.
+
+---
+
+::: {.callout-tip title="Bridge to Chapter 32 — Attention, Transformers & Biomedical Language Models"}
+Gated recurrent networks (`GRU` and `LSTM`) conquer vanilla RNN vanishing gradients, yet they still process sequences **one timestep at a time** ($t = 1 \rightarrow 2 \rightarrow \dots \rightarrow T$), creating a sequential bottleneck when reading 512-token clinical discharge summaries or long genomic sequences. In Chapter 32, you will replace sequential recurrence with **Scaled Dot-Product Self-Attention** and the **Transformer** architecture—letting every timestep attend directly to every other timestep in parallel!
+:::

@@ -1,0 +1,1071 @@
+# Attention, Transformers, Fine-Tuning, and Modern Foundation Models {#sec-ch32}
+
+> **Chapter Mission:** Complete **Part VI (Deep Learning & PyTorch)** by building the entire modern **Transformer** and **Low-Rank Adaptation (LoRA)** stack from scratch in native PyTorch—100% offline on CPU with zero external downloads. You will derive and verify **Scaled Dot-Product Attention** (and why $\sqrt{d_k}$ prevents softmax gradient saturation), **causal autoregressive masking**, **Sinusoidal Positional Encoding**, **Multi-Head Self-Attention**, a **Transformer Encoder Block**, an end-to-end **Clinical Triage Note Classifier** with interpretable attention inspection, and **LoRA ($\Delta W = B A$)** parameter-efficient fine-tuning—while mapping every module cleanly onto BERT, BioClinicalBERT, GPT, Gemini, and Hugging Face `transformers` / `peft` workflows.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch32 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch32 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch32 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Derive and implement **Scaled Dot-Product Attention** in PyTorch, proving mathematically and empirically why dividing by $\sqrt{d_k}$ prevents softmax saturation and how `masked_fill(mask == 0, float("-inf"))` enforces both padding masks and causal autoregressive masks.
+2. Construct Vaswani et al. (2017) **Sinusoidal Positional Encodings** so permutation-equivariant self-attention layers can distinguish clinical word order (e.g., `"no chest pain"` vs. `"chest pain"`).
+3. Assemble **Multi-Head Self-Attention** (`W_q`, `W_k`, `W_v`, `W_o`) and a complete **Transformer Encoder Block** with residual connections, `LayerNorm`, dropout, and a `Linear -> GELU -> Linear` feed-forward network.
+4. Build a leak-free **Clinical Text Tokenizer** (`ClinicalVocabTokenizer` with `PAD_ID = 0` and `UNK_ID = 1`) and train an end-to-end **Clinical Triage Note Transformer** with masked mean pooling and token-level attention inspection.
+5. Implement **Low-Rank Adaptation (`LoRALinear`)** from first principles ($\Delta W = (\alpha / r) B A$ with zero-initialized $B$ and frozen base weights), verifying step-0 output parity, selective gradient flow, and >85% trainable-parameter reduction.
+6. Map every native PyTorch Transformer component onto the three modern **Foundation Model** families (**Encoder-Only**, **Decoder-Only**, **Encoder-Decoder**), Hugging Face `transformers` / `peft` APIs, and **Clinical LLM Safety** guardrails.
+
+---
+
+## Stage 1 — First-Principles Intuition: From Sequential Bottlenecks to Attention & LoRA {#sec-ch32-intuition}
+
+In Chapters 27–31, you built PyTorch tensors and autograd, custom `Dataset` / `DataLoader` pipelines, MLPs, CNNs for medical imaging, and recurrent sequence models (RNNs/LSTMs). Recurrent models process a clinical discharge summary one word at a time ($h_1 \to h_2 \to \dots \to h_T$). That sequential chain creates two fatal limitations at scale:
+
+- **Long-Range Information Bottleneck:** Every early clue (`"allergic to penicillin"` on token 4) must survive dozens of recurrent multiplications before reaching token 120 (`"prescribe antibiotic"`), causing gradients to vanish or distort.
+- **Zero Parallelism Across Time:** Token $t$ cannot be computed until token $t - 1$ finishes, wasting modern GPU matrix-multiplication hardware.
+
+**Self-Attention** (Vaswani et al., 2017, *"Attention Is All You Need"*) replaces the sequential chain with an all-pairs lookup table computed in **one parallel matrix multiply**:
+
+$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{Q K^\top}{\sqrt{d_k}}\right) V$$
+
+Each token projects its embedding into three specialized roles:
+
+- **Query ($Q$):** *"What clinical context am I looking for right now?"*
+- **Key ($K$):** *"What clinical information do I advertise to other tokens?"*
+- **Value ($V$):** *"What feature vector should I pass forward if another token attends to me?"*
+
+Why is dividing by $\sqrt{d_k}$ mandatory? If entries of $Q$ and $K$ have mean $0$ and variance $1$, their dot product $q \cdot k = \sum_{j=1}^{d_k} q_j k_j$ has variance **$d_k$** (standard deviation $\sqrt{d_k}$). For $d_k = 64$, raw dot products swing between $-20$ and $+20$, pushing `softmax` to near one-hot saturation (`0.9999` vs. `0.0001`) where its Jacobian collapses to zero! Dividing by $\sqrt{d_k}$ restores unit variance ($\text{Var} = 1$) and keeps gradients flowing cleanly.
+
+### Mapping Native PyTorch to Modern Foundation Models & Hugging Face
+
+Every billion-parameter model in modern biomedical AI is simply a scaled-up stack of the exact PyTorch blocks you build in this chapter:
+
+| Architecture Family | Attention Mask | Flagship Models | Core Clinical Use Cases |
+| :--- | :--- | :--- | :--- |
+| **Encoder-Only** | Bidirectional (padding mask only) | BERT, PubMedBERT, BioClinicalBERT | Triage classification, ICD coding, clinical NER |
+| **Decoder-Only** | Causal lower-triangular (`torch.tril`) | GPT-4, Gemini, Llama, Med-PaLM | Discharge drafting, clinical QA, reasoning |
+| **Encoder-Decoder** | Bidirectional enc + causal dec + cross-attn | T5, Flan-T5, BART | Radiology summarization, translation |
+
+In production Hugging Face code, your native classes map 1-to-1 onto library APIs:
+
+- `ClinicalVocabTokenizer` $\longleftrightarrow$ `AutoTokenizer.from_pretrained("emilyalsentzer/Bio_ClinicalBERT")` (subword WordPiece / BPE tokenization).
+- `ClinicalNoteTransformer` $\longleftrightarrow$ `AutoModelForSequenceClassification.from_pretrained(...)` (12–24 stacked `TransformerEncoderBlock`s).
+- `LoRALinear` $\longleftrightarrow$ `peft.LoraConfig(r=8, lora_alpha=16, target_modules=["query", "value"])` wrapped with `get_peft_model(base_model, cfg)`.
+
+::: {.callout-warning title="Clinical LLM Safety & Governance Checklist"}
+Before deploying any fine-tuned Transformer or foundation model in healthcare:
+
+1. **Zero PHI Leakage:** Never send raw patient identifiers (names, MRNs, birth dates) to external third-party LLM APIs; de-identify notes locally or host open-weight models inside hospital infrastructure.
+2. **Hallucination & Retrieval Grounding:** Decoder LLMs predict plausible next tokens, not verified medical facts—ground clinical answers in retrieved guidelines (RAG) and cite source passages.
+3. **Human-in-the-Loop Calibration:** Audit subgroup calibration and recall (Chapter 25) and keep clinicians in control of high-stakes triage escalations.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Transformer Encoder & LoRA Fine-Tuning Architecture {#sec-ch32-mental-model}
+
+Study how tokens flow through embeddings, sinusoidal positions, multi-head self-attention, residual `LayerNorm` + GELU FFN, masked pooling, and low-rank LoRA adaptation:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph InputPipe["Input Pipeline"]
+        direction LR
+        T0["Clinical Note<br/>Token IDs + Pad Mask"] --> E1["nn.Embedding<br/>+ Sinusoidal PE"]
+    end
+    subgraph EncBlock["Encoder Block"]
+        direction LR
+        M1["Multi-Head<br/>Self-Attention"] --> N1["Add & LayerNorm<br/>(Residual 1)"]
+        N1 --> F1["Linear -> GELU<br/>-> Linear FFN"]
+        F1 --> N2["Add & LayerNorm<br/>(Residual 2)"]
+    end
+    subgraph LoRABox["LoRA Adapter"]
+        direction LR
+        W0["Frozen Base W<br/>(requires_grad=False)"] --> S1["Sum Output<br/>h = Wx + (a/r)BAx"]
+        AB["Trainable B @ A<br/>(B=0 init, rank r)"] --> S1
+    end
+    subgraph HeadBox["Triage Head"]
+        direction LR
+        P1["Masked Mean Pool<br/>(Exclude PAD)"] --> C1["Linear(d, 1)<br/>Urgent Probability"]
+    end
+    E1 --> M1
+    AB -.->|"Adapts W_q, W_v"| M1
+    N2 --> P1
+```
+
+Notice two architectural hallmarks in this diagram:
+
+1. **Dual Residual Highways:** Both Multi-Head Self-Attention and the GELU Feed-Forward Network wrap inside `LayerNorm(x + Dropout(Sublayer(x)))`, enabling gradients to traverse deep stacks cleanly.
+2. **Plug-In LoRA Path:** When adapting a pretrained Transformer to a new hospital domain, base weights $W$ stay frozen (`requires_grad=False`) while a tiny low-rank bypass $(\alpha / r) B A$ adapts `W_q` and `W_v` with identical step-0 behavior because $B$ starts at exact zero.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch32-walkthrough}
+
+Open `part_06_deep_learning/ch32_attention_transformers_modern_ai/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Offline PyTorch Environment & Deterministic Seeds {#sec-ch32-setup}
+
+```python
+import math
+import numpy as np
+import torch
+import torch.nn as nn
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+import sharukh_tutor as tutor
+
+torch.manual_seed(42)
+torch.set_num_threads(1)
+np.random.seed(42)
+print("PyTorch:", torch.__version__, "| Device: cpu (100% offline)")
+```
+
+**Expected Output:**
+```text
+PyTorch: 2.15.0+cpu | Device: cpu (100% offline)
+```
+
+---
+
+### Why $\sqrt{d_k}$ Prevents Softmax Gradient Saturation {#sec-ch32-sqrt-dk}
+
+```python
+torch.manual_seed(42)
+d_k = 64
+q_demo = torch.randn(1, 6, d_k)
+k_demo = torch.randn(1, 6, d_k)
+
+raw_scores = q_demo @ k_demo.transpose(-2, -1)
+scaled_scores = raw_scores / math.sqrt(d_k)
+
+raw_attn = torch.softmax(raw_scores, dim=-1)
+scaled_attn = torch.softmax(scaled_scores, dim=-1)
+
+print(f"Unscaled score std: {raw_scores.std().item():.3f} | "
+      f"max weight: {raw_attn.max().item():.4f}")
+print(f"Scaled   score std: {scaled_scores.std().item():.3f} | "
+      f"max weight: {scaled_attn.max().item():.4f}")
+```
+
+**Expected Output:**
+```text
+Unscaled score std: 7.523 | max weight: 0.9999
+Scaled   score std: 0.940 | max weight: 0.5441
+```
+
+Look closely at those numbers: for $d_k = 64$, unscaled dot products have standard deviation **`7.523`** ($\approx \sqrt{64} = 8$), forcing `softmax` to put **`0.9999`** mass on a single token (dead gradient!). Dividing by $\sqrt{64} = 8$ brings the standard deviation right back to **`0.940`** and spreads attention smoothly (`max weight: 0.5441`).
+
+---
+
+### Scaled Dot-Product Attention & Causal Autoregressive Masking {#sec-ch32-sdpa}
+
+```python
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    """Compute scaled dot-product attention (mask: 1=allow, 0=block)."""
+    d_k = Q.size(-1)
+    scores = (Q @ K.transpose(-2, -1)) / math.sqrt(d_k)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, float("-inf"))
+    attn = torch.softmax(scores, dim=-1)
+    return attn @ V, attn
+
+torch.manual_seed(7)
+Q_ex = torch.randn(1, 4, 8)
+K_ex = torch.randn(1, 4, 8)
+V_ex = torch.randn(1, 4, 8)
+causal_mask = torch.tril(torch.ones(1, 4, 4))
+ctx, causal_attn = scaled_dot_product_attention(
+    Q_ex, K_ex, V_ex, mask=causal_mask
+)
+upper_max = torch.triu(causal_attn[0], diagonal=1).max().item()
+row_err = (causal_attn.sum(dim=-1) - 1.0).abs().max().item()
+print("Context shape:", tuple(ctx.shape),
+      "| Attn shape:", tuple(causal_attn.shape))
+print("Causal attention matrix (rounded):")
+print(np.round(causal_attn[0].detach().numpy(), 3))
+print(f"Upper-triangle max: {upper_max:.6f} | "
+      f"Row-sum err: {row_err:.6f}")
+```
+
+**Expected Output:**
+```text
+Context shape: (1, 4, 8) | Attn shape: (1, 4, 4)
+Causal attention matrix (rounded):
+[[1.    0.    0.    0.   ]
+ [0.611 0.389 0.    0.   ]
+ [0.088 0.849 0.063 0.   ]
+ [0.084 0.047 0.797 0.073]]
+Upper-triangle max: 0.000000 | Row-sum err: 0.000000
+```
+
+Trace the mechanics carefully:
+
+- Using `K.transpose(-2, -1)` (negative indices!) guarantees the exact same function handles both 3D single-head `(B, T, d_k)` and 4D multi-head `(B, H, T, d_k)` tensors.
+- Filling `mask == 0` with `float("-inf")` **before** `torch.softmax(scores, dim=-1)` sends $e^{-\infty} = 0.0$ strictly to zero while automatically renormalizing the allowed positions so every row sums to `1.000000`.
+- Notice Row 0 (`[1.0, 0, 0, 0]`): token 0 sees only itself; token 2 sees tokens 0, 1, and 2 (`0.088 + 0.849 + 0.063 = 1.0`) and **never** peeks at future token 3. That exact triangular mask powers every autoregressive LLM (GPT, Gemini, Llama).
+
+---
+
+### Sinusoidal Positional Encoding (Vaswani et al., 2017) {#sec-ch32-pe}
+
+```python
+def sinusoidal_positional_encoding(max_len, d_model):
+    """Return (max_len, d_model) float32 sinusoidal position table."""
+    pe = torch.zeros(max_len, d_model, dtype=torch.float32)
+    pos = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
+    div_term = torch.exp(
+        torch.arange(0, d_model, 2, dtype=torch.float32)
+        * (-math.log(10000.0) / d_model)
+    )
+    pe[:, 0::2] = torch.sin(pos * div_term)
+    pe[:, 1::2] = torch.cos(pos * div_term[: d_model // 2])
+    return pe
+
+pe = sinusoidal_positional_encoding(max_len=12, d_model=16)
+cos = nn.CosineSimilarity(dim=0)
+print("PE shape:", tuple(pe.shape), "| dtype:", pe.dtype)
+print("pos=0 first 6 dims:", np.round(pe[0, :6].numpy(), 3))
+print(f"cos(pos0, pos1): {cos(pe[0], pe[1]).item():.4f} | "
+      f"cos(pos0, pos10): {cos(pe[0], pe[10]).item():.4f}")
+```
+
+**Expected Output:**
+```text
+PE shape: (12, 16) | dtype: torch.float32
+pos=0 first 6 dims: [0. 1. 0. 1. 0. 1.]
+cos(pos0, pos1): 0.9356 | cos(pos0, pos10): 0.4558
+```
+
+Why compute `div_term` in log-space (`exp(2i * -ln(10000) / d_model)`) instead of `1.0 / (10000 ** (2i / d_model))`? Log-space exponentiation is numerically cleaner and standard across PyTorch implementations. Notice also the geometric property: adjacent positions (`pos0`, `pos1`) share high cosine similarity (`0.9356`), while distant positions (`pos0`, `pos10`) decay smoothly (`0.4558`).
+
+---
+
+### Multi-Head Self-Attention & Transformer Encoder Block {#sec-ch32-mha-block}
+
+```python
+class MultiHeadSelfAttention(nn.Module):
+    """Multi-head self-attention with W_q, W_k, W_v, W_o projections."""
+
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        if d_model % num_heads != 0:
+            raise ValueError(
+                f"d_model ({d_model}) must be divisible by "
+                f"num_heads ({num_heads})"
+            )
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
+        self.W_v = nn.Linear(d_model, d_model)
+        self.W_o = nn.Linear(d_model, d_model)
+
+    def forward(self, x, mask=None):
+        B, T, _ = x.shape
+        H, dk = self.num_heads, self.d_k
+        Q = self.W_q(x).view(B, T, H, dk).transpose(1, 2)
+        K = self.W_k(x).view(B, T, H, dk).transpose(1, 2)
+        V = self.W_v(x).view(B, T, H, dk).transpose(1, 2)
+        ctx, attn = scaled_dot_product_attention(Q, K, V, mask=mask)
+        merged = ctx.transpose(1, 2).contiguous().view(
+            B, T, self.d_model
+        )
+        return self.W_o(merged), attn
+
+
+class TransformerEncoderBlock(nn.Module):
+    """Pre/Post-LN Transformer Encoder: MHA + Residual + GELU FFN."""
+
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.attn = MultiHeadSelfAttention(d_model, num_heads)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.drop = nn.Dropout(dropout)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_ff),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_ff, d_model),
+        )
+
+    def forward(self, x, mask=None):
+        attn_out, weights = self.attn(x, mask=mask)
+        x = self.norm1(x + self.drop(attn_out))
+        x = self.norm2(x + self.drop(self.ffn(x)))
+        return x, weights
+
+torch.manual_seed(42)
+block = TransformerEncoderBlock(d_model=16, num_heads=4, d_ff=32)
+block.eval()
+x_in = torch.randn(2, 6, 16)
+pad_m = torch.tensor(
+    [[1, 1, 1, 1, 0, 0], [1, 1, 1, 1, 1, 0]], dtype=torch.float32
+).view(2, 1, 1, 6)
+h_out, w_out = block(x_in, mask=pad_m)
+print("Block output:", tuple(h_out.shape),
+      "| Attention:", tuple(w_out.shape))
+print("Max attention on <PAD> tokens:",
+      round(float(w_out[0, :, :4, 4:].max().item()), 6))
+```
+
+**Expected Output:**
+```text
+Block output: (2, 6, 16) | Attention: (2, 4, 6, 6)
+Max attention on <PAD> tokens: 0.0
+```
+
+Study the tensor reshape idiom in `MultiHeadSelfAttention.forward`:
+
+1. `self.W_q(x)` maps `(B, T, d_model)` $\to$ `(B, T, d_model)`.
+2. `.view(B, T, H, dk)` splits only the **last** feature axis into `H` parallel heads of size `d_k = d_model // H`.
+3. `.transpose(1, 2)` swaps `T` and `H` into `(B, H, T, dk)` so `scaled_dot_product_attention` runs all `H` heads simultaneously in one batched matmul.
+4. `.transpose(1, 2).contiguous().view(B, T, d_model)` concatenates all head outputs cleanly before mixing across heads with `self.W_o`.
+
+---
+
+### Clinical Triage Note Classifier & Attention Interpretability {#sec-ch32-clinical-triage}
+
+```python
+class ClinicalVocabTokenizer:
+    """Deterministic whitespace clinical tokenizer with PAD & UNK."""
+
+    PAD_ID = 0
+    UNK_ID = 1
+
+    def __init__(self):
+        self.token_to_id = {"<PAD>": 0, "<UNK>": 1}
+        self.id_to_token = {0: "<PAD>", 1: "<UNK>"}
+
+    def fit(self, texts):
+        words = sorted(
+            {w for t in texts for w in t.lower().split()}
+        )
+        self.token_to_id = {"<PAD>": 0, "<UNK>": 1}
+        for idx, word in enumerate(words, start=2):
+            self.token_to_id[word] = idx
+        self.id_to_token = {
+            v: k for k, v in self.token_to_id.items()
+        }
+        return self
+
+    def encode(self, text, max_len):
+        ids = [
+            self.token_to_id.get(w, self.UNK_ID)
+            for w in text.lower().split()
+        ][:max_len]
+        return ids + [self.PAD_ID] * (max_len - len(ids))
+
+    def __len__(self):
+        return len(self.token_to_id)
+
+
+def make_clinical_triage_notes(n_per_class=90, seed=42):
+    """Synthesize deterministic Routine (0) vs Urgent (1) notes."""
+    rng = np.random.default_rng(seed)
+    shared = ["patient", "ward", "reports", "clinic", "history"]
+    routine = [
+        "mild", "stable", "refill", "followup", "normal",
+        "routine", "afebrile", "checkup", "rash", "cleared",
+    ]
+    urgent = [
+        "severe", "chest", "pain", "dyspnea", "hypoxia",
+        "sepsis", "tachycardia", "syncope", "bleeding", "emergency",
+    ]
+    texts, labels = [], []
+    for _ in range(n_per_class):
+        ctx = list(rng.choice(shared, size=2, replace=False))
+        r_toks = list(rng.choice(routine, size=4, replace=False))
+        u_toks = list(rng.choice(urgent, size=4, replace=False))
+        if rng.random() < 0.2:
+            r_toks[0] = str(rng.choice(urgent))
+        if rng.random() < 0.2:
+            u_toks[0] = str(rng.choice(routine))
+        r_note = ctx + r_toks
+        u_note = ctx + u_toks
+        rng.shuffle(r_note)
+        rng.shuffle(u_note)
+        texts.append(" ".join(r_note))
+        labels.append(0)
+        texts.append(" ".join(u_note))
+        labels.append(1)
+    return texts, np.array(labels, dtype=np.int64)
+
+
+class ClinicalNoteTransformer(nn.Module):
+    """Mini Encoder Transformer for clinical triage classification."""
+
+    def __init__(self, vocab_size, max_len=10, d_model=16, heads=2):
+        super().__init__()
+        self.emb = nn.Embedding(
+            vocab_size, d_model, padding_idx=0
+        )
+        self.register_buffer(
+            "pe", sinusoidal_positional_encoding(max_len, d_model)
+        )
+        self.enc = TransformerEncoderBlock(
+            d_model, heads, d_ff=32, dropout=0.1
+        )
+        self.head = nn.Linear(d_model, 1)
+
+    def forward(self, ids):
+        pad_mask = (ids != 0).float()
+        attn_mask = pad_mask.unsqueeze(1).unsqueeze(2)
+        x = self.emb(ids) + self.pe[: ids.size(1)]
+        h, attn = self.enc(x, mask=attn_mask)
+        w = pad_mask.unsqueeze(-1)
+        pooled = (h * w).sum(dim=1) / w.sum(dim=1).clamp(min=1.0)
+        return self.head(pooled), attn
+
+torch.manual_seed(42)
+notes, y_all = make_clinical_triage_notes(n_per_class=90, seed=42)
+tr_txt, va_txt, y_tr, y_va = train_test_split(
+    notes, y_all, test_size=0.25, stratify=y_all, random_state=42
+)
+tok = ClinicalVocabTokenizer().fit(tr_txt)
+X_tr = torch.tensor([tok.encode(t, 10) for t in tr_txt])
+X_va = torch.tensor([tok.encode(t, 10) for t in va_txt])
+y_tr_t = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(1)
+
+clf = ClinicalNoteTransformer(len(tok), max_len=10, d_model=16)
+opt = torch.optim.Adam(clf.parameters(), lr=0.02)
+loss_fn = nn.BCEWithLogitsLoss()
+for _ in range(25):
+    clf.train()
+    opt.zero_grad()
+    logits, _ = clf(X_tr)
+    loss_fn(logits, y_tr_t).backward()
+    opt.step()
+
+clf.eval()
+with torch.no_grad():
+    va_logits, va_attn = clf(X_va)
+    va_probs = torch.sigmoid(va_logits).squeeze(-1).numpy()
+va_acc = float(((va_probs >= 0.5) == y_va).mean())
+va_auc = float(roc_auc_score(y_va, va_probs))
+print(f"Vocab size: {len(tok)} | Val Acc: {va_acc:.4f} | "
+      f"Val AUC: {va_auc:.4f}")
+
+# Inspect top attended tokens on an Urgent clinical note
+sample = "patient reports severe chest pain dyspnea emergency"
+s_ids = torch.tensor([tok.encode(sample, 10)])
+with torch.no_grad():
+    s_logit, s_attn = clf(s_ids)
+    s_prob = float(torch.sigmoid(s_logit).item())
+words = sample.split()
+mean_recv = s_attn[0, :, : len(words), : len(words)].mean(dim=(0, 1))
+ranked = sorted(
+    zip(words, mean_recv.tolist()), key=lambda p: p[1], reverse=True
+)
+print(f"Urgent prob: {s_prob:.4f} | Top attended tokens:",
+      [(w, round(sc, 3)) for w, sc in ranked[:4]])
+```
+
+**Expected Output:**
+```text
+Vocab size: 27 | Val Acc: 0.9778 | Val AUC: 1.0000
+Urgent prob: 0.9994 | Top attended tokens: [('chest', 0.495), ('dyspnea', 0.421), ('severe', 0.064), ('emergency', 0.008)]
+```
+
+Look at that clinical interpretability payoff: trained in a fraction of a second on CPU with **zero external weights**, our native PyTorch Transformer hits **`97.78%` validation accuracy (`AUC = 1.0000`)** even with 20% cross-class symptom noise—and when presented with `"patient reports severe chest pain dyspnea emergency"`, self-attention focuses overwhelmingly on **`'chest'` (`0.495`)**, **`'dyspnea'` (`0.421`)**, and **`'severe'` (`0.064`)**, ignoring generic boilerplate tokens like `"patient"` and `"reports"`.
+
+Notice two subtle engineering details worth memorizing:
+
+- `self.register_buffer("pe", ...)` stores the sinusoidal positional table inside `state_dict()` and moves it automatically to GPU with `.to(device)` **without** registering it as a trainable gradient parameter.
+- `tok.fit(tr_txt)` fits the vocabulary strictly on the **training split**, never peeking at validation text—the exact zero-leakage standard from Part V.
+
+---
+
+### Parameter-Efficient Fine-Tuning With LoRA ($\Delta W = B A$) {#sec-ch32-lora}
+
+Full fine-tuning of a 7-billion-parameter clinical LLM requires storing gradients and Adam momentum states for every weight (>80 GB VRAM). **Low-Rank Adaptation (LoRA; Hu et al., 2021)** freezes the pretrained matrix $W_0 \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ and learns only two tiny low-rank matrices $A \in \mathbb{R}^{r \times d_{\text{in}}}$ and $B \in \mathbb{R}^{d_{\text{out}} \times r}$ with $r \ll \min(d_{\text{in}}, d_{\text{out}})$:
+
+$$h = W_0 x + \frac{\alpha}{r} B (A x)$$
+
+```python
+class LoRALinear(nn.Module):
+    """Freeze base nn.Linear and learn low-rank delta (B @ A)."""
+
+    def __init__(self, base_linear, rank=4, alpha=8.0):
+        super().__init__()
+        self.base_linear = base_linear
+        for p in self.base_linear.parameters():
+            p.requires_grad = False
+        self.rank = rank
+        self.alpha = float(alpha)
+        self.scaling = float(alpha) / rank
+        in_f = base_linear.in_features
+        out_f = base_linear.out_features
+        self.lora_A = nn.Parameter(torch.randn(rank, in_f) * 0.02)
+        self.lora_B = nn.Parameter(torch.zeros(out_f, rank))
+
+    def forward(self, x):
+        base_out = self.base_linear(x)
+        delta = (x @ self.lora_A.T @ self.lora_B.T) * self.scaling
+        return base_out + delta
+
+torch.manual_seed(42)
+base_proj = nn.Linear(64, 64)
+orig_w = base_proj.weight.detach().clone()
+lora_proj = LoRALinear(base_proj, rank=4, alpha=8.0)
+
+x_adapt = torch.randn(16, 64)
+y_target = torch.randn(16, 64)
+with torch.no_grad():
+    init_diff = (base_proj(x_adapt) - lora_proj(x_adapt)).abs().max()
+
+base_n = sum(p.numel() for p in base_proj.parameters())
+lora_n = sum(p.numel() for p in lora_proj.parameters() if p.requires_grad)
+pct = 100.0 * lora_n / (base_n + lora_n)
+
+opt_lora = torch.optim.Adam(
+    [p for p in lora_proj.parameters() if p.requires_grad], lr=0.05
+)
+losses = []
+for _ in range(15):
+    opt_lora.zero_grad()
+    loss = ((lora_proj(x_adapt) - y_target) ** 2).mean()
+    loss.backward()
+    opt_lora.step()
+    losses.append(round(float(loss.item()), 4))
+
+base_unchanged = bool(torch.equal(base_proj.weight, orig_w))
+print(f"Step-0 max diff: {init_diff.item():.6f} | "
+      f"Base frozen unchanged?: {base_unchanged}")
+print(f"Base params: {base_n} | LoRA trainable: {lora_n} "
+      f"({pct:.2f}% trainable)")
+print(f"Adaptation MSE: start={losses[0]} -> end={losses[-1]}")
+```
+
+**Expected Output:**
+```text
+Step-0 max diff: 0.000000 | Base frozen unchanged?: True
+Base params: 4160 | LoRA trainable: 512 (10.96% trainable)
+Adaptation MSE: start=1.359 -> end=0.7793
+```
+
+Look at all three guarantees proven simultaneously:
+
+- **Zero-Disruption Start:** Because `lora_B` starts at exact zero, `Step-0 max diff = 0.000000`—the wrapped model behaves bit-for-bit identically to the pretrained base model before training begins.
+- **Massive Parameter Savings:** On a `64x64` projection, LoRA trains only **512 parameters (`10.96%`)**—an **89% reduction**! Scale that same math to a 7B foundation model (`4096x4096`, `rank=8`), and trainable weights drop to **`0.39%`**, letting you fine-tune on a single consumer GPU and store task adapters in just ~15 MB instead of 14 GB.
+- **Zero Catastrophic Overwrite:** After 15 gradient updates (`MSE: 1.359 -> 0.7793`), `base_proj.weight` remains **100% untouched** (`Base frozen unchanged?: True`).
+
+---
+
+### Break It On Purpose! (Transformer Error Anatomy) {#sec-ch32-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (`d_model` Not Divisible by `num_heads`)"}
+```python
+bad_mha = MultiHeadSelfAttention(d_model=30, num_heads=4)
+```
+**Python's Traceback:**
+```text
+ValueError: d_model (30) must be divisible by num_heads (4)
+```
+**Diagnosis:** Multi-Head Attention splits `d_model` evenly across `num_heads` subspaces of width $d_k = d_{\text{model}} / H$. Because `30 / 4 = 7.5` is not an integer, `.view(B, T, 4, d_k)` would crash silently or misalign features.  
+**Fix:** Always choose `d_model` as an exact multiple of `num_heads` (e.g., `d_model=32, num_heads=4` or BERT's `d_model=768, num_heads=12`) and enforce `d_model % num_heads == 0` in `__init__`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — IndexError (OOV Token ID >= `vocab_size` in `nn.Embedding`)"}
+```python
+tiny_emb = nn.Embedding(num_embeddings=10, embedding_dim=8)
+tiny_emb(torch.tensor([2, 12]))
+```
+**Python's Traceback:**
+```text
+IndexError: index out of range in self
+```
+**Diagnosis:** `nn.Embedding(10, 8)` allocates a lookup table with valid indices `0..9`. Passing token ID `12` (e.g., from a mismatched tokenizer or unmapped OOV clinical abbreviation) indexes past the end of the embedding table.  
+**Fix:** Always initialize `nn.Embedding(len(tokenizer), d_model, padding_idx=0)` from the **exact** fitted tokenizer and route unseen test words to `UNK_ID = 1`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — RuntimeError (Misaligned Mask Shape in `masked_fill`)"}
+```python
+bad_mask = torch.ones(1, 5)
+scaled_dot_product_attention(Q_ex, K_ex, V_ex, mask=bad_mask)
+```
+**Python's Traceback:**
+```text
+RuntimeError: The size of tensor a (5) must match the size of tensor b (4) at non-singleton dimension 2
+```
+**Diagnosis:** `scores` has shape `(1, 4, 4)` (or `(B, H, T, T)` in multi-head mode), while `bad_mask` had trailing dimension `5` instead of `4`. PyTorch broadcasting requires every mask axis to either match `scores` or equal `1`.  
+**Fix:** Shape padding masks as `(B, 1, 1, T)` (broadcasting cleanly over all heads and query positions) and causal masks as `(1, 1, T, T)` (or `(1, T, T)` for 3D single-head attention).
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch32-blueprint}
+
+**Scenario:** Your hospital NLP group needs a reproducible, offline baseline that (1) trains an interpretable clinical triage Transformer on 180 Routine vs. Urgent symptom notes with zero vocabulary leakage, (2) freezes the trained Transformer backbone and attaches rank-2 **LoRA adapters** to its query (`W_q`) and value (`W_v`) attention projections for future multi-hospital adaptation, and (3) verifies step-0 logit parity alongside trainable-parameter savings.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Leak-Free Data & Tokenizer Layer:**
+
+   - Seed PyTorch and NumPy with `seed`, generate 180 stratified Routine/Urgent notes, and split 75/25 (`135` train / `45` val).
+   - Fit `ClinicalVocabTokenizer` strictly on `tr_t` (`max_len=10`) and encode `X_tr`, `X_va`.
+
+2. **Pretraining Stage (`ClinicalNoteTransformer`):**
+
+   - Train `Embedding + Sinusoidal PE + TransformerEncoderBlock + MaskedMeanPool + Linear(16, 1)` for 25 epochs with `BCEWithLogitsLoss` and `Adam(lr=0.02)`.
+   - Evaluate validation accuracy, ROC-AUC, and record `tuple(va_attn.shape)`.
+
+3. **LoRA Injection & Parameter Efficiency Audit:**
+
+   - Freeze every parameter of the trained Transformer (`requires_grad = False`).
+   - Replace `model.enc.attn.W_q` and `model.enc.attn.W_v` with `LoRALinear(..., rank=2, alpha=4.0)`.
+   - Verify step-0 output logits match the unadapted model to `< 1e-6`, and report `lora_trainable_params` and `lora_trainable_pct`.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_clinical_transformer_lora_audit(seed=42):
+    """Train triage Transformer, wrap Q/V in LoRA, and audit params."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    texts, y = make_clinical_triage_notes(n_per_class=90, seed=seed)
+    tr_t, va_t, y_tr, y_va = train_test_split(
+        texts, y, test_size=0.25, stratify=y, random_state=seed
+    )
+    tok = ClinicalVocabTokenizer().fit(tr_t)
+    X_tr = torch.tensor([tok.encode(t, 10) for t in tr_t])
+    X_va = torch.tensor([tok.encode(t, 10) for t in va_t])
+    y_tr_t = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(1)
+
+    model = ClinicalNoteTransformer(len(tok), max_len=10, d_model=16)
+    opt = torch.optim.Adam(model.parameters(), lr=0.02)
+    loss_fn = nn.BCEWithLogitsLoss()
+    for _ in range(25):
+        model.train()
+        opt.zero_grad()
+        logits, _ = model(X_tr)
+        loss_fn(logits, y_tr_t).backward()
+        opt.step()
+
+    model.eval()
+    with torch.no_grad():
+        va_logits, va_attn = model(X_va)
+        va_probs = torch.sigmoid(va_logits).squeeze(-1).numpy()
+
+    # Freeze entire model and attach rank-2 LoRA adapters to W_q & W_v
+    for p in model.parameters():
+        p.requires_grad = False
+    model.enc.attn.W_q = LoRALinear(
+        model.enc.attn.W_q, rank=2, alpha=4.0
+    )
+    model.enc.attn.W_v = LoRALinear(
+        model.enc.attn.W_v, rank=2, alpha=4.0
+    )
+    with torch.no_grad():
+        lora_logits, _ = model(X_va)
+        parity = bool(
+            (va_logits - lora_logits).abs().max().item() < 1e-6
+        )
+    total_p = sum(p.numel() for p in model.parameters())
+    train_p = sum(
+        p.numel() for p in model.parameters() if p.requires_grad
+    )
+    return {
+        "val_acc": round(float(((va_probs >= 0.5) == y_va).mean()), 4),
+        "val_auc": round(float(roc_auc_score(y_va, va_probs)), 4),
+        "attn_shape": tuple(va_attn.shape),
+        "lora_trainable_params": int(train_p),
+        "lora_trainable_pct": round(100.0 * train_p / total_p, 2),
+        "step0_parity_ok": parity,
+    }
+
+print(run_clinical_transformer_lora_audit(seed=42))
+```
+
+**Output:**
+```text
+{'val_acc': 0.9778, 'val_auc': 1.0, 'attn_shape': (45, 2, 10, 10), 'lora_trainable_params': 128, 'lora_trainable_pct': 4.57, 'step0_parity_ok': True}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch32-todos}
+
+Open `part_06_deep_learning/ch32_attention_transformers_modern_ai/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six native PyTorch Transformer and LoRA building blocks below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 32.1 (`scaled_dot_product_attention(Q, K, V, mask=None)`):** Compute `(Q @ K.transpose(-2, -1)) / math.sqrt(d_k)`, fill `mask == 0` with `float("-inf")`, apply `torch.softmax(scores, dim=-1)`, and return `(attn @ V, attn)`.
+- **To-Do 32.2 (`sinusoidal_positional_encoding(max_len, d_model)`):** Return a `(max_len, d_model)` `torch.float32` tensor implementing Vaswani et al. (2017) `sin` on even indices and `cos` on odd indices.
+- **To-Do 32.3 (`MultiHeadSelfAttention`):** `nn.Module` verifying `d_model % num_heads == 0`, defining `W_q`, `W_k`, `W_v`, `W_o`, and returning `(out[B, T, d_model], attn_weights[B, H, T, T])`.
+- **To-Do 32.4 (`TransformerEncoderBlock`):** `nn.Module` combining `MultiHeadSelfAttention`, two `nn.LayerNorm` layers, residual connections, dropout, and a `Linear -> GELU -> Dropout -> Linear` FFN; returns `(out[B, T, d_model], attn_weights)`.
+- **To-Do 32.5 (`ClinicalVocabTokenizer`):** Deterministic whitespace tokenizer with `PAD_ID = 0`, `UNK_ID = 1`, `.fit(texts)` building a sorted lowercased vocabulary, `.encode(text, max_len)` returning `list[int]` of exact length `max_len`, and `__len__`.
+- **To-Do 32.6 (`LoRALinear`):** `nn.Module` freezing `base_linear` (`requires_grad = False`), defining trainable `lora_A` `(rank, in_features)` and zero-initialized `lora_B` `(out_features, rank)`, and computing `base_linear(x) + (alpha / rank) * (x @ lora_A.T @ lora_B.T)`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch32-test}
+
+Work through all 10 Transformer, attention, and LoRA reasoning questions on paper before checking Stage 8:
+
+1. **Variance Proof for $\sqrt{d_k}$:** If $q, k \in \mathbb{R}^{64}$ have independent $\mathcal{N}(0, 1)$ entries, what is the variance and standard deviation of $q \cdot k$ before vs. after dividing by $\sqrt{64}$, and what happens to `softmax` gradients if you forget to divide?
+2. **Pre-Softmax vs. Post-Softmax Masking:** A student multiplies `attn = torch.softmax(scores, dim=-1) * mask` *after* softmax instead of calling `scores.masked_fill(mask == 0, float("-inf"))` *before* softmax. What mathematical invariant breaks immediately?
+3. **Sinusoidal PE at Position 0:** Without running Python, write the exact first 6 entries of `sinusoidal_positional_encoding(max_len=10, d_model=6)[0]`.
+4. **Multi-Head Reshape Bug:** Suppose `x` has shape `(B=2, T=5, d_model=16)` and `num_heads=4` ($d_k = 4$). Why is `W_q(x).view(2, 4, 5, 4)` wrong compared to `W_q(x).view(2, 5, 4, 4).transpose(1, 2)` even though both produce shape `(2, 4, 5, 4)`?
+5. **Residual & LayerNorm Purpose:** In `TransformerEncoderBlock`, what happens to gradient norms across a 24-layer Transformer if you remove the `+ x` residual additions around self-attention and the FFN?
+6. **Tokenizer Data Leakage & `nn.Embedding` Safety:** Why must `ClinicalVocabTokenizer.fit()` be called on training notes only—and what happens at test time if a validation note contains `"bradycardia"`, a word absent from training?
+7. **Masked Mean Pooling vs. Naive Mean Pooling:** Note A has 3 real tokens + 7 `<PAD>` tokens; Note B has 10 real tokens. Why does naive `h.mean(dim=1)` distort Note A's pooled representation relative to Note B, and how does masked mean pooling fix it?
+8. **LoRA Initialization Asymmetry:** In `LoRALinear`, `lora_A` is initialized with small random Gaussian values while `lora_B` is initialized to all zeros. Why do we NOT initialize *both* `lora_A = 0` and `lora_B = 0`, and why do we NOT initialize both randomly?
+9. **LoRA Parameter Math at 7B Scale:** A single linear projection inside a 7B LLM has shape $4096 \times 4096$ (no bias: $16{,}777{,}216$ base parameters). How many trainable parameters does rank $r = 8$ LoRA add, and roughly what percentage of the layer is trainable?
+10. **Architecture Selection & Clinical Safety:** Match each clinical task to **Encoder-Only (BioClinicalBERT)**, **Decoder-Only (GPT/Gemini)**, or **Encoder-Decoder (Flan-T5)**: (a) classifying ICU admission notes into Urgent vs. Routine; (b) drafting a patient-friendly discharge summary from structured lab results; (c) generating multi-turn differential diagnosis reasoning—and name two mandatory safety guardrails before hospital deployment.
+
+---
+
+## Stage 7 — Chapter 32 Part VI Capstone Coding Exam (100 Points) {#sec-ch32-exam}
+
+Open `part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam.ipynb`, implement all three capstone functions, and run `tutor.check_exam("ch32", exam_submissions)` to earn your **Part VI Capstone** score out of 100 points.
+
+### Exam Task 32.1 (30 Points): `verify_causal_attention_mask(seq_len)`
+
+Audit autoregressive lower-triangular masking:
+
+- Build `mask = torch.tril(torch.ones(1, seq_len, seq_len))`.
+- Run `scaled_dot_product_attention` on random `(1, seq_len, 8)` `Q, K, V` tensors.
+- Compute `upper_triangle_max` (max attention weight strictly above the main diagonal, `diagonal=1`) and `row_sum_error` (max `|row_sum - 1.0|`).
+- Return `{"upper_triangle_max": float, "row_sum_error": float, "is_causal": bool}` where `is_causal` confirms `upper_triangle_max < 1e-6` and `row_sum_error < 1e-5`.
+
+### Exam Task 32.2 (35 Points): `train_clinical_note_transformer(seed=42, epochs=25)`
+
+Build and train an end-to-end clinical triage Transformer offline on CPU:
+
+- Construct a deterministic 180-note Routine (`0`) vs. Urgent (`1`) clinical symptom note dataset (`90` per class).
+- Split 75/25 stratified (`135` train / `45` val) and fit `ClinicalVocabTokenizer` on training notes (`max_len=10`).
+- Train an `Embedding + SinusoidalPE + TransformerEncoderBlock + MaskedMeanPool + Linear(d_model, 1)` classifier for `epochs` epochs with `BCEWithLogitsLoss` and `Adam`.
+- Return `{"val_acc": round4, "val_auc": round4, "attention_shape": tuple_4d}` achieving **`val_auc >= 0.90`** across multiple seeds.
+
+### Exam Task 32.3 (35 Points): `audit_lora_parameter_efficiency(d_in=64, d_out=64, rank=4)`
+
+Audit LoRA step-0 parity, weight freezing, and parameter efficiency:
+
+- Wrap `base = nn.Linear(d_in, d_out)` in `lora = LoRALinear(base, rank=rank, alpha=2.0 * rank)`.
+- Verify initial output parity on random input `x`: `max_diff < 1e-6`.
+- Run a dummy backward pass verifying `base.weight.grad is None` while `lora.lora_A.grad is not None and lora.lora_B.grad is not None`.
+- Compute `base_params`, `lora_trainable_params`, and `trainable_pct = round(100.0 * lora_trainable_params / (base_params + lora_trainable_params), 2)`.
+- Return `{"base_params": int, "lora_trainable_params": int, "trainable_pct": round2, "initial_parity_ok": bool, "base_frozen_ok": bool}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch32-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Because $q \cdot k = \sum_{j=1}^{64} q_j k_j$ sums 64 unit-variance terms, $\text{Var}(q \cdot k) = 64$ ($\text{SD} = 8$). Dividing by $\sqrt{64} = 8$ restores $\text{Var} = 1$ ($\text{SD} = 1$). Without scaling, extreme logits drive `softmax` into near one-hot saturation where $\partial \text{softmax}_i / \partial z_j \approx 0$ (vanishing gradients).
+2. **Row-stochastic probability normalization breaks!** Zeroing masked entries *after* softmax leaves the remaining probabilities summing to `< 1.0` (e.g., `0.35`), shrinking value magnitudes inconsistently across positions. Masking with `-inf` *before* softmax guarantees exact zeros and rows summing to `1.0`.
+3. At `pos = 0`, even indices evaluate $\sin(0) = 0.0$ and odd indices evaluate $\cos(0) = 1.0$, giving **`[0.0, 1.0, 0.0, 1.0, 0.0, 1.0]`**.
+4. Calling `.view(2, 4, 5, 4)` directly on contiguous `(B, T, d_model)` memory slices across the **sequence axis `T`**, mixing features from different tokens into the same head! Splitting the last feature axis first (`.view(2, 5, 4, 4)`) and then swapping axes (`.transpose(1, 2)`) keeps every token intact inside every head.
+5. Without `+ x` residual highways, gradients multiply through 24 consecutive Jacobians and decay exponentially (vanishing gradients), making deep Transformers fail to converge.
+6. Fitting the tokenizer on validation notes leaks vocabulary statistics (and inflates coverage artificially). When trained strictly on training notes, unseen `"bradycardia"` safely maps to `UNK_ID = 1`, preventing an `nn.Embedding` `IndexError`.
+7. Naive `h.mean(dim=1)` averages 7 `<PAD>` vectors into Note A, diluting its symptom signal by 70% compared to Note B. Masked mean pooling (`(h * w).sum(1) / w.sum(1).clamp(min=1.0)`) averages strictly over real clinical tokens.
+8. If both `A = 0` and `B = 0`, then $\partial L / \partial A \propto B^\top = 0$ and $\partial L / \partial B \propto A^\top = 0$—a dead saddle point where neither matrix learns! If both are random, $B A \neq 0$ on step 0, adding random noise that disrupts pretrained foundation-model weights. Setting `B = 0` and `A ~ N(0, 0.02^2)` gives exact step-0 parity **and** non-zero initial gradient on `B`.
+9. Rank $r = 8$ adds $8 \times (4096 + 4096) = \mathbf{65{,}536}$ trainable parameters, which is $65{,}536 / (16{,}777{,}216 + 65{,}536) \approx \mathbf{0.39\%}$ of the layer (>99.6% reduction!).
+10. (a) **Encoder-Only (BioClinicalBERT)**—needs bidirectional context across the entire note; (b) **Encoder-Decoder (Flan-T5)**—sequence-to-sequence summarization; (c) **Decoder-Only (GPT/Gemini)**—open-ended autoregressive reasoning. Mandatory guardrails include **PHI de-identification / local hosting**, **retrieval grounding (RAG) against hallucination**, and **subgroup calibration + clinician-in-the-loop review**.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import math
+import torch
+import torch.nn as nn
+
+# To-Do 32.1
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    """Compute scaled dot-product attention (mask: 1=allow, 0=block)."""
+    d_k = Q.size(-1)
+    scores = (Q @ K.transpose(-2, -1)) / math.sqrt(d_k)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, float("-inf"))
+    attn = torch.softmax(scores, dim=-1)
+    return attn @ V, attn
+
+# To-Do 32.2
+def sinusoidal_positional_encoding(max_len, d_model):
+    """Return (max_len, d_model) float32 sinusoidal position table."""
+    pe = torch.zeros(max_len, d_model, dtype=torch.float32)
+    pos = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
+    div_term = torch.exp(
+        torch.arange(0, d_model, 2, dtype=torch.float32)
+        * (-math.log(10000.0) / d_model)
+    )
+    pe[:, 0::2] = torch.sin(pos * div_term)
+    pe[:, 1::2] = torch.cos(pos * div_term[: d_model // 2])
+    return pe
+
+# To-Do 32.3
+class MultiHeadSelfAttention(nn.Module):
+    """Multi-head self-attention with W_q, W_k, W_v, W_o projections."""
+
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        if d_model % num_heads != 0:
+            raise ValueError(
+                "d_model must be divisible by num_heads"
+            )
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
+        self.W_q = nn.Linear(d_model, d_model)
+        self.W_k = nn.Linear(d_model, d_model)
+        self.W_v = nn.Linear(d_model, d_model)
+        self.W_o = nn.Linear(d_model, d_model)
+
+    def forward(self, x, mask=None):
+        B, T, _ = x.shape
+        H, dk = self.num_heads, self.d_k
+        Q = self.W_q(x).view(B, T, H, dk).transpose(1, 2)
+        K = self.W_k(x).view(B, T, H, dk).transpose(1, 2)
+        V = self.W_v(x).view(B, T, H, dk).transpose(1, 2)
+        ctx, attn = scaled_dot_product_attention(Q, K, V, mask=mask)
+        merged = ctx.transpose(1, 2).contiguous().view(
+            B, T, self.d_model
+        )
+        return self.W_o(merged), attn
+
+# To-Do 32.4
+class TransformerEncoderBlock(nn.Module):
+    """Transformer Encoder Block: MHA + LayerNorm + GELU FFN."""
+
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
+        super().__init__()
+        self.attn = MultiHeadSelfAttention(d_model, num_heads)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.drop = nn.Dropout(dropout)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_ff),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_ff, d_model),
+        )
+
+    def forward(self, x, mask=None):
+        attn_out, weights = self.attn(x, mask=mask)
+        x = self.norm1(x + self.drop(attn_out))
+        x = self.norm2(x + self.drop(self.ffn(x)))
+        return x, weights
+
+# To-Do 32.5
+class ClinicalVocabTokenizer:
+    """Deterministic whitespace clinical tokenizer with PAD & UNK."""
+
+    PAD_ID = 0
+    UNK_ID = 1
+
+    def __init__(self):
+        self.token_to_id = {"<PAD>": 0, "<UNK>": 1}
+        self.id_to_token = {0: "<PAD>", 1: "<UNK>"}
+
+    def fit(self, texts):
+        words = sorted(
+            {w for t in texts for w in t.lower().split()}
+        )
+        self.token_to_id = {"<PAD>": 0, "<UNK>": 1}
+        for idx, word in enumerate(words, start=2):
+            self.token_to_id[word] = idx
+        self.id_to_token = {
+            v: k for k, v in self.token_to_id.items()
+        }
+        return self
+
+    def encode(self, text, max_len):
+        ids = [
+            self.token_to_id.get(w, self.UNK_ID)
+            for w in text.lower().split()
+        ][:max_len]
+        return ids + [self.PAD_ID] * (max_len - len(ids))
+
+    def __len__(self):
+        return len(self.token_to_id)
+
+# To-Do 32.6
+class LoRALinear(nn.Module):
+    """Freeze base nn.Linear and learn low-rank delta (B @ A)."""
+
+    def __init__(self, base_linear, rank=4, alpha=8.0):
+        super().__init__()
+        self.base_linear = base_linear
+        for p in self.base_linear.parameters():
+            p.requires_grad = False
+        self.rank = rank
+        self.alpha = float(alpha)
+        self.scaling = float(alpha) / rank
+        in_f = base_linear.in_features
+        out_f = base_linear.out_features
+        self.lora_A = nn.Parameter(torch.randn(rank, in_f) * 0.02)
+        self.lora_B = nn.Parameter(torch.zeros(out_f, rank))
+
+    def forward(self, x):
+        base_out = self.base_linear(x)
+        delta = (x @ self.lora_A.T @ self.lora_B.T) * self.scaling
+        return base_out + delta
+```
+
+### C. Annotated Solutions — Part VI Capstone Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+
+# Exam Task 32.1 (30 pts)
+def verify_causal_attention_mask(seq_len):
+    """Audit lower-triangular causal attention masking on seq_len."""
+    torch.manual_seed(0)
+    Q = torch.randn(1, seq_len, 8)
+    K = torch.randn(1, seq_len, 8)
+    V = torch.randn(1, seq_len, 8)
+    mask = torch.tril(torch.ones(1, seq_len, seq_len))
+    _, attn = scaled_dot_product_attention(Q, K, V, mask=mask)
+    if seq_len > 1:
+        upper_max = float(
+            torch.triu(attn[0], diagonal=1).max().item()
+        )
+    else:
+        upper_max = 0.0
+    row_err = float((attn.sum(dim=-1) - 1.0).abs().max().item())
+    is_causal = bool(upper_max < 1e-6 and row_err < 1e-5)
+    return {
+        "upper_triangle_max": upper_max,
+        "row_sum_error": row_err,
+        "is_causal": is_causal,
+    }
+
+# Exam Task 32.2 (35 pts)
+def train_clinical_note_transformer(seed=42, epochs=25):
+    """Train a 180-note clinical triage Transformer on CPU."""
+    torch.manual_seed(seed)
+    rng = np.random.default_rng(seed)
+    shared = ["patient", "ward", "reports", "clinic", "history"]
+    routine = [
+        "mild", "stable", "refill", "followup", "normal",
+        "routine", "afebrile", "checkup", "rash", "cleared",
+    ]
+    urgent = [
+        "severe", "chest", "pain", "dyspnea", "hypoxia",
+        "sepsis", "tachycardia", "syncope", "bleeding", "emergency",
+    ]
+    texts, labels = [], []
+    for _ in range(90):
+        ctx = list(rng.choice(shared, size=2, replace=False))
+        r_tok = list(rng.choice(routine, size=4, replace=False))
+        u_tok = list(rng.choice(urgent, size=4, replace=False))
+        if rng.random() < 0.2:
+            r_tok[0] = str(rng.choice(urgent))
+        if rng.random() < 0.2:
+            u_tok[0] = str(rng.choice(routine))
+        rn, un = ctx + r_tok, ctx + u_tok
+        rng.shuffle(rn)
+        rng.shuffle(un)
+        texts.extend([" ".join(rn), " ".join(un)])
+        labels.extend([0, 1])
+    y = np.array(labels, dtype=np.int64)
+
+    tr_t, va_t, y_tr, y_va = train_test_split(
+        texts, y, test_size=0.25, stratify=y, random_state=seed
+    )
+    tok = ClinicalVocabTokenizer().fit(tr_t)
+    X_tr = torch.tensor([tok.encode(t, 10) for t in tr_t])
+    X_va = torch.tensor([tok.encode(t, 10) for t in va_t])
+    y_tr_t = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(1)
+
+    class _TriageNet(nn.Module):
+        def __init__(self, v_size):
+            super().__init__()
+            self.emb = nn.Embedding(v_size, 16, padding_idx=0)
+            self.register_buffer(
+                "pe", sinusoidal_positional_encoding(10, 16)
+            )
+            self.enc = TransformerEncoderBlock(16, 2, 32, 0.1)
+            self.head = nn.Linear(16, 1)
+
+        def forward(self, ids):
+            pm = (ids != 0).float()
+            am = pm.unsqueeze(1).unsqueeze(2)
+            x = self.emb(ids) + self.pe[: ids.size(1)]
+            h, attn = self.enc(x, mask=am)
+            w = pm.unsqueeze(-1)
+            pooled = (h * w).sum(dim=1) / w.sum(dim=1).clamp(min=1.0)
+            return self.head(pooled), attn
+
+    model = _TriageNet(len(tok))
+    opt = torch.optim.Adam(model.parameters(), lr=0.02)
+    loss_fn = nn.BCEWithLogitsLoss()
+    for _ in range(epochs):
+        model.train()
+        opt.zero_grad()
+        logits, _ = model(X_tr)
+        loss_fn(logits, y_tr_t).backward()
+        opt.step()
+
+    model.eval()
+    with torch.no_grad():
+        va_logits, va_attn = model(X_va)
+        probs = torch.sigmoid(va_logits).squeeze(-1).numpy()
+    val_acc = round(float(((probs >= 0.5) == y_va).mean()), 4)
+    val_auc = round(float(roc_auc_score(y_va, probs)), 4)
+    return {
+        "val_acc": val_acc,
+        "val_auc": val_auc,
+        "attention_shape": tuple(va_attn.shape),
+    }
+
+# Exam Task 32.3 (35 pts)
+def audit_lora_parameter_efficiency(d_in=64, d_out=64, rank=4):
+    """Audit LoRA parameter count, step-0 parity, and freeze state."""
+    torch.manual_seed(0)
+    base = nn.Linear(d_in, d_out)
+    lora = LoRALinear(base, rank=rank, alpha=2.0 * rank)
+    x = torch.randn(4, d_in)
+    with torch.no_grad():
+        max_diff = (base(x) - lora(x)).abs().max().item()
+        parity_ok = bool(max_diff < 1e-6)
+    loss = lora(x).pow(2).mean()
+    loss.backward()
+    frozen_ok = bool(
+        base.weight.grad is None
+        and lora.lora_A.grad is not None
+        and lora.lora_B.grad is not None
+    )
+    base_params = sum(p.numel() for p in base.parameters())
+    lora_params = sum(
+        p.numel() for p in lora.parameters() if p.requires_grad
+    )
+    pct = round(
+        100.0 * lora_params / (base_params + lora_params), 2
+    )
+    return {
+        "base_params": int(base_params),
+        "lora_trainable_params": int(lora_params),
+        "trainable_pct": pct,
+        "initial_parity_ok": parity_ok,
+        "base_frozen_ok": frozen_ok,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 32 Failure Modes
+
+1. **Forgetting `/ math.sqrt(d_k)` or Masking After Softmax:** Unscaled dot products saturate softmax and kill gradients, while post-softmax masking breaks row-sum normalization. Always scale by `1 / math.sqrt(d_k)` and apply `scores.masked_fill(mask == 0, float("-inf"))` **before** `torch.softmax(scores, dim=-1)`.
+2. **Scrambling Token Axes in Multi-Head `.view()` or Misaligned Mask Shapes:** Never reshape `(B, T, d_model)` directly to `(B, H, T, d_k)`; always use `.view(B, T, H, d_k).transpose(1, 2)` and pass broadcast-safe masks (`(B, 1, 1, T)` for padding or `(1, 1, T, T)` for causal decoding).
+3. **Breaking LoRA Step-0 Parity or Leaving Base Weights Unfrozen:** Forgetting `p.requires_grad = False` on `base_linear.parameters()` defeats LoRA's memory savings and risks catastrophic forgetting, while initializing `lora_B` randomly corrupts the pretrained model's initial predictions.
+
+---
+
+::: {.callout-tip title="Part VI Milestone Achieved — Welcome to Part VII: Applied Research Engineering & Capstone Paper!"}
+**Congratulations!** By completing **Chapter 32**, you have mastered the complete **Deep Learning & PyTorch (Part VI)** arc—from raw PyTorch tensors, autograd, and custom `DataLoader`s through MLPs, medical-imaging CNNs, sequence models, **Scaled Dot-Product & Multi-Head Self-Attention**, **Transformer Encoders**, **Clinical NLP**, and **LoRA Parameter-Efficient Fine-Tuning**, all engineered cleanly from first principles!
+
+In **Part VII (Applied Research Engineering, Ablation Studies, Fairness & Capstone Paper)**, you will synthesize everything from Parts I through VI into publication-ready science: reproducible experiment tracking, rigorous **ablation studies**, subgroup **fairness and error audits**, clinical reporting checklists (TRIPOD+AI / CONSORT-AI), and assembling your own end-to-end **first peer-reviewed research paper**.
+:::

@@ -1,0 +1,976 @@
+# Training Dynamics, Optimizers, Regularization, BatchNorm, and Early Stopping {#sec-ch29}
+
+> **Chapter Mission:** Transform fragile neural networks that either vanish, explode, or overfit small clinical datasets into **stable, reproducible, well-regularized deep learning pipelines**. Using Bangladesh maternal and child health survey data (`mch_survey_sample`) in PyTorch, you will diagnose vanishing and exploding activation variance, pair **Kaiming (He)** and **Xavier (Glorot)** initialization with the right nonlinearities, benchmark **SGD**, **SGD + Momentum**, and **AdamW** from identical initial weights, combine **BatchNorm1d** and **Dropout** safely across `train()` vs. `eval()` modes, tame spikes with **gradient norm clipping**, schedule learning rates with **CosineAnnealingLR**, and halt overfitting with deep-copied **early-stopping checkpoint restoration**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch29 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch29 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch29 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb) | ![](../assets/qr/part_06_deep_learning__ch29_training_dynamics_regularization__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Diagnose **vanishing and exploding activations/gradients** across deep layers and select **Kaiming (He)** initialization for ReLU networks vs. **Xavier (Glorot)** initialization for symmetric activations (`tanh` / `sigmoid`).
+2. Benchmark **SGD**, **SGD with Momentum**, and **AdamW** fairly from cloned initial `state_dict()` weights, explaining why fast adaptive optimizers require explicit regularization on small clinical cohorts.
+3. Combine **`nn.BatchNorm1d`** and **`nn.Dropout`** inside a reusable `nn.Module` returning raw logits, and verify the mandatory **`model.train()` vs. `model.eval()`** contract under `torch.no_grad()`.
+4. Protect optimization against gradient spikes using global L2 **gradient norm clipping** (`nn.utils.clip_grad_norm_`) without altering the descent direction.
+5. Schedule smooth learning-rate decay with **`CosineAnnealingLR`** and audit how decoupled **weight decay** in `AdamW` shrinks weight-matrix L2 norms monotonically.
+6. Build an **`EarlyStoppingTracker`** that tracks `patience` and `min_delta`, deep-copies `model.state_dict()` at every validation minimum, and restores the optimal checkpoint before untouched test evaluation.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Deep Networks Fail Without Stabilization {#sec-ch29-intuition}
+
+Writing a forward pass and calling `loss.backward()` is only half of deep learning. Even a modest multi-layer perceptron can silently fail in three classic ways:
+
+- **Signal Collapse or Explosion at Depth:** Multiplying activations through 10 linear layers compounds any variance mismatch exponentially. If initial weights are slightly too small ($\sigma = 0.02$), activations collapse to `0.000000`; if slightly too large ($\sigma = 0.35$), activations explode past `21,000` before epoch 1 even finishes!
+- **Fast Optimization Without Regularization Equals Fast Overfitting:** Adaptive optimizers such as **AdamW** rapidly drive training loss down—which is wonderful on millions of rows, yet on a 295-row clinical training split (`mch_survey_sample`), an unregularized MLP memorizes noise within 40 epochs and watches validation AUC collapse below random guessing!
+- **Silent Mode & Checkpointing Bugs:** Forgetting `model.eval()` leaves `Dropout` randomly masking neurons and `BatchNorm1d` normalizing test patients by batch noise during clinical inference. Worse, saving `best_sd = model.state_dict()` without `copy.deepcopy(...)` saves live tensor views that overwrite on the very next `optimizer.step()`.
+
+Five first-principles pillars anchor stable neural network training:
+
+- **Variance-Preserving Initialization:** For a layer with $n_{\text{in}}$ inputs, **Kaiming (He) normal** sets $\text{Var}(W) = 2 / n_{\text{in}}$ so ReLU's half-rectification preserves $\mathcal{O}(1)$ signal variance across depth, whereas **Xavier (Glorot) uniform** balances fan-in and fan-out via $\text{Var}(W) = 2 / (n_{\text{in}} + n_{\text{out}})$ for symmetric activations.
+- **Momentum, Adaptive Steps & Decoupled Weight Decay:** Plain SGD zig-zags across narrow ravines; **Momentum** accumulates an exponential velocity average; **AdamW** pairs per-parameter adaptive step scaling with **decoupled weight decay** ($\theta \leftarrow (1 - \eta \lambda)\theta - \eta \hat{m} / (\sqrt{\hat{v}} + \varepsilon)$), shrinking weight matrices cleanly without distorting gradient variance estimates.
+- **BatchNorm1d & Dropout Synergy:** Placing `Linear -> BatchNorm1d -> ReLU -> Dropout -> Linear` standardizes hidden pre-activations (smoothing the loss landscape) while randomly zeroing hidden units during `train()` so no single neuron memorizes a quirk of one clinic or household.
+- **Global Gradient Clipping & Cosine LR Schedules:** `clip_grad_norm_(params, max_norm)` rescales the entire gradient vector whenever $\|\mathbf{g}\|_2 > c$, keeping direction intact while blocking NaN explosions. Pairing this with **CosineAnnealingLR** starts with bold exploration and smoothly settles into a flat minimum.
+- **Early Stopping with Deep-Copy Restoration:** Monitoring validation loss on a dedicated validation split (`60/20/20` train/val/test) stops training once `patience` consecutive epochs fail to improve by `min_delta`—and **restores the deep-copied `best_state_dict`** before touching the held-out test set.
+
+::: {.callout-note title="Mental Model — Every Training Run Has Two Separate Goals"}
+Think of neural training as **two coupled control loops**:
+
+1. **Optimization Stability (Making Training Loss Fall Smoothly):** Kaiming initialization, `BatchNorm1d`, `AdamW`, gradient clipping, and `CosineAnnealingLR`.
+2. **Generalization Control (Keeping Validation Loss Low):** Decoupled `weight_decay`, `Dropout`, train-only `StandardScaler`, and `EarlyStoppingTracker` restoring the best deep-copied checkpoint before test evaluation.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Training Stabilization & Early-Stopping Diagnostic Loop {#sec-ch29-mental-model}
+
+Follow this disciplined training and validation loop whenever you train a PyTorch neural network on tabular or clinical data:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Init["1. Stabilize Init"]
+        direction LR
+        I1["60/20/20 Split<br/>Train-Only Scaler"]
+        I2["Kaiming + BN + Drop<br/>AdamW + CosineLR"]
+        I1 --> I2
+    end
+    subgraph Train["2. Train Epoch"]
+        direction LR
+        T1["model.train()<br/>zero_grad + backward"]
+        T2["clip_grad_norm_<br/>opt.step + sched.step"]
+        T1 --> T2
+    end
+    subgraph Stop["3. Val & EarlyStop"]
+        direction LR
+        E1["model.eval() + no_grad<br/>Compute Val Loss"]
+        E2["Deep-Copy Best State<br/>Restore -> Test AUC"]
+        E1 --> E2
+    end
+    Init --> Train
+    Train --> Stop
+```
+
+Notice how **no test record ever touches scaling, gradient updates, or early-stopping decisions**. Validation loss guides when to snapshot `copy.deepcopy(model.state_dict())` and when to stop; only after restoring `best_state_dict` and switching to `model.eval()` under `torch.no_grad()` do we unlock `X_test`.
+
+::: {.callout-warning title="Two Silent PyTorch Traps That Never Throw an Error"}
+1. **Shallow `state_dict()` Aliasing:** Writing `best_sd = model.state_dict()` copies only dictionary keys pointing to the *live parameter tensors*. Every subsequent `optimizer.step()` overwrites `best_sd` in place! Always wrap it in `copy.deepcopy(model.state_dict())`.
+2. **Target Leakage in `mch_survey_sample`:** Never feed `maternal_hb_g_dl` when predicting `maternal_anemia` (WHO defines anemia as `Hb < 11.0 g/dL`), and never fit `StandardScaler` before splitting `60/20/20`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch29-walkthrough}
+
+Open `part_06_deep_learning/ch29_training_dynamics_regularization/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Clean `mch_survey_sample`, Stratified 60/20/20 Split & Train-Only Scaling {#sec-ch29-setup}
+
+```python
+import copy
+import math
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import sharukh_tutor as tutor
+
+torch.set_num_threads(1)
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+wealth_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+mch["wealth_num"] = mch["wealth_quintile"].map(wealth_map)
+feat_cols = [
+    "maternal_age_years", "anc_visits", "wealth_num", "is_urban"
+]
+clean = mch[["maternal_anemia"] + feat_cols].dropna()
+X_all = clean[feat_cols].to_numpy(dtype=np.float32)
+y_all = clean["maternal_anemia"].astype(int).to_numpy()
+
+X_tr_raw, X_tmp, y_tr, y_tmp = train_test_split(
+    X_all, y_all, test_size=0.40, stratify=y_all, random_state=42
+)
+X_va_raw, X_te_raw, y_va, y_te = train_test_split(
+    X_tmp, y_tmp, test_size=0.50, stratify=y_tmp, random_state=42
+)
+scaler = StandardScaler()
+X_tr = scaler.fit_transform(X_tr_raw)
+X_va = scaler.transform(X_va_raw)
+X_te = scaler.transform(X_te_raw)
+
+Xtr_t = torch.tensor(X_tr, dtype=torch.float32)
+ytr_t = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(1)
+Xva_t = torch.tensor(X_va, dtype=torch.float32)
+yva_t = torch.tensor(y_va, dtype=torch.float32).unsqueeze(1)
+Xte_t = torch.tensor(X_te, dtype=torch.float32)
+print(
+    f"Split sizes -> train={len(y_tr)}, val={len(y_va)}, "
+    f"test={len(y_te)} | Anemia={y_all.mean():.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Split sizes -> train=295, val=98, test=99 | Anemia=0.3537
+```
+
+Notice two crucial hygiene habits: `StandardScaler` fits strictly on `X_tr_raw` (295 mothers) before transforming `X_va_raw` (98) and `X_te_raw` (99), and labels are reshaped with `.unsqueeze(1)` to `(N, 1)` so they match the `(N, 1)` logits returned by `nn.Linear(..., 1)` without silent broadcasting bugs inside `BCEWithLogitsLoss`. Calling `torch.set_num_threads(1)` avoids OpenMP thread-pool overhead on small tabular batches, keeping CPU runs fast and deterministic.
+
+---
+
+### Vanishing/Exploding Variance & He (Kaiming) vs. Xavier Initialization {#sec-ch29-init}
+
+Watch what happens to the standard deviation of hidden activations as a `(64, 128)` standard-normal batch passes through **10 consecutive `Linear(128, 128) -> ReLU` layers** under four initialization scales:
+
+```python
+# Forward activation variance across 10 ReLU layers (width=128)
+for label, mode in [
+    ("Too small (std=0.02)", 0.02),
+    ("Kaiming ReLU", "kaiming"),
+    ("Xavier Uniform", "xavier"),
+    ("Too large (std=0.35)", 0.35),
+]:
+    torch.manual_seed(42)
+    h = torch.randn(64, 128)
+    for _ in range(10):
+        layer = nn.Linear(128, 128, bias=False)
+        if mode == "kaiming":
+            nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")
+        elif mode == "xavier":
+            nn.init.xavier_uniform_(layer.weight)
+        else:
+            nn.init.normal_(layer.weight, mean=0.0, std=mode)
+        h = torch.relu(layer(h))
+    print(f"{label:21s} | 10-layer act std = {h.std().item():.6f}")
+```
+
+**Expected Output:**
+
+```text
+Too small (std=0.02)  | 10-layer act std = 0.000000
+Kaiming ReLU          | 10-layer act std = 0.721697
+Xavier Uniform        | 10-layer act std = 0.021917
+Too large (std=0.35)  | 10-layer act std = 21376.416016
+```
+
+Stare at those four lines—this is why initialization theory exists:
+
+- **Too small (`std = 0.02`):** Signal variance shrinks by a factor of $(128 \times 0.02^2 / 2)^{10} \approx 10^{-16}$, collapsing to `0.000000` (vanishing activations and gradients).
+- **Xavier Uniform on ReLU (`0.021917`):** Xavier sets $\text{Var}(W) = 1 / n$ assuming linear/symmetric activations (`tanh`), so ReLU zeroing half the units halves the variance at every layer: $(1/2)^{10/2} \approx 0.031$.
+- **Kaiming ReLU (`0.721697`):** Multiplying variance by 2 ($\text{Var}(W) = 2 / n_{\text{in}}$) exactly cancels ReLU's half-rectification, keeping activations healthy and $\mathcal{O}(1)$ even 10 layers deep!
+- **Too large (`std = 0.35`):** Activations blow up past `21,376`, guaranteeing overflowing `NaN` gradients on the first backward pass.
+
+---
+
+### Controlled Optimizer Benchmark: SGD vs. Momentum vs. AdamW {#sec-ch29-opts}
+
+To compare optimizers fairly, we snapshot identical initial weights (`base_sd = copy.deepcopy(base_mlp.state_dict())`) and train an **unregularized** 2-layer MLP for 40 epochs on `mch_survey_sample`:
+
+```python
+torch.manual_seed(42)
+base_mlp = nn.Sequential(
+    nn.Linear(4, 32), nn.ReLU(), nn.Linear(32, 1)
+)
+base_sd = copy.deepcopy(base_mlp.state_dict())
+crit = nn.BCEWithLogitsLoss()
+
+configs = [
+    ("SGD", lambda p: torch.optim.SGD(p, lr=0.05)),
+    ("SGD+Momentum", lambda p: torch.optim.SGD(p, lr=0.05, momentum=0.9)),
+    ("AdamW", lambda p: torch.optim.AdamW(p, lr=0.01, weight_decay=1e-2)),
+]
+for name, build_opt in configs:
+    m = nn.Sequential(nn.Linear(4, 32), nn.ReLU(), nn.Linear(32, 1))
+    m.load_state_dict(copy.deepcopy(base_sd))
+    opt = build_opt(m.parameters())
+    for _ in range(40):
+        m.train()
+        opt.zero_grad()
+        loss = crit(m(Xtr_t), ytr_t)
+        loss.backward()
+        opt.step()
+    m.eval()
+    with torch.no_grad():
+        tr_l = float(crit(m(Xtr_t), ytr_t).item())
+        va_l = float(crit(m(Xva_t), yva_t).item())
+        va_p = torch.sigmoid(m(Xva_t)).squeeze(1).numpy()
+        va_auc = roc_auc_score(y_va, va_p)
+    print(
+        f"{name:13s} | train={tr_l:.4f} | "
+        f"val={va_l:.4f} | val_auc={va_auc:.4f}"
+    )
+```
+
+**Expected Output:**
+
+```text
+SGD           | train=0.6278 | val=0.6457 | val_auc=0.5751
+SGD+Momentum  | train=0.6085 | val=0.6619 | val_auc=0.5592
+AdamW         | train=0.5967 | val=0.7007 | val_auc=0.4844
+```
+
+Look closely at the **two lessons** hidden in this table:
+
+- **Optimization speed:** From the exact same starting weights, `SGD+Momentum` (`0.6085`) and `AdamW` (`0.5967`) push training loss down far faster than vanilla `SGD` (`0.6278`).
+- **The small-data overfitting cliff:** Because this bare MLP has *no* BatchNorm, *no* Dropout, and *no* Early Stopping, `AdamW`'s superior optimization speed actually drives it straight past the validation optimum (`val_loss = 0.7007`, `val_auc = 0.4844`)! Speed without regularization and early stopping hurts generalization.
+
+---
+
+### BatchNorm1d & The Dropout `train()` vs. `eval()` Trap {#sec-ch29-bn-drop}
+
+Now wrap hidden activations in `BatchNorm1d` + `Dropout` inside `ClinicalRegNet`, and directly verify how `model.train()` differs from `model.eval()` on the exact same batch:
+
+```python
+class ClinicalRegNet(nn.Module):
+    def __init__(self, in_dim, hidden_dim=32, dropout_p=0.3):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+torch.manual_seed(42)
+reg_net = ClinicalRegNet(in_dim=4, hidden_dim=32, dropout_p=0.3)
+with torch.no_grad():
+    reg_net.train()
+    t1, t2 = reg_net(Xva_t[:8]), reg_net(Xva_t[:8])
+    reg_net.eval()
+    e1, e2 = reg_net(Xva_t[:8]), reg_net(Xva_t[:8])
+print(f"train() max |t1 - t2| = {(t1 - t2).abs().max().item():.5f}")
+print(f"eval()  max |e1 - e2| = {(e1 - e2).abs().max().item():.5f}")
+```
+
+**Expected Output:**
+
+```text
+train() max |t1 - t2| = 0.51361
+eval()  max |e1 - e2| = 0.00000
+```
+
+In `model.train()` mode, `Dropout(0.3)` randomly zeroes 30% of hidden activations and rescales survivors by $1 / (1 - 0.3)$ (inverted dropout), producing a `0.51361` discrepancy between two back-to-back calls on identical patients! Switching to `model.eval()` disables dropout and switches `BatchNorm1d` to its stored running mean and variance—yielding exact `0.00000` determinism.
+
+---
+
+### Gradient Norm Clipping & Cosine Annealing LR Schedule {#sec-ch29-clip-lr}
+
+When an outlier batch or deep recurrence produces a massive gradient norm $\|\mathbf{g}\|_2$, **global gradient norm clipping** rescales all parameter gradients uniformly by $c / \|\mathbf{g}\|_2$ whenever $\|\mathbf{g}\|_2 > c$, preserving descent direction while capping step size. Meanwhile, **`CosineAnnealingLR`** smoothly anneals the learning rate from $\eta_0$ toward $\eta_{\min} = 0$ via $\eta_t = \frac{1}{2}\eta_0(1 + \cos(\pi t / T_{\max}))$:
+
+```python
+# 1. Gradient clipping on an artificially amplified loss
+torch.manual_seed(42)
+clip_net = ClinicalRegNet(in_dim=4, hidden_dim=32, dropout_p=0.3)
+clip_opt = torch.optim.AdamW(clip_net.parameters(), lr=0.01)
+clip_opt.zero_grad()
+big_loss = crit(clip_net(Xtr_t), ytr_t) * 25.0
+big_loss.backward()
+norm_before = float(
+    nn.utils.clip_grad_norm_(clip_net.parameters(), max_norm=1.0)
+)
+norm_after = math.sqrt(sum(
+    float(p.grad.detach().pow(2).sum().item())
+    for p in clip_net.parameters() if p.grad is not None
+))
+clip_opt.step()
+print(
+    f"Grad L2 norm -> before={norm_before:.4f} | "
+    f"after={norm_after:.4f}"
+)
+
+# 2. Smooth CosineAnnealingLR decay across 20 epochs
+dummy = nn.Parameter(torch.zeros(1))
+lr_opt = torch.optim.SGD([dummy], lr=0.02)
+sched = torch.optim.lr_scheduler.CosineAnnealingLR(lr_opt, T_max=20)
+lrs = []
+for _ in range(20):
+    lrs.append(round(float(lr_opt.param_groups[0]["lr"]), 6))
+    lr_opt.step()
+    sched.step()
+print(
+    f"Cosine LR -> ep0={lrs[0]:.6f}, "
+    f"ep10={lrs[10]:.6f}, ep19={lrs[-1]:.6f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Grad L2 norm -> before=11.4680 | after=1.0000
+Cosine LR -> ep0=0.020000, ep10=0.010000, ep19=0.000123
+```
+
+Notice two exact mathematical fingerprints:
+
+- An `11.4680` gradient spike was rescaled cleanly to `1.0000` right before `clip_opt.step()`.
+- At midpoint `ep10 = T_max / 2`, $\cos(\pi / 2) = 0$, so the cosine learning rate sits at **exactly half** of `base_lr` (`0.020000 -> 0.010000`), then tapers gently to `0.000123` on the final epoch!
+
+---
+
+### Early Stopping & Restoring the Best Validation Checkpoint {#sec-ch29-es}
+
+Now combine **BatchNorm1d + Dropout + AdamW + Gradient Clipping + CosineAnnealingLR + Early Stopping** on `mch_survey_sample` and compare against our earlier overfit `AdamW` run (`val_auc = 0.4844`):
+
+```python
+torch.manual_seed(42)
+es_net = ClinicalRegNet(in_dim=4, hidden_dim=32, dropout_p=0.3)
+es_opt = torch.optim.AdamW(es_net.parameters(), lr=0.02, weight_decay=1e-2)
+es_sched = torch.optim.lr_scheduler.CosineAnnealingLR(es_opt, T_max=80)
+
+best_loss, best_ep, wait, best_sd = float("inf"), 0, 0, None
+for ep in range(1, 81):
+    es_net.train()
+    es_opt.zero_grad()
+    crit(es_net(Xtr_t), ytr_t).backward()
+    nn.utils.clip_grad_norm_(es_net.parameters(), max_norm=1.0)
+    es_opt.step()
+    es_sched.step()
+
+    es_net.eval()
+    with torch.no_grad():
+        vloss = float(crit(es_net(Xva_t), yva_t).item())
+    if vloss < best_loss:
+        best_loss, best_ep, wait = vloss, ep, 0
+        best_sd = copy.deepcopy(es_net.state_dict())
+    else:
+        wait += 1
+        if wait >= 8:
+            break
+
+es_net.load_state_dict(best_sd)
+es_net.eval()
+with torch.no_grad():
+    te_probs = torch.sigmoid(es_net(Xte_t)).squeeze(1).numpy()
+te_auc = roc_auc_score(y_te, te_probs)
+print(
+    f"Stopped at ep={ep} (best_ep={best_ep}) | "
+    f"best_val={best_loss:.5f} | test_auc={te_auc:.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Stopped at ep=12 (best_ep=4) | best_val=0.64933 | test_auc=0.6853
+```
+
+What a dramatic turnaround! Instead of overfitting for 40 epochs (`val_loss = 0.7007`, `AUC = 0.4844`), early stopping halted training at epoch `12`, rewound the model to its deep-copied epoch-`4` checkpoint (`best_val = 0.64933`), and achieved **`test_auc = 0.6853`** on the untouched 99-mother test cohort!
+
+---
+
+### Break It On Purpose! (Training Dynamics Error Anatomy) {#sec-ch29-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (`BatchNorm1d` Crash on Batch Size 1 in `train()` Mode)"}
+```python
+bn = nn.BatchNorm1d(8)
+bn.train()
+bn(torch.randn(1, 8))
+```
+**Python's Traceback:**
+
+```text
+ValueError: Expected more than 1 value per channel when training,
+got input size torch.Size([1, 8])
+```
+**Diagnosis:** During `train()`, `BatchNorm1d` estimates unbiased per-channel variance using denominator $B - 1$. When a mini-batch has size $B = 1$ (for example, the leftover final batch of a `DataLoader` when `len(dataset) % batch_size == 1`, or single-patient inference without `model.eval()`), $B - 1 = 0$ makes batch variance undefined!  
+**Fix:** Pass `drop_last=True` to your training `DataLoader` (so no training batch has size 1), and **always** call `model.eval()` before running single-patient inference (so `BatchNorm1d` uses its stored running statistics instead of batch statistics).
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Negative Learning Rate in `AdamW`)"}
+```python
+torch.optim.AdamW([nn.Parameter(torch.zeros(2))], lr=-0.01)
+```
+**Python's Traceback:**
+
+```text
+ValueError: Invalid learning rate: -0.01
+```
+**Diagnosis:** PyTorch optimizers validate hyperparameters eagerly at construction time and reject negative learning rates (which would perform gradient *ascent* instead of descent) or negative `weight_decay`. This error commonly surfaces when a buggy custom LR schedule or log-scale hyperparameter grid passes a negative value.  
+**Fix:** Keep learning rates strictly non-negative (`lr > 0`), sample learning rates on a log-uniform scale (`10 ** np.random.uniform(-4, -1)`), and rely on built-in schedulers like `CosineAnnealingLR`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Invalid `Dropout` Probability $> 1.0$)"}
+```python
+nn.Dropout(p=1.5)
+```
+**Python's Traceback:**
+
+```text
+ValueError: dropout probability has to be between 0 and 1,
+but got 1.5
+```
+**Diagnosis:** `nn.Dropout(p)` specifies the fraction of activations zeroed during training, which must satisfy $0 \le p \le 1$. Passing a percentage like `30` instead of `0.3`, or mis-reading a hyperparameter config file, triggers an immediate `ValueError`.  
+**Fix:** Express dropout as a probability in `[0.0, 1.0]`—typically `0.1–0.3` for tabular clinical MLPs and `0.3–0.5` for wider hidden layers—and remember `p` is the *drop* probability, not the *keep* probability.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch29-blueprint}
+
+**Scenario:** Your clinical AI team needs a single reusable, reproducible PyTorch training function `train_stabilized_clinical_net(raw_df, target="maternal_anemia", seed=42)` that cleans `mch_survey_sample` without mutation or target leakage, performs a stratified `60/20/20` split with train-only scaling, initializes every linear layer with Kaiming ReLU weights, trains a `BatchNorm1d + Dropout` MLP with `AdamW`, gradient clipping, `CosineAnnealingLR`, and early stopping (`patience=8`), restores the best checkpoint, and reports test ROC-AUC across both `maternal_anemia` and `child_stunted`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Inputs, Leakage Guards & Split:**
+
+   - Copy `raw_df` first (`df = raw_df.copy()`), clean `residence` and `anc_visits == 999`, encode `is_urban` and `wealth_num`, and drop NaNs on `[target, "maternal_age_years", "anc_visits", "wealth_num", "is_urban"]`.
+   - Split stratified `60/20/20` using `random_state=seed` and fit `StandardScaler` strictly on `Xtr`.
+
+2. **Stabilized Architecture & Optimization Loop:**
+
+   - Seed `torch.manual_seed(seed)`, build `ClinicalRegNet(4, 32, 0.3)`, and initialize every `nn.Linear` with `kaiming_normal_(..., nonlinearity="relu")` and `zeros_(bias)`.
+   - Train up to 80 epochs with `AdamW(lr=0.02, weight_decay=1e-2)`, `clip_grad_norm_(..., max_norm=1.0)`, and `CosineAnnealingLR(opt, T_max=80)`.
+
+3. **Early Stopping & Verification Plan:**
+
+   - Evaluate validation loss in `net.eval()` under `torch.no_grad()` every epoch; deep-copy `net.state_dict()` on every new minimum and break after 8 non-improving epochs.
+   - Restore `best_sd` before scoring `Xte_t`; confirm both `maternal_anemia` and `child_stunted` stop early before epoch 80 with realistic leak-free test AUCs (`~0.66`).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def train_stabilized_clinical_net(
+    raw_df, target="maternal_anemia", seed=42
+):
+    """Train Kaiming+BN+Dropout MLP with AdamW, cosine LR & early stop."""
+    df = raw_df.copy()
+    df["residence"] = df["residence"].astype(str).str.strip().str.title()
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    df["wealth_num"] = df["wealth_quintile"].map(w_map)
+    cols = ["maternal_age_years", "anc_visits", "wealth_num", "is_urban"]
+    sub = df[[target] + cols].dropna()
+    X = sub[cols].to_numpy(dtype=np.float32)
+    y = sub[target].astype(int).to_numpy()
+    Xtr, Xtmp, ytr, ytmp = train_test_split(
+        X, y, test_size=0.40, stratify=y, random_state=seed
+    )
+    Xva, Xte, yva, yte = train_test_split(
+        Xtmp, ytmp, test_size=0.50, stratify=ytmp, random_state=seed
+    )
+    sc = StandardScaler()
+    Xtr = sc.fit_transform(Xtr)
+    Xva = sc.transform(Xva)
+    Xte = sc.transform(Xte)
+    torch.manual_seed(seed)
+    net = ClinicalRegNet(in_dim=4, hidden_dim=32, dropout_p=0.3)
+    for m in net.modules():
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
+            nn.init.zeros_(m.bias)
+    opt = torch.optim.AdamW(net.parameters(), lr=0.02, weight_decay=1e-2)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=80)
+    loss_fn = nn.BCEWithLogitsLoss()
+    Xtr_t = torch.tensor(Xtr, dtype=torch.float32)
+    ytr_t = torch.tensor(ytr, dtype=torch.float32).unsqueeze(1)
+    Xva_t = torch.tensor(Xva, dtype=torch.float32)
+    yva_t = torch.tensor(yva, dtype=torch.float32).unsqueeze(1)
+    Xte_t = torch.tensor(Xte, dtype=torch.float32)
+    best_l, wait, best_sd = float("inf"), 0, None
+    for ep in range(1, 81):
+        net.train()
+        opt.zero_grad()
+        loss_fn(net(Xtr_t), ytr_t).backward()
+        nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
+        opt.step()
+        sched.step()
+        net.eval()
+        with torch.no_grad():
+            vl = float(loss_fn(net(Xva_t), yva_t).item())
+        if vl < best_l:
+            best_l, wait = vl, 0
+            best_sd = copy.deepcopy(net.state_dict())
+        else:
+            wait += 1
+            if wait >= 8:
+                break
+    net.load_state_dict(best_sd)
+    net.eval()
+    with torch.no_grad():
+        p_te = torch.sigmoid(net(Xte_t)).squeeze(1).numpy()
+    return {
+        "epochs_run": ep,
+        "best_val_loss": round(best_l, 5),
+        "test_auc": round(float(roc_auc_score(yte, p_te)), 4),
+    }
+
+for label, col in [
+    ("Anemia", "maternal_anemia"),
+    ("Stunting", "child_stunted"),
+]:
+    res = train_stabilized_clinical_net(mch_raw, target=col)
+    print(
+        f"{label:8s} | epochs={res['epochs_run']:2d} | "
+        f"best_val={res['best_val_loss']:.5f} | "
+        f"test_auc={res['test_auc']:.4f}"
+    )
+```
+
+**Output:**
+
+```text
+Anemia   | epochs=10 | best_val=0.64293 | test_auc=0.6621
+Stunting | epochs=27 | best_val=0.30941 | test_auc=0.6655
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch29-todos}
+
+Open `part_06_deep_learning/ch29_training_dynamics_regularization/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six PyTorch training-dynamics components below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 29.1 (`init_linear_weights(layer, method="kaiming")`):** Apply `nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")` for `"kaiming"` or `nn.init.xavier_uniform_(layer.weight)` for `"xavier"`, zero `layer.bias` if present (`is not None`), raise `ValueError` for unknown methods, and return `layer`.
+- **To-Do 29.2 (`RegularizedClinicalMLP`):** Subclass `nn.Module` with `__init__(self, in_dim, hidden_dim=32, dropout_p=0.3)` stacking `Linear(in_dim, hidden_dim) -> BatchNorm1d(hidden_dim) -> ReLU -> Dropout(dropout_p) -> Linear(hidden_dim, 1)` and returning raw logits of shape `(batch, 1)`.
+- **To-Do 29.3 (`verify_dropout_train_vs_eval(model, x_batch)`):** Run 2 forward passes in `model.train()` and 2 in `model.eval()` under `torch.no_grad()`, returning `{"train_stochastic": bool, "eval_deterministic": bool}`.
+- **To-Do 29.4 (`step_with_grad_clipping(model, loss, optimizer, max_norm=1.0)`):** Execute `optimizer.zero_grad()`, `loss.backward()`, clip with `nn.utils.clip_grad_norm_(model.parameters(), max_norm)` capturing pre-clip norm, compute post-clip global L2 norm across parameters, call `optimizer.step()`, and return `{"grad_norm_before": round4, "grad_norm_after": round4}` where `grad_norm_after <= max_norm + 1e-3`.
+- **To-Do 29.5 (`EarlyStoppingTracker`):** Class with `__init__(self, patience=5, min_delta=0.0)` tracking `best_loss = float("inf")`, `counter = 0`, `should_stop = False`, and `best_state_dict = None`; `.step(self, val_loss, model)` updates `best_state_dict = copy.deepcopy(model.state_dict())` and resets `counter = 0` when `val_loss < self.best_loss - self.min_delta`, else increments `counter`, sets `should_stop = counter >= patience`, and returns `self.should_stop`.
+- **To-Do 29.6 (`cosine_lr_schedule_trace(base_lr=0.01, t_max=20)`):** Initialize a dummy `nn.Parameter` + `SGD(..., lr=base_lr)` + `CosineAnnealingLR(opt, T_max=t_max)`, record `opt.param_groups[0]["lr"]` (rounded to 6 decimals) across `t_max` steps (calling `opt.step(); sched.step()`), and return the list of `t_max` floats.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch29-test}
+
+Work through all 10 training-dynamics and regularization reasoning questions on paper before checking Stage 8:
+
+1. **Kaiming vs. Xavier Variance Math:** For a square layer `nn.Linear(200, 200)`, compute the theoretical weight standard deviation under **Kaiming ReLU normal** ($\sqrt{2 / n_{\text{in}}}$) vs. **Xavier normal** ($\sqrt{2 / (n_{\text{in}} + n_{\text{out}})}$). Why is Kaiming larger by $\sqrt{2}$?
+2. **Depth Compounding:** Suppose each hidden layer multiplies activation variance by `0.5` because of poorly scaled initialization. After 10 hidden layers, by what factor has activation variance shrunk?
+3. **Why Clone `state_dict()` in Optimizer Benchmarks?** A colleague compares `SGD` and `AdamW` by instantiating two separate random `nn.Sequential` models without sharing weights and declares `SGD` superior after one run. What experimental confounder invalidates their conclusion?
+4. **Decoupled Weight Decay (Adam vs. AdamW):** In classic L2 regularization added to the loss, the weight penalty gradient $\lambda \theta$ gets divided by Adam's running RMS gradient $\sqrt{\hat{v}_t}$. How does **AdamW** fix this interaction?
+5. **The `BatchNorm1d` Batch-Size-1 Crash:** Why does `nn.BatchNorm1d(32)` raise `ValueError` on an input tensor of shape `(1, 32)` in `model.train()` mode, yet run smoothly on the exact same `(1, 32)` tensor in `model.eval()` mode?
+6. **Inverted Dropout Scaling:** During `model.train()`, `nn.Dropout(p=0.5)` zeroes half the hidden activations. By what factor does PyTorch multiply the surviving activations during training so that `model.eval()` needs *no* rescaling?
+7. **Gradient Norm Clipping Geometry:** A 2-parameter model has gradient vector $\mathbf{g} = [3.0, 4.0]$. After calling `clip_grad_norm_(params, max_norm=1.0)`, what are the clipped gradient components $\tilde{\mathbf{g}}$, and did the angle (direction) of the gradient change?
+8. **Shallow `state_dict()` Checkpointing Bug:** A student writes `self.best_state_dict = model.state_dict()` inside `EarlyStoppingTracker` without `copy.deepcopy`. After 8 worsening epochs, they call `model.load_state_dict(tracker.best_state_dict)`. Which epoch's weights does the model actually hold?
+9. **Cosine Annealing Hand Calculation:** For `CosineAnnealingLR` with `base_lr = 0.04`, `T_max = 20`, and default `eta_min = 0.0`, compute the exact learning rate at step $t = 0$, $t = 10$, and $t = 20$.
+10. **Early Stopping Patience & `min_delta` Trace:** With `patience = 2` and `min_delta = 0.02`, trace `best_loss`, `counter`, and `should_stop` across validation losses `[0.80, 0.79, 0.785]`. On which epoch does training stop?
+
+---
+
+## Stage 7 — Chapter 29 Coding Exam (100 Points) {#sec-ch29-exam}
+
+Open `part_06_deep_learning/ch29_training_dynamics_regularization/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch29", exam_submissions)` to earn your Chapter 29 Exam score out of 100 points.
+
+### Exam Task 29.1 (30 Points): `compare_optimizers_benchmark(X_train, y_train, X_val, y_val, epochs=35, seed=42)`
+
+Compare three optimizers fairly from **identical initial weights**:
+
+- Seed with `torch.manual_seed(seed)`, construct `nn.Sequential(nn.Linear(in_dim, 32), nn.ReLU(), nn.Linear(32, 1))`, and deep-copy `base_sd = copy.deepcopy(base.state_dict())`.
+- Reload `copy.deepcopy(base_sd)` for each of `"SGD"` (`lr=0.05`), `"SGD+Momentum"` (`lr=0.05, momentum=0.9`), and `"AdamW"` (`lr=0.01, weight_decay=1e-2`), training `epochs` steps with `BCEWithLogitsLoss()`.
+- Evaluate `final_train_loss`, `final_val_loss`, and `val_auc` in `model.eval()` under `torch.no_grad()`, returning a `pd.DataFrame` with exact columns `["optimizer", "final_train_loss", "final_val_loss", "val_auc"]` rounded to **4 decimals**.
+
+### Exam Task 29.2 (35 Points): `audit_weight_decay_regularization(X_train, y_train, X_val, y_val, weight_decays, epochs=40, seed=42)`
+
+Audit decoupled `AdamW` weight decay across a list of `weight_decays`:
+
+- Seed with `torch.manual_seed(seed)` and clone identical initial weights for each `wd` in `weight_decays`.
+- Train `epochs` steps using `AdamW(model.parameters(), lr=0.01, weight_decay=wd)` and `BCEWithLogitsLoss()`.
+- Compute `val_loss`, `val_auc`, and `l2_weight_norm` across all 2D weight matrices (`p.ndim >= 2`), all rounded to **4 decimals**.
+- Select `best_wd` from the row with the lowest `val_loss` and return `{"best_wd": float, "table": DataFrame(["weight_decay", "val_loss", "val_auc", "l2_weight_norm"])}` where larger `weight_decay` yields strictly smaller `l2_weight_norm`.
+
+### Exam Task 29.3 (35 Points): `train_with_early_stopping_mch(mch_df, patience=8, max_epochs=80, seed=42)`
+
+Without mutating `mch_df`:
+
+- Copy `mch_df`, clean `residence` casing, replace `anc_visits == 999` with `np.nan`, encode `is_urban` and `wealth_num` (1..5), and drop NaNs across `["maternal_anemia", "maternal_age_years", "anc_visits", "wealth_num", "is_urban"]` (never include `maternal_hb_g_dl`!).
+- Perform a stratified `60/20/20` train/val/test split (`test_size=0.40`, then `test_size=0.50`, `random_state=seed`) and fit `StandardScaler` strictly on `X_train`.
+- Seed `torch.manual_seed(seed)`, train `RegularizedClinicalMLP(4, 32, 0.3)` with `AdamW(lr=0.02, weight_decay=1e-2)`, `CosineAnnealingLR(opt, T_max=max_epochs)`, `BCEWithLogitsLoss()`, and early stopping (`patience`).
+- Restore `best_state_dict` before scoring `X_test` in `model.eval()` under `torch.no_grad()`, returning `{"epochs_run": int, "best_val_loss": round5, "test_auc": round4, "stopped_early": bool}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch29-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **Kaiming:** $\sqrt{2 / 200} = \sqrt{0.01} = \mathbf{0.1000}$. **Xavier:** $\sqrt{2 / (200 + 200)} = \sqrt{0.005} \approx \mathbf{0.0707}$. Kaiming is $\sqrt{2}\times$ larger because ReLU zeroes the negative half of a zero-mean distribution, halving signal variance at every layer.
+2. Activation variance shrinks by $(0.5)^{10} = 1 / 1024 \approx \mathbf{0.000977}$—losing over 99.9% of signal variance!
+3. **Initialization variance confounder:** Each optimizer started at a different random point on the non-convex loss surface, so luck of initialization is confounded with optimizer performance. Cloning `copy.deepcopy(base.state_dict())` isolates the optimizer effect.
+4. **AdamW** decouples weight decay from the gradient moment estimates, shrinking weights directly via $\theta_t \leftarrow (1 - \eta \lambda)\theta_t$ before applying the adaptive Adam step—guaranteeing uniform, predictable L2 shrinkage across all parameters.
+5. In `train()` mode, `BatchNorm1d` computes batch variance with denominator $B - 1 = 0$ when $B = 1$, raising `ValueError`. In `eval()` mode, it normalizes using its saved `running_mean` and `running_var`, which works for any batch size including $B = 1$.
+6. Surviving activations are scaled by $1 / (1 - p) = 1 / 0.5 = \mathbf{2.0}$ during `train()` so their expected magnitude matches the unmasked `eval()` forward pass automatically.
+7. Original norm $\|\mathbf{g}\|_2 = \sqrt{3^2 + 4^2} = 5.0 > 1.0$. Scaling by $1.0 / 5.0$ gives $\tilde{\mathbf{g}} = \mathbf{[0.6, 0.8]}$ with norm `1.0`. Because every component shares the same positive scalar factor, the **direction is completely unchanged**.
+8. It holds the **final (overfit) epoch's weights**! Because `model.state_dict()` returns live tensor references, every `optimizer.step()` silently overwrote `best_state_dict` in place.
+9. Using $\eta_t = \frac{1}{2}\eta_0(1 + \cos(\pi t / T_{\max}))$: at $t = 0$, $\eta_0 = \mathbf{0.04}$; at $t = 10$, $\eta_{10} = 0.02(1 + 0) = \mathbf{0.02}$; at $t = 20$, $\eta_{20} = 0.02(1 - 1) = \mathbf{0.00}$.
+10. Epoch 1 (`0.80`): `best_loss = 0.80`, `counter = 0`. Epoch 2 (`0.79`): `0.79 < 0.80 - 0.02 = 0.78` is **False**, so `counter = 1`. Epoch 3 (`0.785`): still not `< 0.78`, so `counter = 2 >= patience`, setting **`should_stop = True` on Epoch 3**!
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import copy
+import math
+import torch
+import torch.nn as nn
+
+# To-Do 29.1
+def init_linear_weights(layer, method="kaiming"):
+    """Initialize a Linear layer with Kaiming or Xavier weights."""
+    if method == "kaiming":
+        nn.init.kaiming_normal_(layer.weight, nonlinearity="relu")
+    elif method == "xavier":
+        nn.init.xavier_uniform_(layer.weight)
+    else:
+        raise ValueError(f"Unknown initialization method: {method!r}")
+    if layer.bias is not None:
+        nn.init.zeros_(layer.bias)
+    return layer
+
+# To-Do 29.2
+class RegularizedClinicalMLP(nn.Module):
+    """Regularized MLP with BatchNorm1d, ReLU, and Dropout."""
+
+    def __init__(self, in_dim, hidden_dim=32, dropout_p=0.3):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout_p),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+# To-Do 29.3
+def verify_dropout_train_vs_eval(model, x_batch):
+    """Check stochastic train() vs deterministic eval() forward passes."""
+    with torch.no_grad():
+        model.train()
+        t1 = model(x_batch)
+        t2 = model(x_batch)
+        model.eval()
+        e1 = model(x_batch)
+        e2 = model(x_batch)
+    return {
+        "train_stochastic": bool(not torch.allclose(t1, t2)),
+        "eval_deterministic": bool(torch.allclose(e1, e2)),
+    }
+
+# To-Do 29.4
+def step_with_grad_clipping(model, loss, optimizer, max_norm=1.0):
+    """Zero grads, backprop, clip global L2 norm, and step optimizer."""
+    optimizer.zero_grad()
+    loss.backward()
+    norm_before = float(
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+    )
+    sq_sum = sum(
+        float(p.grad.detach().pow(2).sum().item())
+        for p in model.parameters()
+        if p.grad is not None
+    )
+    norm_after = math.sqrt(sq_sum)
+    optimizer.step()
+    return {
+        "grad_norm_before": round(norm_before, 4),
+        "grad_norm_after": round(norm_after, 4),
+    }
+
+# To-Do 29.5
+class EarlyStoppingTracker:
+    """Track validation loss, deep-copy best weights, and signal stop."""
+
+    def __init__(self, patience=5, min_delta=0.0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.best_loss = float("inf")
+        self.counter = 0
+        self.should_stop = False
+        self.best_state_dict = None
+
+    def step(self, val_loss, model):
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = float(val_loss)
+            self.counter = 0
+            self.best_state_dict = copy.deepcopy(model.state_dict())
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.should_stop = True
+        return self.should_stop
+
+# To-Do 29.6
+def cosine_lr_schedule_trace(base_lr=0.01, t_max=20):
+    """Trace smooth CosineAnnealingLR decay across t_max steps."""
+    param = nn.Parameter(torch.zeros(1))
+    opt = torch.optim.SGD([param], lr=base_lr)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=t_max)
+    lrs = []
+    for _ in range(t_max):
+        lrs.append(round(float(opt.param_groups[0]["lr"]), 6))
+        opt.step()
+        sched.step()
+    return lrs
+```
+
+### C. Annotated Solutions — Chapter 29 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Exam Task 29.1 (30 pts)
+def compare_optimizers_benchmark(
+    X_train, y_train, X_val, y_val, epochs=35, seed=42
+):
+    """Benchmark SGD, SGD+Momentum & AdamW from cloned initial weights."""
+    Xtr = torch.tensor(np.asarray(X_train, dtype=np.float32))
+    ytr = torch.tensor(np.asarray(y_train, dtype=np.float32)).unsqueeze(1)
+    Xva = torch.tensor(np.asarray(X_val, dtype=np.float32))
+    yva = torch.tensor(np.asarray(y_val, dtype=np.float32)).unsqueeze(1)
+    yva_np = np.asarray(y_val, dtype=int)
+    in_dim = int(Xtr.shape[1])
+
+    torch.manual_seed(seed)
+    base = nn.Sequential(
+        nn.Linear(in_dim, 32), nn.ReLU(), nn.Linear(32, 1)
+    )
+    base_sd = copy.deepcopy(base.state_dict())
+    crit = nn.BCEWithLogitsLoss()
+
+    specs = [
+        ("SGD", lambda p: torch.optim.SGD(p, lr=0.05)),
+        (
+            "SGD+Momentum",
+            lambda p: torch.optim.SGD(p, lr=0.05, momentum=0.9),
+        ),
+        (
+            "AdamW",
+            lambda p: torch.optim.AdamW(p, lr=0.01, weight_decay=1e-2),
+        ),
+    ]
+    rows = []
+    for name, make_opt in specs:
+        model = nn.Sequential(
+            nn.Linear(in_dim, 32), nn.ReLU(), nn.Linear(32, 1)
+        )
+        model.load_state_dict(copy.deepcopy(base_sd))
+        opt = make_opt(model.parameters())
+        for _ in range(epochs):
+            model.train()
+            opt.zero_grad()
+            crit(model(Xtr), ytr).backward()
+            opt.step()
+        model.eval()
+        with torch.no_grad():
+            tr_l = float(crit(model(Xtr), ytr).item())
+            va_l = float(crit(model(Xva), yva).item())
+            va_p = torch.sigmoid(model(Xva)).squeeze(1).numpy()
+            auc = float(roc_auc_score(yva_np, va_p))
+        rows.append({
+            "optimizer": name,
+            "final_train_loss": round(tr_l, 4),
+            "final_val_loss": round(va_l, 4),
+            "val_auc": round(auc, 4),
+        })
+    cols = ["optimizer", "final_train_loss", "final_val_loss", "val_auc"]
+    return pd.DataFrame(rows, columns=cols)
+
+# Exam Task 29.2 (35 pts)
+def audit_weight_decay_regularization(
+    X_train, y_train, X_val, y_val, weight_decays, epochs=40, seed=42
+):
+    """Sweep AdamW weight_decay and audit val loss, AUC & L2 weight norm."""
+    Xtr = torch.tensor(np.asarray(X_train, dtype=np.float32))
+    ytr = torch.tensor(np.asarray(y_train, dtype=np.float32)).unsqueeze(1)
+    Xva = torch.tensor(np.asarray(X_val, dtype=np.float32))
+    yva = torch.tensor(np.asarray(y_val, dtype=np.float32)).unsqueeze(1)
+    yva_np = np.asarray(y_val, dtype=int)
+    in_dim = int(Xtr.shape[1])
+
+    torch.manual_seed(seed)
+    base = nn.Sequential(
+        nn.Linear(in_dim, 32), nn.ReLU(), nn.Linear(32, 1)
+    )
+    base_sd = copy.deepcopy(base.state_dict())
+    crit = nn.BCEWithLogitsLoss()
+
+    rows = []
+    for wd in weight_decays:
+        model = nn.Sequential(
+            nn.Linear(in_dim, 32), nn.ReLU(), nn.Linear(32, 1)
+        )
+        model.load_state_dict(copy.deepcopy(base_sd))
+        opt = torch.optim.AdamW(
+            model.parameters(), lr=0.01, weight_decay=wd
+        )
+        for _ in range(epochs):
+            model.train()
+            opt.zero_grad()
+            crit(model(Xtr), ytr).backward()
+            opt.step()
+        model.eval()
+        with torch.no_grad():
+            vl = float(crit(model(Xva), yva).item())
+            vp = torch.sigmoid(model(Xva)).squeeze(1).numpy()
+            auc = float(roc_auc_score(yva_np, vp))
+            l2 = math.sqrt(sum(
+                float(p.detach().pow(2).sum().item())
+                for p in model.parameters()
+                if p.ndim >= 2
+            ))
+        rows.append({
+            "weight_decay": round(float(wd), 4),
+            "val_loss": round(vl, 4),
+            "val_auc": round(auc, 4),
+            "l2_weight_norm": round(l2, 4),
+        })
+    cols = ["weight_decay", "val_loss", "val_auc", "l2_weight_norm"]
+    table = pd.DataFrame(rows, columns=cols)
+    best_wd = float(table.loc[table["val_loss"].idxmin(), "weight_decay"])
+    return {"best_wd": best_wd, "table": table}
+
+# Exam Task 29.3 (35 pts)
+def train_with_early_stopping_mch(
+    mch_df, patience=8, max_epochs=80, seed=42
+):
+    """Train leak-free regularized MCH MLP with early stopping."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_num"] = work["wealth_quintile"].map(w_map)
+    feat_cols = [
+        "maternal_age_years", "anc_visits", "wealth_num", "is_urban"
+    ]
+    clean = work[["maternal_anemia"] + feat_cols].dropna()
+    X = clean[feat_cols].to_numpy(dtype=np.float32)
+    y = clean["maternal_anemia"].astype(int).to_numpy()
+
+    Xtr, Xtmp, ytr, ytmp = train_test_split(
+        X, y, test_size=0.40, stratify=y, random_state=seed
+    )
+    Xva, Xte, yva, yte = train_test_split(
+        Xtmp, ytmp, test_size=0.50, stratify=ytmp, random_state=seed
+    )
+    scaler = StandardScaler()
+    Xtr = scaler.fit_transform(Xtr)
+    Xva = scaler.transform(Xva)
+    Xte = scaler.transform(Xte)
+
+    Xtr_t = torch.tensor(Xtr, dtype=torch.float32)
+    ytr_t = torch.tensor(ytr, dtype=torch.float32).unsqueeze(1)
+    Xva_t = torch.tensor(Xva, dtype=torch.float32)
+    yva_t = torch.tensor(yva, dtype=torch.float32).unsqueeze(1)
+    Xte_t = torch.tensor(Xte, dtype=torch.float32)
+
+    torch.manual_seed(seed)
+    model = nn.Sequential(
+        nn.Linear(4, 32),
+        nn.BatchNorm1d(32),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(32, 1),
+    )
+    opt = torch.optim.AdamW(model.parameters(), lr=0.02, weight_decay=1e-2)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=max_epochs
+    )
+    crit = nn.BCEWithLogitsLoss()
+
+    best_loss, counter, stopped_early = float("inf"), 0, False
+    best_sd = None
+    epochs_run = 0
+    for ep in range(1, max_epochs + 1):
+        epochs_run = ep
+        model.train()
+        opt.zero_grad()
+        crit(model(Xtr_t), ytr_t).backward()
+        opt.step()
+        sched.step()
+
+        model.eval()
+        with torch.no_grad():
+            vloss = float(crit(model(Xva_t), yva_t).item())
+        if vloss < best_loss:
+            best_loss = vloss
+            counter = 0
+            best_sd = copy.deepcopy(model.state_dict())
+        else:
+            counter += 1
+            if counter >= patience:
+                stopped_early = True
+                break
+
+    if best_sd is not None:
+        model.load_state_dict(best_sd)
+    model.eval()
+    with torch.no_grad():
+        probs = torch.sigmoid(model(Xte_t)).squeeze(1).numpy()
+    return {
+        "epochs_run": int(epochs_run),
+        "best_val_loss": round(float(best_loss), 5),
+        "test_auc": round(float(roc_auc_score(yte, probs)), 4),
+        "stopped_early": bool(stopped_early),
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 29 Failure Modes
+
+1. **Forgetting `model.eval()` and `torch.no_grad()` Before Validation or Inference:** Leaving `Dropout` and `BatchNorm1d` in `train()` mode injects random noise into validation loss (breaking early stopping!) and causes single-patient inference to crash with `ValueError: Expected more than 1 value per channel`.
+2. **Shallow `model.state_dict()` Checkpointing Without `copy.deepcopy`:** Storing a raw `state_dict()` holds live references to parameter tensors that mutate on every subsequent `optimizer.step()`. Always deep-copy on every new validation minimum and explicitly call `model.load_state_dict(best_state_dict)` before touching `X_test`.
+3. **Double-Squashing Logits with `nn.Sigmoid()` + `BCEWithLogitsLoss()`:** Appending `nn.Sigmoid()` to a binary classifier that already trains with `nn.BCEWithLogitsLoss()` restricts logits to `[0, 1]`, flattens gradients, and ruins probability calibration. Return raw logits from `forward()` and apply `torch.sigmoid(...)` only at evaluation time.
+
+---
+
+::: {.callout-tip title="Bridge to Chapter 30 — Convolutional Neural Networks & Spatial Representations"}
+Every stabilization tool you just mastered—**Kaiming initialization**, **`BatchNorm`**, **`Dropout`**, **`AdamW`**, **`CosineAnnealingLR`**, **gradient clipping**, and **early-stopping checkpoint restoration**—transfers directly to **Convolutional Neural Networks (CNNs)** in Chapter 30, where weight-sharing 2D kernels and `BatchNorm2d` extract spatial features from medical imaging and structured grids!
+:::
