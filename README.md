@@ -9,6 +9,7 @@
 **Mezanur Rahman Sharukh**  
 *M.Sc. Statistician | Public Health & Machine Learning Researcher*  
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24446563.svg)](https://doi.org/10.5281/zenodo.24446563)
+[![PyPI](https://img.shields.io/pypi/v/sharukh-tutor?color=0F5C6E&logo=pypi&logoColor=white)](https://pypi.org/project/sharukh-tutor/)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0006--8348--6123-A6CE39?style=flat&logo=orcid&logoColor=white)](https://orcid.org/0009-0006-8348-6123)
 [![Release](https://img.shields.io/badge/Edition-1st%20(v1.0.2)-1B3B6F?style=flat)](https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.2)
 [![Notebooks](https://img.shields.io/badge/Colab%20Notebooks-182%2F182%20PASS-0F5C6E?style=flat&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb)
