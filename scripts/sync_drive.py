@@ -65,7 +65,15 @@ def main() -> int:
         artifact = BOOK_OUT_DIR / filename
         if not artifact.exists():
             continue
-        copy_cmd = [rclone_bin, "copy", str(artifact), downloads_remote, "--progress"]
+        copy_cmd = [
+            rclone_bin,
+            "copy",
+            str(artifact),
+            downloads_remote,
+            "--drive-upload-cutoff",
+            "32M",
+            "--progress",
+        ]
         if args.dry_run:
             copy_cmd.append("--dry-run")
         print("Running:", " ".join(copy_cmd))
