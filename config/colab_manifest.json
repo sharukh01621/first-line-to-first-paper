@@ -492,6 +492,66 @@
       "qr_path": "assets/qr/part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam.png",
       "is_solution": false
     },
+    "part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__03_coding_exam.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__01_walkthrough.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__02_guided_todos.png",
+      "is_solution": false
+    },
+    "part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb",
+      "qr_path": "assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__03_coding_exam.png",
+      "is_solution": false
+    },
     "solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_01_python_foundations/ch01_first_program/02_guided_todos_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_01_python_foundations__ch01_first_program__02_guided_todos_SOLUTION.png",
@@ -810,6 +870,46 @@
     "solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam_SOLUTION.ipynb": {
       "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_06_deep_learning/ch32_attention_transformers_modern_ai/03_coding_exam_SOLUTION.ipynb",
       "qr_path": "assets/qr/solutions__part_06_deep_learning__ch32_attention_transformers_modern_ai__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch33_reproducible_experiments_ablation__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch33_reproducible_experiments_ablation__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch34_error_analysis_fairness_calibration__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch34_error_analysis_fairness_calibration__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch35_packaging_deployment_reproducibility__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch35_packaging_deployment_reproducibility__03_coding_exam_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch36_flagship_research_capstone__02_guided_todos_SOLUTION.png",
+      "is_solution": true
+    },
+    "solutions/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam_SOLUTION.ipynb": {
+      "colab_url": "https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/solutions/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam_SOLUTION.ipynb",
+      "qr_path": "assets/qr/solutions__part_07_research_capstone__ch36_flagship_research_capstone__03_coding_exam_SOLUTION.png",
       "is_solution": true
     }
   }

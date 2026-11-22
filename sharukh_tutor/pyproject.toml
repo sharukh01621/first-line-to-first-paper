@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sharukh-tutor"
-version = "0.7.0"
+version = "1.0.0"
 description = "Interactive hints, diagnostic self-checks, and Public Health datasets for 'From First Line to First Paper' by Mezanur Rahman Sharukh."
 readme = "README.md"
 license = {text = "MIT"}
@@ -14,7 +14,7 @@ authors = [
 requires-python = ">=3.10"
 keywords = ["education", "python", "data-science", "machine-learning", "public-health", "colab"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",

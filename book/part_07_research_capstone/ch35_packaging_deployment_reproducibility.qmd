@@ -1,0 +1,1113 @@
+# Publishing Reproducible Research — Model Cards, Inference Contracts, Artifact Manifests, and TRIPOD+AI Checklists {#sec-ch35}
+
+> **Chapter Mission:** Bridge the final chasm between an experimental research notebook and a peer-reviewer-proof clinical AI release. Using `mch_survey_sample`, you will enforce strict physiological **inference input contracts**, wrap fitted Scikit-Learn pipelines inside a versioned **`ClinicalRiskService`** (with a clean FastAPI deployment blueprint), generate programmatic **Model Cards** directly from evaluation metrics, seal model weights with **SHA-256 cryptographic artifact manifests** inside isolated temporary directories, benchmark **p95 inference latency SLAs**, and run an automated **8-point TRIPOD+AI reporting compliance audit**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch35 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch35 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch35 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch35_packaging_deployment_reproducibility__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Enforce a strict clinical **inference contract** (`validate_clinical_payload`) that rejects missing keys, wrong data types (including Python's `bool`-is-an-`int` trap), `NaN` values, and physiologically impossible measurements before they reach a model.
+2. Wrap any serialized Scikit-Learn `Pipeline` inside a versioned **`ClinicalRiskService`** class returning calibrated probabilities, clinical risk tiers (`High`, `Borderline`, `Low`), thresholds, and model versions ready for FastAPI or batch scoring.
+3. Generate standardized 5-section **Model Cards** (`MODEL_CARD.md`) programmatically from live evaluation metrics so manuscript tables and repository documentation never drift out of sync.
+4. Build and verify **cryptographic reproducibility bundles** (`model.joblib`, `config.json`, `manifest.json`) using lowercase 64-character **SHA-256** checksums inside `tempfile.TemporaryDirectory()` to catch 1-byte weight corruption or silent file overwrites.
+5. Benchmark single-request **mean, p95, and max inference latency** plus throughput ($\text{req/s}$) with `time.perf_counter()`, and protect nightly clinical batch pipelines with a **dead-letter quarantine queue**.
+6. Audit manuscript and repository readiness systematically against an **8-point TRIPOD+AI reporting checklist** prior to journal submission.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why "It Ran on My Laptop" Fails Peer Review and Clinics {#sec-ch35-intuition}
+
+Training a high-AUC classifier is only half of applied scientific AI. Every year, high-profile clinical machine learning papers are retracted or fail external hospital validation because of **packaging, contract, and reporting breakdowns**—not model math:
+
+- **Silent Input Corruption at Serving Time:** A clinic intake form accidentally submits `maternal_hb_g_dl = 99.0` (a decimal-point typo for `9.9`) or `anc_visits = 999` (a survey sentinel code) or omits `"residence"`. Without an explicit **inference contract**, a Scikit-Learn pipeline silently multiplies garbage into a confident-looking risk probability.
+- **Unverifiable Binary Weights ("Mystery `.joblib` Files"):** Six months after submitting a manuscript, reviewers request a sensitivity analysis—and nobody can prove whether `final_model_v2_REAL.joblib` on a shared drive matches the exact model whose ROC-AUC (`0.7810`) appears in Table 2. A **SHA-256 artifact manifest** locks every binary file to an unforgeable 64-character cryptographic fingerprint.
+- **Documentation Drift Between Code and Paper:** Manually typing ROC-AUC, Brier scores, intended use, and cohort limitations into a `README.md` guarantees stale numbers the next time a random seed or cohort filter changes. Programmatic **Model Cards** (Mitchell et al.) render documentation straight from the training run.
+- **Incomplete TRIPOD+AI Reporting:** Leading medical journals (*The Lancet Digital Health*, *BMJ*, *Nature Medicine*) require transparent **TRIPOD+AI** compliance covering data sources, missing-data handling, leakage prevention, calibration, subgroup fairness, fixed seeds, limitations, and released code.
+
+::: {.callout-note title="Mental Model — The Four Seals of a Publishable Clinical Model"}
+Think of every reproducible research release as four interlocking seals protecting your scientific claim:
+
+1. **The Input Seal (Inference Contract):** Rejects malformed types and physiologically impossible measurements *before* scoring.
+2. **The Versioned Service Seal (`ClinicalRiskService`):** Couples the portable `Pipeline` with an explicit clinical decision threshold, risk tiers, and semantic `model_version`.
+3. **The Cryptographic Seal (`manifest.json` + `config.json`):** Binds `model.joblib` to its exact SHA-256 digest, Python version, UTC timestamp, and training configuration.
+4. **The Transparency Seal (`MODEL_CARD.md` + TRIPOD+AI Audit):** Documents intended clinical use, discrimination, calibration, and limitations alongside a machine-checkable reporting checklist.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Reproducible Research Release & Inference Contract Pipeline {#sec-ch35-mental-model}
+
+Trace how training, cryptographic packaging, and live clinical inference lock together into three sequential stages with zero leakage and zero unverified binaries:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph TrainStage["1. Train & Audit"]
+        direction LR
+        T1["Clean Survey<br/>Stratified 75/25"] --> T2["Fit Pipeline<br/>AUC & Brier"] --> T3["TRIPOD+AI<br/>8-Pt Audit"]
+    end
+    subgraph BundleStage["2. Release Bundle"]
+        direction LR
+        B1["model.joblib<br/>Portable Pipe"] --> B2["MODEL_CARD.md<br/>5 Sections"] --> B3["manifest.json<br/>SHA-256 + Cfg"]
+    end
+    subgraph ServeStage["3. Serve & Verify"]
+        direction LR
+        S1["Verify Hash<br/>Tamper Guard"] --> S2["Input Contract<br/>Bounds & Types"] --> S3["Risk Service<br/>Tier & p95 SLA"]
+    end
+    TrainStage --> BundleStage
+    BundleStage --> ServeStage
+```
+
+Notice the order of operations in Stage 3 (**Serve & Verify**): on startup, the service first verifies the on-disk SHA-256 checksum against `manifest.json` before loading weights; then, on every incoming patient payload, `validate_clinical_payload` enforces schema and physiological bounds *before* the fitted `Pipeline` scores a 1-row DataFrame.
+
+::: {.callout-warning title="Three Production Reproducibility Traps to Avoid"}
+1. **Python's `bool`-Is-an-`int` Trap:** Because `isinstance(True, int)` evaluates to `True`, checking only `isinstance(val, (int, float))` lets `True` silently masquerade as `1.0`! Always reject `isinstance(val, bool)` explicitly.
+2. **Pickling Locally-Defined Custom Classes:** Serializing a `Pipeline` containing a custom class defined inside a notebook cell (`__main__`) breaks `joblib.load()` in clean deployment environments. Stick to standard Scikit-Learn estimators (or importable package modules) for portable artifacts.
+3. **Leaving Stray Artifacts in Git:** Always run packaging tests and verification demos inside `tempfile.TemporaryDirectory()` so temporary `.joblib`, `.json`, and `.md` test files vanish automatically after assertions finish.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch35-walkthrough}
+
+Open `part_07_research_capstone/ch35_packaging_deployment_reproducibility/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Training a Portable Baseline Clinical Pipeline {#sec-ch35-setup}
+
+```python
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+from pathlib import Path
+import platform
+import tempfile
+import time
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import brier_score_loss, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+mch["wealth_quintile"] = (
+    mch["wealth_quintile"].astype(str).str.strip().str.title()
+)
+num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+cat_cols = ["residence", "wealth_quintile"]
+mch[num_cols] = mch[num_cols].replace(999, np.nan)
+
+X = mch[num_cols + cat_cols]
+y = mch["child_stunted"]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=42
+)
+
+prep = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ]), num_cols),
+    ("cat", Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("encoder", OneHotEncoder(
+            handle_unknown="ignore", sparse_output=False
+        )),
+    ]), cat_cols),
+])
+pipe = Pipeline([
+    ("prep", prep),
+    ("model", LogisticRegression(max_iter=500)),
+])
+pipe.fit(X_train, y_train)
+test_probs = pipe.predict_proba(X_test)[:, 1]
+test_auc = round(float(roc_auc_score(y_test, test_probs)), 4)
+test_brier = round(float(brier_score_loss(y_test, test_probs)), 4)
+print(f"Train/Test split: {len(X_train)}/{len(X_test)} | "
+      f"Test ROC-AUC: {test_auc:.4f} | Brier: {test_brier:.4f}")
+```
+
+**Expected Output:**
+```text
+Train/Test split: 375/125 | Test ROC-AUC: 0.7810 | Brier: 0.1012
+```
+
+Notice two deliberate engineering choices: we never mutate `mch_raw` (and never use `inplace=True` in Pandas 3.x), and `pipe` consists **exclusively of built-in Scikit-Learn transformers and estimators**, guaranteeing clean `joblib.dump` / `joblib.load` portability across any Python runtime.
+
+---
+
+### Strict Clinical Payload Contract (`validate_clinical_payload`) {#sec-ch35-contract}
+
+```python
+REQUIRED_KEYS = {
+    "maternal_age_years",
+    "anc_visits",
+    "maternal_hb_g_dl",
+    "residence",
+    "wealth_quintile",
+}
+VALID_RESIDENCE = {"Rural", "Urban"}
+VALID_WEALTH = {"Poorest", "Poorer", "Middle", "Richer", "Richest"}
+
+def _check_num(val, lo, hi, field):
+    if (
+        isinstance(val, bool)
+        or not isinstance(val, (int, float))
+        or not math.isfinite(float(val))
+    ):
+        raise ValueError(f"{field} must be a finite number: {val!r}")
+    num = float(val)
+    if not (lo <= num <= hi):
+        raise ValueError(f"{field} outside [{lo}, {hi}]: {num}")
+    return num
+
+def validate_clinical_payload(payload):
+    """Validate & normalize a single maternal risk request dict."""
+    if not isinstance(payload, dict):
+        raise ValueError("Payload must be a dictionary.")
+    missing = sorted(REQUIRED_KEYS - set(payload.keys()))
+    if missing:
+        raise ValueError(f"Missing required keys: {missing}")
+    age = _check_num(
+        payload["maternal_age_years"], 12, 60, "maternal_age_years"
+    )
+    anc = _check_num(payload["anc_visits"], 0, 25, "anc_visits")
+    hb = _check_num(
+        payload["maternal_hb_g_dl"], 2.0, 25.0, "maternal_hb_g_dl"
+    )
+    res = payload["residence"]
+    if not isinstance(res, str):
+        raise ValueError("residence must be a string.")
+    res_clean = res.strip().title()
+    if res_clean not in VALID_RESIDENCE:
+        raise ValueError(f"Invalid residence: {res!r}")
+    wq = payload["wealth_quintile"]
+    if not isinstance(wq, str):
+        raise ValueError("wealth_quintile must be a string.")
+    wq_clean = wq.strip().title()
+    if wq_clean not in VALID_WEALTH:
+        raise ValueError(f"Invalid wealth_quintile: {wq!r}")
+    return {
+        "maternal_age_years": age,
+        "anc_visits": anc,
+        "maternal_hb_g_dl": hb,
+        "residence": res_clean,
+        "wealth_quintile": wq_clean,
+    }
+
+messy_req = {
+    "maternal_age_years": 17,
+    "anc_visits": 1,
+    "maternal_hb_g_dl": 14.2,
+    "residence": "  rural ",
+    "wealth_quintile": " poorest ",
+}
+clean_req = validate_clinical_payload(messy_req)
+print("Normalized payload:", clean_req)
+print("Caller dict mutated?:", messy_req["residence"] != "  rural ")
+```
+
+**Expected Output:**
+```text
+Normalized payload: {'maternal_age_years': 17.0, 'anc_visits': 1.0,
+ 'maternal_hb_g_dl': 14.2, 'residence': 'Rural',
+ 'wealth_quintile': 'Poorest'}
+Caller dict mutated?: False
+```
+
+Every defensive detail here earns its keep in production:
+
+- **Schema completeness:** Set subtraction `REQUIRED_KEYS - set(payload.keys())` catches omitted fields immediately with an exact list of missing keys.
+- **Type & finiteness hygiene:** Rejecting `bool` and checking `math.isfinite(float(val))` blocks `True`, `None`, strings like `"26"`, `float("nan")`, and `float("inf")`.
+- **Physiological bounds:** Enforcing maternal age in $[12, 60]$, antenatal visits in $[0, 25]$ (catching sentinel `999`!), and hemoglobin in $[2.0, 25.0]\text{ g/dL}$ blocks data-entry errors before inference.
+- **Immutability:** Returning a freshly constructed dictionary preserves `messy_req` untouched for audit logging.
+
+---
+
+### `ClinicalRiskService` & Production FastAPI Endpoint Pattern {#sec-ch35-service}
+
+```python
+class ClinicalRiskService:
+    """Versioned clinical inference wrapper with risk tiering."""
+
+    def __init__(self, pipeline, threshold=0.35, model_version="v1.0"):
+        self.pipeline = pipeline
+        self.threshold = float(threshold)
+        self.model_version = str(model_version)
+
+    def predict_one(self, payload):
+        clean = validate_clinical_payload(payload)
+        row = pd.DataFrame([clean])
+        prob = float(self.pipeline.predict_proba(row)[0, 1])
+        label = int(prob >= self.threshold)
+        if prob >= self.threshold:
+            tier = "High"
+        elif prob >= self.threshold - 0.15:
+            tier = "Borderline"
+        else:
+            tier = "Low"
+        return {
+            "probability": round(prob, 4),
+            "predicted_label": label,
+            "risk_tier": tier,
+            "threshold": self.threshold,
+            "model_version": self.model_version,
+        }
+
+service = ClinicalRiskService(
+    pipe, threshold=0.35, model_version="v1.0"
+)
+sample_profiles = [
+    messy_req,
+    {
+        "maternal_age_years": 28,
+        "anc_visits": 1,
+        "maternal_hb_g_dl": 9.2,
+        "residence": "Rural",
+        "wealth_quintile": "Poorest",
+    },
+    {
+        "maternal_age_years": 30,
+        "anc_visits": 6,
+        "maternal_hb_g_dl": 12.8,
+        "residence": "Urban",
+        "wealth_quintile": "Richest",
+    },
+]
+for idx, prof in enumerate(sample_profiles, start=1):
+    print(f"Case {idx}:", service.predict_one(prof))
+```
+
+**Expected Output:**
+```text
+Case 1: {'probability': 0.3596, 'predicted_label': 1, 'risk_tier': 'High',
+ 'threshold': 0.35, 'model_version': 'v1.0'}
+Case 2: {'probability': 0.2149, 'predicted_label': 0,
+ 'risk_tier': 'Borderline', 'threshold': 0.35, 'model_version': 'v1.0'}
+Case 3: {'probability': 0.0902, 'predicted_label': 0, 'risk_tier': 'Low',
+ 'threshold': 0.35, 'model_version': 'v1.0'}
+```
+
+With `threshold = 0.35`, the three risk tiers partition predicted probability cleanly into **High** ($p \ge 0.35$), **Borderline** ($0.20 \le p < 0.35$), and **Low** ($p < 0.20$). Notice how trivially this service plugs into a **FastAPI** HTTP microservice without duplicating any ML or validation code:
+
+```python
+# api/app.py  (illustrative production entrypoint)
+from fastapi import FastAPI, HTTPException
+import joblib
+
+app = FastAPI(title="MCH Stunting Risk API", version="1.0")
+svc = ClinicalRiskService(joblib.load("model.joblib"), threshold=0.35)
+
+@app.post("/v1/predict")
+def predict_endpoint(payload: dict):
+    try:
+        return svc.predict_one(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+```
+
+Translating `ValueError` into HTTP `422 Unprocessable Entity` gives frontend clinics actionable field-level feedback instead of an opaque `500 Internal Server Error`.
+
+---
+
+### Programmatic Model Card Generation (`generate_model_card_markdown`) {#sec-ch35-model-card}
+
+```python
+def generate_model_card_markdown(meta):
+    """Render a 5-section clinical Model Card in Markdown."""
+    lims = meta["limitations"]
+    if isinstance(lims, list):
+        lim_text = "\n".join(f"- {item}" for item in lims)
+    else:
+        lim_text = str(lims)
+    return (
+        f"# Model Card: {meta['name']}\n\n"
+        f"## Model Details\n"
+        f"- **Name:** {meta['name']}\n"
+        f"- **Version:** {meta['version']}\n\n"
+        f"## Intended Use\n"
+        f"{meta['intended_use']}\n\n"
+        f"## Training Data\n"
+        f"{meta['dataset']}\n\n"
+        f"## Evaluation Metrics\n"
+        f"- **ROC-AUC:** {float(meta['roc_auc']):.4f}\n"
+        f"- **Brier Score:** {float(meta['brier_score']):.4f}\n\n"
+        f"## Fairness & Limitations\n"
+        f"{lim_text}\n"
+    )
+
+card_meta = {
+    "name": "MCH Child Stunting Triage Classifier",
+    "version": "v1.0",
+    "intended_use": (
+        "Community screening triage for nutritional follow-up."
+    ),
+    "dataset": "mch_survey_sample (n=500, 75/25 stratified split)",
+    "roc_auc": test_auc,
+    "brier_score": test_brier,
+    "limitations": (
+        "Cross-sectional survey; external clinic validation required."
+    ),
+}
+card_md = generate_model_card_markdown(card_meta)
+print(card_md)
+```
+
+**Expected Output:**
+```text
+# Model Card: MCH Child Stunting Triage Classifier
+
+## Model Details
+- **Name:** MCH Child Stunting Triage Classifier
+- **Version:** v1.0
+
+## Intended Use
+Community screening triage for nutritional follow-up.
+
+## Training Data
+mch_survey_sample (n=500, 75/25 stratified split)
+
+## Evaluation Metrics
+- **ROC-AUC:** 0.7810
+- **Brier Score:** 0.1012
+
+## Fairness & Limitations
+Cross-sectional survey; external clinic validation required.
+```
+
+Because `generate_model_card_markdown` receives `test_auc` and `test_brier` directly from the evaluation step, every release automatically emits an up-to-date `MODEL_CARD.md` with zero manual transcription errors.
+
+---
+
+### Cryptographic Artifact Manifests & Tamper Detection {#sec-ch35-manifest}
+
+```python
+def build_reproducibility_bundle(artifact_path, config_dict, out_dir):
+    """Hash artifact with SHA-256 and write config & manifest JSON."""
+    artifact = Path(artifact_path)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    manifest = {
+        "artifact_name": artifact.name,
+        "artifact_bytes": int(artifact.stat().st_size),
+        "artifact_sha256": sha256,
+        "python_version": platform.python_version(),
+        "created_utc": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+    }
+    (out / "config.json").write_text(
+        json.dumps(config_dict, indent=2), encoding="utf-8"
+    )
+    (out / "manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
+    return manifest
+
+def verify_reproducibility_bundle(out_dir, artifact_path):
+    """Verify SHA-256 digest and config presence for a bundle."""
+    out = Path(out_dir)
+    manifest = json.loads(
+        (out / "manifest.json").read_text(encoding="utf-8")
+    )
+    actual_sha = hashlib.sha256(
+        Path(artifact_path).read_bytes()
+    ).hexdigest()
+    hash_match = actual_sha == manifest["artifact_sha256"]
+    config_present = (out / "config.json").exists()
+    return {
+        "hash_match": bool(hash_match),
+        "config_present": bool(config_present),
+        "bundle_valid": bool(hash_match and config_present),
+    }
+
+with tempfile.TemporaryDirectory() as tmpdir:
+    bundle_dir = Path(tmpdir) / "release_v1"
+    bundle_dir.mkdir()
+    model_file = bundle_dir / "model.joblib"
+    joblib.dump(pipe, model_file)
+    cfg = {"seed": 42, "threshold": 0.35, "split": "75/25"}
+    man = build_reproducibility_bundle(model_file, cfg, bundle_dir)
+    print("Artifact bytes:", man["artifact_bytes"],
+          "| SHA-256 prefix:", man["artifact_sha256"][:16])
+    print("Untampered check:", verify_reproducibility_bundle(
+        bundle_dir, model_file
+    ))
+    # Simulate 1-byte accidental overwrite / corruption
+    model_file.write_bytes(model_file.read_bytes() + b"X")
+    print("Tampered check:  ", verify_reproducibility_bundle(
+        bundle_dir, model_file
+    ))
+```
+
+**Expected Output:**
+```text
+Artifact bytes: 4474 | SHA-256 prefix: 29d7d13e5b496eaf
+Untampered check: {'hash_match': True, 'config_present': True,
+ 'bundle_valid': True}
+Tampered check:   {'hash_match': False, 'config_present': True,
+ 'bundle_valid': False}
+```
+
+Appending a **single byte** (`b"X"`) completely avalanches the 256-bit SHA-256 digest, immediately flipping `hash_match` and `bundle_valid` from `True` to `False`. Running this check inside a container's startup hook guarantees corrupted or silently replaced model binaries are never served to clinicians.
+
+---
+
+### Inference Latency & p95 SLA Benchmarking {#sec-ch35-latency}
+
+```python
+times_ms = []
+for _ in range(50):
+    t0 = time.perf_counter()
+    service.predict_one(messy_req)
+    times_ms.append((time.perf_counter() - t0) * 1000.0)
+
+mean_ms = float(np.mean(times_ms))
+p95_ms = float(np.percentile(times_ms, 95))
+max_ms = float(np.max(times_ms))
+tps = 1000.0 / max(mean_ms, 1e-9)
+print(f"n=50 | mean={mean_ms:.3f} ms | p95={p95_ms:.3f} ms | "
+      f"max={max_ms:.3f} ms | tps={tps:.1f} req/s")
+```
+
+**Representative Output (CPU-dependent):**
+```text
+n=50 | mean=6.951 ms | p95=13.243 ms | max=16.899 ms | tps=143.9 req/s
+```
+
+Why report **p95** (`np.percentile(times_ms, 95)`) alongside the mean? Averages hide garbage-collection pauses and OS scheduling spikes. A clinical triage dashboard with a 50 ms SLA cares that at least 95% of requests finish comfortably under budget (`~13 ms` here)—and using monotonic `time.perf_counter()` avoids clock-drift artifacts from `time.time()`.
+
+---
+
+### TRIPOD+AI 8-Point Reporting Audit (`score_tripod_ai_checklist`) {#sec-ch35-tripod}
+
+```python
+TRIPOD_ITEMS = [
+    "calibration_reported",
+    "code_released",
+    "data_source_described",
+    "leakage_prevented",
+    "limitations_stated",
+    "missing_data_handled",
+    "seeds_fixed",
+    "subgroup_fairness_audited",
+]
+
+def score_tripod_ai_checklist(checklist_dict):
+    """Audit 8 mandatory TRIPOD+AI items and flag missing items."""
+    missing = sorted(
+        k for k in TRIPOD_ITEMS
+        if not bool(checklist_dict.get(k, False))
+    )
+    score = len(TRIPOD_ITEMS) - len(missing)
+    return {
+        "score": int(score),
+        "max_score": 8,
+        "pct": round(100.0 * score / 8, 1),
+        "missing_items": missing,
+    }
+
+draft_audit = {
+    "calibration_reported": False,
+    "code_released": True,
+    "data_source_described": True,
+    "leakage_prevented": True,
+    "limitations_stated": True,
+    "missing_data_handled": True,
+    "seeds_fixed": False,
+}
+final_audit = {item: True for item in TRIPOD_ITEMS}
+print("Draft manuscript:", score_tripod_ai_checklist(draft_audit))
+print("Final release:   ", score_tripod_ai_checklist(final_audit))
+```
+
+**Expected Output:**
+```text
+Draft manuscript: {'score': 5, 'max_score': 8, 'pct': 62.5,
+ 'missing_items': ['calibration_reported', 'seeds_fixed',
+ 'subgroup_fairness_audited']}
+Final release:    {'score': 8, 'max_score': 8, 'pct': 100.0,
+ 'missing_items': []}
+```
+
+Notice how omitting `"subgroup_fairness_audited"` from `draft_audit` automatically flags it alongside the two `False` entries, turning a subjective peer-review checklist into a deterministic CI gate.
+
+---
+
+### Break It On Purpose! (Contract & Manifest Error Anatomy) {#sec-ch35-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Impossible Hemoglobin 99.0 g/dL)"}
+```python
+validate_clinical_payload({
+    "maternal_age_years": 26,
+    "anc_visits": 4,
+    "maternal_hb_g_dl": 99.0,
+    "residence": "Rural",
+    "wealth_quintile": "Middle",
+})
+```
+**Python's Traceback:**
+```text
+ValueError: maternal_hb_g_dl outside [2.0, 25.0]: 99.0
+```
+**Diagnosis:** A missing decimal point turned `9.9 g/dL` (mild anemia) into an impossible `99.0 g/dL`. Without an input contract, `StandardScaler` would compute a $+63\sigma$ outlier and distort the linear logit.  
+**Fix:** Catch `ValueError` at the API boundary (HTTP `422`) or route the row into a batch dead-letter quarantine queue for clinical data-entry review.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Missing Required Key `'residence'`)"}
+```python
+validate_clinical_payload({
+    "maternal_age_years": 26,
+    "anc_visits": 4,
+    "maternal_hb_g_dl": 11.2,
+    "wealth_quintile": "Middle",
+})
+```
+**Python's Traceback:**
+```text
+ValueError: Missing required keys: ['residence']
+```
+**Diagnosis:** An upstream mobile intake app dropped the `"residence"` field after a schema update. Passing the partial dict directly into `ColumnTransformer` would crash deeper inside Scikit-Learn with an obscure column-index error.  
+**Fix:** Validate exact required keys up front with `REQUIRED_KEYS - set(payload.keys())` so callers receive an unmistakable, actionable schema error.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — FileNotFoundError (Missing `manifest.json` in Bundle)"}
+```python
+with tempfile.TemporaryDirectory() as empty_dir:
+    dummy = Path(empty_dir) / "model.joblib"
+    dummy.write_bytes(b"placeholder")
+    verify_reproducibility_bundle(empty_dir, dummy)
+```
+**Python's Traceback:**
+```text
+FileNotFoundError: [Errno 2] No such file or directory:
+  '/tmp/.../manifest.json'
+```
+**Diagnosis:** Someone copied `model.joblib` into a deployment folder without its companion `manifest.json`. Because `verify_reproducibility_bundle` refuses to silently skip a missing manifest, startup fails fast instead of serving an unverified binary.  
+**Fix:** Always ship the complete 4-file release bundle (`model.joblib`, `MODEL_CARD.md`, `config.json`, `manifest.json`) generated together by `build_reproducibility_bundle`.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch35-blueprint}
+
+**Scenario:** Your maternal-health research group is submitting a manuscript on `mch_survey_sample` to *The Lancet Digital Health*. The editor requests a single reproducible release script that (1) trains a portable leak-free `LogisticRegression` pipeline on a stratified 75/25 split, (2) computes held-out ROC-AUC and Brier calibration score, (3) writes `model.joblib`, `MODEL_CARD.md`, `config.json`, and `manifest.json` inside a clean temporary directory, (4) verifies cryptographic SHA-256 integrity, and (5) records 100% TRIPOD+AI readiness without leaving temporary files behind.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Data Hygiene & Stratified Split:**
+
+   - Copy `raw_df` without mutating it, strip/title-case `residence` and `wealth_quintile`, replace numeric sentinel `999` with `np.nan`, and split 75/25 stratified by `child_stunted` with `random_state=seed`.
+
+2. **Portable Pipeline & Dual Evaluation:**
+
+   - Fit a standard `ColumnTransformer` + `LogisticRegression(max_iter=500)` pipeline (no custom notebook-local classes) and record both discrimination (`roc_auc_score`) and calibration (`brier_score_loss`).
+
+3. **Atomic Bundle Packaging & Self-Verification:**
+
+   - Inside `with tempfile.TemporaryDirectory() as tmpdir:`, dump `model.joblib`, render `MODEL_CARD.md`, call `build_reproducibility_bundle` to generate `config.json` + SHA-256 `manifest.json`, call `verify_reproducibility_bundle`, and score the 8-item TRIPOD+AI checklist.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def audit_and_release_clinical_model(raw_df, seed=42):
+    """Train, package, hash, verify & audit inside a temp directory."""
+    df = raw_df.copy()
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    df["wealth_quintile"] = (
+        df["wealth_quintile"].astype(str).str.strip().str.title()
+    )
+    n_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+    c_cols = ["residence", "wealth_quintile"]
+    df[n_cols] = df[n_cols].replace(999, np.nan)
+    X_all, y_all = df[n_cols + c_cols], df["child_stunted"]
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X_all, y_all, test_size=0.25, stratify=y_all, random_state=seed
+    )
+    pre = ColumnTransformer([
+        ("num", Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+        ]), n_cols),
+        ("cat", Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("encoder", OneHotEncoder(
+                handle_unknown="ignore", sparse_output=False
+            )),
+        ]), c_cols),
+    ])
+    mdl = Pipeline([
+        ("prep", pre),
+        ("model", LogisticRegression(max_iter=500)),
+    ])
+    mdl.fit(X_tr, y_tr)
+    pr = mdl.predict_proba(X_te)[:, 1]
+    auc_v = round(float(roc_auc_score(y_te, pr)), 4)
+    brier_v = round(float(brier_score_loss(y_te, pr)), 4)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out = Path(tmpdir) / "mch_release_v1"
+        out.mkdir()
+        m_path = out / "model.joblib"
+        joblib.dump(mdl, m_path)
+        meta = {
+            "name": "MCH Child Stunting Risk Model",
+            "version": "v1.0",
+            "intended_use": "Community screening triage.",
+            "dataset": "mch_survey_sample (n=500)",
+            "roc_auc": auc_v,
+            "brier_score": brier_v,
+            "limitations": "Requires external prospective audit.",
+        }
+        (out / "MODEL_CARD.md").write_text(
+            generate_model_card_markdown(meta), encoding="utf-8"
+        )
+        cfg = {"seed": seed, "threshold": 0.35, "test_auc": auc_v}
+        build_reproducibility_bundle(m_path, cfg, out)
+        ver = verify_reproducibility_bundle(out, m_path)
+        files = sorted(p.name for p in out.iterdir() if p.is_file())
+
+    tripod = score_tripod_ai_checklist({k: True for k in TRIPOD_ITEMS})
+    return {
+        "test_auc": auc_v,
+        "brier_score": brier_v,
+        "bundle_valid": ver["bundle_valid"],
+        "tripod_pct": tripod["pct"],
+        "files_created": files,
+    }
+
+print(audit_and_release_clinical_model(mch_raw))
+```
+
+**Output:**
+```text
+{'test_auc': 0.781, 'brier_score': 0.1012, 'bundle_valid': True,
+ 'tripod_pct': 100.0, 'files_created': ['MODEL_CARD.md', 'config.json',
+ 'manifest.json', 'model.joblib']}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch35-todos}
+
+Open `part_07_research_capstone/ch35_packaging_deployment_reproducibility/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reproducible-research building blocks below. Pass each **function or class name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 35.1 (`validate_clinical_payload(payload)`):** Validate required keys `{"maternal_age_years", "anc_visits", "maternal_hb_g_dl", "residence", "wealth_quintile"}`, enforce finite non-bool bounds (`age` in `[12, 60]`, `anc_visits` in `[0, 25]`, `hb` in `[2.0, 25.0]`), strip/title-case `residence` (`{"Rural", "Urban"}`) and `wealth_quintile` (`{"Poorest", "Poorer", "Middle", "Richer", "Richest"}`), raise `ValueError` on violations, and return a clean non-mutated copy dict.
+- **To-Do 35.2 (`ClinicalRiskService`):** Class with `__init__(self, pipeline, threshold=0.35, model_version="v1.0")` and `.predict_one(self, payload)` validating via `validate_clinical_payload`, scoring a 1-row DataFrame, mapping `High` / `Borderline` / `Low` tiers, and returning `{"probability": round4, "predicted_label": int, "risk_tier": str, "threshold": float, "model_version": str}`.
+- **To-Do 35.3 (`generate_model_card_markdown(meta)`):** Return a Markdown string containing exact headings `## Model Details`, `## Intended Use`, `## Training Data`, `## Evaluation Metrics`, and `## Fairness & Limitations` populated from `meta` (`name`, `version`, `intended_use`, `dataset`, `roc_auc`, `brier_score`, `limitations`).
+- **To-Do 35.4 (`build_reproducibility_bundle(artifact_path, config_dict, out_dir)`):** Create `out_dir`, compute lowercase 64-char SHA-256 of `artifact_path`, write `config.json` and `manifest.json` (`artifact_name`, `artifact_bytes`, `artifact_sha256`, `python_version`, `created_utc`), and return the manifest dict.
+- **To-Do 35.5 (`verify_reproducibility_bundle(out_dir, artifact_path)`):** Load `manifest.json`, verify `config.json` exists, recompute SHA-256 of `artifact_path`, and return `{"hash_match": bool, "config_present": bool, "bundle_valid": bool}`.
+- **To-Do 35.6 (`score_tripod_ai_checklist(checklist_dict)`):** Audit the 8 mandatory TRIPOD+AI boolean items and return `{"score": int, "max_score": 8, "pct": round1, "missing_items": sorted_list}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch35-test}
+
+Work through all 10 reproducible-research and deployment engineering questions on paper before checking Stage 8:
+
+1. **The `bool`-as-`int` Contract Bug:** What happens in Python if a payload validator checks `isinstance(payload["anc_visits"], (int, float))` without excluding `bool`, and a buggy JSON client sends `{"anc_visits": True}`?
+2. **Boundary Risk-Tier Trace:** A `ClinicalRiskService` uses `threshold = 0.35`. Determine `(predicted_label, risk_tier)` for four predicted probabilities: (a) `0.35`, (b) `0.3499`, (c) `0.20`, and (d) `0.1999`.
+3. **Why Non-Mutation Matters:** Suppose `validate_clinical_payload` modifies `payload["residence"] = payload["residence"].strip().title()` in place instead of returning a copy. What subtle audit-trail bug does this cause when a FastAPI middleware logs the raw incoming request after calling the validator?
+4. **Why `joblib.dump` Fails on Notebook-Local Classes:** You define `class MyScaler(BaseEstimator, TransformerMixin): ...` inside Cell 2 of a notebook, fit a `Pipeline` using it, and save `model.joblib`. Why does `joblib.load("model.joblib")` fail inside a fresh FastAPI Docker container?
+5. **SHA-256 Avalanche Effect:** A `model.joblib` file is 4,474 bytes long. Suppose a disk transfer corrupts a single bit in byte 4,000. How does `verify_reproducibility_bundle` detect it, and how many hex characters long is the SHA-256 digest?
+6. **Three-Field Bundle Diagnostics:** `verify_reproducibility_bundle` returns `{"hash_match": True, "config_present": False, "bundle_valid": False}`. Explain exactly what is intact and what is broken on disk.
+7. **Dead-Letter Quarantine Math:** A nightly clinic batch contains 20 payloads; 17 pass validation and 3 raise `ValueError` at indices `2`, `9`, and `14`. What exact dictionary structure and `success_rate` does `batch_inference_with_quarantine` return? What should it return if the batch is empty (`[]`)?
+8. **Mean vs. p95 Latency:** Suppose 49 requests take `5.0 ms` each and 1 garbage-collection spike takes `105.0 ms`. Compute the approximate mean latency (`7.0 ms`) versus `max_ms` (`105.0 ms`), and explain why `time.perf_counter()` beats `time.time()` for microsecond benchmarking.
+9. **Throughput Formula:** If `mean_ms = 4.0` milliseconds per request on a single CPU worker, what is `throughput_per_sec` ($\text{req/s}$)?
+10. **TRIPOD+AI Extra-Key Immunity:** A researcher submits a checklist dictionary with 6 mandatory TRIPOD+AI keys set to `True`, 2 mandatory keys omitted, and 3 custom bonus keys (`"gpu_used": True`, etc.). What should `score`, `max_score`, and `pct` be?
+
+---
+
+## Stage 7 — Chapter 35 Coding Exam (100 Points) {#sec-ch35-exam}
+
+Open `part_07_research_capstone/ch35_packaging_deployment_reproducibility/03_coding_exam.ipynb`, implement all three capstone release functions, and run `tutor.check_exam("ch35", exam_submissions)` to earn your score out of 100 points.
+
+### Exam Task 35.1 (30 Points): `batch_inference_with_quarantine(service, payloads)`
+
+Iterate `enumerate(payloads)` without mutating `payloads`:
+
+- Call `service.predict_one(p)` inside `try / except ValueError as exc:`.
+- Append valid prediction dicts to `"succeeded"` and `{"index": idx, "error": str(exc)}` to `"quarantined"`.
+- Return `{"succeeded": list, "quarantined": list, "success_rate": round4}` (guarding empty batches with `0.0`).
+
+### Exam Task 35.2 (35 Points): `benchmark_inference_latency(service, valid_payload, n_runs=50)`
+
+Run `service.predict_one(valid_payload)` exactly `n_runs` times, timing each call individually with `time.perf_counter()` (converted to milliseconds):
+
+- Compute `mean_ms`, `p95_ms` (`np.percentile(times_ms, 95)`), `max_ms`, and `throughput_per_sec = 1000.0 / mean_ms`.
+- Return `{"n_runs": int, "mean_ms": round4, "p95_ms": round4, "max_ms": round4, "throughput_per_sec": round2}`.
+
+### Exam Task 35.3 (35 Points): `package_end_to_end_research_release(mch_df, out_dir, seed=42)`
+
+Without mutating `mch_df`:
+
+- Clean `residence` and `wealth_quintile` (`str.strip().str.title()`) and replace sentinel `999` with `np.nan` in `["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]`.
+- Fit a standard `Pipeline([("prep", ColumnTransformer(...)), ("model", LogisticRegression(max_iter=500))])` on a stratified 75/25 `train_test_split(..., random_state=seed)` predicting `child_stunted`.
+- Compute held-out `test_auc` and `brier`, then write `model.joblib`, `MODEL_CARD.md`, `config.json`, and `manifest.json` inside `out_dir`.
+- Run `verify_reproducibility_bundle(out_dir, model_path)` and return `{"bundle_valid": bool, "test_auc": round4, "files_created": sorted_list}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch35-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. `isinstance(True, int)` is **`True`** in Python, so `True` silently passes as `anc_visits = 1.0` instead of raising `ValueError`. Always reject `isinstance(val, bool)` first.
+2. At `threshold = 0.35` (`Borderline` floor $= 0.35 - 0.15 = 0.20$): (a) `0.35` $\rightarrow$ `(1, "High")`; (b) `0.3499` $\rightarrow$ `(0, "Borderline")`; (c) `0.20` $\rightarrow$ `(0, "Borderline")`; (d) `0.1999` $\rightarrow$ `(0, "Low")`.
+3. Mutating the caller's dictionary destroys the raw audit log of what the clinic actually transmitted—making it impossible to diagnose frontend whitespace or casing bugs after the fact.
+4. `joblib` (pickle) stores the class import path `__main__.MyScaler`, not its bytecode. A fresh Docker container has no `MyScaler` in `__main__` and raises `AttributeError`. Use built-in Scikit-Learn steps or importable package modules.
+5. Recomputing `hashlib.sha256(artifact.read_bytes()).hexdigest()` yields a completely different **64-character** lowercase hexadecimal digest, so `hash_match` and `bundle_valid` become `False`.
+6. The model binary `model.joblib` matches the cryptographic SHA-256 hash recorded in `manifest.json` (`hash_match=True`), **but** `config.json` is missing from `out_dir` (`config_present=False`), invalidating the bundle (`bundle_valid=False`).
+7. `succeeded` has length `17`, `quarantined` has 3 dicts (`[{"index": 2, "error": ...}, {"index": 9, "error": ...}, {"index": 14, "error": ...}]`), and `success_rate = round(17 / 20, 4) = 0.85`. On an empty batch `[]`, return `{"succeeded": [], "quarantined": [], "success_rate": 0.0}`.
+8. Mean is $(49 \times 5 + 105) / 50 = 7.0\text{ ms}$, which looks deceptively fast despite a `105.0 ms` tail spike. `time.perf_counter()` is monotonic and highest-resolution, whereas `time.time()` can jump backwards during NTP clock adjustments.
+9. $\text{throughput} = 1000.0 / 4.0 = \mathbf{250.0\text{ req/s}}$.
+10. Extra non-mandatory keys are ignored: `score = 6`, `max_score = 8`, `pct = round(100.0 * 6 / 8, 1) = 75.0`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+from pathlib import Path
+import platform
+import pandas as pd
+
+# To-Do 35.1
+def validate_clinical_payload(payload):
+    """Validate & normalize a maternal risk request without mutation."""
+    if not isinstance(payload, dict):
+        raise ValueError("Payload must be a dictionary.")
+    required = {
+        "maternal_age_years",
+        "anc_visits",
+        "maternal_hb_g_dl",
+        "residence",
+        "wealth_quintile",
+    }
+    missing = sorted(required - set(payload.keys()))
+    if missing:
+        raise ValueError(f"Missing required keys: {missing}")
+
+    bounds = [
+        ("maternal_age_years", 12, 60),
+        ("anc_visits", 0, 25),
+        ("maternal_hb_g_dl", 2.0, 25.0),
+    ]
+    clean = {}
+    for key, lo, hi in bounds:
+        val = payload[key]
+        if (
+            isinstance(val, bool)
+            or not isinstance(val, (int, float))
+            or not math.isfinite(float(val))
+        ):
+            raise ValueError(f"{key} must be a finite number.")
+        num = float(val)
+        if not (lo <= num <= hi):
+            raise ValueError(f"{key} out of range [{lo}, {hi}]: {num}")
+        clean[key] = num
+
+    res = payload["residence"]
+    if not isinstance(res, str):
+        raise ValueError("residence must be a string.")
+    res_norm = res.strip().title()
+    if res_norm not in {"Rural", "Urban"}:
+        raise ValueError(f"Invalid residence: {res!r}")
+    clean["residence"] = res_norm
+
+    wq = payload["wealth_quintile"]
+    if not isinstance(wq, str):
+        raise ValueError("wealth_quintile must be a string.")
+    wq_norm = wq.strip().title()
+    valid_wq = {"Poorest", "Poorer", "Middle", "Richer", "Richest"}
+    if wq_norm not in valid_wq:
+        raise ValueError(f"Invalid wealth_quintile: {wq!r}")
+    clean["wealth_quintile"] = wq_norm
+    return clean
+
+# To-Do 35.2
+class ClinicalRiskService:
+    """Versioned clinical risk service with input contract & tiers."""
+
+    def __init__(self, pipeline, threshold=0.35, model_version="v1.0"):
+        self.pipeline = pipeline
+        self.threshold = float(threshold)
+        self.model_version = str(model_version)
+
+    def predict_one(self, payload):
+        clean = validate_clinical_payload(payload)
+        row = pd.DataFrame([clean])
+        prob = float(self.pipeline.predict_proba(row)[0, 1])
+        label = int(prob >= self.threshold)
+        if prob >= self.threshold:
+            tier = "High"
+        elif prob >= self.threshold - 0.15:
+            tier = "Borderline"
+        else:
+            tier = "Low"
+        return {
+            "probability": round(prob, 4),
+            "predicted_label": label,
+            "risk_tier": tier,
+            "threshold": self.threshold,
+            "model_version": self.model_version,
+        }
+
+# To-Do 35.3
+def generate_model_card_markdown(meta):
+    """Render a structured 5-section clinical Model Card string."""
+    lims = meta["limitations"]
+    if isinstance(lims, list):
+        lim_text = "\n".join(f"- {item}" for item in lims)
+    else:
+        lim_text = str(lims)
+    return (
+        f"# Model Card: {meta['name']}\n\n"
+        f"## Model Details\n"
+        f"- **Name:** {meta['name']}\n"
+        f"- **Version:** {meta['version']}\n\n"
+        f"## Intended Use\n"
+        f"{meta['intended_use']}\n\n"
+        f"## Training Data\n"
+        f"{meta['dataset']}\n\n"
+        f"## Evaluation Metrics\n"
+        f"- **ROC-AUC:** {float(meta['roc_auc']):.4f}\n"
+        f"- **Brier Score:** {float(meta['brier_score']):.4f}\n\n"
+        f"## Fairness & Limitations\n"
+        f"{lim_text}\n"
+    )
+
+# To-Do 35.4
+def build_reproducibility_bundle(artifact_path, config_dict, out_dir):
+    """Hash artifact with SHA-256 and write config.json & manifest.json."""
+    artifact = Path(artifact_path)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    manifest = {
+        "artifact_name": artifact.name,
+        "artifact_bytes": int(artifact.stat().st_size),
+        "artifact_sha256": sha256,
+        "python_version": platform.python_version(),
+        "created_utc": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+    }
+    (out / "config.json").write_text(
+        json.dumps(config_dict, indent=2), encoding="utf-8"
+    )
+    (out / "manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
+    return manifest
+
+# To-Do 35.5
+def verify_reproducibility_bundle(out_dir, artifact_path):
+    """Verify SHA-256 checksum and config.json presence in a bundle."""
+    out = Path(out_dir)
+    manifest = json.loads(
+        (out / "manifest.json").read_text(encoding="utf-8")
+    )
+    actual_sha = hashlib.sha256(
+        Path(artifact_path).read_bytes()
+    ).hexdigest()
+    hash_match = actual_sha == manifest["artifact_sha256"]
+    config_present = (out / "config.json").exists()
+    return {
+        "hash_match": bool(hash_match),
+        "config_present": bool(config_present),
+        "bundle_valid": bool(hash_match and config_present),
+    }
+
+# To-Do 35.6
+def score_tripod_ai_checklist(checklist_dict):
+    """Score an 8-point TRIPOD+AI reporting compliance dictionary."""
+    mandatory = [
+        "calibration_reported",
+        "code_released",
+        "data_source_described",
+        "leakage_prevented",
+        "limitations_stated",
+        "missing_data_handled",
+        "seeds_fixed",
+        "subgroup_fairness_audited",
+    ]
+    missing = sorted(
+        item for item in mandatory
+        if not bool(checklist_dict.get(item, False))
+    )
+    score = len(mandatory) - len(missing)
+    return {
+        "score": int(score),
+        "max_score": 8,
+        "pct": round(100.0 * score / 8, 1),
+        "missing_items": missing,
+    }
+```
+
+### C. Annotated Solutions — Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import time
+import joblib
+import numpy as np
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import brier_score_loss, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+# Exam Task 35.1 (30 pts)
+def batch_inference_with_quarantine(service, payloads):
+    """Score valid payloads and quarantine ValueError rows by index."""
+    succeeded = []
+    quarantined = []
+    for idx, payload in enumerate(payloads):
+        try:
+            succeeded.append(service.predict_one(payload))
+        except ValueError as exc:
+            quarantined.append({"index": idx, "error": str(exc)})
+    rate = round(len(succeeded) / len(payloads), 4) if payloads else 0.0
+    return {
+        "succeeded": succeeded,
+        "quarantined": quarantined,
+        "success_rate": rate,
+    }
+
+# Exam Task 35.2 (35 pts)
+def benchmark_inference_latency(service, valid_payload, n_runs=50):
+    """Measure mean, p95, max latency (ms) & throughput (req/s)."""
+    times_ms = []
+    for _ in range(n_runs):
+        t0 = time.perf_counter()
+        service.predict_one(valid_payload)
+        times_ms.append((time.perf_counter() - t0) * 1000.0)
+    mean_ms = float(np.mean(times_ms))
+    p95_ms = float(np.percentile(times_ms, 95))
+    max_ms = float(np.max(times_ms))
+    tps = 1000.0 / max(mean_ms, 1e-9)
+    return {
+        "n_runs": int(n_runs),
+        "mean_ms": round(mean_ms, 4),
+        "p95_ms": round(p95_ms, 4),
+        "max_ms": round(max_ms, 4),
+        "throughput_per_sec": round(tps, 2),
+    }
+
+# Exam Task 35.3 (35 pts)
+def package_end_to_end_research_release(mch_df, out_dir, seed=42):
+    """Train, package, hash & verify a full MCH research release."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["wealth_quintile"] = (
+        work["wealth_quintile"].astype(str).str.strip().str.title()
+    )
+    num_cols = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl"
+    ]
+    cat_cols = ["residence", "wealth_quintile"]
+    work[num_cols] = work[num_cols].replace(999, np.nan)
+
+    X = work[num_cols + cat_cols]
+    y = work["child_stunted"]
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.25, stratify=y, random_state=seed
+    )
+
+    prep = ColumnTransformer([
+        ("num", Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+        ]), num_cols),
+        ("cat", Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("encoder", OneHotEncoder(
+                handle_unknown="ignore", sparse_output=False
+            )),
+        ]), cat_cols),
+    ])
+    pipe = Pipeline([
+        ("prep", prep),
+        ("model", LogisticRegression(max_iter=500)),
+    ])
+    pipe.fit(X_tr, y_tr)
+
+    probs = pipe.predict_proba(X_te)[:, 1]
+    test_auc = round(float(roc_auc_score(y_te, probs)), 4)
+    brier = round(float(brier_score_loss(y_te, probs)), 4)
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    model_path = out / "model.joblib"
+    joblib.dump(pipe, model_path)
+
+    meta = {
+        "name": "MCH Child Stunting Risk Classifier",
+        "version": "v1.0",
+        "intended_use": "Community health screening triage.",
+        "dataset": "mch_survey_sample (n=500, 75/25 stratified)",
+        "roc_auc": test_auc,
+        "brier_score": brier,
+        "limitations": "Cross-sectional; prospective audit needed.",
+    }
+    (out / "MODEL_CARD.md").write_text(
+        generate_model_card_markdown(meta), encoding="utf-8"
+    )
+    cfg = {
+        "seed": int(seed),
+        "test_size": 0.25,
+        "test_auc": test_auc,
+        "brier_score": brier,
+    }
+    build_reproducibility_bundle(model_path, cfg, out)
+    ver = verify_reproducibility_bundle(out, model_path)
+    files = sorted(p.name for p in out.iterdir() if p.is_file())
+    return {
+        "bundle_valid": bool(ver["bundle_valid"]),
+        "test_auc": test_auc,
+        "files_created": files,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 35 Failure Modes
+
+1. **Forgetting `not isinstance(val, bool)` or `math.isfinite()` in Contracts:** Allowing `True`, `False`, or `NaN` through `validate_clinical_payload` corrupts predictions silently. Always guard type, finiteness, and inclusive physiological ranges on a non-mutated copy.
+2. **Writing Release Artifacts Directly Into the Working Repository:** Dumping `model.joblib` or `manifest.json` into the project root during unit tests leaves untracked binaries in Git. Wrap every packaging test in `tempfile.TemporaryDirectory()` and serialize portable standard Scikit-Learn pipelines.
+3. **Reporting Only Mean Latency or Unhashed Artifacts:** Mean latency conceals p95 tail spikes that violate clinical SLAs, and shipping a `.joblib` without a verified SHA-256 `manifest.json` leaves reviewers with zero cryptographic proof that deployed weights match published tables.
+
+---
+
+::: {.callout-tip title="Reproducible Release Milestone Achieved — Ready for Final Manuscript Capstone!"}
+**Congratulations!** You now command the complete reproducible-research release lifecycle: physiological input contracts, versioned clinical inference services with dead-letter quarantine, programmatic Model Cards, SHA-256 tamper-evident artifact bundles, p95 latency SLA benchmarking, and automated TRIPOD+AI reporting audits—putting your work on par with the highest peer-reviewed medical AI standards!
+:::

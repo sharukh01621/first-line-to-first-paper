@@ -1,0 +1,106 @@
+# The Top-50 Python, Data Science & Deep Learning Error Decoder {#sec-appendix-c}
+
+> **How to Use This Appendix:** Every error below corresponds to a real failure mode triggered deliberately in our "Break It On Purpose" labs across Chapters 1–36. When a traceback halts your notebook, match its exception class and symptom in the relevant table below to jump straight to the root cause and canonical 1-line fix.
+
+::: {.callout-tip title="The 3-Second Traceback Reading Protocol"}
+Always read Python tracebacks **bottom-up**:
+
+1. **Last line:** Read the exact exception type (`ValueError`, `RuntimeError`) and message first.
+2. **Last frame in your code:** Ignore deep library internals (`site-packages/...`) until you locate the last file and line number *you* wrote.
+3. **Inspect shapes & dtypes:** In Parts IV–VII, over 80% of crashes dissolve immediately after printing `.shape`, `.dtype`, and `np.isnan(...).sum()` right above the failing line.
+:::
+
+---
+
+## Core Python & Data Structure Errors (#1–#10) {#sec-app-c-python}
+
+| # | Error & Trigger | Root Cause | 1-Line Fix | Ch |
+| :-: | :--- | :--- | :--- | :-: |
+| 1 | `SyntaxError`: missing `:` or unmatched `)` | Parser rejected invalid Python grammar before execution began | Add missing `:` / bracket on the flagged line or the line above it | 1, 4 |
+| 2 | `IndentationError`: unexpected indent | Mixed tabs/spaces or misaligned block inside `if`/`for`/`def` | Re-indent consistently using 4 spaces per block level | 4, 5 |
+| 3 | `NameError: name 'x' is not defined` | Variable misspelled, out of function scope, or cell never run | Define `x` first, fix spelling, or run earlier notebook cells | 2, 6 |
+| 4 | `TypeError`: `"Age: " + 25` | Attempted binary operation between incompatible `str` and `int` | Use an f-string `f"Age: {age}"` or cast `str(age)` | 2, 3 |
+| 5 | `ValueError: invalid literal for int()` | `int("37.5")` or `int("N/A")` received non-integer text | Parse via `int(float(s))` or validate with `try/except ValueError` | 3, 10 |
+| 6 | `ZeroDivisionError: division by zero` | Denominator evaluated to `0` (e.g., empty stratum or `height == 0`) | Guard with `num / den if den != 0 else float("nan")` | 2, 10 |
+| 7 | `IndexError: list index out of range` | Accessed `items[len(items)]` or popped from an empty list | Use `range(len(items))`, negative index `items[-1]`, or check `if items:` | 5, 7 |
+| 8 | `KeyError: 'Sylhet'` | Dict lookup `d[k]` requested a missing key | Use `d.get(k, 0)` or `collections.defaultdict(int)` | 8 |
+| 9 | `FileNotFoundError: No such file` | Relative path wrong for current working directory (`cwd`) | Build paths from `Path(__file__).resolve().parent` or verify `Path.cwd()` | 9, 14 |
+| 10 | `RecursionError: maximum recursion depth` | Recursive function lacks a reachable base case or never shrinks | Add an explicit base case (`if n <= 1: return 1`) or convert to a loop | 11 |
+
+: {tbl-colwidths="[5,25,28,34,8]"}
+
+---
+
+## Engineering, OOP, Packaging & Serialization Errors (#11–#20) {#sec-app-c-eng}
+
+| # | Error & Trigger | Root Cause | 1-Line Fix | Ch |
+| :-: | :--- | :--- | :--- | :-: |
+| 11 | `AttributeError: 'NoneType' has no attr` | Function forgot `return`, or called `.sort()` which returns `None` | Return the computed value explicitly; use `sorted(x)` instead of `x = x.sort()` | 7, 12 |
+| 12 | `ModuleNotFoundError: No module named` | Package not installed in the *active* venv/Colab kernel, or bad `sys.path` | Run `pip install -e .` inside the active `.venv` or select the right kernel | 13, 14 |
+| 13 | `json.JSONDecodeError` | Trailing comma, single quotes, or empty/truncated `.json` file | Validate JSON with double quotes; verify file is non-empty before `json.load` | 9 |
+| 14 | `io.UnsupportedOperation: not writable` | Called `f.write(...)` on a file opened in default `"r"` read mode | Open with `open(path, "w", encoding="utf-8")` or `"a"` for append | 9 |
+| 15 | `AssertionError` in `pytest` or guard | Test expectation failed or floating-point `0.1 + 0.2 == 0.3` mismatch | Compare floats with `math.isclose(a, b, rel_tol=1e-6)` or `pytest.approx` | 10, 15 |
+| 16 | `SystemExit: 2` from `argparse` in Colab | `parser.parse_args()` parsed Jupyter's hidden `-f kernel.json` flags | Pass explicit args in notebooks: `parser.parse_args(["--epochs", "5"])` | 13, 35 |
+| 17 | `TypeError: unhashable type: 'list'` | Used a mutable `list` as a `dict` key or element of a `set` | Convert the key to an immutable `tuple`: `seen.add(tuple(coords))` | 8 |
+| 18 | `PicklingError` / `AttributeError` on save | `joblib`/`pickle` cannot serialize `lambda` or classes defined inside functions | Move custom classes and transform functions to top-level module scope | 14, 35 |
+| 19 | `PermissionError: [Errno 13]` | Target path is a directory, locked by Excel, or in read-only filesystem | Write to a filename inside a writable folder (e.g., `Path("artifacts/out.csv")`) | 9, 14 |
+| 20 | `UnicodeDecodeError: 'utf-8' codec` | Legacy Windows/SPSS CSV saved in `latin-1` or `cp1252` with BOM | Open with `encoding="utf-8-sig"` or fallback `encoding="latin-1"` | 9, 18 |
+
+: {tbl-colwidths="[5,25,28,34,8]"}
+
+---
+
+## NumPy, Pandas 3.x & Biostatistics Errors (#21–#30) {#sec-app-c-data}
+
+| # | Error & Trigger | Root Cause | 1-Line Fix | Ch |
+| :-: | :--- | :--- | :--- | :-: |
+| 21 | `ValueError: could not broadcast (100,4) (100,)` | Row vector `(100,)` aligned right against `4` instead of `(100, 1)` | Reshape column vector explicitly: `v[:, np.newaxis]` or `keepdims=True` | 16 |
+| 22 | `ValueError: matmul: Input operand 1 mismatch` | Inner dimensions of `A @ B` do not match (`(n, p) @ (q, k)` with $p \neq q$) | Verify `A.shape` and `B.shape`; transpose as `A @ B.T` if needed | 16, 22 |
+| 23 | `ValueError: truth value of Series ambiguous` | Used Python `and`/`or`/`if s:` on a multi-row Boolean Series | Use bitwise `&`, `|`, `~` with parentheses: `(df["a"] > 0) & (df["b"] < 5)` | 17 |
+| 24 | `pandas.errors.MergeError` | Duplicate keys violated `validate="m:1"` (preventing silent row explosion) | Deduplicate lookup table first: `meta.drop_duplicates(subset=["key"])` | 18 |
+| 25 | `ChainedAssignmentError` / silent non-edit | Pandas 3.x CoW rejects `df[mask]["col"] = val` chained mutation | Use single-step `df.loc[mask, "col"] = val` or `df = df.assign(...)` | 17, 18 |
+| 26 | `ValueError: could not convert str 'N/A'` | `s.astype(float)` crashed on dirty survey text like `"N/A"` or `""` | Parse safely with `pd.to_numeric(s, errors="coerce")` | 18 |
+| 27 | `RuntimeWarning: overflow in exp` (`nan`) | Naive `np.exp(z)` overflowed for large logits ($z > 709$ in `float64`) | Subtract row max first: `z_s = z - z.max(axis=-1, keepdims=True)` | 23, 27 |
+| 28 | `LinAlgError: Singular matrix` | Exact collinearity or $p > n$ makes $X^\top X$ non-invertible | Add Ridge penalty $X^\top X + \lambda I$ or use `np.linalg.lstsq(X, y)` | 16, 22 |
+| 29 | `MissingDataError` in `sm.Logit` / `sm.OLS` | Design matrix `exog` contains `NaN` or `inf` entries | Drop or impute missing rows first, or pass `missing="drop"` to Statsmodels | 20, 23 |
+| 30 | `ValueError` in `chi2_contingency` | Contingency table contains negative values or an all-zero row/column | Filter out empty levels (`observed=True`) and verify counts $\ge 0$ | 20 |
+
+: {tbl-colwidths="[5,25,28,34,8]"}
+
+---
+
+## Scikit-Learn & Classical ML Errors (#31–#40) {#sec-app-c-sklearn}
+
+| # | Error & Trigger | Root Cause | 1-Line Fix | Ch |
+| :-: | :--- | :--- | :--- | :-: |
+| 31 | `NotFittedError: instance not fitted yet` | Called `.predict()` or `.transform()` before `.fit(X_train, y_train)` | Fit on training data first: `pipe.fit(X_train, y_train)` | 21, 26 |
+| 32 | `ValueError: least populated class has 1` | `train_test_split(..., stratify=y)` cannot split a singleton class | Drop or merge ultra-rare classes ($n < 2$), or inspect `y.value_counts()` | 21, 23 |
+| 33 | `ValueError: Only one class in y_true` | Fold or small subgroup contains all `0`s or all `1`s when calling `roc_auc_score` | Use `StratifiedKFold` and check `len(np.unique(y_sub)) == 2` in subgroup audits | 23, 34 |
+| 34 | `ValueError: Found unknown categories` | Test fold has a rare district/category absent from training fold | Configure `OneHotEncoder(handle_unknown="ignore")` inside the `Pipeline` | 21, 26 |
+| 35 | `ValueError: Invalid parameter 'C'` | `GridSearchCV` on a `Pipeline` needs `<step_name>__<param>` routing | Prefix parameter grid keys with the step name: `{"model__C": [0.1, 1.0]}` | 26 |
+| 36 | `ValueError: 'groups' should not be None` | `GroupKFold` / `StratifiedGroupKFold` called without cluster/patient IDs | Pass `groups=cluster_ids` into `cross_val_score` or `search.fit(..., groups=g)` | 21, 26 |
+| 37 | `ValueError: Number of labels is 1` | `silhouette_score` requires $2 \le K \le n - 1$ clusters (DBSCAN found 1 cluster) | Guard with `if len(set(labels) - {-1}) >= 2:` before computing silhouette | 25 |
+| 38 | `ValueError: n_components must be <= min` | Requested `PCA(n_components=k)` exceeding $\min(n_{\text{samples}}, n_{\text{features}})$ | Cap with `k = min(k, X_train.shape[0], X_train.shape[1])` or pass float `0.95` | 25 |
+| 39 | `ValueError: Input X contains NaN` | Estimator (`LogisticRegression`, `GradientBoosting`) does not accept raw `NaN` | Prepend `SimpleImputer(strategy="median")` inside a `Pipeline` | 22, 24 |
+| 40 | `ValueError: mix of binary and continuous` | Passed predicted probabilities `y_prob` instead of hard labels to `confusion_matrix` | Threshold probabilities first: `y_pred = (y_prob >= threshold).astype(int)` | 23, 34 |
+
+: {tbl-colwidths="[5,25,28,34,8]"}
+
+---
+
+## PyTorch & Deep Learning Errors (#41–#50) {#sec-app-c-pytorch}
+
+| # | Error & Trigger | Root Cause | 1-Line Fix | Ch |
+| :-: | :--- | :--- | :--- | :-: |
+| 41 | `RuntimeError: expected mat1 and mat2 same dtype` | NumPy `float64` array converted to `torch.float64` passed into `float32` layer | Cast tensors explicitly: `torch.as_tensor(X, dtype=torch.float32)` | 28 |
+| 42 | `RuntimeError: mat1 and mat2 shapes mismatch` | Input feature count or flattened CNN size does not match `nn.Linear(in_f, ...)` | Print `x.shape` in `forward()`; match `in_features` or use `AdaptiveAvgPool2d` | 28, 30 |
+| 43 | `RuntimeError: backward through graph 2nd time` | Backpropped twice on same computation graph or reused un-detached hidden state | Detach carried states `h = h.detach()` and call `optimizer.zero_grad()` each step | 28, 31 |
+| 44 | `ValueError: Expected > 1 value per channel` | Final mini-batch had size $1$ in `BatchNorm1d` during `model.train()` | Set `DataLoader(..., drop_last=True)` for training and `model.eval()` for inference | 29 |
+| 45 | `RuntimeError: Given groups=1, weight size` | Image tensor is NHWC `(B, H, W, C)` instead of PyTorch NCHW `(B, C, H, W)` | Permute dimensions (`x.permute(0, 3, 1, 2)`) or add channel dim `x.unsqueeze(1)` | 30 |
+| 46 | `RuntimeError: element 0 does not require grad` | All model parameters have `requires_grad=False` (e.g., frozen backbone, no LoRA) | Unfreeze adapter/head params (`p.requires_grad = True`) before creating optimizer | 30, 32 |
+| 47 | `RuntimeError: input.size(-1) != input_size` | Passed 2D `(B, T)` tensor into `nn.GRU` expecting 3D `(B, T, F)` with `batch_first=True` | Add trailing feature axis: `x = x.unsqueeze(-1)` so shape is `(B, T, 1)` | 31 |
+| 48 | `TypeError` / `AttributeError` on `nn.LSTM` | Treated `lstm(x)` return value as a tensor instead of `(output, (h_n, c_n))` | Unpack explicitly: `out, (h_n, c_n) = self.lstm(x)` | 31 |
+| 49 | `IndexError: index out of range in self` | Token ID $\ge$ `num_embeddings` or negative ID fed into `nn.Embedding` | Map unseen tokens to `UNK_ID = 1` and keep all IDs in `[0, vocab_size - 1]` | 32 |
+| 50 | `RuntimeError: size of tensor a must match b` | Attention mask `(B, T)` did not broadcast cleanly to scores `(B, H, T, T)` | Reshape mask to `(B, 1, 1, T)` before `scores.masked_fill(mask == 0, float("-inf"))` | 32 |
+
+: {tbl-colwidths="[5,25,28,34,8]"}

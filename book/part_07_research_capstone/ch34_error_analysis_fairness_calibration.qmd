@@ -1,0 +1,1106 @@
+# Error Analysis, Subgroup Fairness Audits, Calibration Curves, and Responsible Clinical AI {#sec-ch34}
+
+> **Chapter Mission:** Learn why an impressive aggregate ROC-AUC is never enough to deploy a clinical or public-health model safely. Using Bangladesh maternal and child health survey data (`mch_survey_sample`), you will disaggregate performance across geographic and socioeconomic strata, quantify **Demographic Parity**, **Equal Opportunity**, and **Equalized Odds** disparities, audit **subgroup calibration (ECE & Brier)**, slice **worst false negatives and false positives** for qualitative root-cause analysis, reduce **Equal Opportunity** gaps via **validation-calibrated group thresholds** without retraining, and detect real-world covariate shift with the **Population Stability Index (PSI)**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch34 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch34 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch34 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch34_error_analysis_fairness_calibration__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Disaggregate classifier discrimination (`roc_auc`, handling single-class strata cleanly as `np.nan`), sensitivity (`tpr`), false positive rate (`fpr`), prevalence, and `brier` score across sensitive subgroups (`residence`, `wealth_quintile`).
+2. Compute and interpret **Demographic Parity difference**, **Equal Opportunity difference**, **Max FPR difference**, and **Equalized Odds difference**—and explain why clinical impossibility theorems force explicit trade-offs when base rates differ.
+3. Audit **subgroup probability calibration** via equal-width **Expected Calibration Error (ECE)** and **Brier score** to expose hidden miscalibration in disadvantaged populations.
+4. Perform **qualitative error analysis** by slicing the top-$k$ most confident false negatives and false positives without mutating source DataFrames.
+5. Apply **post-processing threshold calibration** strictly on a held-out validation split (`calibrate_group_thresholds_for_tpr`) to reduce Equal Opportunity disparities on unseen patients without retraining model weights.
+6. Build a production **covariate-shift monitoring gate** using the **Population Stability Index (PSI)** with quantile binning and $\pm\infty$ outer boundaries to trigger timely clinical model retraining.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Aggregate Metrics Hide Clinical Harm {#sec-ch34-intuition}
+
+Every hospital AI horror story begins with a celebratory aggregate metric. A team trains a child-stunting or sepsis risk classifier, sees a respectable overall test ROC-AUC on a pooled evaluation split, and declares victory. Weeks after deployment, clinicians notice the tool systematically misses sick patients in one demographic while flooding clinics with false alarms in another—or silently collapses after a seasonal shock changes patient demographics.
+
+Responsible Clinical AI rests on five non-negotiable engineering disciplines:
+
+- **Disaggregation Before Deployment:** Pooled accuracy, AUC, and Brier score are weighted averages dominated by the majority stratum. A model scoring `0.65` overall can simultaneously achieve `73%` sensitivity in rural clinics while missing `100%` of cases in urban clinics—or flagging `100%` of poorest households while ignoring wealthier stunted children.
+- **Fairness Definitions Encode Clinical Values:** Three group-fairness criteria capture distinct harms:
+
+  - **Demographic Parity ($\Delta_{\text{DP}}$):** $\max_g P(\hat{Y}=1 \mid G=g) - \min_g P(\hat{Y}=1 \mid G=g)$. Equalizes overall referral or screening rates across groups—dangerous when true disease prevalence genuinely differs!
+  - **Equal Opportunity ($\Delta_{\text{EO}}$):** $\max_g \text{TPR}_g - \min_g \text{TPR}_g$. Ensures sick patients in every group have an equal probability of being caught and treated.
+  - **Equalized Odds ($\Delta_{\text{EqOdds}}$):** $\max(\Delta_{\text{EO}}, \Delta_{\text{FPR}})$. Equalizes both missed cases (TPR) and false-alarm burden (FPR).
+
+- **Subgroup Calibration Matters Independently of Ranking:** Even if a model's overall ECE looks tiny (`~0.03`), risk scores can remain systematically miscalibrated inside vulnerable subgroups (`Poorest` ECE `0.1658` vs. `Richer` ECE `0.0077`). Clinicians rely on honest probabilities to allocate scarce nutrition supplements and diagnostic tests.
+- **Qualitative Error Slicing Turns Numbers into Hypotheses:** Scalar metrics tell you *that* a model failed; inspecting the 5 most confident **False Negatives** ($y=1$, lowest $\hat{p}$) and **False Positives** ($y=0$, highest $\hat{p}$) reveals *why*—such as over-reliance on socioeconomic proxies (`wealth_rank`, `is_urban`) when clinical biomarkers are missing.
+- **Post-Deployment Shift Monitoring (PSI):** Clinical environments never stand still. Pandemics, droughts, supply-chain disruptions, and hospital coding changes alter input feature distributions (**covariate shift**) long before delayed health outcomes are measured. The **Population Stability Index (PSI)** quantifies distribution drift continuously so teams retrain *before* patients are harmed.
+
+::: {.callout-note title="Impossibility Theorem in Clinical Fairness (Chouldechova / Kleinberg)"}
+When two populations have genuinely different disease prevalences ($P(Y=1 \mid G=a) \neq P(Y=1 \mid G=b)$, such as Rural `16.2%` vs. Urban `8.1%` stunting in `mch_survey_sample`), it is **mathematically impossible** for any imperfect classifier to simultaneously satisfy **subgroup calibration**, **Equal Opportunity (equal TPR)**, and **equal FPR**! You must choose the fairness criterion aligned with clinical harm—typically **Equal Opportunity** for life-saving screening—and document residual trade-offs transparently in a Model Card.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: The Responsible Clinical AI Audit Loop {#sec-ch34-mental-model}
+
+Never ship a clinical classifier after a single train/test score. Run every candidate model through this four-stage continuous audit loop:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph Audit["1. Subgroup Audit"]
+        direction LR
+        A1["Disaggregate Metrics<br/>AUC, TPR, FPR, Brier"]
+        A2["Fairness & ECE Gaps<br/>DP, EO, EqOdds, ECE"]
+        A1 --> A2
+    end
+    subgraph Slice["2. Error Slicing"]
+        direction LR
+        E1["Worst FN & FP Cases<br/>Top-k Confident Misses"]
+        E2["Root-Cause Diagnosis<br/>Proxy Bias & Features"]
+        E1 --> E2
+    end
+    subgraph Mitigate["3. Mitigation"]
+        direction LR
+        M1["Val Group Cutoffs<br/>Target TPR >= 0.75"]
+        M2["Frozen Test Re-Audit<br/>Verify EO Gap Drop"]
+        M1 --> M2
+    end
+    subgraph Drift["4. Drift Monitor"]
+        direction LR
+        D1["Feature PSI Audit<br/>Quantile Bins +/-inf"]
+        D2["Retrain Gate<br/>PSI >= 0.25 Alert"]
+        D1 --> D2
+    end
+    Audit --> Slice
+    Slice --> Mitigate
+    Mitigate --> Drift
+```
+
+Notice the strict **leakage barrier** inside Stage 3 (`Mitigation`): group-specific thresholds are calibrated *only* on a held-out validation split and frozen before evaluating the final test split. Likewise, Stage 4 (`Drift Monitor`) locks quantile bin boundaries on the historical baseline cohort and evaluates incoming clinic streams with $\pm\infty$ outer edges so extreme shocks never vanish.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch34-walkthrough}
+
+Open `part_07_research_capstone/ch34_error_analysis_fairness_calibration/01_walkthrough.ipynb` in Colab and execute every cell top-to-bottom alongside the dissections below.
+
+### Setup: Leak-Free Baseline Stunting Model on `mch_survey_sample` {#sec-ch34-setup}
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import brier_score_loss, roc_auc_score, roc_curve
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+df = mch_raw.copy()
+df["residence"] = df["residence"].astype(str).str.strip().str.title()
+df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+df["is_urban"] = (df["residence"] == "Urban").astype(int)
+w_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+df["wealth_rank"] = df["wealth_quintile"].map(w_map)
+feat_cols = [
+    "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+    "wealth_rank", "is_urban",
+]
+keep = [
+    "household_id", "residence", "wealth_quintile", "child_stunted",
+] + feat_cols
+clean = df[keep].dropna().reset_index(drop=True)
+
+X = clean[feat_cols]
+y = clean["child_stunted"].astype(int)
+X_tr, X_te, y_tr, y_te, df_tr, df_te = train_test_split(
+    X, y, clean, test_size=0.30, stratify=y, random_state=42
+)
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=500)),
+])
+pipe.fit(X_tr, y_tr)
+p_tr = pipe.predict_proba(X_tr)[:, 1]
+p_te = pipe.predict_proba(X_te)[:, 1]
+fpr_tr, tpr_tr, th_tr = roc_curve(y_tr, p_tr)
+t_youden = float(th_tr[int(np.argmax(tpr_tr - fpr_tr))])
+pred_te = (p_te >= t_youden).astype(int)
+
+print(f"Complete rows: {len(clean)} | Test rows: {len(y_te)}")
+print(
+    f"Overall Test ROC-AUC: {roc_auc_score(y_te, p_te):.4f} | "
+    f"Train Youden t: {t_youden:.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Complete rows: 470 | Test rows: 141
+Overall Test ROC-AUC: 0.6471 | Train Youden t: 0.1429
+```
+
+Notice two crucial hygiene details:
+
+- Because our outcome is `child_stunted` (not `maternal_anemia`), `maternal_hb_g_dl` is a genuine biological risk predictor rather than a target leak!
+- We select Youden's $J$ threshold (`0.1429`) **strictly on `(y_tr, p_tr)`** so test labels remain completely untouched during cutoff tuning.
+
+---
+
+### Aggregate AUC Hides Subgroup Disparities {#sec-ch34-subgroups}
+
+Now let's peel back the `0.6471` aggregate AUC by disaggregating performance across `residence` and `wealth_quintile`:
+
+```python
+def subgroup_performance_table(y_true, y_prob, groups, threshold=0.5):
+    """Disaggregate clinical classifier metrics by sorted subgroup."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    rows = []
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        pred_g = (yp_g >= threshold).astype(int)
+        auc = (
+            round(float(roc_auc_score(yt_g, yp_g)), 4)
+            if len(np.unique(yt_g)) == 2
+            else np.nan
+        )
+        tp = int(np.sum((yt_g == 1) & (pred_g == 1)))
+        fn = int(np.sum((yt_g == 1) & (pred_g == 0)))
+        fp = int(np.sum((yt_g == 0) & (pred_g == 1)))
+        tn = int(np.sum((yt_g == 0) & (pred_g == 0)))
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+        rows.append({
+            "group": g.item() if hasattr(g, "item") else g,
+            "n": int(np.sum(m)),
+            "prevalence": round(float(np.mean(yt_g == 1)), 4),
+            "roc_auc": auc,
+            "tpr": round(tpr, 4),
+            "fpr": round(fpr, 4),
+            "brier": round(float(brier_score_loss(yt_g, yp_g)), 4),
+        })
+    cols = [
+        "group", "n", "prevalence", "roc_auc", "tpr", "fpr", "brier",
+    ]
+    return pd.DataFrame(rows, columns=cols)
+
+print("--- Residence Subgroups ---")
+print(
+    subgroup_performance_table(
+        y_te, p_te, df_te["residence"], threshold=t_youden
+    ).to_string(index=False)
+)
+print("\n--- Wealth Quintile Subgroups ---")
+print(
+    subgroup_performance_table(
+        y_te, p_te, df_te["wealth_quintile"], threshold=t_youden
+    ).to_string(index=False)
+)
+```
+
+**Expected Output:**
+
+```text
+--- Residence Subgroups ---
+group  n  prevalence  roc_auc    tpr    fpr  brier
+Rural 96      0.1562   0.7432 0.7333 0.3951 0.1220
+Urban 45      0.0889   0.1280 0.0000 0.1220 0.0908
+
+--- Wealth Quintile Subgroups ---
+  group  n  prevalence  roc_auc  tpr    fpr  brier
+ Middle 24      0.0000      NaN  0.0 0.1250 0.0104
+ Poorer 31      0.1290   0.4352  0.5 0.6667 0.1235
+Poorest 25      0.3600   0.6181  1.0 1.0000 0.2410
+ Richer 31      0.0645   0.4655  0.0 0.0000 0.0610
+Richest 30      0.1333   0.3365  0.0 0.0000 0.1269
+```
+
+Stare at what aggregate `ROC-AUC = 0.6471` completely hid:
+
+- **Geographic collapse:** In `Rural` clinics, the model catches **`73.33%`** of stunted children (`AUC = 0.7432`). In `Urban` clinics, sensitivity plunges to **`0.0000`**—every single stunted urban child in the test set was missed!
+- **Socioeconomic polarization:** Across `wealth_quintile`, the model flags **`100%`** of `Poorest` children (`TPR = 1.0`, `FPR = 1.0`—zero specificity!) while flagging **`0%`** of `Richer` and `Richest` children (`TPR = 0.0`).
+- **Single-class guard in action:** The `Middle` stratum happened to contain zero positive stunting cases (`prevalence = 0.0000`). Checking `len(np.unique(yt_g)) == 2` cleanly emitted `NaN` instead of crashing the audit table!
+
+---
+
+### Quantifying Fairness Gaps: DP, Equal Opportunity & Equalized Odds {#sec-ch34-fairness}
+
+Let's turn these subgroup tables into standardized fairness-gap metrics (`max - min` across groups):
+
+```python
+def compute_fairness_gaps(y_true, y_pred, sensitive_attr):
+    """Compute max-min DP, Equal Opportunity, FPR, and EqOdds gaps."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_pred, dtype=int)
+    gr = np.asarray(sensitive_attr)
+    if not (len(yt) == len(yp) == len(gr)):
+        raise ValueError(
+            "y_true, y_pred, and sensitive_attr must have equal length"
+        )
+    sels, tprs, fprs = [], [], []
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        sels.append(float(np.mean(yp_g == 1)))
+        tp = int(np.sum((yt_g == 1) & (yp_g == 1)))
+        fn = int(np.sum((yt_g == 1) & (yp_g == 0)))
+        fp = int(np.sum((yt_g == 0) & (yp_g == 1)))
+        tn = int(np.sum((yt_g == 0) & (yp_g == 0)))
+        tprs.append(tp / (tp + fn) if (tp + fn) > 0 else 0.0)
+        fprs.append(fp / (fp + tn) if (fp + tn) > 0 else 0.0)
+    eo = max(tprs) - min(tprs)
+    fpr_d = max(fprs) - min(fprs)
+    return {
+        "demographic_parity_diff": round(max(sels) - min(sels), 4),
+        "equal_opportunity_diff": round(eo, 4),
+        "max_fpr_diff": round(fpr_d, 4),
+        "equalized_odds_diff": round(max(eo, fpr_d), 4),
+    }
+
+for label, col in [
+    ("Residence", "residence"),
+    ("Wealth", "wealth_quintile"),
+]:
+    gaps = compute_fairness_gaps(y_te, pred_te, df_te[col])
+    print(
+        f"{label:9s} | DP={gaps['demographic_parity_diff']:.4f} | "
+        f"EO={gaps['equal_opportunity_diff']:.4f} | "
+        f"FPR={gaps['max_fpr_diff']:.4f} | "
+        f"EqOdds={gaps['equalized_odds_diff']:.4f}"
+    )
+```
+
+**Expected Output:**
+
+```text
+Residence | DP=0.3368 | EO=0.7333 | FPR=0.2731 | EqOdds=0.7333
+Wealth    | DP=1.0000 | EO=1.0000 | FPR=1.0000 | EqOdds=1.0000
+```
+
+Every metric tells an exact story:
+
+- **`equal_opportunity_diff = 0.7333`** (`0.7333 - 0.0000`) proves a 73.3-percentage-point disparity in catching truly stunted children between rural and urban households.
+- **`equalized_odds_diff = max(0.7333, 0.2731) = 0.7333`** summarizes the worst error-rate gap across both TPR and FPR.
+- Across wealth quintiles, all four gaps hit **`1.0`**, confirming the classifier is acting mostly as a crude poverty proxy rather than a nuanced clinical model!
+
+---
+
+### Subgroup Calibration Curves & ECE Disparity {#sec-ch34-calib}
+
+Now let's audit **probability calibration** separately within each subgroup using equal-width Expected Calibration Error on $[0, 1]$:
+
+$$\text{ECE}_g = \sum_{b=1}^{B} \frac{n_{g,b}}{N_g} \left| \bar{y}_{g,b} - \bar{p}_{g,b} \right|$$
+
+```python
+def subgroup_calibration_audit(y_true, y_prob, groups, n_bins=5):
+    """Audit equal-width ECE and Brier score across sorted subgroups."""
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    rows, raw_eces = [], {}
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        n_g = int(np.sum(m))
+        ece = 0.0
+        for i in range(n_bins):
+            lo, hi = edges[i], edges[i + 1]
+            if i < n_bins - 1:
+                bm = (yp_g >= lo) & (yp_g < hi)
+            else:
+                bm = (yp_g >= lo) & (yp_g <= hi)
+            cnt = int(np.sum(bm))
+            if cnt > 0:
+                gap = abs(float(yt_g[bm].mean()) - float(yp_g[bm].mean()))
+                ece += (cnt / n_g) * gap
+        g_val = g.item() if hasattr(g, "item") else g
+        raw_eces[str(g_val)] = ece
+        rows.append({
+            "group": g_val,
+            "n": n_g,
+            "ece": round(ece, 4),
+            "brier": round(float(brier_score_loss(yt_g, yp_g)), 4),
+        })
+    worst = max(raw_eces, key=raw_eces.get)
+    max_gap = round(max(raw_eces.values()) - min(raw_eces.values()), 4)
+    return {
+        "per_group": pd.DataFrame(
+            rows, columns=["group", "n", "ece", "brier"]
+        ),
+        "worst_ece_group": worst,
+        "max_ece_gap": max_gap,
+    }
+
+cal_wealth = subgroup_calibration_audit(
+    y_te, p_te, df_te["wealth_quintile"], n_bins=5
+)
+print(cal_wealth["per_group"].to_string(index=False))
+print(
+    f"Worst ECE group: {cal_wealth['worst_ece_group']} | "
+    f"Max ECE gap: {cal_wealth['max_ece_gap']:.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+  group  n    ece  brier
+ Middle 24 0.0905 0.0104
+ Poorer 31 0.0500 0.1235
+Poorest 25 0.1658 0.2410
+ Richer 31 0.0077 0.0610
+Richest 30 0.0965 0.1269
+Worst ECE group: Poorest | Max ECE gap: 0.1581
+```
+
+Look at that disparity: in the `Richer` stratum, predicted probabilities deviate from observed stunting rates by less than **0.8 percentage points** (`ECE = 0.0077`), whereas in the `Poorest` stratum, calibration error jumps **21-fold** to **`0.1658`** (`Brier = 0.2410`)! Notice also how the final bin uses closed right bound `(yp_g <= hi)` so an exact `1.0` probability is never dropped.
+
+---
+
+### Qualitative Error Analysis: Worst False Negatives & False Positives {#sec-ch34-slice}
+
+Why did the model fail so sharply across residence and wealth strata? Let's inspect the top-3 worst False Negatives and top-3 worst False Positives directly:
+
+```python
+def slice_worst_errors(df, y_true, y_prob, top_k=5):
+    """Return top-k most confident false negatives and false positives."""
+    work = df.copy()
+    work["y_true"] = np.asarray(y_true, dtype=int)
+    work["y_prob"] = np.asarray(y_prob, dtype=float)
+    fn_df = (
+        work[work["y_true"] == 1]
+        .sort_values("y_prob", ascending=True)
+        .head(top_k)
+        .reset_index(drop=True)
+    )
+    fp_df = (
+        work[work["y_true"] == 0]
+        .sort_values("y_prob", ascending=False)
+        .head(top_k)
+        .reset_index(drop=True)
+    )
+    return {
+        "worst_false_negatives": fn_df,
+        "worst_false_positives": fp_df,
+    }
+
+view_cols = ["household_id", "residence", "wealth_quintile", "anc_visits"]
+errs = slice_worst_errors(df_te[view_cols], y_te, np.round(p_te, 4), 3)
+print("--- Top 3 Missed Stunting Cases (Worst FN) ---")
+print(errs["worst_false_negatives"].to_string(index=False))
+print("\n--- Top 3 False Alarms (Worst FP) ---")
+print(errs["worst_false_positives"].to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+--- Top 3 Missed Stunting Cases (Worst FN) ---
+household_id residence wealth_quintile  anc_visits  y_true  y_prob
+   MCH-00197     Urban         Richest         7.0       1  0.0129
+   MCH-00167     Urban          Richer         5.0       1  0.0202
+   MCH-00380     Urban         Richest         5.0       1  0.0248
+
+--- Top 3 False Alarms (Worst FP) ---
+household_id residence wealth_quintile  anc_visits  y_true  y_prob
+   MCH-00314     Rural         Poorest         1.0       0  0.5813
+   MCH-00229     Rural         Poorest         0.0       0  0.4407
+   MCH-00495     Rural         Poorest         1.0       0  0.3863
+```
+
+In six lines of output, qualitative error slicing diagnoses the exact failure mechanism:
+
+- **Worst False Negatives:** All three missed stunting cases (`MCH-00197`, `MCH-00167`, `MCH-00380`) are `Urban` `Richer`/`Richest` children whose families had 5–7 ANC visits (`y_prob = 0.0129–0.0248`). Because the linear model relies heavily on socioeconomic status, it lacks clinical pediatric features (such as birth weight, recurrent diarrhea, or breastfeeding duration) needed to detect stunting in affluent urban households.
+- **Worst False Positives:** All three false alarms (`MCH-00314`, `MCH-00229`, `MCH-00495`) are healthy `Rural` `Poorest` children with 0–1 ANC visits flagged purely because of socioeconomic proxy features (`y_prob = 0.3863–0.5813`)!
+
+---
+
+### Post-Processing Fairness Mitigation Without Retraining {#sec-ch34-mitigate}
+
+When a classifier ranks sick patients well inside each subgroup but exhibits a score offset across groups (e.g., rural maternal anemia scores sit systematically lower than urban scores under a uniform `0.50` cutoff), **post-processing threshold calibration** can dramatically reduce the Equal Opportunity gap *without retraining a single weight*:
+
+```python
+def calibrate_group_thresholds_for_tpr(
+    y_true, y_prob, groups, target_tpr=0.75
+):
+    """Pick highest per-group cutoff achieving TPR >= target_tpr."""
+    if not (0.0 < target_tpr <= 1.0):
+        raise ValueError("target_tpr must lie in (0, 1]")
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    out = {}
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        n_pos = int(np.sum(yt_g == 1))
+        best_t = 0.0
+        if n_pos > 0:
+            for t in np.sort(np.unique(yp_g))[::-1]:
+                if np.sum((yt_g == 1) & (yp_g >= t)) / n_pos >= target_tpr:
+                    best_t = float(t)
+                    break
+        out[g.item() if hasattr(g, "item") else g] = round(best_t, 4)
+    return out
+
+# Leak-free Train / Val / Test split on maternal_anemia (no Hb feature!)
+anem_cols = ["maternal_age_years", "anc_visits", "wealth_rank", "is_urban"]
+anem_df = df[["residence", "maternal_anemia"] + anem_cols].dropna()
+Xa, ya, ga = (
+    anem_df[anem_cols],
+    anem_df["maternal_anemia"].astype(int),
+    anem_df["residence"],
+)
+Xa_tr, Xa_tmp, ya_tr, ya_tmp, ga_tr, ga_tmp = train_test_split(
+    Xa, ya, ga, test_size=0.50, stratify=ya, random_state=42
+)
+Xa_val, Xa_te, ya_val, ya_te, ga_val, ga_te = train_test_split(
+    Xa_tmp, ya_tmp, ga_tmp, test_size=0.50, stratify=ya_tmp, random_state=42
+)
+anem_pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=500)),
+])
+anem_pipe.fit(Xa_tr, ya_tr)
+pa_val = anem_pipe.predict_proba(Xa_val)[:, 1]
+pa_te = anem_pipe.predict_proba(Xa_te)[:, 1]
+
+before_gaps = compute_fairness_gaps(
+    ya_te, (pa_te >= 0.50).astype(int), ga_te
+)
+grp_th = calibrate_group_thresholds_for_tpr(
+    ya_val, pa_val, ga_val, target_tpr=0.75
+)
+pred_after = np.array(
+    [int(p >= grp_th[g]) for p, g in zip(pa_te, ga_te)], dtype=int
+)
+after_gaps = compute_fairness_gaps(ya_te, pred_after, ga_te)
+
+print("Validation-calibrated thresholds:", grp_th)
+print(
+    f"Equal Opportunity gap: {before_gaps['equal_opportunity_diff']:.4f} "
+    f"-> {after_gaps['equal_opportunity_diff']:.4f}"
+)
+```
+
+**Expected Output:**
+
+```text
+Validation-calibrated thresholds: {'Rural': 0.2914, 'Urban': 0.3737}
+Equal Opportunity gap: 0.1750 -> 0.0464
+```
+
+Look at that clean out-of-sample win:
+
+- Fitting thresholds strictly on the validation set selected `0.2914` for `Rural` clinics and `0.3737` for `Urban` clinics.
+- On the untouched test split, the **Equal Opportunity gap dropped by 73.5%** (`0.1750 -> 0.0464`) while preserving every underlying calibrated probability!
+- **Why the *highest* qualifying threshold?** Lowering a threshold always raises TPR, eventually hitting `1.0` by flagging everyone (`FPR = 1.0`). Scanning unique probabilities from highest to lowest and stopping at the *first* threshold where `TPR >= target_tpr` hits the sensitivity target with minimum false alarms.
+
+---
+
+### Covariate Shift Monitoring with Population Stability Index (PSI) {#sec-ch34-psi}
+
+After deployment, how do you know when a pandemic, flood, or supply disruption has broken your model's input distribution? Compute the **Population Stability Index (PSI)** across quantile bins locked on the baseline cohort:
+
+$$\text{PSI} = \sum_{b=1}^{B} \left(p_{\text{act}, b} - p_{\text{exp}, b}\right) \ln\left(\frac{p_{\text{act}, b}}{p_{\text{exp}, b}}\right)$$
+
+Standard operational thresholds classify `PSI < 0.10` as **Stable**, `0.10 <= PSI < 0.25` as **Moderate Drift**, and `PSI >= 0.25` as **Severe Drift** (retraining required):
+
+```python
+def population_stability_index(expected, actual, n_bins=10, eps=1e-6):
+    """Compute PSI and drift severity status from quantile bins."""
+    exp = np.asarray(expected, dtype=float)
+    act = np.asarray(actual, dtype=float)
+    if len(exp) == 0 or len(act) == 0:
+        raise ValueError("expected and actual arrays must be non-empty")
+    edges = np.unique(np.quantile(exp, np.linspace(0.0, 1.0, n_bins + 1)))
+    if len(edges) < 2:
+        edges = np.array([-np.inf, np.inf])
+    else:
+        edges = edges.copy()
+        edges[0] = -np.inf
+        edges[-1] = np.inf
+    exp_cnt, _ = np.histogram(exp, bins=edges)
+    act_cnt, _ = np.histogram(act, bins=edges)
+    p_exp = np.clip(exp_cnt / exp_cnt.sum(), eps, None)
+    p_exp = p_exp / p_exp.sum()
+    p_act = np.clip(act_cnt / act_cnt.sum(), eps, None)
+    p_act = p_act / p_act.sum()
+    psi = round(float(np.sum((p_act - p_exp) * np.log(p_act / p_exp))), 4)
+    if psi < 0.10:
+        status = "Stable"
+    elif psi < 0.25:
+        status = "Moderate Drift"
+    else:
+        status = "Severe Drift"
+    return {"psi": psi, "drift_status": status}
+
+# Simulate pandemic/famine shock: clinic visits and maternal Hb drop
+rng = np.random.default_rng(42)
+shock_df = clean.copy()
+shock_df["maternal_age_years"] = (
+    shock_df["maternal_age_years"] + rng.normal(0.0, 0.4, len(shock_df))
+)
+shock_df["anc_visits"] = np.clip(shock_df["anc_visits"] - 1.5, 0.0, None)
+shock_df["maternal_hb_g_dl"] = shock_df["maternal_hb_g_dl"] - 1.2
+
+for col in ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]:
+    res = population_stability_index(clean[col], shock_df[col])
+    print(f"{col:20s} | PSI={res['psi']:.4f} | {res['drift_status']}")
+```
+
+**Expected Output:**
+
+```text
+maternal_age_years   | PSI=0.0187 | Stable
+anc_visits           | PSI=0.9132 | Severe Drift
+maternal_hb_g_dl     | PSI=0.7344 | Severe Drift
+```
+
+PSI immediately isolates the exact clinical channels hit by the crisis: maternal age remained **`Stable` (`0.0187`)**, whereas prenatal access (`anc_visits`, **`0.9132`**) and maternal hemoglobin (`maternal_hb_g_dl`, **`0.7344`**) crossed into **`Severe Drift`**—triggering a retraining alert weeks before child stunting labels could even be collected!
+
+---
+
+### Break It On Purpose! (Responsible AI Audit Error Anatomy) {#sec-ch34-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Mismatched Array Lengths in Fairness Audit)"}
+```python
+compute_fairness_gaps([0, 1, 1, 0], [0, 1, 0, 0], ["Rural", "Urban"])
+```
+**Python's Traceback:**
+
+```text
+ValueError: y_true, y_pred, and sensitive_attr must have equal length
+```
+**Diagnosis:** A classic silent bug in subgroup auditing happens when you drop `NaN` rows from `X` and `y` *after* slicing `sensitive_attr`, leaving `groups` misaligned or a different length from `y_true`. Without an explicit length guard, Pandas/NumPy either crashes cryptically or compares the wrong patients' demographics!  
+**Fix:** Always drop missing values across `[target, sensitive_attr] + feature_cols` in one atomic `.dropna()` call, pass `groups` alongside `X` and `y` into `train_test_split`, and validate `len(yt) == len(yp) == len(gr)`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Empty Baseline Array in PSI Quantile Binning)"}
+```python
+population_stability_index([], [10.5, 11.2, 12.1])
+```
+**Python's Traceback:**
+
+```text
+ValueError: expected and actual arrays must be non-empty
+```
+**Diagnosis:** In automated monitoring pipelines, a broken database query or overly strict clinic filter can hand an empty Series (`len == 0`) to `np.quantile`, causing cryptic `IndexError` or `ZeroDivisionError` failures downstream.  
+**Fix:** Drop `NaN` values explicitly and validate `len(exp) > 0 and len(act) > 0` before calling `np.quantile`, raising an actionable `ValueError` when a monitoring window has zero observations.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — ValueError (Impossible `target_tpr` Outside `(0, 1]`)"}
+```python
+calibrate_group_thresholds_for_tpr(
+    [0, 1, 0, 1], [0.2, 0.8, 0.3, 0.7],
+    ["Rural", "Rural", "Urban", "Urban"], target_tpr=1.5,
+)
+```
+**Python's Traceback:**
+
+```text
+ValueError: target_tpr must lie in (0, 1]
+```
+**Diagnosis:** Passing a percentage (`75` instead of `0.75`) or typo (`1.5`) as `target_tpr` can silently cause every group to miss the target and fall back to threshold `0.0`—flagging 100% of patients without raising a single warning!  
+**Fix:** Enforce `if not (0.0 < target_tpr <= 1.0): raise ValueError(...)` right at function entry so invalid clinical sensitivity targets fail fast and loudly.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch34-blueprint}
+
+**Scenario:** Before any district hospital deploys a child-stunting screening model, your Responsible AI governance board requires an automated gate function `build_responsible_ai_audit(raw_df, current_df, seed=42)` that cleans `mch_survey_sample` without mutating it, fits a leak-free scaled logistic classifier on a 70/30 stratified split, picks Youden's $J$ on training probabilities, audits Rural/Urban Equal Opportunity, wealth-quintile ECE disparity, and multi-feature PSI against the live clinic stream (`current_df`), and outputs `"PASS"` only if `eo_gap < 0.15` and `max_psi < 0.25`.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Atomic Leak-Free Preparation:**
+
+   - Copy `raw_df`, standardize `residence`, replace `anc_visits == 999` with `np.nan`, encode `is_urban` and `wealth_rank` (`1..5`), and drop missing values simultaneously across target, features, `residence`, and `wealth_quintile`.
+
+2. **Stratified Split, Train-Only Cutoff & Three-Pillar Audit:**
+
+   - Split 70/30 stratified on `child_stunted`, fit `Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])`, and select `cut` via Youden's $J$ on `(y_tr, p_tr)`.
+   - Compute `eo_gap` across `residence`, `worst_ece_group` and `max_ece_gap` across `wealth_quintile`, and `max_psi` across `["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]`.
+
+3. **Deployment Gate & Verification:**
+
+   - Emit `"PASS"` iff `eo_gap < 0.15` and `max_psi < 0.25`, else `"BLOCK — Audit Required"`.
+   - Confirm that under our baseline model + pandemic shock stream, the gate blocks deployment (`eo_gap = 0.7333`, `max_psi = 0.9132`).
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def build_responsible_ai_audit(raw_df, current_df, seed=42):
+    """Run fairness, calibration, and shift deployment gate."""
+    work = raw_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_rank"] = work["wealth_quintile"].map(w_map)
+    fcols = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+        "wealth_rank", "is_urban",
+    ]
+    sub = work[["child_stunted", "residence", "wealth_quintile"] + fcols]
+    sub = sub.dropna().reset_index(drop=True)
+    X_tr, X_te, y_tr, y_te, d_tr, d_te = train_test_split(
+        sub[fcols], sub["child_stunted"].astype(int), sub,
+        test_size=0.30, stratify=sub["child_stunted"], random_state=seed,
+    )
+    mdl = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=500)),
+    ])
+    mdl.fit(X_tr, y_tr)
+    fpr_t, tpr_t, th_t = roc_curve(y_tr, mdl.predict_proba(X_tr)[:, 1])
+    cut = float(th_t[int(np.argmax(tpr_t - fpr_t))])
+    pr_te = mdl.predict_proba(X_te)[:, 1]
+    fg = compute_fairness_gaps(
+        y_te, (pr_te >= cut).astype(int), d_te["residence"]
+    )
+    cal = subgroup_calibration_audit(
+        y_te, pr_te, d_te["wealth_quintile"], n_bins=5
+    )
+    drift_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+    max_psi = max(
+        population_stability_index(sub[c], current_df[c].dropna())["psi"]
+        for c in drift_cols
+    )
+    gate = (
+        "PASS"
+        if (fg["equal_opportunity_diff"] < 0.15 and max_psi < 0.25)
+        else "BLOCK — Audit Required"
+    )
+    return {
+        "overall_auc": round(float(roc_auc_score(y_te, pr_te)), 4),
+        "youden_t": round(cut, 4),
+        "eo_gap": fg["equal_opportunity_diff"],
+        "worst_ece_group": cal["worst_ece_group"],
+        "max_ece_gap": cal["max_ece_gap"],
+        "max_psi": round(max_psi, 4),
+        "deployment_gate": gate,
+    }
+
+audit = build_responsible_ai_audit(mch_raw, shock_df)
+for k, v in audit.items():
+    print(f"{k:16s}: {v}")
+```
+
+**Output:**
+
+```text
+overall_auc     : 0.6471
+youden_t        : 0.1429
+eo_gap          : 0.7333
+worst_ece_group : Poorest
+max_ece_gap     : 0.1581
+max_psi         : 0.9132
+deployment_gate : BLOCK — Audit Required
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch34-todos}
+
+Open `part_07_research_capstone/ch34_error_analysis_fairness_calibration/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six Responsible Clinical AI functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 34.1 (`subgroup_performance_table(y_true, y_prob, groups, threshold=0.5)`):** Disaggregate `n` (`int`), `prevalence`, `roc_auc` (`np.nan` if single-class), `tpr`, `fpr`, and `brier` across sorted unique groups, returning a DataFrame with columns `["group", "n", "prevalence", "roc_auc", "tpr", "fpr", "brier"]` rounded to 4 decimals.
+- **To-Do 34.2 (`compute_fairness_gaps(y_true, y_pred, sensitive_attr)`):** Compute per-group selection rate, TPR, and FPR and return `{"demographic_parity_diff": round4, "equal_opportunity_diff": round4, "max_fpr_diff": round4, "equalized_odds_diff": round4}` where each diff is `max - min` and `equalized_odds_diff = max(equal_opportunity_diff, max_fpr_diff)`.
+- **To-Do 34.3 (`subgroup_calibration_audit(y_true, y_prob, groups, n_bins=5)`):** Compute per-group equal-width ECE and Brier score on `[0, 1]` and return `{"per_group": DataFrame(["group", "n", "ece", "brier"]), "worst_ece_group": str, "max_ece_gap": round4}`.
+- **To-Do 34.4 (`population_stability_index(expected, actual, n_bins=10, eps=1e-6)`):** Compute quantile bin edges from `expected` with `-inf`/`+inf` outer bounds, clip shares to `>= eps` and re-normalize, sum `(p_act - p_exp) * ln(p_act / p_exp)`, and return `{"psi": round4, "drift_status": str}` (`"Stable"` `< 0.10`, `"Moderate Drift"` `< 0.25`, `"Severe Drift"` `>= 0.25`).
+- **To-Do 34.5 (`slice_worst_errors(df, y_true, y_prob, top_k=5)`):** Non-mutating copy attaching `y_true` and `y_prob`, returning `{"worst_false_negatives": DataFrame, "worst_false_positives": DataFrame}` sorted ascending/descending by `y_prob` with reset indices.
+- **To-Do 34.6 (`calibrate_group_thresholds_for_tpr(y_true, y_prob, groups, target_tpr=0.75)`):** For each unique group, find the highest unique probability in that group achieving `tpr >= target_tpr` (fallback `0.0`), returning `group -> round4_float`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch34-test}
+
+Work through all 10 Responsible Clinical AI, fairness, calibration, and drift reasoning questions on paper before checking Stage 8:
+
+1. **Hidden Disparity Under Good Aggregate AUC:** A maternal screening classifier achieves `overall_auc = 0.82` across 900 Urban patients (`TPR = 0.85`) and 100 Rural patients (`TPR = 0.25`). Compute the **pooled overall TPR** (assuming equal prevalence) and the **Equal Opportunity difference**. Why does pooled performance mislead?
+2. **Demographic Parity vs. Equal Opportunity:** Suppose Rural stunting prevalence is `20%` and Urban prevalence is `8%`. If a health ministry enforces strict **Demographic Parity** ($\Delta_{\text{DP}} = 0$) at a `12%` referral rate in both strata, what clinical harm happens to rural stunted children?
+3. **Equalized Odds Hand Calculation:** Across three hospital districts, a triage model achieves `TPR = [0.80, 0.72, 0.60]` and `FPR = [0.10, 0.28, 0.15]`. Compute **`equal_opportunity_diff`**, **`max_fpr_diff`**, and **`equalized_odds_diff`**.
+4. **Single-Class Subgroup Guard:** During a 5-stratum wealth audit, the `Middle` test subgroup contains 24 children, all with `y_true = 0`. What happens if your code calls `roc_auc_score` unconditionally, and what value should `subgroup_performance_table` store instead?
+5. **Subgroup ECE Hand Calculation:** Inside Group A ($N = 10$), 6 patients fall in bin `[0.0, 0.2)` with mean predicted risk `0.10` and 0 events (`obs = 0.00`), while 4 patients fall in bin `[0.8, 1.0]` with mean predicted risk `0.90` and 2 events (`obs = 0.50`). Compute Group A's exact **ECE**.
+6. **Why Highest Qualifying Threshold?** In `calibrate_group_thresholds_for_tpr`, suppose a subgroup has positives at probabilities `[0.85, 0.70, 0.45, 0.20]` and negatives at `[0.60, 0.35, 0.10]`. For `target_tpr = 0.75`, both `t = 0.45` and `t = 0.10` achieve `TPR >= 0.75`. Which threshold should you pick and why?
+7. **Validation-Only Post-Processing:** A junior analyst tunes group-specific thresholds directly on `(y_test, prob_test, g_test)` and reports that `equal_opportunity_diff` dropped to `0.0000`. Why is that audit result invalid?
+8. **Why $\pm\infty$ Outer Bin Edges in PSI?** Baseline maternal hemoglobin ranges from `8.5` to `15.0 g/dL`. During a severe drought, 18% of new patients arrive with `Hb < 8.0 g/dL`. What silently goes wrong if PSI uses `[8.5, ..., 15.0]` instead of `[-inf, ..., +inf]`?
+9. **PSI Drift Calculation & Status:** Suppose a 2-bin PSI check yields normalized baseline shares `p_exp = [0.50, 0.50]` and current shares `p_act = [0.80, 0.20]`. Given $\ln(1.6) \approx 0.4700$ and $\ln(0.4) \approx -0.9163$, compute **PSI** and its **`drift_status`**.
+10. **Qualitative Error Slicing vs. Retraining:** Your top-5 worst False Negatives are all affluent urban children with `y_prob < 0.03`, and your top-5 worst False Positives are all healthy rural poor children with `y_prob > 0.40`. Will simply changing `C` in `LogisticRegression` fix this problem? What upstream action is actually needed?
+
+---
+
+## Stage 7 — Chapter 34 Coding Exam (100 Points) {#sec-ch34-exam}
+
+Open `part_07_research_capstone/ch34_error_analysis_fairness_calibration/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch34", exam_submissions)` to earn your Chapter 34 Exam score out of 100 points.
+
+### Exam Task 34.1 (30 Points): `audit_rural_urban_fairness_mch(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Copy `mch_df`, standardize `residence` (`str.strip().str.title()`), replace `anc_visits == 999` with `np.nan`, encode `is_urban = (residence == "Urban").astype(int)`, and map `wealth_quintile` (`Poorest` $\rightarrow$ 1 .. `Richest` $\rightarrow$ 5) into `wealth_rank`.
+- Drop rows with missing values across `["child_stunted", "residence", "maternal_age_years", "anc_visits", "maternal_hb_g_dl", "wealth_rank", "is_urban"]`.
+- Split 70/30 stratified on `child_stunted` (`test_size=0.30, stratify=y, random_state=seed`) keeping `X`, `y`, and `residence` aligned.
+- Fit `Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression(max_iter=500))])` on `(X_train, y_train)`.
+- Select Youden's $J$ threshold **strictly on the training split** `(y_train, prob_train)` via `roc_curve`.
+- Evaluate on the held-out test set across `"Rural"` vs. `"Urban"` to return `{"overall_auc": round4, "threshold": round4, "subgroup_table": DataFrame, "fairness_gaps": dict}`.
+
+### Exam Task 34.2 (35 Points): `mitigate_equal_opportunity_gap(y_true_val, y_prob_val, g_val, y_true_test, y_prob_test, g_test, target_tpr=0.75)`
+
+- Evaluate uniform cutoff `0.5` on `(y_true_test, y_prob_test, g_test)` to obtain `before_eo_diff`.
+- Fit group-specific thresholds **strictly on validation** `(y_true_val, y_prob_val, g_val)` selecting the highest unique probability per group achieving `tpr >= target_tpr` (fallback `0.0`), rounded to 4 decimals.
+- Apply those frozen `group_thresholds` to the test set to obtain `after_eo_diff`.
+- Return `{"before_eo_diff": round4, "after_eo_diff": round4, "group_thresholds": dict, "gap_reduced": bool}` where `gap_reduced = bool(after_eo_diff < before_eo_diff)`.
+
+### Exam Task 34.3 (35 Points): `clinical_shift_monitoring_report(baseline_df, current_df, feature_cols)`
+
+- Run `population_stability_index` (10 quantile bins from baseline with `-inf`/`+inf` outer edges, `eps=1e-6`) on every column in `feature_cols` without mutating either DataFrame.
+- Return `{"feature_psi": DataFrame(["feature", "psi", "drift_status"]), "max_psi": round4, "retrain_recommended": bool}` where `retrain_recommended = bool(max_psi >= 0.25)`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch34-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Pooled TPR $= 0.9 \times 0.85 + 0.1 \times 0.25 = \mathbf{0.7900}$, whereas $\Delta_{\text{EO}} = 0.85 - 0.25 = \mathbf{0.6000}$. The 90% urban majority mathematically drowns out a catastrophic 25% sensitivity in rural clinics.
+2. Capping rural referrals at 12% when 20% of rural children are stunted guarantees that **at least 40% of rural stunted children are automatically missed**! Demographic Parity ignores real epidemiological prevalence differences.
+3. $\Delta_{\text{EO}} = 0.80 - 0.60 = \mathbf{0.2000}$; $\Delta_{\text{FPR}} = 0.28 - 0.10 = \mathbf{0.1800}$; $\Delta_{\text{EqOdds}} = \max(0.20, 0.18) = \mathbf{0.2000}$.
+4. `roc_auc_score` raises `ValueError` or `UndefinedMetricWarning` because TPR is undefined with zero positives. Guard with `len(np.unique(yt_g)) == 2` and store **`np.nan`**.
+5. $\text{ECE}_A = (6/10)|0.00 - 0.10| + (4/10)|0.50 - 0.90| = 0.06 + 0.16 = \mathbf{0.2200}$ (22 percentage points).
+6. Pick **`t = 0.45`** (the *highest* threshold achieving `TPR = 3/4 = 0.75`). At `t = 0.45`, only 1 of 3 negatives (`0.60`) is falsely flagged (`FPR = 0.33`), whereas at `t = 0.10` every negative is falsely flagged (`FPR = 1.00`).
+7. Fitting thresholds on test labels **leaks the test set into post-processing**—the zero gap is an overfitted artifact that will bounce right back on real future patients.
+8. Every patient with `Hb < 8.5` falls outside the finite histogram bins and is **silently dropped** (`sum(act_cnt) < N`), underreporting the exact severe anemia tail that PSI was built to catch!
+9. $\text{PSI} = (0.80 - 0.50)\ln(1.6) + (0.20 - 0.50)\ln(0.4) = 0.30(0.4700) + (-0.30)(-0.9163) = 0.1410 + 0.2749 = \mathbf{0.4159} \ge 0.25 \Rightarrow$ **`"Severe Drift"`**.
+10. No—tuning regularization `C` cannot invent missing pediatric biology! The model is leaning on socioeconomic proxies (`wealth_rank`, `residence`). Upstream fixes include collecting direct clinical predictors (birth weight, infection history, dietary diversity) and auditing feature proxy reliance.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.metrics import brier_score_loss, roc_auc_score
+
+# To-Do 34.1
+def subgroup_performance_table(y_true, y_prob, groups, threshold=0.5):
+    """Disaggregate clinical classifier metrics by sorted subgroup."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    rows = []
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        pred_g = (yp_g >= threshold).astype(int)
+        auc = (
+            round(float(roc_auc_score(yt_g, yp_g)), 4)
+            if len(np.unique(yt_g)) == 2
+            else np.nan
+        )
+        tp = int(np.sum((yt_g == 1) & (pred_g == 1)))
+        fn = int(np.sum((yt_g == 1) & (pred_g == 0)))
+        fp = int(np.sum((yt_g == 0) & (pred_g == 1)))
+        tn = int(np.sum((yt_g == 0) & (pred_g == 0)))
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+        rows.append({
+            "group": g.item() if hasattr(g, "item") else g,
+            "n": int(np.sum(m)),
+            "prevalence": round(float(np.mean(yt_g == 1)), 4),
+            "roc_auc": auc,
+            "tpr": round(tpr, 4),
+            "fpr": round(fpr, 4),
+            "brier": round(float(brier_score_loss(yt_g, yp_g)), 4),
+        })
+    cols = [
+        "group", "n", "prevalence", "roc_auc", "tpr", "fpr", "brier",
+    ]
+    return pd.DataFrame(rows, columns=cols)
+
+# To-Do 34.2
+def compute_fairness_gaps(y_true, y_pred, sensitive_attr):
+    """Compute max-min DP, Equal Opportunity, FPR, and EqOdds gaps."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_pred, dtype=int)
+    gr = np.asarray(sensitive_attr)
+    if not (len(yt) == len(yp) == len(gr)):
+        raise ValueError(
+            "y_true, y_pred, and sensitive_attr must have equal length"
+        )
+    sels, tprs, fprs = [], [], []
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        sels.append(float(np.mean(yp_g == 1)))
+        tp = int(np.sum((yt_g == 1) & (yp_g == 1)))
+        fn = int(np.sum((yt_g == 1) & (yp_g == 0)))
+        fp = int(np.sum((yt_g == 0) & (yp_g == 1)))
+        tn = int(np.sum((yt_g == 0) & (yp_g == 0)))
+        tprs.append(tp / (tp + fn) if (tp + fn) > 0 else 0.0)
+        fprs.append(fp / (fp + tn) if (fp + tn) > 0 else 0.0)
+    eo = max(tprs) - min(tprs)
+    fpr_d = max(fprs) - min(fprs)
+    return {
+        "demographic_parity_diff": round(max(sels) - min(sels), 4),
+        "equal_opportunity_diff": round(eo, 4),
+        "max_fpr_diff": round(fpr_d, 4),
+        "equalized_odds_diff": round(max(eo, fpr_d), 4),
+    }
+
+# To-Do 34.3
+def subgroup_calibration_audit(y_true, y_prob, groups, n_bins=5):
+    """Audit equal-width ECE and Brier score across sorted subgroups."""
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    rows, raw_eces = [], {}
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        n_g = int(np.sum(m))
+        ece = 0.0
+        for i in range(n_bins):
+            lo, hi = edges[i], edges[i + 1]
+            if i < n_bins - 1:
+                bm = (yp_g >= lo) & (yp_g < hi)
+            else:
+                bm = (yp_g >= lo) & (yp_g <= hi)
+            cnt = int(np.sum(bm))
+            if cnt > 0:
+                gap = abs(float(yt_g[bm].mean()) - float(yp_g[bm].mean()))
+                ece += (cnt / n_g) * gap
+        g_val = g.item() if hasattr(g, "item") else g
+        raw_eces[str(g_val)] = ece
+        rows.append({
+            "group": g_val,
+            "n": n_g,
+            "ece": round(ece, 4),
+            "brier": round(float(brier_score_loss(yt_g, yp_g)), 4),
+        })
+    worst = max(raw_eces, key=raw_eces.get)
+    max_gap = round(max(raw_eces.values()) - min(raw_eces.values()), 4)
+    return {
+        "per_group": pd.DataFrame(
+            rows, columns=["group", "n", "ece", "brier"]
+        ),
+        "worst_ece_group": worst,
+        "max_ece_gap": max_gap,
+    }
+
+# To-Do 34.4
+def population_stability_index(expected, actual, n_bins=10, eps=1e-6):
+    """Compute PSI and drift severity status from quantile bins."""
+    exp = np.asarray(expected, dtype=float)
+    act = np.asarray(actual, dtype=float)
+    if len(exp) == 0 or len(act) == 0:
+        raise ValueError("expected and actual arrays must be non-empty")
+    edges = np.unique(np.quantile(exp, np.linspace(0.0, 1.0, n_bins + 1)))
+    if len(edges) < 2:
+        edges = np.array([-np.inf, np.inf])
+    else:
+        edges = edges.copy()
+        edges[0] = -np.inf
+        edges[-1] = np.inf
+    exp_cnt, _ = np.histogram(exp, bins=edges)
+    act_cnt, _ = np.histogram(act, bins=edges)
+    p_exp = np.clip(exp_cnt / exp_cnt.sum(), eps, None)
+    p_exp = p_exp / p_exp.sum()
+    p_act = np.clip(act_cnt / act_cnt.sum(), eps, None)
+    p_act = p_act / p_act.sum()
+    psi = round(float(np.sum((p_act - p_exp) * np.log(p_act / p_exp))), 4)
+    if psi < 0.10:
+        status = "Stable"
+    elif psi < 0.25:
+        status = "Moderate Drift"
+    else:
+        status = "Severe Drift"
+    return {"psi": psi, "drift_status": status}
+
+# To-Do 34.5
+def slice_worst_errors(df, y_true, y_prob, top_k=5):
+    """Return top-k most confident false negatives and false positives."""
+    work = df.copy()
+    work["y_true"] = np.asarray(y_true, dtype=int)
+    work["y_prob"] = np.asarray(y_prob, dtype=float)
+    fn_df = (
+        work[work["y_true"] == 1]
+        .sort_values("y_prob", ascending=True)
+        .head(top_k)
+        .reset_index(drop=True)
+    )
+    fp_df = (
+        work[work["y_true"] == 0]
+        .sort_values("y_prob", ascending=False)
+        .head(top_k)
+        .reset_index(drop=True)
+    )
+    return {
+        "worst_false_negatives": fn_df,
+        "worst_false_positives": fp_df,
+    }
+
+# To-Do 34.6
+def calibrate_group_thresholds_for_tpr(
+    y_true, y_prob, groups, target_tpr=0.75
+):
+    """Pick highest per-group cutoff achieving TPR >= target_tpr."""
+    if not (0.0 < target_tpr <= 1.0):
+        raise ValueError("target_tpr must lie in (0, 1]")
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    gr = np.asarray(groups)
+    out = {}
+    for g in sorted(pd.unique(gr)):
+        m = gr == g
+        yt_g, yp_g = yt[m], yp[m]
+        n_pos = int(np.sum(yt_g == 1))
+        best_t = 0.0
+        if n_pos > 0:
+            for t in np.sort(np.unique(yp_g))[::-1]:
+                if np.sum((yt_g == 1) & (yp_g >= t)) / n_pos >= target_tpr:
+                    best_t = float(t)
+                    break
+        out[g.item() if hasattr(g, "item") else g] = round(best_t, 4)
+    return out
+```
+
+### C. Annotated Solutions — Chapter 34 Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_curve
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+# Exam Task 34.1 (30 pts)
+def audit_rural_urban_fairness_mch(mch_df, seed=42):
+    """Train leak-free stunting model and audit Rural vs Urban fairness."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_rank"] = work["wealth_quintile"].map(w_map)
+    fcols = [
+        "maternal_age_years", "anc_visits", "maternal_hb_g_dl",
+        "wealth_rank", "is_urban",
+    ]
+    clean = work[["child_stunted", "residence"] + fcols].dropna()
+    X = clean[fcols]
+    y = clean["child_stunted"].astype(int)
+    g = clean["residence"]
+    X_tr, X_te, y_tr, y_te, g_tr, g_te = train_test_split(
+        X, y, g, test_size=0.30, stratify=y, random_state=seed
+    )
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=500)),
+    ])
+    pipe.fit(X_tr, y_tr)
+    prob_tr = pipe.predict_proba(X_tr)[:, 1]
+    prob_te = pipe.predict_proba(X_te)[:, 1]
+    fpr_tr, tpr_tr, th_tr = roc_curve(y_tr, prob_tr)
+    best_t = float(th_tr[int(np.argmax(tpr_tr - fpr_tr))])
+    pred_te = (prob_te >= best_t).astype(int)
+    return {
+        "overall_auc": round(float(roc_auc_score(y_te, prob_te)), 4),
+        "threshold": round(best_t, 4),
+        "subgroup_table": subgroup_performance_table(
+            y_te, prob_te, g_te, threshold=best_t
+        ),
+        "fairness_gaps": compute_fairness_gaps(y_te, pred_te, g_te),
+    }
+
+# Exam Task 34.2 (35 pts)
+def mitigate_equal_opportunity_gap(
+    y_true_val, y_prob_val, g_val,
+    y_true_test, y_prob_test, g_test,
+    target_tpr=0.75,
+):
+    """Fit validation group thresholds and measure test EO reduction."""
+    yp_te = np.asarray(y_prob_test, dtype=float)
+    gr_te = np.asarray(g_test)
+    before_eo = compute_fairness_gaps(
+        y_true_test, (yp_te >= 0.5).astype(int), gr_te
+    )["equal_opportunity_diff"]
+    grp_th = calibrate_group_thresholds_for_tpr(
+        y_true_val, y_prob_val, g_val, target_tpr=target_tpr
+    )
+    pred_after = np.array(
+        [
+            int(p >= grp_th.get(g.item() if hasattr(g, "item") else g, 0.5))
+            for p, g in zip(yp_te, gr_te)
+        ],
+        dtype=int,
+    )
+    after_eo = compute_fairness_gaps(
+        y_true_test, pred_after, gr_te
+    )["equal_opportunity_diff"]
+    return {
+        "before_eo_diff": before_eo,
+        "after_eo_diff": after_eo,
+        "group_thresholds": grp_th,
+        "gap_reduced": bool(after_eo < before_eo),
+    }
+
+# Exam Task 34.3 (35 pts)
+def clinical_shift_monitoring_report(baseline_df, current_df, feature_cols):
+    """Monitor multi-feature covariate shift with PSI and retrain gate."""
+    rows = []
+    for col in feature_cols:
+        res = population_stability_index(
+            baseline_df[col].dropna(), current_df[col].dropna()
+        )
+        rows.append({
+            "feature": col,
+            "psi": res["psi"],
+            "drift_status": res["drift_status"],
+        })
+    psi_df = pd.DataFrame(rows, columns=["feature", "psi", "drift_status"])
+    max_psi = round(float(psi_df["psi"].max()), 4) if len(psi_df) else 0.0
+    return {
+        "feature_psi": psi_df,
+        "max_psi": max_psi,
+        "retrain_recommended": bool(max_psi >= 0.25),
+    }
+```
+
+### D. Debugging Post-Mortem — Five High-Impact Responsible AI Pitfalls
+
+- **Pitfall 1 — Auditing on In-Sample or Threshold-Leaked Predictions:** Selecting Youden's $J$ or group thresholds on the test set fabricates artificially small fairness gaps. Always reserve a separate validation split for threshold tuning and evaluate on an untouched test cohort.
+- **Pitfall 2 — Crashing on Single-Class Small Strata:** In real demographic tables, small subgroups often contain zero positive outcomes. Always check `len(np.unique(yt_g)) == 2` before calling `roc_auc_score` and emit `np.nan` cleanly.
+- **Pitfall 3 — Dropping Out-of-Range Values in PSI:** Keeping finite quantile endpoints `[min(expected), max(expected)]` causes extreme shifted values during clinical shocks to fall outside `np.histogram` bins. Always set `edges[0] = -np.inf` and `edges[-1] = np.inf`, clip shares to `>= eps`, and re-normalize.
+- **Pitfall 4 — Mutating Caller DataFrames During Error Slicing:** Writing `df["y_prob"] = y_prob` directly mutates the researcher's cohort table (and triggers Pandas 3.x Copy-on-Write surprises). Always start with `work = df.copy()`.
+- **Pitfall 5 — Treating Post-Processing as a Cure-All:** Group thresholds fix *score-offset* disparities (like `maternal_anemia` across `residence`), but cannot rescue a subgroup where within-group discrimination is poor (`Urban` stunting AUC `0.1280`). When ranking itself fails, inspect worst FN/FP slices and collect better clinical features.

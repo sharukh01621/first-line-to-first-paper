@@ -54,8 +54,17 @@ book:
         - part_06_deep_learning/ch30_cnns_computer_vision.qmd
         - part_06_deep_learning/ch31_sequences_rnns_time_series.qmd
         - part_06_deep_learning/ch32_attention_transformers_modern_ai.qmd
-    # Subsequent Parts (Part VII Ch 33–36 & Appendices A–D) plug in seamlessly here
-    # as each chapter is authored and verified by scripts/verify_all.py.
+    - part: "Applied Research Engineering, Ablation Studies, Fairness & Capstone"
+      chapters:
+        - part_07_research_capstone/ch33_reproducible_experiments_ablation.qmd
+        - part_07_research_capstone/ch34_error_analysis_fairness_calibration.qmd
+        - part_07_research_capstone/ch35_packaging_deployment_reproducibility.qmd
+        - part_07_research_capstone/ch36_flagship_research_capstone.qmd
+  appendices:
+    - appendices/app_a_python_data_cheatsheets.qmd
+    - appendices/app_b_math_stats_refresher.qmd
+    - appendices/app_c_error_decoder.qmd
+    - appendices/app_d_master_colab_index.qmd
 
 execute:
   freeze: auto

@@ -1,0 +1,1422 @@
+# Flagship Research Capstone — From Raw Survey CSV to Publication-Ready Paper & Reproducible Artifact {#sec-ch36}
+
+> **Chapter Mission:** Complete the entire 36-chapter journey of *From First Line to First Paper* by executing one seamless, journal-grade applied research study on `mch_survey_sample`—from raw household survey CSV all the way to a peer-review-ready manuscript package and cryptographically verified release bundle. You will synthesize every skill from Parts I–VII: defensive survey cleaning, **Journal Table 1** hypothesis testing, multivariable **Adjusted Odds Ratios** (`statsmodels.Logit`), leak-free 5-fold **cluster-grouped (`GroupKFold`)** benchmarking across Logistic Regression, Random Forest, HistGradientBoosting, and a native **PyTorch MLP**, out-of-fold **Rural vs. Urban fairness auditing** at Youden's $J$, **Decision Curve Analysis** (Vickers & Elkin, 2006), automated Markdown results and a 300-word **structured journal abstract**, and a complete **SHA-256 verified artifact release** (`table1.csv`, `leaderboard.csv`, `fairness_audit.json`, `MODEL_CARD.md`, `model.joblib`, `config.json`, `manifest.json`).
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch36 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch36 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch36 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch36_flagship_research_capstone__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this grand-finale chapter, you will be able to:
+
+1. Construct a scripted, zero-mutation **Journal Table 1** (`build_publication_table1`) and multivariable **Adjusted Odds Ratio** regression table (`statsmodels.Logit`) that expose socioeconomic confounding cleanly.
+2. Execute a deterministic, leak-free 5-fold **cluster-grouped (`GroupKFold`)** benchmark comparing classical statistical, tree-ensemble, and **PyTorch MLP** models on both discrimination (**ROC-AUC**) and probability calibration (**Brier score**).
+3. Audit out-of-fold predictions for **Rural vs. Urban algorithmic equity** (**Demographic Parity** and **Equal Opportunity** gaps at Youden's $J$) and programmatically render zero-typo Markdown results tables.
+4. Quantify real-world clinical utility via **Decision Curve Analysis** (Vickers & Elkin, 2006), proving where a prediction model beats both **Treat All** and **Treat None** across actionable screening thresholds.
+5. Generate a journal-compliant, $\le 300$-word **structured medical research abstract** dynamically from verified pipeline statistics.
+6. Package, serialize (`joblib` `Pipeline`), hash (**SHA-256**), and automatically audit a complete **7-artifact publication release bundle** inside an isolated temporary directory with zero leftover repository clutter.
+
+---
+
+## Stage 1 — First-Principles Intuition: Synthesizing Seven Parts Into One Publication Pipeline {#sec-ch36-intuition}
+
+When you wrote your first `print()` statement in Chapter 1, publishing a peer-reviewed computational public-health paper felt miles away. Yet every chapter across Parts I–VII built one load-bearing pillar of the exact workflow real research teams execute before clicking **Submit Manuscript**:
+
+| Textbook Part | Chapters | Role Inside Your Chapter 36 Flagship Paper |
+| :--- | :---: | :--- |
+| **Part I: Python Foundations** | 1–7 | Pure functions, guard clauses (`ValueError`/`KeyError`), clean formatting |
+| **Part II: Modular Code & Files** | 8–12 | `pathlib`, `json`, `hashlib` SHA-256 manifests, `tempfile` isolation |
+| **Part III: NumPy, Pandas & Viz** | 13–17 | Sentinel cleaning (`999 -> NaN`), string normalization, tidy DataFrames |
+| **Part IV: Stats & Epidemiology** | 18–20 | Welch's $t$-test, Pearson $\chi^2$, Table 1, adjusted Odds Ratios |
+| **Part V: Machine Learning** | 21–26 | Leak-free `Pipeline`, `GroupKFold`, ROC-AUC, Brier score, calibration |
+| **Part VI: Deep Learning** | 27–32 | Deterministic CPU **PyTorch MLP** with train-only fold scaling |
+| **Part VII: Research Engineering** | 33–36 | Subgroup fairness, Decision Curve Analysis, `MODEL_CARD.md`, release gate |
+
+### Three Mathematical Pillars of Clinical Publication Readiness
+
+Beyond raw ROC-AUC, top biomedical and global-health journals (*The Lancet Global Health*, *BMJ*, *PLOS Medicine*, *Nature Medicine*) evaluate three quantitative pillars before accepting a predictive modeling manuscript:
+
+1. **Confounding-Adjusted Epidemiological Effect Sizes (`aOR`):**
+
+   In univariate Table 1 comparisons, antenatal care visits (`anc_visits`) and urban residence (`is_urban`) both look strongly protective against childhood stunting ($p = 0.0006$ and $p = 0.0416$). Fitting a multivariable logistic regression model $\text{logit}(P(Y = 1 \mid X)) = \beta_0 + \sum_j \beta_j X_j$ yields **adjusted Odds Ratios**:
+
+   $$\text{aOR}_j = e^{\beta_j}, \qquad 95\%\ \text{CI} = \left[\,e^{\beta_j - 1.96\,\text{SE}_j},\; e^{\beta_j + 1.96\,\text{SE}_j}\,\right]$$
+
+   As you will prove in Stage 3, once household wealth (`wealth_rank`) enters the model ($\text{aOR} = 0.5835$, $p < 0.0001$), crude associations for `anc_visits` and `is_urban` attenuate—demonstrating classic **socioeconomic confounding**.
+
+2. **Subgroup Algorithmic Fairness at Youden's $J$ Threshold:**
+
+   For any out-of-fold probability score $\hat{p}_i$, Youden's optimal clinical operating threshold maximizes sensitivity plus specificity minus one:
+
+   $$t^* = \arg\max_{t} \bigl(\text{TPR}(t) - \text{FPR}(t)\bigr)$$
+
+   At $t^*$, we audit Rural ($g = 0$) vs. Urban ($g = 1$) disparities via **Demographic Parity Difference** $\lvert P(\hat{Y}=1 \mid g=0) - P(\hat{Y}=1 \mid g=1) \rvert$ and **Equal Opportunity Difference** $\lvert \text{TPR}_{g=0} - \text{TPR}_{g=1} \rvert$.
+
+3. **Decision Curve Analysis (Vickers & Elkin, 2006):**
+
+   A model with $\text{AUC} = 0.72$ still begs a clinical question: *"If a community health worker screens children above probability threshold $t \in (0, 1)$, does the model do more good than referring everyone or referring no one?"* At threshold $t$, the clinician implicitly weights each false positive at $t / (1 - t)$ times a true positive, giving **Clinical Net Benefit**:
+
+   $$\text{NB}_{\text{model}}(t) = \frac{\text{TP}_t}{N} - \frac{\text{FP}_t}{N}\!\left(\frac{t}{1 - t}\right), \qquad \text{NB}_{\text{all}}(t) = \pi - (1 - \pi)\!\left(\frac{t}{1 - t}\right)$$
+
+   where $\pi = \frac{1}{N}\sum_{i=1}^N y_i$ is stunting prevalence and $\text{NB}_{\text{none}}(t) = 0$. A model earns clinical deployment strictly where $\text{NB}_{\text{model}}(t) > \max\bigl(\text{NB}_{\text{all}}(t),\, 0\bigr)$.
+
+::: {.callout-warning title="Zero Target Leakage & Zero Repository Pollution"}
+Two cardinal engineering rules govern every flagship study:
+
+1. **Never Include Derived Outcomes as Features:** In `mch_survey_sample`, `child_stunted` is defined directly from `child_haz < -2.0`. Including `child_haz` as a predictor leaks the label and inflates AUC near `1.00`—an instant desk-rejection offense!
+2. **Isolate Ephemeral Exports:** Always write test release bundles inside `tempfile.TemporaryDirectory()` during development and automated QA so stray CSVs or binary `.joblib` files never pollute your Git repository.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: End-to-End "From First Line to First Paper" Pipeline {#sec-ch36-mental-model}
+
+Trace how raw household survey rows flow through epidemiological cleaning, leak-free cluster-grouped ML/DL benchmarking, fairness and clinical-utility auditing, and finally a SHA-256 verified journal submission release:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph DataStage["1. Survey & Epi"]
+        direction LR
+        D1["Raw Survey CSV<br/>(500 Rows, 50 Clusters)"] --> D2["Clean Sentinels<br/>999->NaN, Title Case"]
+        D2 --> D3["Table 1 + Logit<br/>Welch, Chi2, aORs"]
+    end
+    subgraph ModelStage["2. ML/DL & Audit"]
+        direction LR
+        M1["5-Fold GroupKFold<br/>(By cluster_id)"] --> M2["4 Model Families<br/>LR, RF, HGB, MLP"]
+        M2 --> M3["OOF Audit<br/>Fairness + DCA"]
+    end
+    subgraph PaperStage["3. Paper & Hash"]
+        direction LR
+        P1["Results Markdown<br/>+ 300w Abstract"] --> P2["Release Bundle<br/>7 Files + Joblib"]
+        P2 --> P3["SHA-256 Manifest<br/>+ Submission Gate"]
+    end
+    DataStage --> ModelStage
+    ModelStage --> PaperStage
+```
+
+Notice the strict unidirectional flow across the three layers:
+
+1. **Survey & Epidemiology (`DataStage`):** Raw survey anomalies (`anc_visits == 999`, lowercase `"urban"`) are repaired once in a pure, non-mutating function feeding both Table 1 and adjusted regression.
+2. **ML/DL & Clinical Audit (`ModelStage`):** All 50 geographic clusters are partitioned strictly by `cluster_id` so households from the same village never straddle train and validation folds; imputation and scaling stay inside each fold, and both fairness and DCA evaluate strictly on out-of-fold probabilities.
+3. **Manuscript & Provenance (`PaperStage`):** Every statistic in the Markdown tables, 300-word abstract, `MODEL_CARD.md`, and `manifest.json` flows programmatically from code—and `model.joblib` is hashed with SHA-256 before passing the submission gate.
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch36-walkthrough}
+
+Open `part_07_research_capstone/ch36_flagship_research_capstone/01_walkthrough.ipynb` in Colab and run every cell top-to-bottom alongside the dissections below.
+
+### Setup: Reproducible Capstone Research Stack {#sec-ch36-setup}
+
+```python
+import hashlib
+import json
+import tempfile
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+from scipy import stats
+import statsmodels.api as sm
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    brier_score_loss,
+    roc_auc_score,
+    roc_curve,
+)
+from sklearn.model_selection import GroupKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import torch
+import torch.nn as nn
+import sharukh_tutor as tutor
+
+torch.set_num_threads(1)
+torch.manual_seed(42)
+np.random.seed(42)
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+print("Loaded mch_survey_sample:", mch_raw.shape,
+      "| Clusters:", mch_raw["cluster_id"].nunique())
+```
+
+**Expected Output:**
+
+```text
+Loaded mch_survey_sample: (500, 12) | Clusters: 50
+```
+
+---
+
+### Survey Cleaning, Journal Table 1 & Multivariable Adjusted Odds Ratios {#sec-ch36-table1}
+
+```python
+WEALTH_MAP = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+FEATURES = [
+    "maternal_age_years", "anc_visits",
+    "maternal_hb_g_dl", "is_urban", "wealth_rank",
+]
+
+
+def clean_mch_survey(mch_df):
+    """Clean survey sentinels & casing without mutating input."""
+    df = mch_df.copy()
+    anc = pd.to_numeric(df["anc_visits"], errors="coerce")
+    df["anc_visits"] = anc.replace(999, np.nan)
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    df["wealth_rank"] = df["wealth_quintile"].map(WEALTH_MAP)
+    df = df.dropna(subset=["child_stunted"]).copy()
+    df["child_stunted"] = df["child_stunted"].astype(int)
+    return df
+
+
+def build_publication_table1(mch_df):
+    """Build Journal Table 1 comparing non-stunted vs stunted."""
+    df = clean_mch_survey(mch_df)
+    g0 = df[df["child_stunted"] == 0]
+    g1 = df[df["child_stunted"] == 1]
+    rows = []
+    for col in ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]:
+        s0, s1 = g0[col].dropna(), g1[col].dropna()
+        _, p_val = stats.ttest_ind(s0, s1, equal_var=False)
+        rows.append({
+            "variable": col,
+            "not_stunted": f"{s0.mean():.2f} ± {s0.std(ddof=1):.2f}",
+            "stunted": f"{s1.mean():.2f} ± {s1.std(ddof=1):.2f}",
+            "p_value": round(float(p_val), 4),
+        })
+    ct = pd.crosstab(df["child_stunted"], df["is_urban"])
+    _, p_chi, _, _ = stats.chi2_contingency(ct, correction=False)
+    c0, pct0 = int(g0["is_urban"].sum()), 100.0 * g0["is_urban"].mean()
+    c1, pct1 = int(g1["is_urban"].sum()), 100.0 * g1["is_urban"].mean()
+    rows.append({
+        "variable": "is_urban",
+        "not_stunted": f"{c0} ({pct0:.1f}%)",
+        "stunted": f"{c1} ({pct1:.1f}%)",
+        "p_value": round(float(p_chi), 4),
+    })
+    return pd.DataFrame(rows)
+
+
+table1_df = build_publication_table1(mch_raw)
+print("=== Journal Table 1 ===")
+print(table1_df.to_string(index=False))
+
+df_clean = clean_mch_survey(mch_raw)
+cc = df_clean[["child_stunted"] + FEATURES].dropna()
+X_sm = sm.add_constant(cc[FEATURES].astype(float))
+logit_res = sm.Logit(
+    cc["child_stunted"].astype(float), X_sm
+).fit(disp=False)
+ci = logit_res.conf_int()
+aor_rows = []
+for feat in FEATURES:
+    aor_rows.append({
+        "feature": feat,
+        "aor": round(float(np.exp(logit_res.params[feat])), 4),
+        "ci_low": round(float(np.exp(ci.loc[feat, 0])), 4),
+        "ci_high": round(float(np.exp(ci.loc[feat, 1])), 4),
+        "p_value": round(float(logit_res.pvalues[feat]), 4),
+    })
+aor_df = pd.DataFrame(aor_rows)
+print(f"\n=== Adjusted Odds Ratios (n={len(cc)} complete cases) ===")
+print(aor_df.to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+=== Journal Table 1 ===
+          variable  not_stunted      stunted  p_value
+maternal_age_years 30.67 ± 7.70 30.24 ± 7.22   0.6524
+        anc_visits  3.90 ± 1.98  3.01 ± 1.87   0.0006
+  maternal_hb_g_dl 11.45 ± 1.38 11.52 ± 1.42   0.7253
+          is_urban  131 (30.5%)   13 (18.6%)   0.0416
+
+=== Adjusted Odds Ratios (n=470 complete cases) ===
+           feature    aor  ci_low  ci_high  p_value
+maternal_age_years 0.9980  0.9618   1.0355   0.9135
+        anc_visits 0.9231  0.7856   1.0847   0.3310
+  maternal_hb_g_dl 1.2167  0.9818   1.5079   0.0731
+          is_urban 0.6486  0.3140   1.3400   0.2423
+       wealth_rank 0.5835  0.4515   0.7539   0.0000
+```
+
+Read this scientific story like a seasoned epidemiologist:
+
+- Replacing 8 sentinel `anc_visits == 999` values with `NaN` (with zero `inplace=True`, adhering strictly to Pandas 3.x best practice) restores realistic antenatal care means (`3.90` vs. `3.01` visits, Welch's $p = 0.0006$).
+- Title-casing `residence` rescues 11 lowercase `"rural"` and 4 lowercase `"urban"` households, revealing `30.5%` vs. `18.6%` urban share ($\chi^2$ $p = 0.0416$).
+- In the multivariable logistic regression on $n = 470$ complete cases, **household wealth (`wealth_rank`)** emerges as the dominant independent protective factor ($\text{aOR} = 0.5835$, 95% CI `0.4515–0.7539`, $p < 0.0001$), attenuating the unadjusted effects of `anc_visits` and `is_urban`.
+
+---
+
+### 4-Model Cluster-Grouped Benchmark (`GroupKFold` + PyTorch MLP) {#sec-ch36-benchmark}
+
+```python
+def _fit_predict_mlp_fold(X_tr_df, y_tr, X_va_df, fold_seed):
+    """Train leak-free 16-unit PyTorch MLP on one CV fold."""
+    imp = SimpleImputer(strategy="median")
+    scl = StandardScaler()
+    X_tr_s = scl.fit_transform(imp.fit_transform(X_tr_df))
+    X_va_s = scl.transform(imp.transform(X_va_df))
+    torch.set_num_threads(1)
+    torch.manual_seed(fold_seed)
+    net = nn.Sequential(
+        nn.Linear(X_tr_s.shape[1], 16),
+        nn.ReLU(),
+        nn.Linear(16, 1),
+    )
+    opt = torch.optim.Adam(net.parameters(), lr=0.02)
+    loss_fn = nn.BCEWithLogitsLoss()
+    xt = torch.tensor(X_tr_s, dtype=torch.float32)
+    yt = torch.tensor(y_tr, dtype=torch.float32).unsqueeze(1)
+    xv = torch.tensor(X_va_s, dtype=torch.float32)
+    net.train()
+    for _ in range(30):
+        opt.zero_grad()
+        loss_fn(net(xt), yt).backward()
+        opt.step()
+    net.eval()
+    with torch.no_grad():
+        return torch.sigmoid(net(xv)).squeeze(-1).numpy()
+
+
+def run_capstone_model_benchmark(mch_df, seed=42):
+    """Benchmark 4 model families under 5-fold cluster GroupKFold."""
+    df = clean_mch_survey(mch_df)
+    X = df[FEATURES].astype(float)
+    y = df["child_stunted"].to_numpy()
+    groups = df["cluster_id"].to_numpy()
+    gkf = GroupKFold(n_splits=5)
+
+    sk_builders = {
+        "LogisticRegression": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("scl", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+        ]),
+        "RandomForestClassifier": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", RandomForestClassifier(
+                n_estimators=80, max_depth=4, random_state=seed
+            )),
+        ]),
+        "HistGradientBoostingClassifier": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", HistGradientBoostingClassifier(
+                max_iter=50, max_depth=3, random_state=seed
+            )),
+        ]),
+    }
+    rows = []
+    for name, make_pipe in sk_builders.items():
+        aucs, briers = [], []
+        for tr, va in gkf.split(X, y, groups):
+            pipe = make_pipe()
+            pipe.fit(X.iloc[tr], y[tr])
+            probs = pipe.predict_proba(X.iloc[va])[:, 1]
+            aucs.append(roc_auc_score(y[va], probs))
+            briers.append(brier_score_loss(y[va], probs))
+        rows.append({
+            "model": name,
+            "mean_auc": round(float(np.mean(aucs)), 4),
+            "std_auc": round(float(np.std(aucs)), 4),
+            "mean_brier": round(float(np.mean(briers)), 4),
+        })
+
+    mlp_aucs, mlp_briers = [], []
+    for fold_i, (tr, va) in enumerate(gkf.split(X, y, groups)):
+        probs = _fit_predict_mlp_fold(
+            X.iloc[tr], y[tr], X.iloc[va], seed + fold_i
+        )
+        mlp_aucs.append(roc_auc_score(y[va], probs))
+        mlp_briers.append(brier_score_loss(y[va], probs))
+    rows.append({
+        "model": "PyTorch_MLP",
+        "mean_auc": round(float(np.mean(mlp_aucs)), 4),
+        "std_auc": round(float(np.std(mlp_aucs)), 4),
+        "mean_brier": round(float(np.mean(mlp_briers)), 4),
+    })
+    return (
+        pd.DataFrame(rows)
+        .sort_values("mean_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
+leaderboard_df = run_capstone_model_benchmark(mch_raw, seed=42)
+print(leaderboard_df.to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+                         model  mean_auc  std_auc  mean_brier
+        RandomForestClassifier    0.7181   0.0825      0.1137
+            LogisticRegression    0.7132   0.0823      0.1138
+                   PyTorch_MLP    0.7105   0.0775      0.1128
+HistGradientBoostingClassifier    0.6984   0.0774      0.1170
+```
+
+Look closely at what honest, leak-free benchmarking reveals:
+
+- All 5 folds of our compact 16-unit `PyTorch_MLP` complete in ~1.2 seconds on CPU with `torch.set_num_threads(1)` and deterministic `torch.manual_seed(seed + fold_i)`.
+- On moderate-size tabular survey data ($N = 500$, 5 predictors), `RandomForestClassifier` (`0.7181`) and `LogisticRegression` (`0.7132`) rival or edge out deep learning (`PyTorch_MLP`: `0.7105`), while `PyTorch_MLP` achieves the sharpest Brier score (`0.1128`). Reporting **both** discrimination and calibration gives reviewers full scientific transparency.
+
+---
+
+### Out-of-Fold Subgroup Fairness Audit & Results Markdown {#sec-ch36-fairness}
+
+```python
+X_all = df_clean[FEATURES].astype(float)
+y_all = df_clean["child_stunted"].to_numpy()
+groups_all = df_clean["cluster_id"].to_numpy()
+gkf = GroupKFold(n_splits=5)
+
+oof_rf = np.zeros(len(y_all), dtype=float)
+for tr, va in gkf.split(X_all, y_all, groups_all):
+    pipe = Pipeline([
+        ("imp", SimpleImputer(strategy="median")),
+        ("clf", RandomForestClassifier(
+            n_estimators=80, max_depth=4, random_state=42
+        )),
+    ])
+    pipe.fit(X_all.iloc[tr], y_all[tr])
+    oof_rf[va] = pipe.predict_proba(X_all.iloc[va])[:, 1]
+
+fpr, tpr, thresh = roc_curve(y_all, oof_rf)
+youden_t = float(thresh[int(np.argmax(tpr - fpr))])
+y_hat = (oof_rf >= youden_t).astype(int)
+rural_m = df_clean["is_urban"].to_numpy() == 0
+urban_m = df_clean["is_urban"].to_numpy() == 1
+
+r_pos = float(y_hat[rural_m].mean())
+u_pos = float(y_hat[urban_m].mean())
+r_tpr = float(y_hat[rural_m & (y_all == 1)].mean())
+u_tpr = float(y_hat[urban_m & (y_all == 1)].mean())
+fairness_dict = {
+    "threshold": round(youden_t, 4),
+    "rural_pos_rate": round(r_pos, 4),
+    "urban_pos_rate": round(u_pos, 4),
+    "demographic_parity_diff": round(abs(r_pos - u_pos), 4),
+    "rural_tpr": round(r_tpr, 4),
+    "urban_tpr": round(u_tpr, 4),
+    "equal_opportunity_diff": round(abs(r_tpr - u_tpr), 4),
+}
+
+
+def build_publication_results_markdown(lb_df, fair_dict):
+    """Generate publication-ready Markdown benchmark & fairness text."""
+    lines = [
+        "### Model Benchmark",
+        "",
+        "| Model | Mean AUC | SD AUC | Mean Brier |",
+        "| :--- | :---: | :---: | :---: |",
+    ]
+    for r in lb_df.itertuples(index=False):
+        lines.append(
+            f"| {r.model} | {r.mean_auc:.4f} | "
+            f"{r.std_auc:.4f} | {r.mean_brier:.4f} |"
+        )
+    lines.extend([
+        "",
+        "### Subgroup Fairness Summary",
+        "",
+        f"- **Demographic Parity Diff:** "
+        f"{fair_dict['demographic_parity_diff']:.4f}",
+        f"- **Equal Opportunity Diff:** "
+        f"{fair_dict['equal_opportunity_diff']:.4f}",
+    ])
+    return "\n".join(lines)
+
+
+results_md = build_publication_results_markdown(
+    leaderboard_df, fairness_dict
+)
+print(results_md)
+```
+
+**Expected Output:**
+
+```text
+### Model Benchmark
+
+| Model | Mean AUC | SD AUC | Mean Brier |
+| :--- | :---: | :---: | :---: |
+| RandomForestClassifier | 0.7181 | 0.0825 | 0.1137 |
+| LogisticRegression | 0.7132 | 0.0823 | 0.1138 |
+| PyTorch_MLP | 0.7105 | 0.0775 | 0.1128 |
+| HistGradientBoostingClassifier | 0.6984 | 0.0774 | 0.1170 |
+
+### Subgroup Fairness Summary
+
+- **Demographic Parity Diff:** 0.2371
+- **Equal Opportunity Diff:** 0.4993
+```
+
+Notice the critical equity insight surfaced by auditing out-of-fold predictions: because rural households carry lower wealth and higher baseline risk, applying one single global Youden threshold (`0.1436`) detects `80.7%` of stunted rural children (`Rural TPR`) but only `30.8%` of stunted urban children (`Urban TPR`), creating an **Equal Opportunity Diff** of **`0.4993`**. Disclosing this disparity transparently—and recommending subgroup-calibrated operating thresholds in the Discussion and `MODEL_CARD.md`—is what separates responsible health AI from uncritical metric chasing.
+
+---
+
+### Decision Curve Analysis (Vickers & Elkin, 2006) {#sec-ch36-dca}
+
+```python
+def compute_clinical_net_benefit(y_true, y_prob, thresholds):
+    """Compute Vickers & Elkin (2006) clinical net benefit."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    n = len(yt)
+    prev = float(np.mean(yt))
+    rows = []
+    for t in thresholds:
+        t_f = float(t)
+        if not (0.0 < t_f < 1.0):
+            raise ValueError(
+                f"Threshold {t_f} must satisfy 0 < t < 1"
+            )
+        pred = (yp >= t_f).astype(int)
+        tp = int(np.sum((pred == 1) & (yt == 1)))
+        fp = int(np.sum((pred == 1) & (yt == 0)))
+        odds = t_f / (1.0 - t_f)
+        nb_m = round((tp / n) - (fp / n) * odds, 5) + 0.0
+        nb_a = round(prev - (1.0 - prev) * odds, 5) + 0.0
+        rows.append({
+            "threshold": round(t_f, 5),
+            "nb_model": nb_m,
+            "nb_all": nb_a,
+            "nb_none": 0.0,
+        })
+    return pd.DataFrame(rows)
+
+
+dca_df = compute_clinical_net_benefit(
+    y_all, oof_rf, [0.10, 0.15, 0.20, 0.25, 0.30]
+)
+print(dca_df.to_string(index=False))
+```
+
+**Expected Output:**
+
+```text
+ threshold  nb_model   nb_all  nb_none
+      0.10   0.06178  0.04444      0.0
+      0.15   0.04588 -0.01176      0.0
+      0.20   0.01850 -0.07500      0.0
+      0.25   0.01333 -0.14667      0.0
+      0.30  -0.00200 -0.22857      0.0
+```
+
+Look how immediately actionable this table is for a ministry of health or district clinic:
+
+- Across thresholds **`0.10` through `0.25`**, `nb_model` strictly beats **both** `nb_all` (refer every child) and `nb_none` (`0.0`).
+- At `t = 0.15` (willing to screen ~6–7 children to catch 1 stunted case), the model achieves **`+0.04588`** net benefit—equivalent to identifying **~4.6 extra true stunted children per 100 screened with zero unnecessary interventions**—whereas Treat-All has negative net benefit (`-0.01176`).
+- At `t = 0.30`, `nb_model` dips to `-0.00200`, clearly demarcating the model's useful clinical operating window (`10%–25%`).
+
+---
+
+### Automated 300-Word Structured Journal Abstract {#sec-ch36-abstract}
+
+```python
+def draft_structured_abstract(study_stats):
+    """Format a 4-section structured medical abstract (<=300 words)."""
+    n_tot = study_stats["n_total"]
+    stunt_pct = study_stats["stunting_pct"]
+    best_m = study_stats["best_model"]
+    best_auc = study_stats["best_auc"]
+    brier = study_stats["brier_score"]
+    eo_gap = study_stats["eo_gap"]
+    text = (
+        f"**Background:** Childhood stunting remains a major maternal "
+        f"and child health burden in low-resource settings.\n\n"
+        f"**Methods:** We analyzed {n_tot} survey households "
+        f"(stunting prevalence {stunt_pct:.1f}%) using 5-fold "
+        f"cluster-grouped cross-validation comparing statistical, "
+        f"tree-ensemble, and PyTorch neural models with Decision "
+        f"Curve Analysis and Rural-vs-Urban fairness auditing.\n\n"
+        f"**Results:** {best_m} achieved the highest discrimination "
+        f"(mean ROC-AUC {best_auc:.4f}; Brier score {brier:.4f}) "
+        f"with positive clinical net benefit across 10%-25% "
+        f"thresholds, though an equal-opportunity gap of "
+        f"{eo_gap:.4f} persisted between rural and urban strata.\n\n"
+        f"**Conclusions:** Transparent, cluster-validated models "
+        f"add actionable screening value when paired with subgroup "
+        f"fairness monitoring and reproducible artifact releases."
+    )
+    wc = len(text.split())
+    return {
+        "abstract_text": text,
+        "word_count": wc,
+        "within_limit": bool(wc <= 300),
+    }
+
+
+top_row = leaderboard_df.iloc[0]
+study_stats = {
+    "n_total": int(len(df_clean)),
+    "stunting_pct": round(100.0 * float(y_all.mean()), 1),
+    "best_model": str(top_row["model"]),
+    "best_auc": float(top_row["mean_auc"]),
+    "brier_score": float(top_row["mean_brier"]),
+    "eo_gap": float(fairness_dict["equal_opportunity_diff"]),
+}
+abstract_out = draft_structured_abstract(study_stats)
+print(abstract_out["abstract_text"])
+print(f"\nWords: {abstract_out['word_count']} | "
+      f"Within 300-word limit?: {abstract_out['within_limit']}")
+```
+
+**Expected Output:**
+
+```text
+**Background:** Childhood stunting remains a major maternal and child health burden in low-resource settings.
+
+**Methods:** We analyzed 500 survey households (stunting prevalence 14.0%) using 5-fold cluster-grouped cross-validation comparing statistical, tree-ensemble, and PyTorch neural models with Decision Curve Analysis and Rural-vs-Urban fairness auditing.
+
+**Results:** RandomForestClassifier achieved the highest discrimination (mean ROC-AUC 0.7181; Brier score 0.1137) with positive clinical net benefit across 10%-25% thresholds, though an equal-opportunity gap of 0.4993 persisted between rural and urban strata.
+
+**Conclusions:** Transparent, cluster-validated models add actionable screening value when paired with subgroup fairness monitoring and reproducible artifact releases.
+
+Words: 92 | Within 300-word limit?: True
+```
+
+---
+
+### Reproducible SHA-256 Artifact Bundle (Inside `TemporaryDirectory`) {#sec-ch36-release}
+
+```python
+REQUIRED_FILES = sorted([
+    "MODEL_CARD.md", "fairness_audit.json", "leaderboard.csv",
+    "manifest.json", "model.joblib", "table1.csv",
+])
+
+
+def audit_manuscript_reproducibility(release_dir):
+    """Audit release directory for all 6 required paper artifacts."""
+    root = Path(release_dir)
+    present = sorted(f for f in REQUIRED_FILES if (root / f).is_file())
+    missing = sorted(
+        f for f in REQUIRED_FILES if not (root / f).is_file()
+    )
+    return {
+        "present": present,
+        "missing": missing,
+        "ready_for_submission": len(missing) == 0,
+    }
+
+
+with tempfile.TemporaryDirectory() as tmp_dir:
+    rel = Path(tmp_dir) / "paper_release_v1"
+    rel.mkdir(parents=True, exist_ok=True)
+    table1_df.to_csv(rel / "table1.csv", index=False)
+    leaderboard_df.to_csv(rel / "leaderboard.csv", index=False)
+    (rel / "fairness_audit.json").write_text(
+        json.dumps(fairness_dict, indent=2), encoding="utf-8"
+    )
+    final_pipe = Pipeline([
+        ("imp", SimpleImputer(strategy="median")),
+        ("clf", RandomForestClassifier(
+            n_estimators=80, max_depth=4, random_state=42
+        )),
+    ])
+    final_pipe.fit(X_all, y_all)
+    model_path = rel / "model.joblib"
+    joblib.dump(final_pipe, model_path)
+    sha = hashlib.sha256(model_path.read_bytes()).hexdigest()
+    (rel / "MODEL_CARD.md").write_text(
+        f"# Stunting Risk Model Card\n\n{results_md}\n",
+        encoding="utf-8",
+    )
+    (rel / "config.json").write_text(
+        json.dumps({"seed": 42, "features": FEATURES}, indent=2),
+        encoding="utf-8",
+    )
+    (rel / "manifest.json").write_text(
+        json.dumps(
+            {"model.joblib": sha, "files": REQUIRED_FILES},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    audit = audit_manuscript_reproducibility(rel)
+    reloaded = joblib.load(model_path)
+    sample_p = float(reloaded.predict_proba(X_all.iloc[:1])[0, 1])
+    print("Submission ready?:", audit["ready_for_submission"])
+    print("Present files:", len(audit["present"]),
+          "| Missing:", audit["missing"])
+    print("model.joblib SHA-256 prefix:", sha[:16])
+    print("Reloaded sample P(stunted):", round(sample_p, 4))
+```
+
+**Expected Output:**
+
+```text
+Submission ready?: True
+Present files: 6 | Missing: []
+model.joblib SHA-256 prefix: ded7357add2741f9
+Reloaded sample P(stunted): 0.2538
+```
+
+Notice why we serialize a standard scikit-learn `Pipeline` (`SimpleImputer` + classifier) via `joblib.dump`: any reviewer or hospital IT team can run `joblib.load("model.joblib").predict_proba(X_new)` cleanly in one line with zero custom-class pickle conflicts, while the `manifest.json` SHA-256 digest guarantees bit-level integrity—and `tempfile.TemporaryDirectory()` cleans up automatically on exit!
+
+---
+
+### Break It On Purpose! (Capstone Pipeline Error Anatomy) {#sec-ch36-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (Invalid DCA Threshold t = 1.0)"}
+```python
+compute_clinical_net_benefit(y_all, oof_rf, [0.15, 1.0])
+```
+**Python's Traceback:**
+```text
+ValueError: Threshold 1.0 must satisfy 0 < t < 1
+```
+**Diagnosis:** In Vickers & Elkin's formula $\text{NB}(t) = \frac{\text{TP}}{N} - \frac{\text{FP}}{N}\frac{t}{1 - t}$, setting $t = 1.0$ divides by $1 - t = 0$ (infinite harm-to-benefit ratio), while $t \le 0$ represents zero harm for false positives.  
+**Fix:** Enforce an explicit guard `if not (0.0 < t_f < 1.0): raise ValueError(...)` before evaluating threshold odds so invalid clinical cutoffs fail loudly rather than producing `ZeroDivisionError` or `nan`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (GroupKFold n_splits Exceeds Unique Clusters)"}
+```python
+tiny_groups = np.array([1, 1, 1, 2, 2, 2])
+list(GroupKFold(n_splits=5).split(X_all.iloc[:6], y_all[:6], tiny_groups))
+```
+**Python's Traceback:**
+```text
+ValueError: Cannot have number of splits n_splits=5 greater than the number of groups: 2.
+```
+**Diagnosis:** `GroupKFold` assigns every unique survey cluster (`cluster_id`) to at most one validation fold so households from the same village never leak across splits. Asking for 5 folds when a regional subset contains only 2 clusters is mathematically impossible.  
+**Fix:** Always verify `n_unique_clusters >= n_splits` (or dynamically cap `n_splits = min(5, groups.nunique())`) before running grouped cross-validation on small pilot cohorts.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — KeyError (Missing Required Metric in Abstract Builder)"}
+```python
+incomplete_stats = {k: v for k, v in study_stats.items() if k != "eo_gap"}
+draft_structured_abstract(incomplete_stats)
+```
+**Python's Traceback:**
+```text
+KeyError: 'eo_gap'
+```
+**Diagnosis:** Automated manuscript generators should **never** silently substitute `"N/A"` or `0.0` when an equity or calibration metric is missing—silent fallbacks can publish fabricated zeroes into an abstract!  
+**Fix:** Use direct dictionary indexing (`study_stats["eo_gap"]`) rather than `.get("eo_gap", 0.0)` so incomplete study dictionaries raise an immediate `KeyError` during build verification.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch36-blueprint}
+
+**Scenario:** Your research group's principal investigator asks for a single reproducible command (`run_flagship_first_paper_pipeline(mch_df, seed=42)`) that accepts raw survey data, runs Table 1, 4-model cluster-grouped benchmarking, out-of-fold fairness auditing, Decision Curve Analysis, and 300-word structured abstract generation, exports all 7 publication artifacts with a SHA-256 manifest inside an isolated temporary directory, and returns a single executive readiness summary.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Cohort & Statistical Layer:**
+
+   - Clean `mch_df` without mutation (`999 -> NaN`, title-case `residence`, map `wealth_rank`).
+   - Build `table1` (`build_publication_table1`) and 4-model `GroupKFold` leaderboard (`run_capstone_model_benchmark`).
+
+2. **Clinical Utility & Equity Layer:**
+
+   - Collect out-of-fold predictions for the winning model across all 50 survey clusters.
+   - Compute Youden's $J$ threshold, Rural vs. Urban Demographic Parity and Equal Opportunity gaps, and DCA across `[0.10, 0.15, 0.20]`.
+   - Format the 4-section structured abstract (`draft_structured_abstract`) and verify `word_count <= 300`.
+
+3. **Isolated Release Packaging & Audit Layer:**
+
+   - Inside `tempfile.TemporaryDirectory()`, save `table1.csv`, `leaderboard.csv`, `fairness_audit.json`, `MODEL_CARD.md`, a fitted sklearn `Pipeline` (`model.joblib`), `config.json`, and `manifest.json` with exact SHA-256 digest.
+   - Verify submission readiness with `audit_manuscript_reproducibility` and return the executive summary dict.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_flagship_first_paper_pipeline(mch_df, seed=42):
+    """Execute full CSV-to-submission pipeline inside TemporaryDirectory."""
+    df = clean_mch_survey(mch_df)
+    t1 = build_publication_table1(mch_df)
+    lb = run_capstone_model_benchmark(mch_df, seed=seed)
+    X = df[FEATURES].astype(float)
+    y = df["child_stunted"].to_numpy()
+    groups = df["cluster_id"].to_numpy()
+
+    oof = np.zeros(len(y), dtype=float)
+    for tr, va in GroupKFold(n_splits=5).split(X, y, groups):
+        pipe = Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", RandomForestClassifier(
+                n_estimators=80, max_depth=4, random_state=seed
+            )),
+        ])
+        pipe.fit(X.iloc[tr], y[tr])
+        oof[va] = pipe.predict_proba(X.iloc[va])[:, 1]
+
+    fpr, tpr, thr = roc_curve(y, oof)
+    yt = float(thr[int(np.argmax(tpr - fpr))])
+    yhat = (oof >= yt).astype(int)
+    r_m = df["is_urban"].to_numpy() == 0
+    u_m = df["is_urban"].to_numpy() == 1
+    fair = {
+        "threshold": round(yt, 4),
+        "demographic_parity_diff": round(
+            abs(float(yhat[r_m].mean() - yhat[u_m].mean())), 4
+        ),
+        "equal_opportunity_diff": round(
+            abs(
+                float(yhat[r_m & (y == 1)].mean())
+                - float(yhat[u_m & (y == 1)].mean())
+            ),
+            4,
+        ),
+    }
+    dca = compute_clinical_net_benefit(y, oof, [0.10, 0.15, 0.20])
+    top = lb.iloc[0]
+    ab = draft_structured_abstract({
+        "n_total": int(len(df)),
+        "stunting_pct": round(100.0 * float(y.mean()), 1),
+        "best_model": str(top["model"]),
+        "best_auc": float(top["mean_auc"]),
+        "brier_score": float(top["mean_brier"]),
+        "eo_gap": fair["equal_opportunity_diff"],
+    })
+
+    with tempfile.TemporaryDirectory() as tmp:
+        rel = Path(tmp) / "release"
+        rel.mkdir()
+        t1.to_csv(rel / "table1.csv", index=False)
+        lb.to_csv(rel / "leaderboard.csv", index=False)
+        (rel / "fairness_audit.json").write_text(
+            json.dumps(fair, indent=2), encoding="utf-8"
+        )
+        final_p = Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("scl", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+        ]).fit(X, y)
+        joblib.dump(final_p, rel / "model.joblib")
+        sha = hashlib.sha256(
+            (rel / "model.joblib").read_bytes()
+        ).hexdigest()
+        (rel / "MODEL_CARD.md").write_text(
+            ab["abstract_text"], encoding="utf-8"
+        )
+        (rel / "config.json").write_text(
+            json.dumps({"seed": seed}, indent=2), encoding="utf-8"
+        )
+        (rel / "manifest.json").write_text(
+            json.dumps({"model.joblib": sha}, indent=2), encoding="utf-8"
+        )
+        audit = audit_manuscript_reproducibility(rel)
+
+    return {
+        "n_total": int(len(df)),
+        "winner": str(top["model"]),
+        "winner_auc": float(top["mean_auc"]),
+        "eo_gap": fair["equal_opportunity_diff"],
+        "nb_at_15pct": float(dca.loc[1, "nb_model"]),
+        "abstract_words": ab["word_count"],
+        "ready": audit["ready_for_submission"],
+        "sha256_prefix": sha[:12],
+    }
+
+
+print(run_flagship_first_paper_pipeline(mch_raw, seed=42))
+```
+
+**Output:**
+
+```text
+{'n_total': 500, 'winner': 'RandomForestClassifier', 'winner_auc': 0.7181, 'eo_gap': 0.4993, 'nb_at_15pct': 0.04588, 'abstract_words': 92, 'ready': True, 'sha256_prefix': '5ecfeb0141f1'}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch36-todos}
+
+Open `part_07_research_capstone/ch36_flagship_research_capstone/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six publication-pipeline functions below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 36.1 (`build_publication_table1(mch_df)`):** Clean `mch_survey_sample` (`anc_visits == 999 -> NaN`, title-case `residence` -> `is_urban`, drop missing `child_stunted`), compare `child_stunted == 0` vs. `1` across `maternal_age_years`, `anc_visits`, `maternal_hb_g_dl` (`"mean ± SD"`, Welch's $t$-test) and `is_urban` (`"count (pct%)"`, Pearson $\chi^2$), and return DataFrame `["variable", "not_stunted", "stunted", "p_value"]` with `p_value` rounded to 4 decimals.
+- **To-Do 36.2 (`run_capstone_model_benchmark(mch_df, seed=42)`):** Clean `mch_survey_sample` and evaluate 4 model families (`LogisticRegression`, `RandomForestClassifier`, `HistGradientBoostingClassifier`, and a leak-free 16-unit `PyTorch_MLP` with train-only fold imputation & `StandardScaler`) under 5-fold `GroupKFold` (`cluster_id`), returning DataFrame `["model", "mean_auc", "std_auc", "mean_brier"]` sorted by `mean_auc` desc rounded to 4 decimals.
+- **To-Do 36.3 (`build_publication_results_markdown(leaderboard_df, fairness_dict)`):** Return a clean Markdown string containing `### Model Benchmark` (pipe table with one row per model) plus `### Subgroup Fairness Summary` reporting `demographic_parity_diff` and `equal_opportunity_diff`.
+- **To-Do 36.4 (`compute_clinical_net_benefit(y_true, y_prob, thresholds)`):** Validate `0 < t < 1` (raising `ValueError` otherwise) and compute Vickers & Elkin (2006) `nb_model`, `nb_all`, and `nb_none = 0.0`, returning DataFrame `["threshold", "nb_model", "nb_all", "nb_none"]` rounded to 5 decimals.
+- **To-Do 36.5 (`draft_structured_abstract(study_stats)`):** Format a 4-section structured medical abstract (`**Background:**`, `**Methods:**`, `**Results:**`, `**Conclusions:**`) using all 6 required keys (`n_total`, `stunting_pct`, `best_model`, `best_auc`, `brier_score`, `eo_gap`), returning `{"abstract_text": str, "word_count": int, "within_limit": bool}` (`word_count <= 300`).
+- **To-Do 36.6 (`audit_manuscript_reproducibility(release_dir)`):** Audit `Path(release_dir)` for `["MODEL_CARD.md", "fairness_audit.json", "leaderboard.csv", "manifest.json", "model.joblib", "table1.csv"]` and return `{"present": sorted_list, "missing": sorted_list, "ready_for_submission": bool}`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch36-test}
+
+Work through all 10 end-to-end capstone synthesis questions on paper before checking Stage 8:
+
+1. **Sentinel Code Distortion:** In `mch_survey_sample`, 8 out of 500 households encode missing antenatal visits as `999`. Qualitatively and quantitatively, why does forgetting `.replace(999, np.nan)` destroy both Table 1's Welch $t$-test and a downstream neural network's `StandardScaler`?
+2. **Confounding in Table 1 vs. Multivariable Logit:** In Table 1, `anc_visits` has $p = 0.0006$ and `is_urban` has $p = 0.0416$, yet in the multivariable logistic regression including `wealth_rank`, their adjusted $p$-values rise to `0.3310` and `0.2423` while `wealth_rank` has $\text{aOR} = 0.5835$ ($p < 0.0001$). What epidemiological phenomenon does this demonstrate?
+3. **Target Leakage Detection:** A junior analyst adds `child_haz` (child height-for-age $z$-score) to `FEATURES` and excitedly reports 5-fold ROC-AUC = `0.9994`. Why must you reject this model immediately?
+4. **Why `GroupKFold(cluster_id)` Instead of Random `StratifiedKFold`:** Survey households in the same village (`cluster_id`) share water infrastructure, clinic distance, and local poverty shocks. What happens to estimated generalization AUC if households from Cluster 14 appear in both training and validation folds?
+5. **Discrimination vs. Calibration:** On `mch_survey_sample`, `RandomForestClassifier` achieves slightly higher `mean_auc` (`0.7181`) than `PyTorch_MLP` (`0.7105`), while `PyTorch_MLP` achieves a lower `mean_brier` (`0.1128` vs. `0.1137`). Explain in one sentence what each metric measures and why both matter for clinical screening.
+6. **Interpreting the Rural–Urban Equal Opportunity Gap:** At Youden's global threshold $t^* = 0.1436$, `Rural TPR = 0.8070` while `Urban TPR = 0.3077` (`equal_opportunity_diff = 0.4993`). Does this prove the model was coded with a bug, or what real-world deployment risk does it expose?
+7. **Hand-Computing Vickers & Elkin Net Benefit:** A cohort of $N = 100$ children has 20 stunted cases ($\pi = 0.20$). At probability threshold $t = 0.20$, a screening model yields $\text{TP} = 14$ and $\text{FP} = 20$. Compute $\text{NB}_{\text{model}}(0.20)$ and $\text{NB}_{\text{all}}(0.20)$ by hand—does the model beat both Treat-All and Treat-None?
+8. **Boundary Math in Decision Curve Analysis:** Why is `t = 1.0` mathematically invalid in `compute_clinical_net_benefit`, and what clinical preference does $t = 0.20$ (odds $0.20 / 0.80 = 0.25$) represent?
+9. **Programmatic Abstracts & Fail-Loud Dictionaries:** Why does `draft_structured_abstract` index `study_stats["eo_gap"]` directly instead of using `study_stats.get("eo_gap", 0.0)`?
+10. **Cryptographic Provenance & `joblib` Portability:** Why should your paper's submission release bundle serialize a standard scikit-learn `Pipeline` (`SimpleImputer` + scaler + estimator) to `model.joblib` and record its exact **SHA-256** digest inside `manifest.json`?
+
+---
+
+## Stage 7 — Chapter 36 Grand Book Finale Capstone Exam (100 Points) {#sec-ch36-exam}
+
+Open `part_07_research_capstone/ch36_flagship_research_capstone/03_coding_exam.ipynb`, implement all three Grand Book Finale tasks, and run `tutor.check_exam("ch36", exam_submissions)` to earn your final **100-point Capstone score**.
+
+### Exam Task 36.1 (30 Points): `full_table1_and_adjusted_or(mch_df)`
+
+Produce the complete epidemiological results tables from raw `mch_survey_sample`:
+
+- Build `table1` via `build_publication_table1(mch_df)`.
+- Clean `mch_df`, map `wealth_quintile` to `wealth_rank` (`1..5`), and take complete cases across `["child_stunted", "maternal_age_years", "anc_visits", "maternal_hb_g_dl", "is_urban", "wealth_rank"]`.
+- Fit multivariable `statsmodels.api.Logit(y, sm.add_constant(X)).fit(disp=False)`.
+- Extract exponentiated adjusted ORs, 95% CIs, and $p$-values (excluding `"const"`), rounded to 4 decimals, into DataFrame `["feature", "aor", "ci_low", "ci_high", "p_value"]`.
+- Return `{"table1": DataFrame, "adjusted_ors": DataFrame, "n_analytic": int}`.
+
+### Exam Task 36.2 (35 Points): `capstone_ml_dl_fairness_pipeline(mch_df, seed=42)`
+
+Execute an end-to-end cluster-grouped ML/DL benchmark with out-of-fold fairness and DCA:
+
+- Run 5-fold `GroupKFold(n_splits=5)` (`cluster_id`) across `LogisticRegression`, `HistGradientBoostingClassifier`, and a 16-unit PyTorch `MLP` (`Linear -> ReLU -> Linear`, 30 epochs, train-only fold imputation & `StandardScaler`), storing out-of-fold probabilities.
+- Select the top model (`winner = leaderboard.iloc[0]["model"]`, sorted by `mean_auc` desc).
+- Compute Rural (`is_urban == 0`) vs. Urban (`is_urban == 1`) fairness gaps on the winner's OOF probabilities at Youden's $J$ threshold (`threshold`, `demographic_parity_diff`, `equal_opportunity_diff`).
+- Compute Decision Curve Analysis across `[0.10, 0.15, 0.20, 0.25, 0.30]`.
+- Return `{"leaderboard": DataFrame, "winner": str, "fairness_gaps": dict, "dca_table": DataFrame}`.
+
+### Exam Task 36.3 (35 Points): `execute_first_paper_release(mch_df, release_dir, seed=42)`
+
+Package and cryptographically verify a journal-ready artifact release inside `release_dir`:
+
+- Run `build_publication_table1(mch_df)` and `capstone_ml_dl_fairness_pipeline(mch_df, seed=seed)`.
+- Fit a standard scikit-learn `Pipeline` (`SimpleImputer` + `StandardScaler` + `LogisticRegression`) on the cleaned features and serialize it with `joblib.dump` to `release_dir / "model.joblib"`.
+- Compute the exact SHA-256 hex digest of `model.joblib`.
+- Write all 7 release files (`table1.csv`, `leaderboard.csv`, `fairness_audit.json`, `MODEL_CARD.md`, `model.joblib`, `config.json`, `manifest.json` embedding the exact SHA-256) into `release_dir`.
+- Audit `release_dir` with `audit_manuscript_reproducibility(release_dir)` and return `{"ready_for_submission": bool, "winner": str, "winner_auc": round4, "artifact_sha256": str}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch36-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. Leaving 8 `999` codes inflates mean `anc_visits` from `3.90` to `19.70` and explodes variance ($\text{SD} \approx 125$), washing out Welch's $t$-test and squashing all real visit counts (`0–8`) into tiny negative $z$-scores inside `StandardScaler`, which destabilizes neural-network gradients.
+2. **Socioeconomic confounding:** Wealthier households simultaneously attend more antenatal visits, live more often in urban areas, and have lower stunting risk. Once `wealth_rank` is held constant, the apparent unadjusted effects of `anc_visits` and `is_urban` attenuate sharply.
+3. Because `child_stunted` is defined deterministically as `child_haz < -2.0`, including `child_haz` passes the ground-truth answer directly as an input (**target leakage**)—impossible to obtain before measuring stunting in prospective screening.
+4. Cluster-correlated households share village-level environments; random splitting leaks cluster signatures across train and validation folds, producing optimistically biased AUC that collapses when deployed in unseen villages.
+5. **ROC-AUC** measures rank-ordering discrimination (how often a stunted child receives a higher score than a non-stunted child), whereas **Brier score** measures mean squared probability error (calibration + refinement). Clinical thresholds and Decision Curve Analysis rely on well-calibrated probabilities, not rankings alone.
+6. It is not a coding bug—it reflects genuine base-rate and covariate shift between rural and urban households. Deploying a single global threshold risks missing ~69% of stunted urban children unless clinics adopt subgroup-calibrated thresholds or local recalibration.
+7. At $t = 0.20$, $\frac{t}{1 - t} = \frac{0.20}{0.80} = 0.25$. Thus $\text{NB}_{\text{model}}(0.20) = \frac{14}{100} - \frac{20}{100}(0.25) = 0.14 - 0.05 = \mathbf{0.09}$, while $\text{NB}_{\text{all}}(0.20) = 0.20 - 0.80(0.25) = \mathbf{0.00}$ and $\text{NB}_{\text{none}} = \mathbf{0.00}$. Yes—the model strictly beats both strategies (`+9` net true cases per 100 screened)!
+8. At $t = 1.0$, $\frac{t}{1 - t}$ divides by zero. A threshold of $t = 0.20$ means the clinician considers catching 1 true stunted child worth 4 false-positive referrals (ratio $1 : 4$, i.e., false-positive weight $0.25$).
+9. Direct indexing (`study_stats["eo_gap"]`) fails loudly with `KeyError` if an upstream audit was skipped, preventing an automated paper build from silently publishing a misleading `0.0000` fairness gap.
+10. Packaging `SimpleImputer` + `StandardScaler` + estimator inside one standard sklearn `Pipeline` eliminates train/serve preprocessing skew and custom-class pickle errors, while the SHA-256 digest in `manifest.json` lets reviewers verify that `model.joblib` was never corrupted or tampered with after publication.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+from pathlib import Path
+import numpy as np
+import pandas as pd
+from scipy import stats
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import brier_score_loss, roc_auc_score
+from sklearn.model_selection import GroupKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import torch
+import torch.nn as nn
+
+# To-Do 36.1
+def build_publication_table1(mch_df):
+    """Build Journal Table 1 comparing non-stunted vs stunted."""
+    df = mch_df.copy()
+    anc = pd.to_numeric(df["anc_visits"], errors="coerce")
+    df["anc_visits"] = anc.replace(999, np.nan)
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    df = df.dropna(subset=["child_stunted"]).copy()
+    df["child_stunted"] = df["child_stunted"].astype(int)
+
+    g0 = df[df["child_stunted"] == 0]
+    g1 = df[df["child_stunted"] == 1]
+    rows = []
+    for col in ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]:
+        s0, s1 = g0[col].dropna(), g1[col].dropna()
+        _, p_val = stats.ttest_ind(s0, s1, equal_var=False)
+        rows.append({
+            "variable": col,
+            "not_stunted": f"{s0.mean():.2f} ± {s0.std(ddof=1):.2f}",
+            "stunted": f"{s1.mean():.2f} ± {s1.std(ddof=1):.2f}",
+            "p_value": round(float(p_val), 4),
+        })
+
+    ct = pd.crosstab(df["child_stunted"], df["is_urban"])
+    _, p_chi, _, _ = stats.chi2_contingency(ct, correction=False)
+    c0, pct0 = int(g0["is_urban"].sum()), 100.0 * g0["is_urban"].mean()
+    c1, pct1 = int(g1["is_urban"].sum()), 100.0 * g1["is_urban"].mean()
+    rows.append({
+        "variable": "is_urban",
+        "not_stunted": f"{c0} ({pct0:.1f}%)",
+        "stunted": f"{c1} ({pct1:.1f}%)",
+        "p_value": round(float(p_chi), 4),
+    })
+    return pd.DataFrame(rows)
+
+# To-Do 36.2
+def run_capstone_model_benchmark(mch_df, seed=42):
+    """Benchmark LR, RF, HGB, and PyTorch MLP via 5-fold GroupKFold."""
+    wealth_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    feats = [
+        "maternal_age_years", "anc_visits",
+        "maternal_hb_g_dl", "is_urban", "wealth_rank",
+    ]
+    df = mch_df.copy()
+    anc = pd.to_numeric(df["anc_visits"], errors="coerce")
+    df["anc_visits"] = anc.replace(999, np.nan)
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    df["wealth_rank"] = df["wealth_quintile"].map(wealth_map)
+    df = df.dropna(subset=["child_stunted"]).copy()
+    X = df[feats].astype(float)
+    y = df["child_stunted"].astype(int).to_numpy()
+    groups = df["cluster_id"].to_numpy()
+    gkf = GroupKFold(n_splits=5)
+
+    builders = {
+        "LogisticRegression": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("scl", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+        ]),
+        "RandomForestClassifier": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", RandomForestClassifier(
+                n_estimators=80, max_depth=4, random_state=seed
+            )),
+        ]),
+        "HistGradientBoostingClassifier": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", HistGradientBoostingClassifier(
+                max_iter=50, max_depth=3, random_state=seed
+            )),
+        ]),
+    }
+    rows = []
+    for name, make_pipe in builders.items():
+        aucs, briers = [], []
+        for tr, va in gkf.split(X, y, groups):
+            pipe = make_pipe()
+            pipe.fit(X.iloc[tr], y[tr])
+            probs = pipe.predict_proba(X.iloc[va])[:, 1]
+            aucs.append(roc_auc_score(y[va], probs))
+            briers.append(brier_score_loss(y[va], probs))
+        rows.append({
+            "model": name,
+            "mean_auc": round(float(np.mean(aucs)), 4),
+            "std_auc": round(float(np.std(aucs)), 4),
+            "mean_brier": round(float(np.mean(briers)), 4),
+        })
+
+    torch.set_num_threads(1)
+    mlp_aucs, mlp_briers = [], []
+    for fold_i, (tr, va) in enumerate(gkf.split(X, y, groups)):
+        imp = SimpleImputer(strategy="median")
+        scl = StandardScaler()
+        X_tr_s = scl.fit_transform(imp.fit_transform(X.iloc[tr]))
+        X_va_s = scl.transform(imp.transform(X.iloc[va]))
+        torch.manual_seed(seed + fold_i)
+        net = nn.Sequential(
+            nn.Linear(X_tr_s.shape[1], 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+        )
+        opt = torch.optim.Adam(net.parameters(), lr=0.02)
+        loss_fn = nn.BCEWithLogitsLoss()
+        xt = torch.tensor(X_tr_s, dtype=torch.float32)
+        yt = torch.tensor(y[tr], dtype=torch.float32).unsqueeze(1)
+        xv = torch.tensor(X_va_s, dtype=torch.float32)
+        net.train()
+        for _ in range(30):
+            opt.zero_grad()
+            loss_fn(net(xt), yt).backward()
+            opt.step()
+        net.eval()
+        with torch.no_grad():
+            probs = torch.sigmoid(net(xv)).squeeze(-1).numpy()
+        mlp_aucs.append(roc_auc_score(y[va], probs))
+        mlp_briers.append(brier_score_loss(y[va], probs))
+    rows.append({
+        "model": "PyTorch_MLP",
+        "mean_auc": round(float(np.mean(mlp_aucs)), 4),
+        "std_auc": round(float(np.std(mlp_aucs)), 4),
+        "mean_brier": round(float(np.mean(mlp_briers)), 4),
+    })
+    return (
+        pd.DataFrame(rows)
+        .sort_values("mean_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+
+# To-Do 36.3
+def build_publication_results_markdown(leaderboard_df, fairness_dict):
+    """Generate clean Markdown benchmark table & fairness summary."""
+    lines = [
+        "### Model Benchmark",
+        "",
+        "| Model | Mean AUC | SD AUC | Mean Brier |",
+        "| :--- | :---: | :---: | :---: |",
+    ]
+    for r in leaderboard_df.itertuples(index=False):
+        lines.append(
+            f"| {r.model} | {r.mean_auc:.4f} | "
+            f"{r.std_auc:.4f} | {r.mean_brier:.4f} |"
+        )
+    dp = float(fairness_dict["demographic_parity_diff"])
+    eo = float(fairness_dict["equal_opportunity_diff"])
+    lines.extend([
+        "",
+        "### Subgroup Fairness Summary",
+        "",
+        f"- **Demographic Parity Diff:** {dp:.4f}",
+        f"- **Equal Opportunity Diff:** {eo:.4f}",
+    ])
+    return "\n".join(lines)
+
+# To-Do 36.4
+def compute_clinical_net_benefit(y_true, y_prob, thresholds):
+    """Compute Vickers & Elkin (2006) clinical net benefit table."""
+    yt = np.asarray(y_true, dtype=int)
+    yp = np.asarray(y_prob, dtype=float)
+    n = len(yt)
+    prev = float(np.mean(yt))
+    rows = []
+    for t in thresholds:
+        t_f = float(t)
+        if not (0.0 < t_f < 1.0):
+            raise ValueError(
+                f"Threshold {t_f} must satisfy 0 < t < 1"
+            )
+        pred = (yp >= t_f).astype(int)
+        tp = int(np.sum((pred == 1) & (yt == 1)))
+        fp = int(np.sum((pred == 1) & (yt == 0)))
+        odds = t_f / (1.0 - t_f)
+        nb_m = round((tp / n) - (fp / n) * odds, 5) + 0.0
+        nb_a = round(prev - (1.0 - prev) * odds, 5) + 0.0
+        rows.append({
+            "threshold": round(t_f, 5),
+            "nb_model": nb_m,
+            "nb_all": nb_a,
+            "nb_none": 0.0,
+        })
+    return pd.DataFrame(rows)
+
+# To-Do 36.5
+def draft_structured_abstract(study_stats):
+    """Draft a concise 4-section medical abstract (<=300 words)."""
+    n_tot = study_stats["n_total"]
+    stunt_pct = float(study_stats["stunting_pct"])
+    best_m = study_stats["best_model"]
+    best_auc = float(study_stats["best_auc"])
+    brier = float(study_stats["brier_score"])
+    eo_gap = float(study_stats["eo_gap"])
+    text = (
+        f"**Background:** Childhood stunting remains a pressing "
+        f"public health challenge requiring accurate risk "
+        f"stratification.\n\n"
+        f"**Methods:** We evaluated {n_tot} survey households "
+        f"(stunting prevalence {stunt_pct:.1f}%) under 5-fold "
+        f"cluster-grouped cross-validation with Decision Curve "
+        f"Analysis and rural-urban fairness auditing.\n\n"
+        f"**Results:** {best_m} achieved top discrimination "
+        f"(ROC-AUC {best_auc:.4f}; Brier {brier:.4f}), while "
+        f"subgroup auditing identified an equal-opportunity gap "
+        f"of {eo_gap:.4f}.\n\n"
+        f"**Conclusions:** Leak-free cluster validation paired with "
+        f"fairness reporting supports responsible screening."
+    )
+    wc = len(text.split())
+    return {
+        "abstract_text": text,
+        "word_count": wc,
+        "within_limit": bool(wc <= 300),
+    }
+
+# To-Do 36.6
+def audit_manuscript_reproducibility(release_dir):
+    """Audit release_dir for all 6 required submission artifacts."""
+    required = sorted([
+        "MODEL_CARD.md", "fairness_audit.json", "leaderboard.csv",
+        "manifest.json", "model.joblib", "table1.csv",
+    ])
+    root = Path(release_dir)
+    present = sorted(f for f in required if (root / f).is_file())
+    missing = sorted(f for f in required if not (root / f).is_file())
+    return {
+        "present": present,
+        "missing": missing,
+        "ready_for_submission": len(missing) == 0,
+    }
+```
+
+### C. Annotated Solutions — Grand Book Finale Capstone Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+import hashlib
+import json
+import joblib
+import statsmodels.api as sm
+from sklearn.metrics import roc_curve
+
+# Exam Task 36.1 (30 pts)
+def full_table1_and_adjusted_or(mch_df):
+    """Produce Journal Table 1 and multivariable adjusted ORs."""
+    table1 = build_publication_table1(mch_df)
+    df = clean_mch_survey(mch_df)
+    cc = df[["child_stunted"] + FEATURES].dropna()
+    X_sm = sm.add_constant(cc[FEATURES].astype(float))
+    res = sm.Logit(
+        cc["child_stunted"].astype(float), X_sm
+    ).fit(disp=False)
+    ci = res.conf_int()
+    rows = []
+    for feat in FEATURES:
+        rows.append({
+            "feature": feat,
+            "aor": round(float(np.exp(res.params[feat])), 4),
+            "ci_low": round(float(np.exp(ci.loc[feat, 0])), 4),
+            "ci_high": round(float(np.exp(ci.loc[feat, 1])), 4),
+            "p_value": round(float(res.pvalues[feat]), 4),
+        })
+    return {
+        "table1": table1,
+        "adjusted_ors": pd.DataFrame(rows),
+        "n_analytic": int(len(cc)),
+    }
+
+# Exam Task 36.2 (35 pts)
+def capstone_ml_dl_fairness_pipeline(mch_df, seed=42):
+    """Benchmark LR/HGB/PyTorch MLP + OOF fairness + DCA."""
+    df = clean_mch_survey(mch_df)
+    X = df[FEATURES].astype(float)
+    y = df["child_stunted"].to_numpy()
+    groups = df["cluster_id"].to_numpy()
+    gkf = GroupKFold(n_splits=5)
+
+    sk_builders = {
+        "LogisticRegression": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("scl", StandardScaler()),
+            ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+        ]),
+        "HistGradientBoostingClassifier": lambda: Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("clf", HistGradientBoostingClassifier(
+                max_iter=50, max_depth=3, random_state=seed
+            )),
+        ]),
+    }
+    rows, oof_map = [], {}
+    for name, make_pipe in sk_builders.items():
+        aucs, briers = [], []
+        oof = np.zeros(len(y), dtype=float)
+        for tr, va in gkf.split(X, y, groups):
+            pipe = make_pipe()
+            pipe.fit(X.iloc[tr], y[tr])
+            p = pipe.predict_proba(X.iloc[va])[:, 1]
+            oof[va] = p
+            aucs.append(roc_auc_score(y[va], p))
+            briers.append(brier_score_loss(y[va], p))
+        oof_map[name] = oof
+        rows.append({
+            "model": name,
+            "mean_auc": round(float(np.mean(aucs)), 4),
+            "std_auc": round(float(np.std(aucs)), 4),
+            "mean_brier": round(float(np.mean(briers)), 4),
+        })
+
+    torch.set_num_threads(1)
+    mlp_aucs, mlp_briers = [], []
+    oof_mlp = np.zeros(len(y), dtype=float)
+    for fold_i, (tr, va) in enumerate(gkf.split(X, y, groups)):
+        imp = SimpleImputer(strategy="median")
+        scl = StandardScaler()
+        X_tr_s = scl.fit_transform(imp.fit_transform(X.iloc[tr]))
+        X_va_s = scl.transform(imp.transform(X.iloc[va]))
+        torch.manual_seed(seed + fold_i)
+        net = nn.Sequential(
+            nn.Linear(X_tr_s.shape[1], 16),
+            nn.ReLU(),
+            nn.Linear(16, 1),
+        )
+        opt = torch.optim.Adam(net.parameters(), lr=0.02)
+        loss_fn = nn.BCEWithLogitsLoss()
+        xt = torch.tensor(X_tr_s, dtype=torch.float32)
+        yt_t = torch.tensor(y[tr], dtype=torch.float32).unsqueeze(1)
+        xv = torch.tensor(X_va_s, dtype=torch.float32)
+        net.train()
+        for _ in range(30):
+            opt.zero_grad()
+            loss_fn(net(xt), yt_t).backward()
+            opt.step()
+        net.eval()
+        with torch.no_grad():
+            p = torch.sigmoid(net(xv)).squeeze(-1).numpy()
+        oof_mlp[va] = p
+        mlp_aucs.append(roc_auc_score(y[va], p))
+        mlp_briers.append(brier_score_loss(y[va], p))
+    oof_map["PyTorch_MLP"] = oof_mlp
+    rows.append({
+        "model": "PyTorch_MLP",
+        "mean_auc": round(float(np.mean(mlp_aucs)), 4),
+        "std_auc": round(float(np.std(mlp_aucs)), 4),
+        "mean_brier": round(float(np.mean(mlp_briers)), 4),
+    })
+
+    lb = (
+        pd.DataFrame(rows)
+        .sort_values("mean_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+    winner = str(lb.loc[0, "model"])
+    oof_w = oof_map[winner]
+    fpr, tpr, thr = roc_curve(y, oof_w)
+    youden_t = float(thr[int(np.argmax(tpr - fpr))])
+    yhat = (oof_w >= youden_t).astype(int)
+    r_m = df["is_urban"].to_numpy() == 0
+    u_m = df["is_urban"].to_numpy() == 1
+    r_pos, u_pos = float(yhat[r_m].mean()), float(yhat[u_m].mean())
+    r_tpr = float(yhat[r_m & (y == 1)].mean())
+    u_tpr = float(yhat[u_m & (y == 1)].mean())
+    fair = {
+        "threshold": round(youden_t, 4),
+        "rural_pos_rate": round(r_pos, 4),
+        "urban_pos_rate": round(u_pos, 4),
+        "demographic_parity_diff": round(abs(r_pos - u_pos), 4),
+        "rural_tpr": round(r_tpr, 4),
+        "urban_tpr": round(u_tpr, 4),
+        "equal_opportunity_diff": round(abs(r_tpr - u_tpr), 4),
+    }
+    dca = compute_clinical_net_benefit(
+        y, oof_w, [0.10, 0.15, 0.20, 0.25, 0.30]
+    )
+    return {
+        "leaderboard": lb,
+        "winner": winner,
+        "fairness_gaps": fair,
+        "dca_table": dca,
+    }
+
+# Exam Task 36.3 (35 pts)
+def execute_first_paper_release(mch_df, release_dir, seed=42):
+    """Package and verify a complete publication release bundle."""
+    rel = Path(release_dir)
+    rel.mkdir(parents=True, exist_ok=True)
+
+    t1 = build_publication_table1(mch_df)
+    pipe_out = capstone_ml_dl_fairness_pipeline(mch_df, seed=seed)
+    lb = pipe_out["leaderboard"]
+    winner = str(pipe_out["winner"])
+    winner_auc = round(float(lb.loc[0, "mean_auc"]), 4)
+    fair = pipe_out["fairness_gaps"]
+
+    df = clean_mch_survey(mch_df)
+    X = df[FEATURES].astype(float)
+    y = df["child_stunted"].to_numpy()
+    final_pipe = Pipeline([
+        ("imp", SimpleImputer(strategy="median")),
+        ("scl", StandardScaler()),
+        ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+    ])
+    final_pipe.fit(X, y)
+
+    model_path = rel / "model.joblib"
+    joblib.dump(final_pipe, model_path)
+    sha256 = hashlib.sha256(model_path.read_bytes()).hexdigest()
+
+    t1.to_csv(rel / "table1.csv", index=False)
+    lb.to_csv(rel / "leaderboard.csv", index=False)
+    (rel / "fairness_audit.json").write_text(
+        json.dumps(fair, indent=2), encoding="utf-8"
+    )
+    (rel / "MODEL_CARD.md").write_text(
+        f"# First Paper Model Card\n\n"
+        f"- **Winner:** {winner} (Mean AUC={winner_auc:.4f})\n"
+        f"- **Equal Opportunity Diff:** "
+        f"{fair['equal_opportunity_diff']:.4f}\n",
+        encoding="utf-8",
+    )
+    (rel / "config.json").write_text(
+        json.dumps(
+            {"seed": seed, "features": FEATURES, "winner": winner},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (rel / "manifest.json").write_text(
+        json.dumps(
+            {"model.joblib": sha256, "winner": winner},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    audit = audit_manuscript_reproducibility(rel)
+    return {
+        "ready_for_submission": bool(audit["ready_for_submission"]),
+        "winner": winner,
+        "winner_auc": winner_auc,
+        "artifact_sha256": sha256,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 36 Failure Modes
+
+1. **Unnoticed Data & Target Leakage (`child_haz` or Global Preprocessing):** Including `child_haz` leaks `child_stunted` directly, while fitting `SimpleImputer` or `StandardScaler` outside `GroupKFold` leaks validation cluster distributions. Always restrict features strictly to pre-outcome predictors and wrap preprocessing inside each fold's `Pipeline` (or PyTorch fold loop).
+2. **Evaluating Fairness or DCA In-Sample Instead of Out-of-Fold:** Computing Youden's $J$, subgroup TPR gaps, or Decision Curve Analysis on training predictions hides overfitting and exaggerates clinical net benefit. Always audit strictly on out-of-fold or held-out predictions.
+3. **Leaving Unhashed Artifacts or Polluting the Working Tree:** Publishing model weights without a SHA-256 `manifest.json` breaks cryptographic reproducibility, while writing scratch exports directly into your repository root breaks CI cleanliness. Always hash `model.joblib` after `joblib.dump` and run test exports inside `tempfile.TemporaryDirectory()`.
+
+---
+
+::: {.callout-tip title="Author's Epilogue — You Have Arrived: From First Line to First Paper"}
+**Congratulations—you did it!**
+
+Thirty-six chapters ago, you opened a blank notebook and wrote your very first line of Python. Since then, you have climbed every rung of modern computational research without skipping a single foundation: clean Python architecture and error anatomy (**Parts I–II**), vectorized numerical computing and publication visualization (**Part III**), probability, biostatistics, and confounding-adjusted epidemiology (**Part IV**), leak-free scikit-learn pipelines and tree ensembles (**Part V**), PyTorch neural networks, CNNs, sequence models, Transformers, and LoRA (**Part VI**), and finally reproducible experiment engineering, fairness auditing, clinical Decision Curve Analysis, and cryptographic artifact releases (**Part VII**).
+
+You are no longer merely a consumer of black-box libraries or a passive reader of research papers. You can inspect a raw, messy real-world survey CSV, uncover its hidden sentinels and confounders, benchmark classical statistics beside modern deep learning with zero data leakage, challenge your own model's equity across vulnerable subgroups, quantify its real clinical net benefit, and hand peer reviewers a self-verifying, SHA-256-backed scientific artifact they can reproduce with a single click.
+
+Now close this textbook, open a fresh repository for the research question that keeps *you* awake at night, and write your first paper—rigorously, ethically, and reproducibly. The scientific community is waiting for your contribution.
+
+*With deepest pride and warm wishes for your research journey,*  
+**Mezanur Rahman Sharukh**
+:::

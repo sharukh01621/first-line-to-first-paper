@@ -1,0 +1,1080 @@
+# Designing Rigorous Experiments — Config-Driven Runs, Multi-Seed Benchmarks, and Ablation Studies {#sec-ch33}
+
+> **Chapter Mission:** Open **Part VII (Research Capstone — From Code to Peer-Reviewed Paper)** by replacing fragile, hand-edited notebooks with **reproducible, reviewer-proof experimental pipelines**. Using `mch_survey_sample`, you will lock random state across Python, NumPy, and PyTorch (`set_all_seeds`), drive every run from validated YAML specifications (`load_and_validate_config`), log immutable results into append-only JSONL ledgers (`append_experiment_ledger`), expose single-seed variance with multi-seed cross-validation (`multi_seed_cv_benchmark`), test model differences rigorously via **non-parametric bootstrap CIs**, **paired bootstrap tests**, and **exact McNemar's tests**, and prove which clinical feature domains drive prediction via systematic **feature-group ablation studies**.
+
+### Chapter Companion Notebooks (1-to-1 Mirrored in Google Colab) {.unnumbered}
+
+| Lab Type | Interactive Colab Notebook | Scan (Print) |
+| :--- | :--- | :---: |
+| **Walkthrough** | [ch33 / 01_walkthrough.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__01_walkthrough.png){width=58px} |
+| **Guided To-Dos** | [ch33 / 02_guided_todos.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__02_guided_todos.png){width=58px} |
+| **Coding Exam** | [ch33 / 03_coding_exam.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb) | ![](../assets/qr/part_07_research_capstone__ch33_reproducible_experiments_ablation__03_coding_exam.png){width=58px} |
+
+: {tbl-colwidths="[22,56,22]"}
+
+### Learning Objectives {.unnumbered}
+
+By the end of this chapter, you will be able to:
+
+1. Enforce bit-exact multi-library determinism across Python's `random`, `numpy.random`, and `torch.manual_seed` before any data split or parameter initialization.
+2. Replace hardcoded notebook magic numbers with validated YAML experiment configs (`yaml.safe_load`) and append-only UTF-8 JSONL experiment ledgers tested safely inside `tempfile.TemporaryDirectory()`.
+3. Quantify split and initialization variance via multi-seed cross-validation (`mean ± SD`, `min`, `max`), eliminating single-seed cherry-picking ("seed hacking").
+4. Compute non-parametric percentile **bootstrap confidence intervals** (`bootstrap_metric_ci`) and run **paired bootstrap** (`paired_bootstrap_test`) vs. **exact binomial McNemar** (`mcnemar_exact_comparison`) hypothesis tests on paired model predictions.
+5. Design and execute systematic **leave-one-group-out feature ablations** (`run_feature_ablation` and cluster-aware `GroupKFold` ablations) to isolate which clinical domains truly carry predictive signal.
+6. Distinguish statistically significant thresholded classification gains (McNemar) from continuous rank-order equivalence (paired bootstrap ROC-AUC) when writing Methods and Results sections.
+
+---
+
+## Stage 1 — First-Principles Intuition: Why Single-Seed Notebooks Fail Peer Review {#sec-ch33-intuition}
+
+Across Parts V and VI, you built classical ML pipelines and PyTorch neural architectures. Now imagine submitting your manuscript to *Nature Digital Medicine*, *The Lancet Digital Health*, or *NeurIPS*. Reviewer 2 asks three brutal questions:
+
+- *"You reported ROC-AUC = 0.7050 for Logistic Regression and 0.7010 for Random Forest on one split (`seed=7`). Does that 0.004 gap survive across five random seeds—and is it statistically significant?"*
+- *"Which clinical predictors actually drove your model—demographics, antenatal care access, socioeconomic wealth, or maternal nutrition? Show us a formal ablation table."*
+- *"Where are the exact configuration files and run logs that produced Table 2?"*
+
+Without an **experimental harness**, research code silently fails in four classic ways:
+
+- **Single-Seed Illusion ("Seed Hacking"):** On a 470-household survey, simply changing the `StratifiedKFold` seed from `7` to `84` swings Logistic Regression ROC-AUC from `0.7050` down to `0.6769`—a **2.8-point swing** caused purely by random fold assignment! Reporting one lucky seed mistakes noise for discovery.
+- **Unpaired or Bare-Number Comparisons:** Publishing `"Model B = 0.696, Model A = 0.695"` without confidence intervals or paired hypothesis tests hides huge sampling uncertainty ($\text{SE} \approx 0.035$ on $n = 470$). Worse, comparing two *independent* CIs throws away the massive statistical power gained by evaluating both models on the **exact same resampled patients** (paired bootstrap and McNemar's test).
+- **Hidden Hyperparameters & Overwritten Logs:** Editing `cv_splits = 5` to `3` in cell 14 without saving a YAML config or appending a JSONL ledger row makes last week's best table impossible to reproduce.
+- **Unproven Complexity (Missing Ablations):** Claiming that every collected biomarker improves prediction without a leave-one-group-out ablation study hides redundant or noisy covariates that actually *hurt* out-of-cluster generalization.
+
+::: {.callout-note title="Mental Model — Four Pillars of a Reviewer-Proof Experiment"}
+Treat every publishable ML study as an auditable laboratory protocol:
+
+1. **Declarative Spec (YAML + Multi-Library Seeds):** Every run begins from a validated YAML file and locked Python/NumPy/PyTorch seeds.
+2. **Multi-Seed Estimation:** Evaluate leak-free `Pipeline` factories across $S \ge 5$ seeds so you report `mean ± SD` alongside `[min, max]`.
+3. **Paired Statistical Verification:** Attach percentile bootstrap 95% CIs to every headline metric, and compare rival models on **identical test cohorts** via paired bootstrap (continuous scores) and exact McNemar's test (binary clinical decisions).
+4. **Systematic Ablation & Append-Only Ledger:** Drop one domain group at a time to measure $\Delta_{\text{AUC}} = \text{AUC}_{\text{drop}} - \text{AUC}_{\text{full}}$, and append every completed run to a durable `.jsonl` ledger.
+:::
+
+---
+
+## Stage 2 — Visual Mental Model: Config-Driven Multi-Seed Experiment & Ablation Loop {#sec-ch33-mental-model}
+
+Study the four stacked stages of a reproducible research harness—notice how validated configs and locked seeds flow strictly downward into multi-seed benchmarking, paired statistical testing, and append-only logging:
+
+```{mermaid}
+%%| echo: false
+%%| fig-width: 5.4
+%%| fig-align: center
+flowchart TD
+    subgraph S1["1. Config & Seeds"]
+        direction LR
+        C1["YAML Spec<br/>safe_load + Check"] --> C2["Lock All RNGs<br/>Py + NumPy + Torch"]
+    end
+    subgraph S2["2. Multi-Seed CV"]
+        direction LR
+        M1["Fresh Pipeline<br/>Scale + Model"] --> M2["Loop Over Seeds<br/>Mean +/- SD, Range"]
+    end
+    subgraph S3["3. Stats & Tests"]
+        direction LR
+        T1["Bootstrap 95% CI<br/>Skip 1-Class Draws"] --> T2["Paired Tests<br/>Boot Delta + McNemar"]
+    end
+    subgraph S4["4. Ablation & Log"]
+        direction LR
+        A1["Drop Feature Groups<br/>Delta vs Full AUC"] --> A2["JSONL Ledger<br/>Append UTF-8 Record"]
+    end
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+```
+
+Every box in this four-stage architecture corresponds directly to a reusable Python function you will build in Stage 3, test in Stage 5, and combine in the Stage 7 Coding Exam.
+
+::: {.callout-warning title="Two Subtle Experimental Traps to Guard Against"}
+1. **Python's `bool` Subclasses `int`:** Writing `isinstance(cv_splits, int)` returns `True` for `cv_splits: true` in YAML! Always validate integer config fields with `isinstance(v, int) and not isinstance(v, bool)`.
+2. **Degenerate Resamples & Zero Discordance:** On imbalanced clinical outcomes, a bootstrap resample can occasionally contain only class `0`, crashing `roc_auc_score` unless skipped (`len(np.unique(y_b)) < 2`). Similarly, exact McNemar (`binomtest(min(b, c), b + c, 0.5)`) crashes if `b + c == 0` unless you return `p_value = 1.0`.
+:::
+
+---
+
+## Stage 3 — Line-by-Line Code Walkthrough & Error Anatomy {#sec-ch33-walkthrough}
+
+Open `part_07_research_capstone/ch33_reproducible_experiments_ablation/01_walkthrough.ipynb` in Colab and run each cell top-to-bottom alongside the dissections below.
+
+### Setup: Cleaning `mch_survey_sample` for Reproducible Experiments {#sec-ch33-setup}
+
+```python
+import json
+from pathlib import Path
+import random
+import tempfile
+import numpy as np
+import pandas as pd
+from scipy.stats import binomtest
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import (
+    StratifiedKFold,
+    cross_val_predict,
+    cross_val_score,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import torch
+import yaml
+import sharukh_tutor as tutor
+
+mch_raw = tutor.load_data("mch_survey_sample", as_pandas=True)
+mch = mch_raw.copy()
+mch["residence"] = (
+    mch["residence"].astype(str).str.strip().str.title()
+)
+mch["anc_visits"] = mch["anc_visits"].replace(999, np.nan)
+mch["is_urban"] = (mch["residence"] == "Urban").astype(int)
+wealth_map = {
+    "Poorest": 1, "Poorer": 2, "Middle": 3,
+    "Richer": 4, "Richest": 5,
+}
+mch["wealth_rank"] = (
+    mch["wealth_quintile"].astype(str).str.strip()
+    .str.title().map(wealth_map)
+)
+feat_cols = [
+    "maternal_age_years", "is_urban", "anc_visits",
+    "wealth_rank", "maternal_hb_g_dl",
+]
+clean = (
+    mch[feat_cols + ["child_stunted", "cluster_id"]]
+    .dropna()
+    .reset_index(drop=True)
+)
+X = clean[feat_cols]
+y = clean["child_stunted"].astype(int)
+clusters = clean["cluster_id"]
+print("Clean MCH cohort:", clean.shape,
+      "| stunted:", int(y.sum()),
+      "| clusters:", clusters.nunique())
+```
+
+**Expected Output:**
+```text
+Clean MCH cohort: (470, 7) | stunted: 65 | clusters: 50
+```
+
+Removing the 8 sentinel `anc_visits == 999` entries and 22 missing hemoglobin rows yields **470 complete households across 50 DHS clusters** (`65` stunted children, $13.8\%$ prevalence). Notice we work strictly on `mch = mch_raw.copy()` and never use `inplace=True`.
+
+---
+
+### Multi-Library Deterministic Seed Control (`set_all_seeds`) {#sec-ch33-seeds}
+
+```python
+def set_all_seeds(seed=42):
+    """Lock Python, NumPy, and PyTorch RNGs and verify scalar draws."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    return {
+        "seed": int(seed),
+        "py_draw": round(float(random.random()), 6),
+        "np_draw": round(float(np.random.rand()), 6),
+        "torch_draw": round(float(torch.rand(1).item()), 6),
+    }
+
+run1 = set_all_seeds(42)
+run2 = set_all_seeds(42)
+run3 = set_all_seeds(101)
+print("Run 1 (seed=42): ", run1)
+print("Run 2 (seed=42): ", run2)
+print("Bit-exact match?:", run1 == run2)
+print("Run 3 (seed=101):", run3)
+```
+
+**Expected Output:**
+```text
+Run 1 (seed=42):  {'seed': 42, 'py_draw': 0.639427, 'np_draw': 0.37454, 'torch_draw': 0.882269}
+Run 2 (seed=42):  {'seed': 42, 'py_draw': 0.639427, 'np_draw': 0.37454, 'torch_draw': 0.882269}
+Bit-exact match?: True
+Run 3 (seed=101): {'seed': 101, 'py_draw': 0.581152, 'np_draw': 0.516399, 'torch_draw': 0.198049}
+```
+
+Why lock **all three** generators? A modern research script mixes Python's `random` (data augmentation lists), NumPy (bootstrap indices and Scikit-Learn internals), and PyTorch (neural weight initialization and `DataLoader` shuffling). Returning one scalar draw from each engine serves as a lightweight **reproducibility fingerprint** you can print at the top of every job log.
+
+---
+
+### Config-Driven Runs With YAML & Append-Only JSONL Ledgers {#sec-ch33-yaml-ledger}
+
+```python
+def load_and_validate_config(yaml_path):
+    """Load YAML config and validate required experiment fields."""
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError("Config YAML must be a mapping.")
+    required = {"experiment_name", "seeds", "model_type", "cv_splits"}
+    missing = required - set(cfg.keys())
+    if missing:
+        raise ValueError(
+            f"Missing required config keys: {sorted(missing)}"
+        )
+    seeds = cfg["seeds"]
+    valid_seeds = (
+        isinstance(seeds, list)
+        and len(seeds) > 0
+        and all(
+            isinstance(s, int) and not isinstance(s, bool)
+            for s in seeds
+        )
+    )
+    if not valid_seeds:
+        raise ValueError("seeds must be a non-empty list of ints.")
+    cv = cfg["cv_splits"]
+    if not isinstance(cv, int) or isinstance(cv, bool) or cv < 2:
+        raise ValueError("cv_splits must be an integer >= 2.")
+    return cfg
+
+def append_experiment_ledger(ledger_path, run_record):
+    """Append one UTF-8 JSON line and return total non-empty lines."""
+    path = Path(ledger_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(run_record, sort_keys=True) + "\n")
+    with open(path, "r", encoding="utf-8") as f:
+        return int(sum(1 for line in f if line.strip()))
+
+sample_cfg = {
+    "experiment_name": "mch_stunting_lr_v1",
+    "seeds": [7, 21, 42, 84, 105],
+    "model_type": "logistic_regression",
+    "cv_splits": 5,
+}
+with tempfile.TemporaryDirectory() as tmpdir:
+    cfg_file = Path(tmpdir) / "exp_lr.yaml"
+    ledger_file = Path(tmpdir) / "experiments.jsonl"
+    cfg_file.write_text(
+        yaml.safe_dump(sample_cfg, sort_keys=False), encoding="utf-8"
+    )
+    cfg = load_and_validate_config(cfg_file)
+    n1 = append_experiment_ledger(
+        ledger_file, {"exp": cfg["experiment_name"], "auc": 0.6942}
+    )
+    n2 = append_experiment_ledger(
+        ledger_file, {"exp": "mch_stunting_rf_v1", "auc": 0.6998}
+    )
+    last_ln = ledger_file.read_text(encoding="utf-8").splitlines()[-1]
+    print("Validated:", cfg["experiment_name"], "| seeds:", cfg["seeds"])
+    print("Ledger entries after 2 runs:", n2)
+    print("Last JSONL line:", last_ln)
+```
+
+**Expected Output:**
+```text
+Validated: mch_stunting_lr_v1 | seeds: [7, 21, 42, 84, 105]
+Ledger entries after 2 runs: 2
+Last JSONL line: {"auc": 0.6998, "exp": "mch_stunting_rf_v1"}
+```
+
+Notice three production engineering habits working together:
+
+- **`yaml.safe_load` + Fail-Fast Schema Check:** Bad configs (`cv_splits: 1`, empty `seeds`, or typos in key names) fail in millisecond 1—never after 4 hours of GPU training.
+- **Append-Only JSONL (`sort_keys=True`):** Unlike a single giant JSON array (which corrupts if a job dies mid-write), JSON Lines appends one atomic line per run and loads directly into Pandas via `pd.read_json("experiments.jsonl", lines=True)`.
+- **`tempfile.TemporaryDirectory()`:** Keeps unit tests and walkthrough demos 100% isolated so stray `.yaml` or `.jsonl` files never pollute Git.
+
+---
+
+### Multi-Seed Cross-Validation Reporting (`multi_seed_cv_benchmark`) {#sec-ch33-multiseed}
+
+```python
+def multi_seed_cv_benchmark(
+    X_in, y_in, model_factory, seeds, cv_splits=5
+):
+    """Benchmark a model factory across multiple CV split seeds."""
+    raw = []
+    for s in seeds:
+        skf = StratifiedKFold(
+            n_splits=cv_splits, shuffle=True, random_state=s
+        )
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model_factory()),
+        ])
+        sc = cross_val_score(pipe, X_in, y_in, cv=skf, scoring="roc_auc")
+        raw.append(float(sc.mean()))
+    return {
+        "n_seeds": int(len(seeds)),
+        "mean_auc": round(float(np.mean(raw)), 4),
+        "std_auc": round(float(np.std(raw)), 4),
+        "min_auc": round(float(np.min(raw)), 4),
+        "max_auc": round(float(np.max(raw)), 4),
+        "seed_scores": [round(v, 4) for v in raw],
+    }
+
+seeds5 = [7, 21, 42, 84, 105]
+lr_bench = multi_seed_cv_benchmark(
+    X, y, lambda: LogisticRegression(max_iter=500), seeds5
+)
+rf_bench = multi_seed_cv_benchmark(
+    X, y,
+    lambda: RandomForestClassifier(
+        n_estimators=80, max_depth=5, random_state=42
+    ),
+    seeds5,
+)
+print("LR 5-seed:", lr_bench)
+print("RF 5-seed:", rf_bench)
+```
+
+**Expected Output:**
+```text
+LR 5-seed: {'n_seeds': 5, 'mean_auc': 0.6942, 'std_auc': 0.0098, 'min_auc': 0.6769, 'max_auc': 0.705, 'seed_scores': [0.705, 0.6976, 0.691, 0.6769, 0.7007]}
+RF 5-seed: {'n_seeds': 5, 'mean_auc': 0.6998, 'std_auc': 0.0056, 'min_auc': 0.6918, 'max_auc': 0.7081, 'seed_scores': [0.7026, 0.6955, 0.701, 0.6918, 0.7081]}
+```
+
+Look closely at those five seeds for Logistic Regression: `[0.7050, 0.6976, 0.6910, 0.6769, 0.7007]`. If a researcher tested only `seed=7` (`0.7050`) vs. `seed=21` (`0.6976`), LR looks ahead of RF (`0.7026` / `0.6955`); on `seed=84` (`0.6769`), LR trails RF (`0.6918`) by `0.015`! Across all 5 seeds, their distributions overlap heavily (`0.6942 ± 0.0098` vs. `0.6998 ± 0.0056`). That leads directly to formal statistical testing.
+
+---
+
+### Bootstrap CIs, Paired Bootstrap & Exact McNemar Comparison {#sec-ch33-stats}
+
+```python
+def bootstrap_metric_ci(
+    y_true, y_score, metric_fn, n_boot=300, alpha=0.05, seed=42
+):
+    """Compute non-parametric percentile bootstrap CI & SE."""
+    yt, ys = np.asarray(y_true), np.asarray(y_score)
+    point = float(metric_fn(yt, ys))
+    rng = np.random.default_rng(seed)
+    boots = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, len(yt), size=len(yt))
+        if len(np.unique(yt[idx])) < 2:
+            continue
+        boots.append(float(metric_fn(yt[idx], ys[idx])))
+    lo, hi = np.percentile(
+        boots, [100 * alpha / 2, 100 * (1 - alpha / 2)]
+    )
+    return {
+        "point": round(point, 4),
+        "ci_low": round(float(lo), 4),
+        "ci_high": round(float(hi), 4),
+        "se": round(float(np.std(boots, ddof=1)), 4),
+    }
+
+def paired_bootstrap_test(
+    y_true, score_a, score_b, metric_fn, n_boot=400, seed=42
+):
+    """Run paired bootstrap test of metric(B) - metric(A)."""
+    yt, sa, sb = (
+        np.asarray(y_true), np.asarray(score_a), np.asarray(score_b)
+    )
+    delta_pt = float(metric_fn(yt, sb) - metric_fn(yt, sa))
+    rng = np.random.default_rng(seed)
+    deltas = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, len(yt), size=len(yt))
+        if len(np.unique(yt[idx])) < 2:
+            continue
+        d = float(
+            metric_fn(yt[idx], sb[idx]) - metric_fn(yt[idx], sa[idx])
+        )
+        deltas.append(d)
+    arr = np.asarray(deltas)
+    lo, hi = np.percentile(arr, [2.5, 97.5])
+    p_raw = 2.0 * min(float(np.mean(arr <= 0)), float(np.mean(arr >= 0)))
+    p_val = float(np.clip(p_raw, 0.0, 1.0))
+    return {
+        "delta_point": round(delta_pt, 4),
+        "ci_low": round(float(lo), 4),
+        "ci_high": round(float(hi), 4),
+        "p_value_two_sided": round(p_val, 4),
+    }
+
+def mcnemar_exact_comparison(y_true, pred_a, pred_b):
+    """Run exact binomial McNemar test on paired binary predictions."""
+    yt, pa, pb = (
+        np.asarray(y_true), np.asarray(pred_a), np.asarray(pred_b)
+    )
+    a_ok, b_ok = (pa == yt), (pb == yt)
+    b = int(np.sum(a_ok & ~b_ok))
+    c = int(np.sum(~a_ok & b_ok))
+    p_val = (
+        1.0 if (b + c) == 0
+        else float(binomtest(min(b, c), b + c, 0.5).pvalue)
+    )
+    return {
+        "b_only_a_correct": b,
+        "c_only_b_correct": c,
+        "p_value": round(p_val, 4),
+        "significant_05": bool(p_val < 0.05),
+    }
+
+skf_oof = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+pipe_lr = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LogisticRegression(max_iter=500)),
+])
+pipe_rf = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", RandomForestClassifier(
+        n_estimators=80, max_depth=5, random_state=42
+    )),
+])
+prob_lr = cross_val_predict(
+    pipe_lr, X, y, cv=skf_oof, method="predict_proba"
+)[:, 1]
+prob_rf = cross_val_predict(
+    pipe_rf, X, y, cv=skf_oof, method="predict_proba"
+)[:, 1]
+print("LR 95% CI:", bootstrap_metric_ci(y, prob_lr, roc_auc_score))
+print("RF 95% CI:", bootstrap_metric_ci(y, prob_rf, roc_auc_score))
+print(
+    "Paired Bootstrap (LR - RF):",
+    paired_bootstrap_test(y, prob_rf, prob_lr, roc_auc_score),
+)
+pred_rf = (prob_rf >= 0.25).astype(int)
+pred_lr = (prob_lr >= 0.25).astype(int)
+print(
+    "McNemar Exact (RF vs LR @ t=0.25):",
+    mcnemar_exact_comparison(y, pred_rf, pred_lr),
+)
+```
+
+**Expected Output:**
+```text
+LR 95% CI: {'point': 0.6949, 'ci_low': 0.6259, 'ci_high': 0.7621, 'se': 0.0368}
+RF 95% CI: {'point': 0.6963, 'ci_low': 0.6315, 'ci_high': 0.7631, 'se': 0.0337}
+Paired Bootstrap (LR - RF): {'delta_point': -0.0014, 'ci_low': -0.0435, 'ci_high': 0.04, 'p_value_two_sided': 0.96}
+McNemar Exact (RF vs LR @ t=0.25): {'b_only_a_correct': 19, 'c_only_b_correct': 37, 'p_value': 0.0222, 'significant_05': True}
+```
+
+Pause and appreciate this remarkable empirical contrast:
+
+- **Individual 95% CIs Are Wide:** Both LR (`[0.6259, 0.7621]`) and RF (`[0.6315, 0.7631]`) span roughly $\pm 0.068$ AUC due to cohort size ($n = 470$).
+- **Paired Bootstrap Cancels Cohort Variance:** On identical resampled patients, the difference $\Delta_{\text{AUC}} = \text{AUC}_{\text{LR}} - \text{AUC}_{\text{RF}} = -0.0014$ has a much narrower 95% CI (`[-0.0435, 0.0400]`) and $p = 0.96$—confirming **zero statistically significant difference in continuous ranking**.
+- **Exact McNemar Separates Clinical Decisions at $t = 0.25$:** When both models issue binary screening referrals at risk threshold $t = 0.25$, they disagree on $19 + 37 = 56$ households—and LR wins `37` vs. RF's `19` ($p = 0.0222 < 0.05$)! Ranking equivalence (ROC-AUC) does **not** imply thresholded accuracy equivalence because probability calibration differs across model families.
+
+---
+
+### Systematic Feature-Group Ablation Study (`run_feature_ablation`) {#sec-ch33-ablation}
+
+```python
+def run_feature_ablation(
+    X_df, y_in, feature_groups, model_factory, cv_splits=5, seed=42
+):
+    """Run leave-one-group-out feature ablation under Stratified CV."""
+    skf = StratifiedKFold(
+        n_splits=cv_splits, shuffle=True, random_state=seed
+    )
+    pipe_full = Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", model_factory()),
+    ])
+    full_sc = cross_val_score(
+        pipe_full, X_df, y_in, cv=skf, scoring="roc_auc"
+    )
+    full_auc = float(full_sc.mean())
+    rows = [{
+        "ablation": "full_model",
+        "mean_auc": round(full_auc, 4),
+        "std_auc": round(float(full_sc.std()), 4),
+        "delta_vs_full": 0.0,
+    }]
+    for gname, cols in feature_groups.items():
+        pipe_g = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model_factory()),
+        ])
+        sc = cross_val_score(
+            pipe_g, X_df.drop(columns=cols), y_in,
+            cv=skf, scoring="roc_auc",
+        )
+        m = float(sc.mean())
+        rows.append({
+            "ablation": f"drop_{gname}",
+            "mean_auc": round(m, 4),
+            "std_auc": round(float(sc.std()), 4),
+            "delta_vs_full": round(m - full_auc, 4),
+        })
+    return pd.DataFrame(rows)
+
+feature_groups = {
+    "demographics": ["maternal_age_years", "is_urban"],
+    "care_access": ["anc_visits"],
+    "socioeconomic": ["wealth_rank"],
+    "nutrition": ["maternal_hb_g_dl"],
+}
+ablation_df = run_feature_ablation(
+    X, y, feature_groups,
+    lambda: LogisticRegression(max_iter=500),
+    cv_splits=5, seed=42,
+)
+print(ablation_df.to_string(index=False))
+```
+
+**Expected Output:**
+```text
+          ablation  mean_auc  std_auc  delta_vs_full
+        full_model    0.6910   0.0448         0.0000
+ drop_demographics    0.7051   0.0400         0.0142
+  drop_care_access    0.6929   0.0452         0.0019
+drop_socioeconomic    0.6232   0.0394        -0.0678
+    drop_nutrition    0.6937   0.0554         0.0028
+```
+
+Read that ablation table like a senior epidemiologist:
+
+- Dropping `socioeconomic` (`wealth_rank`) triggers a massive **`-0.0678` ROC-AUC collapse** (`0.6910 -> 0.6232`), proving household wealth is the single indispensable predictor of child stunting in this cohort.
+- Dropping `demographics` (`maternal_age_years`, `is_urban`) actually **improves** cross-validated AUC (`+0.0142`, `0.6910 -> 0.7051`) while shrinking fold SD (`0.0448 -> 0.0400`)—evidence that weak covariates add variance in modest-$N$ linear models!
+
+---
+
+### Break It On Purpose! (Experiment Harness Error Anatomy) {#sec-ch33-errors}
+
+::: {.callout-important title="Break It On Purpose #1 — ValueError (YAML Config Missing Required Keys)"}
+```python
+with tempfile.TemporaryDirectory() as tmpdir:
+    bad_cfg = Path(tmpdir) / "missing_keys.yaml"
+    bad_cfg.write_text(
+        "experiment_name: incomplete_run\nseeds: [42]\n",
+        encoding="utf-8",
+    )
+    load_and_validate_config(bad_cfg)
+```
+**Python's Traceback:**
+```text
+ValueError: Missing required config keys: ['cv_splits', 'model_type']
+```
+**Diagnosis:** Without upfront schema validation, a missing key like `cv_splits` surfaces as a cryptic `KeyError` deep inside a training loop hours later.  
+**Fix:** Always validate the required key set `{"experiment_name", "seeds", "model_type", "cv_splits"}` immediately upon calling `yaml.safe_load`.
+:::
+
+::: {.callout-important title="Break It On Purpose #2 — ValueError (Empty `seeds` List or `cv_splits < 2`)"}
+```python
+with tempfile.TemporaryDirectory() as tmpdir:
+    bad_seeds = Path(tmpdir) / "empty_seeds.yaml"
+    bad_seeds.write_text(
+        "experiment_name: bad\nseeds: []\n"
+        "model_type: lr\ncv_splits: 1\n",
+        encoding="utf-8",
+    )
+    load_and_validate_config(bad_seeds)
+```
+**Python's Traceback:**
+```text
+ValueError: seeds must be a non-empty list of ints.
+```
+**Diagnosis:** An empty `seeds` list produces `NaN` means in `np.mean([])`, while `cv_splits: 1` crashes `StratifiedKFold` (cross-validation requires at least 2 folds).  
+**Fix:** Enforce `len(seeds) > 0` with strict integer elements (rejecting `bool`) and `cv_splits >= 2` inside `load_and_validate_config`.
+:::
+
+::: {.callout-important title="Break It On Purpose #3 — KeyError (Dropping a Non-Existent Feature Column During Ablation)"}
+```python
+bad_groups = {"typo_nutrition": ["maternal_bmi"]}
+run_feature_ablation(
+    X, y, bad_groups, lambda: LogisticRegression(max_iter=500)
+)
+```
+**Python's Traceback:**
+```text
+KeyError: "['maternal_bmi'] not found in axis"
+```
+**Diagnosis:** A single misspelled column name (`"maternal_bmi"` instead of `"maternal_hb_g_dl"`) aborts `X_df.drop(columns=cols)`. Never silence this with `errors="ignore"`—silently ignoring a typo would evaluate the full model under a fake `"drop_typo_nutrition"` label!  
+**Fix:** Verify every column in `feature_groups` exists in `X_df.columns` before launching an ablation sweep.
+:::
+
+---
+
+## Stage 4 — The Researcher's Problem-Structuring Blueprint {#sec-ch33-blueprint}
+
+**Scenario:** Your research group needs a single reproducible audit function `run_reproducible_study(raw_df, config_dict)` that takes raw `mch_survey_sample` and an experiment configuration, writes and validates a YAML spec inside a clean temporary directory, locks all RNGs, benchmarks `LogisticRegression` vs. `RandomForestClassifier` across every configured seed, computes an out-of-fold paired bootstrap test and leave-one-group-out ablation table, and records the final run in a JSONL ledger without leaving a single stray file behind.
+
+### Blueprint (Completed on Paper Before Coding)
+
+1. **Data Hygiene Layer (Zero Mutation):**
+
+   - Copy `raw_df`, standardize `residence`, replace `anc_visits == 999` with `np.nan`, derive `is_urban` and `wealth_rank` (`1..5`), and drop incomplete rows across the 5 features + `child_stunted`.
+
+2. **Isolated Temp Directory & Spec Validation:**
+
+   - Inside `with tempfile.TemporaryDirectory() as tmpdir:`, serialize `config_dict` to `study_config.yaml`, reload via `load_and_validate_config`, and lock RNGs with `set_all_seeds(cfg["seeds"][0])`.
+
+3. **Benchmark, Paired Test, Ablation & Ledger Append:**
+
+   - Run `multi_seed_cv_benchmark` for LR and RF across `cfg["seeds"]`.
+   - Compute out-of-fold probabilities via `cross_val_predict` and compare via `paired_bootstrap_test`.
+   - Run `run_feature_ablation` across the 4 clinical domains, extract the group with the most negative `delta_vs_full`, append the summary dictionary to `study_ledger.jsonl` via `append_experiment_ledger`, and return the audited record.
+
+### Clean Python Implementation (Verbatim in `01_walkthrough.ipynb`)
+
+```python
+def run_reproducible_study(raw_df, config_dict):
+    """Execute config-driven benchmark, paired test & ablation."""
+    df = raw_df.copy()
+    df["residence"] = (
+        df["residence"].astype(str).str.strip().str.title()
+    )
+    df["anc_visits"] = df["anc_visits"].replace(999, np.nan)
+    df["is_urban"] = (df["residence"] == "Urban").astype(int)
+    w_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    df["wealth_rank"] = (
+        df["wealth_quintile"].astype(str).str.strip()
+        .str.title().map(w_map)
+    )
+    f_groups = {
+        "demographics": ["maternal_age_years", "is_urban"],
+        "care_access": ["anc_visits"],
+        "socioeconomic": ["wealth_rank"],
+        "nutrition": ["maternal_hb_g_dl"],
+    }
+    cols = [c for g in f_groups.values() for c in g]
+    cln = df[cols + ["child_stunted"]].dropna().reset_index(drop=True)
+    X_c, y_c = cln[cols], cln["child_stunted"].astype(int)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg_path = Path(tmpdir) / "study_config.yaml"
+        led_path = Path(tmpdir) / "study_ledger.jsonl"
+        cfg_path.write_text(
+            yaml.safe_dump(config_dict, sort_keys=False),
+            encoding="utf-8",
+        )
+        cfg = load_and_validate_config(cfg_path)
+        s0 = cfg["seeds"][0]
+        set_all_seeds(s0)
+
+        lr_res = multi_seed_cv_benchmark(
+            X_c, y_c, lambda: LogisticRegression(max_iter=500),
+            cfg["seeds"], cv_splits=cfg["cv_splits"],
+        )
+        rf_res = multi_seed_cv_benchmark(
+            X_c, y_c,
+            lambda: RandomForestClassifier(
+                n_estimators=80, max_depth=5, random_state=s0
+            ),
+            cfg["seeds"], cv_splits=cfg["cv_splits"],
+        )
+        cv_oof = StratifiedKFold(
+            n_splits=cfg["cv_splits"], shuffle=True, random_state=s0
+        )
+        p_lr = cross_val_predict(
+            Pipeline([
+                ("scaler", StandardScaler()),
+                ("model", LogisticRegression(max_iter=500)),
+            ]),
+            X_c, y_c, cv=cv_oof, method="predict_proba",
+        )[:, 1]
+        p_rf = cross_val_predict(
+            Pipeline([
+                ("scaler", StandardScaler()),
+                ("model", RandomForestClassifier(
+                    n_estimators=80, max_depth=5, random_state=s0
+                )),
+            ]),
+            X_c, y_c, cv=cv_oof, method="predict_proba",
+        )[:, 1]
+        pb = paired_bootstrap_test(
+            y_c, p_rf, p_lr, roc_auc_score, seed=s0
+        )
+        ab = run_feature_ablation(
+            X_c, y_c, f_groups,
+            lambda: LogisticRegression(max_iter=500),
+            cv_splits=cfg["cv_splits"], seed=s0,
+        )
+        drops = ab[ab["ablation"] != "full_model"]
+        top_grp = str(
+            drops.loc[drops["delta_vs_full"].idxmin(), "ablation"]
+        ).removeprefix("drop_")
+        rec = {
+            "experiment_name": cfg["experiment_name"],
+            "lr_mean_auc": lr_res["mean_auc"],
+            "rf_mean_auc": rf_res["mean_auc"],
+            "paired_delta": pb["delta_point"],
+            "paired_p_value": pb["p_value_two_sided"],
+            "most_critical_group": top_grp,
+        }
+        rec["ledger_entries"] = append_experiment_ledger(led_path, rec)
+        return rec
+
+study_cfg = {
+    "experiment_name": "ch33_mch_stunting_audit",
+    "seeds": [7, 21, 42, 84, 105],
+    "model_type": "logistic_vs_rf",
+    "cv_splits": 5,
+}
+print(run_reproducible_study(mch_raw, study_cfg))
+```
+
+**Output:**
+```text
+{'experiment_name': 'ch33_mch_stunting_audit', 'lr_mean_auc': 0.6942, 'rf_mean_auc': 0.6967, 'paired_delta': 0.0245, 'paired_p_value': 0.23, 'most_critical_group': 'socioeconomic', 'ledger_entries': 1}
+```
+
+---
+
+## Stage 5 — Guided "To-Do" Practice Labs {#sec-ch33-todos}
+
+Open `part_07_research_capstone/ch33_reproducible_experiments_ablation/02_guided_todos.ipynb` in Google Colab, run **Step 0** to activate `sharukh-tutor`, and implement all six reproducible-experiment building blocks below. Pass each **function name (without parentheses!)** to `tutor.check(...)`.
+
+- **To-Do 33.1 (`set_all_seeds(seed=42)`):** Seed `random`, `np.random`, and `torch`, draw one scalar from each (`random.random()`, `float(np.random.rand())`, `float(torch.rand(1).item())`), and return `{"seed": int(seed), "py_draw": round6, "np_draw": round6, "torch_draw": round6}`.
+- **To-Do 33.2 (`load_and_validate_config(yaml_path)`):** Parse YAML via `yaml.safe_load`, verify it is a `dict` containing `{"experiment_name", "seeds", "model_type", "cv_splits"}`, confirm `seeds` is a non-empty list of ints (no booleans) and `cv_splits >= 2`, raising `ValueError` otherwise, and return the dict.
+- **To-Do 33.3 (`bootstrap_metric_ci(y_true, y_score, metric_fn, n_boot=300, alpha=0.05, seed=42)`):** Compute `point`, run `n_boot` bootstrap resamples via `np.random.default_rng(seed)` skipping single-class resamples, compute percentile CI `[alpha/2, 1 - alpha/2]` and bootstrap SD `se`, and return `{"point": round4, "ci_low": round4, "ci_high": round4, "se": round4}`.
+- **To-Do 33.4 (`paired_bootstrap_test(y_true, score_a, score_b, metric_fn, n_boot=400, seed=42)`):** On identical bootstrap indices, compute `delta_i = metric_fn(y_b, sb_b) - metric_fn(y_b, sa_b)`, `delta_point`, 95% CI, and two-sided bootstrap p-value `2 * min(mean(deltas <= 0), mean(deltas >= 0))` clipped to `[0.0, 1.0]`, returning `{"delta_point": round4, "ci_low": round4, "ci_high": round4, "p_value_two_sided": round4}`.
+- **To-Do 33.5 (`run_feature_ablation(X_df, y, feature_groups, model_factory, cv_splits=5, seed=42)`):** Evaluate `"full_model"` then `"drop_<group_name>"` using `Pipeline([("scaler", StandardScaler()), ("model", model_factory())])` + `StratifiedKFold(cv_splits, shuffle=True, random_state=seed)` scoring `roc_auc`, returning a DataFrame `["ablation", "mean_auc", "std_auc", "delta_vs_full"]` rounded to 4 decimals (`delta_vs_full = mean_auc - full_auc`).
+- **To-Do 33.6 (`append_experiment_ledger(ledger_path, run_record)`):** Append one UTF-8 JSON line (`json.dumps(run_record, sort_keys=True) + "\n"`) to `ledger_path` and return the total non-empty line count as an `int`.
+
+---
+
+## Stage 6 — Concept & Execution Trace Test (No Computer Allowed!) {#sec-ch33-test}
+
+Work through all 10 experimental-design and statistical reasoning questions on paper before checking Stage 8:
+
+1. **Why Seed Three Separate Libraries:** You call `np.random.seed(42)` at the top of a PyTorch + Scikit-Learn script, yet two runs produce slightly different neural network losses. What two other RNG states remained unseeded?
+2. **YAML Safety (`safe_load` vs. `load`):** Why is `yaml.safe_load` mandatory over `yaml.load` when loading experiment configurations shared by collaborators or downloaded from GitHub?
+3. **The Python `bool` Subclass Trap:** Suppose a YAML file contains `cv_splits: true`. What does `isinstance(cfg["cv_splits"], int)` evaluate to in Python, and how do you guard against it?
+4. **Why Paired Bootstrap Beats Unpaired CIs:** Model A has 95% AUC CI `[0.63, 0.76]` and Model B has `[0.65, 0.78]`. The two intervals overlap heavily—does that automatically mean $p > 0.05$ in a paired bootstrap test? Explain why or why not!
+5. **Two-Sided Bootstrap p-Value Clipping:** Two models produce identical risk scores (`score_a == score_b`), so every bootstrap difference is $\Delta_i = 0.0$. What does `2 * min(mean(deltas <= 0), mean(deltas >= 0))` equal *before* clipping, and why must you clip to `[0.0, 1.0]`?
+6. **Exact McNemar Contingency Table:** On 100 test patients, both models are right on 60 patients, both are wrong on 15, only Model A is right on `b = 5`, and only Model B is right on `c = 20`. Which two counts enter `binomtest`, and what is the null success probability $p_0$?
+7. **Rank-Order vs. Binary Decision Divergence:** How can Model A and Model B have nearly identical ROC-AUC ($\Delta = -0.0014$, paired bootstrap $p = 0.96$) while exact McNemar's test at threshold $t = 0.25$ yields $p = 0.0222$?
+8. **Reading a Positive Ablation Delta:** In `run_feature_ablation`, `"drop_demographics"` produces `delta_vs_full = +0.0142`. What does a **positive** delta mean scientifically?
+9. **Why `errors="ignore"` Is Dangerous in Ablations:** A teammate writes `X_df.drop(columns=cols, errors="ignore")` inside an ablation loop. What silent scientific bug occurs if `"maternal_hb_g_dl"` is misspelled as `"maternal_hb"`?
+10. **JSONL vs. Single JSON Array Ledgers:** Why do ML engineering teams prefer append-only `.jsonl` files (`one JSON object per line`) over reading, mutating, and rewriting one giant `experiments.json` list during a 50-run sweep?
+
+---
+
+## Stage 7 — Chapter 33 Coding Exam (100 Points) {#sec-ch33-exam}
+
+Open `part_07_research_capstone/ch33_reproducible_experiments_ablation/03_coding_exam.ipynb`, implement all three functions, and run `tutor.check_exam("ch33", exam_submissions)` to earn your Chapter 33 score out of 100 points.
+
+### Exam Task 33.1 (30 Points): `multi_seed_cv_benchmark(X, y, model_factory, seeds, cv_splits=4)`
+
+For every seed `s` in `seeds`:
+
+- Build `StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=s)` and a fresh leak-free `Pipeline([("scaler", StandardScaler()), ("model", model_factory())])`.
+- Score with `cross_val_score(..., scoring="roc_auc")` and record each seed's mean AUC.
+- Return `{"n_seeds": int, "mean_auc": round4, "std_auc": round4, "min_auc": round4, "max_auc": round4, "seed_scores": list_round4}`.
+
+### Exam Task 33.2 (35 Points): `mcnemar_exact_comparison(y_true, pred_a, pred_b)`
+
+Compare paired binary predictions `pred_a` and `pred_b` against `y_true`:
+
+- Count `b` = examples where A is right and B is wrong; `c` = examples where A is wrong and B is right.
+- Compute the exact two-sided binomial p-value via `scipy.stats.binomtest(min(b, c), b + c, 0.5).pvalue`—or return `1.0` when `b + c == 0`.
+- Return `{"b_only_a_correct": int, "c_only_b_correct": int, "p_value": round4, "significant_05": bool}`.
+
+### Exam Task 33.3 (35 Points): `mch_ablation_study_report(mch_df, seed=42)`
+
+Without mutating `mch_df`:
+
+- Clean `mch_survey_sample`: standardize `residence` (`str.strip().str.title()`), derive `is_urban = (work["residence"] == "Urban").astype(int)`, map `wealth_quintile` (`Poorest: 1 .. Richest: 5`) to `wealth_rank`, replace `anc_visits == 999` with `np.nan`, and drop incomplete rows across the 5 features + `child_stunted` + `cluster_id`.
+- Define feature groups `demographics=["maternal_age_years", "is_urban"]`, `care_access=["anc_visits"]`, `socioeconomic=["wealth_rank"]`, and `nutrition=["maternal_hb_g_dl"]`.
+- Evaluate `Pipeline([("scaler", StandardScaler()), ("model", LogisticRegression(max_iter=500))])` predicting `child_stunted` with `GroupKFold(n_splits=5)` grouped by `cluster_id` (`scoring="roc_auc"`) for `"full_model"` and each `"drop_<group>"` subset.
+- Build `ablation_table` with columns `["ablation", "mean_auc", "std_auc", "delta_vs_full"]` (rounded to 4 decimals), identify `most_critical_group` = bare group name with the most negative `delta_vs_full`, and return `{"full_auc": round4, "ablation_table": DataFrame, "most_critical_group": str}`.
+
+---
+
+## Stage 8 — Complete Annotated Solutions & Debugging Post-Mortem {#sec-ch33-solutions}
+
+### A. Concept & Execution Trace Test Key
+
+1. **Python's built-in `random` module** and **PyTorch's RNG (`torch.manual_seed`)** remained unseeded, causing nondeterministic PyTorch weight initialization and `DataLoader` shuffling.
+2. `yaml.load` with an unsafe loader can execute arbitrary Python constructors embedded in a malicious YAML file (remote code execution). `yaml.safe_load` restricts parsing strictly to plain data types (dicts, lists, strings, numbers, booleans).
+3. It evaluates to **`True`** because `bool` subclasses `int` in Python (`True == 1`). Always check `isinstance(v, int) and not isinstance(v, bool)`!
+4. **No!** Overlapping marginal CIs do *not* rule out a significant paired difference because marginal CIs include shared patient-sampling variance. Pairing models on identical bootstrap indices subtracts that shared variance out, often yielding a tight difference CI that excludes zero.
+5. Because `0 <= 0` and `0 >= 0` are both `True` for every resample, `mean(deltas <= 0) == 1.0` and `mean(deltas >= 0) == 1.0`, so `2 * min(1.0, 1.0) = 2.0`. Probabilities cannot exceed `1.0`, so clipping to `[0.0, 1.0]` is mandatory.
+6. Only the **discordant** counts **`b = 5` and `c = 20`** enter `binomtest(min(5, 20), 25, 0.5)` with null probability **$p_0 = 0.5$** (under $H_0$, whichever model disagrees is equally likely to be right). Concordant pairs (60 and 15) cancel out.
+7. **ROC-AUC** evaluates only rank order across *all* thresholds, whereas **McNemar's test** evaluates hard decisions at one specific threshold ($t = 0.25$). If one model is better calibrated near $t = 0.25$, it can make significantly fewer classification errors despite an identical ROC-AUC.
+8. Removing `demographics` **increased** cross-validated ROC-AUC by `+0.0142` (`mean_auc > full_auc`), indicating those features contributed more estimation variance than predictive signal in this small-$N$ linear model.
+9. `X_df.drop(columns=["maternal_hb"], errors="ignore")` drops **zero columns** without warning, silently re-evaluating the full model and falsely printing `delta_vs_full = 0.0000` for nutrition!
+10. Rewriting one giant JSON array requires reading/parsing the whole file on every run and risks corrupting all prior runs if a process crashes mid-write. Append-only `.jsonl` writes one independent UTF-8 line per run, survives crashes cleanly, and streams straight into `pd.read_json(..., lines=True)`.
+
+### B. Annotated Solutions — Guided To-Dos (Mirrored in `02_guided_todos_SOLUTION.ipynb`)
+
+```python
+import json
+from pathlib import Path
+import random
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+import torch
+import yaml
+
+# To-Do 33.1
+def set_all_seeds(seed=42):
+    """Lock Python, NumPy, and PyTorch RNGs and return 6-dec draws."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    return {
+        "seed": int(seed),
+        "py_draw": round(float(random.random()), 6),
+        "np_draw": round(float(np.random.rand()), 6),
+        "torch_draw": round(float(torch.rand(1).item()), 6),
+    }
+
+# To-Do 33.2
+def load_and_validate_config(yaml_path):
+    """Load YAML config and validate required experiment fields."""
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError("Config YAML must deserialize to a dict.")
+    required = {"experiment_name", "seeds", "model_type", "cv_splits"}
+    missing = required - set(cfg.keys())
+    if missing:
+        raise ValueError(f"Missing required keys: {sorted(missing)}")
+    seeds = cfg["seeds"]
+    valid_seeds = (
+        isinstance(seeds, list)
+        and len(seeds) > 0
+        and all(
+            isinstance(s, int) and not isinstance(s, bool)
+            for s in seeds
+        )
+    )
+    if not valid_seeds:
+        raise ValueError("seeds must be a non-empty list of ints.")
+    cv = cfg["cv_splits"]
+    if not isinstance(cv, int) or isinstance(cv, bool) or cv < 2:
+        raise ValueError("cv_splits must be an integer >= 2.")
+    return cfg
+
+# To-Do 33.3
+def bootstrap_metric_ci(
+    y_true, y_score, metric_fn, n_boot=300, alpha=0.05, seed=42
+):
+    """Compute percentile bootstrap CI and SE for any scoring fn."""
+    yt = np.asarray(y_true)
+    ys = np.asarray(y_score)
+    point = float(metric_fn(yt, ys))
+    rng = np.random.default_rng(seed)
+    boots = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, len(yt), size=len(yt))
+        if len(np.unique(yt[idx])) < 2:
+            continue
+        boots.append(float(metric_fn(yt[idx], ys[idx])))
+    lo, hi = np.percentile(
+        boots, [100 * alpha / 2, 100 * (1 - alpha / 2)]
+    )
+    return {
+        "point": round(point, 4),
+        "ci_low": round(float(lo), 4),
+        "ci_high": round(float(hi), 4),
+        "se": round(float(np.std(boots, ddof=1)), 4),
+    }
+
+# To-Do 33.4
+def paired_bootstrap_test(
+    y_true, score_a, score_b, metric_fn, n_boot=400, seed=42
+):
+    """Run paired bootstrap test comparing score_b minus score_a."""
+    yt = np.asarray(y_true)
+    sa = np.asarray(score_a)
+    sb = np.asarray(score_b)
+    delta_point = float(metric_fn(yt, sb) - metric_fn(yt, sa))
+    rng = np.random.default_rng(seed)
+    deltas = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, len(yt), size=len(yt))
+        if len(np.unique(yt[idx])) < 2:
+            continue
+        d = float(
+            metric_fn(yt[idx], sb[idx]) - metric_fn(yt[idx], sa[idx])
+        )
+        deltas.append(d)
+    arr = np.asarray(deltas)
+    lo, hi = np.percentile(arr, [2.5, 97.5])
+    p_raw = 2.0 * min(float(np.mean(arr <= 0)), float(np.mean(arr >= 0)))
+    p_val = float(np.clip(p_raw, 0.0, 1.0))
+    return {
+        "delta_point": round(delta_point, 4),
+        "ci_low": round(float(lo), 4),
+        "ci_high": round(float(hi), 4),
+        "p_value_two_sided": round(p_val, 4),
+    }
+
+# To-Do 33.5
+def run_feature_ablation(
+    X_df, y, feature_groups, model_factory, cv_splits=5, seed=42
+):
+    """Run leak-free leave-one-group-out feature ablation via CV."""
+    skf = StratifiedKFold(
+        n_splits=cv_splits, shuffle=True, random_state=seed
+    )
+    pipe_full = Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", model_factory()),
+    ])
+    full_sc = cross_val_score(
+        pipe_full, X_df, y, cv=skf, scoring="roc_auc"
+    )
+    full_auc = float(full_sc.mean())
+    rows = [{
+        "ablation": "full_model",
+        "mean_auc": round(full_auc, 4),
+        "std_auc": round(float(full_sc.std()), 4),
+        "delta_vs_full": 0.0,
+    }]
+    for gname, cols in feature_groups.items():
+        pipe_g = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model_factory()),
+        ])
+        sc = cross_val_score(
+            pipe_g, X_df.drop(columns=cols), y,
+            cv=skf, scoring="roc_auc",
+        )
+        m = float(sc.mean())
+        rows.append({
+            "ablation": f"drop_{gname}",
+            "mean_auc": round(m, 4),
+            "std_auc": round(float(sc.std()), 4),
+            "delta_vs_full": round(m - full_auc, 4),
+        })
+    return pd.DataFrame(rows)
+
+# To-Do 33.6
+def append_experiment_ledger(ledger_path, run_record):
+    """Append one UTF-8 JSONL record and return total line count."""
+    path = Path(ledger_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(run_record, sort_keys=True) + "\n")
+    with open(path, "r", encoding="utf-8") as f:
+        return int(sum(1 for line in f if line.strip()))
+```
+
+### C. Annotated Solutions — Chapter 33 Coding Exam (Mirrored in `03_coding_exam_SOLUTION.ipynb`)
+
+```python
+from scipy.stats import binomtest
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupKFold
+
+# Exam Task 33.1 (30 pts)
+def multi_seed_cv_benchmark(
+    X, y, model_factory, seeds, cv_splits=4
+):
+    """Run leak-free Stratified CV across multiple random seeds."""
+    raw = []
+    for s in seeds:
+        skf = StratifiedKFold(
+            n_splits=cv_splits, shuffle=True, random_state=s
+        )
+        pipe = Pipeline([
+            ("scaler", StandardScaler()),
+            ("model", model_factory()),
+        ])
+        sc = cross_val_score(pipe, X, y, cv=skf, scoring="roc_auc")
+        raw.append(float(sc.mean()))
+    return {
+        "n_seeds": int(len(seeds)),
+        "mean_auc": round(float(np.mean(raw)), 4),
+        "std_auc": round(float(np.std(raw)), 4),
+        "min_auc": round(float(np.min(raw)), 4),
+        "max_auc": round(float(np.max(raw)), 4),
+        "seed_scores": [round(float(v), 4) for v in raw],
+    }
+
+# Exam Task 33.2 (35 pts)
+def mcnemar_exact_comparison(y_true, pred_a, pred_b):
+    """Run exact two-sided McNemar binomial test on paired preds."""
+    yt = np.asarray(y_true)
+    pa = np.asarray(pred_a)
+    pb = np.asarray(pred_b)
+    a_ok = pa == yt
+    b_ok = pb == yt
+    b = int(np.sum(a_ok & ~b_ok))
+    c = int(np.sum(~a_ok & b_ok))
+    p_val = (
+        1.0 if (b + c) == 0
+        else float(binomtest(min(b, c), b + c, 0.5).pvalue)
+    )
+    return {
+        "b_only_a_correct": b,
+        "c_only_b_correct": c,
+        "p_value": round(p_val, 4),
+        "significant_05": bool(p_val < 0.05),
+    }
+
+# Exam Task 33.3 (35 pts)
+def mch_ablation_study_report(mch_df, seed=42):
+    """Run cluster-aware GroupKFold ablation study on MCH stunting."""
+    work = mch_df.copy()
+    work["residence"] = (
+        work["residence"].astype(str).str.strip().str.title()
+    )
+    work["anc_visits"] = work["anc_visits"].replace(999, np.nan)
+    work["is_urban"] = (work["residence"] == "Urban").astype(int)
+    wealth_map = {
+        "Poorest": 1, "Poorer": 2, "Middle": 3,
+        "Richer": 4, "Richest": 5,
+    }
+    work["wealth_rank"] = (
+        work["wealth_quintile"].astype(str).str.strip()
+        .str.title().map(wealth_map)
+    )
+    feature_groups = {
+        "demographics": ["maternal_age_years", "is_urban"],
+        "care_access": ["anc_visits"],
+        "socioeconomic": ["wealth_rank"],
+        "nutrition": ["maternal_hb_g_dl"],
+    }
+    all_cols = [c for cols in feature_groups.values() for c in cols]
+    clean = (
+        work[all_cols + ["child_stunted", "cluster_id"]]
+        .dropna()
+        .reset_index(drop=True)
+    )
+    X = clean[all_cols]
+    y = clean["child_stunted"].astype(int)
+    clusters = clean["cluster_id"]
+
+    gkf = GroupKFold(n_splits=5)
+    pipe = Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", LogisticRegression(max_iter=500)),
+    ])
+    full_sc = cross_val_score(
+        pipe, X, y, groups=clusters, cv=gkf, scoring="roc_auc"
+    )
+    full_auc = float(full_sc.mean())
+    rows = [{
+        "ablation": "full_model",
+        "mean_auc": round(full_auc, 4),
+        "std_auc": round(float(full_sc.std()), 4),
+        "delta_vs_full": 0.0,
+    }]
+    for gname, cols in feature_groups.items():
+        sc = cross_val_score(
+            pipe, X.drop(columns=cols), y,
+            groups=clusters, cv=gkf, scoring="roc_auc",
+        )
+        m = float(sc.mean())
+        rows.append({
+            "ablation": f"drop_{gname}",
+            "mean_auc": round(m, 4),
+            "std_auc": round(float(sc.std()), 4),
+            "delta_vs_full": round(m - full_auc, 4),
+        })
+    tbl = pd.DataFrame(rows)
+    drops = tbl[tbl["ablation"] != "full_model"]
+    critical = str(
+        drops.loc[drops["delta_vs_full"].idxmin(), "ablation"]
+    ).removeprefix("drop_")
+    return {
+        "full_auc": round(full_auc, 4),
+        "ablation_table": tbl,
+        "most_critical_group": critical,
+    }
+```
+
+### D. Debugging Post-Mortem: Top 3 Chapter 33 Failure Modes
+
+1. **Ignoring `bool` Subclassing `int` & Missing Schema Validation:** Passing `seeds: [true]` or `cv_splits: 1` silently bypasses naive `isinstance(..., int)` checks. Always validate YAML configs strictly (`isinstance(x, int) and not isinstance(x, bool)`) before launching multi-seed loops.
+2. **Crashing on Degenerate Bootstrap Draws or Zero McNemar Discordance:** Rare-event clinical cohorts occasionally draw a single-class resample (breaking `roc_auc_score`), and identical classifiers yield `b + c == 0` (breaking `binomtest`). Always skip single-class resamples, clip two-sided bootstrap p-values to `[0.0, 1.0]`, and return `1.0` when `b + c == 0`.
+3. **Flipping Ablation Delta Sign or Keeping the `"drop_"` Prefix:** Define `delta_vs_full = ablated_auc - full_auc` so **negative** deltas unambiguously flag features whose removal hurt performance (like `socioeconomic` dropping cluster-CV AUC by `-0.0597`), and strip `"drop_"` when reporting the winning group name.
+
+---
+
+::: {.callout-tip title="Part VII Launched — From Experiment Harness to Publication-Ready Research"}
+You have just built the scientific backbone of **Part VII (Research Capstone)**: deterministic multi-library seed locking, YAML-driven configs, append-only JSONL experiment tracking, multi-seed CV reporting, paired statistical significance testing, and cluster-aware ablation studies. In the upcoming chapters of Part VII, you will turn these audited JSONL ledgers and ablation tables directly into **reproducible research repositories, publication-grade LaTeX/Quarto tables, and a complete peer-review-ready manuscript**.
+:::

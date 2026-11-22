@@ -1,0 +1,475 @@
+# Master Reference Cheat Sheets: Python, NumPy, Pandas, Scikit-Learn & PyTorch {#sec-appendix-a}
+
+> **How to Use This Appendix:** Keep these six desk-reference cards open whenever you write analysis scripts, build ML pipelines, or debug PyTorch experiments. Every idiom below reflects the modern, leakage-free standards enforced across Chapters 1–36 (Python 3.11+, NumPy 2.x, Pandas 3.x Copy-on-Write, Scikit-Learn 1.5+, and PyTorch 2.x).
+
+---
+
+## Core Python & Data Structures (Chapters 1–12) {#sec-app-a-python}
+
+### Essential Idioms: Comprehensions, Unpacking & Formatting
+
+```python
+from collections import Counter, defaultdict
+
+# Comprehensions (list, dict, set)
+high_bp = [bp for bp in systolic_bps if bp >= 140]
+hb_by_id = {r["patient_id"]: float(r["hb"]) for r in records}
+unique_districts = {r["district"].strip().title() for r in records}
+
+# Pythonic iteration: enumerate, zip, and tuple unpacking
+for idx, (pid, temp) in enumerate(zip(patient_ids, temps_c), start=1):
+    flag = "FEVER" if temp >= 38.0 else "OK"
+    print(f"{idx:02d} | {pid:<8s} | {temp:5.1f} C | {flag}")
+
+# Frequency counts & grouping without KeyError
+counts = Counter(r["district"] for r in records)
+by_dist = defaultdict(list)
+for r in records:
+    by_dist[r["district"]].append(float(r["temp_c"]))
+
+# Safe dict lookup and f-string numeric specifiers
+rate = counts.get("Sylhet", 0) / max(len(records), 1)
+print(f"Sylhet share: {rate:6.2%} | Total N = {len(records):,d}")
+```
+
+### Core Data Structure Time Complexity (Big-$O$ Reference)
+
+| Structure | Access / Lookup | Insert / Append | Delete | Membership (`x in s`) | Ordered / Mutable |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| `list` | $O(1)$ by index | $O(1)$ end; $O(n)$ front | $O(n)$ | $O(n)$ linear scan | Ordered, Mutable |
+| `tuple` | $O(1)$ by index | N/A (immutable) | N/A | $O(n)$ linear scan | Ordered, Immutable |
+| `dict` | $O(1)$ avg by key | $O(1)$ avg | $O(1)$ avg | $O(1)$ avg (keys) | Insertion-ordered, Mutable |
+| `set` | N/A (no index) | $O(1)$ avg | $O(1)$ avg | $O(1)$ avg (hash) | Unordered, Mutable |
+| `str` | $O(1)$ by index | $O(n)$ concat | N/A | $O(n)$ substring | Ordered, Immutable |
+| `deque` | $O(n)$ middle | $O(1)$ both ends | $O(1)$ ends | $O(n)$ linear scan | Ordered, Mutable |
+| `sorted()` | Timsort | — | — | $O(\log n)$ via `bisect` | $O(n \log n)$ worst |
+
+: {tbl-colwidths="[14,17,19,13,18,19]"}
+
+### Safe File I/O (`pathlib`), Defensive Exceptions & `@dataclass`
+
+```python
+import csv
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+
+# Cross-platform paths & UTF-8 CSV/JSON I/O
+data_dir = Path("data")
+csv_path = data_dir / "clinic_triage.csv"
+with csv_path.open("r", encoding="utf-8", newline="") as f:
+    rows = list(csv.DictReader(f))
+
+out_path = data_dir / "summary.json"
+out_path.parent.mkdir(parents=True, exist_ok=True)
+with out_path.open("w", encoding="utf-8") as f:
+    json.dump({"n_patients": len(rows)}, f, indent=2)
+
+# Defensive exception handling (EAFP with narrow except clauses)
+def safe_bmi(weight_kg: float, height_cm: float) -> float:
+    if weight_kg <= 0 or height_cm <= 0:
+        raise ValueError("weight_kg and height_cm must be positive.")
+    height_m = height_cm / 100.0
+    return weight_kg / (height_m ** 2)
+
+# Structured OOP with @dataclass (clean __init__, __repr__, __eq__)
+@dataclass(frozen=True)
+class PatientRecord:
+    patient_id: str
+    age_years: int
+    hemoglobin_g_dl: float
+    tags: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def is_anemic(self) -> bool:
+        return self.hemoglobin_g_dl < 12.0
+```
+
+---
+
+## NumPy Vectorization & Linear Algebra (Chapter 16) {#sec-app-a-numpy}
+
+### Array Creation, Reproducible RNG & Vectorized Masking
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(seed=42)
+X = rng.normal(loc=0.0, scale=1.0, size=(100, 4))  # shape (100, 4)
+grid = np.linspace(0.0, 1.0, 11)                   # 11 evenly spaced
+zeros = np.zeros((3, 4), dtype=np.float64)         # explicit dtype
+
+# Boolean masking & vectorized conditional logic (no Python loops)
+fever_mask = X[:, 0] > 1.5
+clipped = np.clip(X, -3.0, 3.0)
+risk_tier = np.where(X[:, 0] > 1.0, "High", "Standard")
+```
+
+### Broadcasting Rules & Axis Reductions
+
+Two array shapes are **broadcast-compatible** when, aligning dimensions from **right to left**, every dimension pair $(a, b)$ satisfies:
+
+1. $a = b$, **or**
+2. One of $a$ or $b$ equals $1$, **or**
+3. One array has fewer dimensions (implicitly padded with leading ones, $1$).
+
+```python
+# Standardize columns: X is (n, p); col_mean/col_std are (1, p)
+col_mean = np.nanmean(X, axis=0, keepdims=True)   # down rows -> (1, p)
+col_std = np.nanstd(X, axis=0, keepdims=True)     # down rows -> (1, p)
+X_z = (X - col_mean) / np.where(col_std == 0, 1.0, col_std)
+
+# Row-wise L2 norm: axis=1 collapses across columns -> (n, 1)
+row_norms = np.linalg.norm(X_z, ord=2, axis=1, keepdims=True)
+X_unit = X_z / np.maximum(row_norms, 1e-12)
+```
+
+### Linear Algebra & SVD Core Idioms
+
+```python
+# Matrix multiply (@), transpose (.T), solve, and thin SVD
+n, p = X_z.shape
+cov = (X_z.T @ X_z) / (n - 1)                      # (p, p) covariance
+eigvals, eigvecs = np.linalg.eigh(cov)             # symmetric matrix
+U, s, Vt = np.linalg.svd(X_z, full_matrices=False) # thin SVD
+explained_var_ratio = (s ** 2) / np.sum(s ** 2)
+
+# Numerically stable Ridge solve: (X^T X + lam * I) w = X^T y
+lam = 1.0
+A = X_z.T @ X_z + lam * np.eye(p)
+w_ridge = np.linalg.solve(A, X_z.T @ y)            # never np.linalg.inv
+```
+
+---
+
+## Pandas 3.x Copy-on-Write Wrangling (Chapters 17–18) {#sec-app-a-pandas}
+
+::: {.callout-warning title="Pandas 3.x Copy-on-Write (CoW) Golden Rule"}
+Never chain indexing on the left-hand side of an assignment (`df[mask]["col"] = val`). In Pandas 3.x CoW, chained assignments silently fail or raise `ChainedAssignmentError`. Always mutate via a single `.loc[row_mask, "col"] = val` call or return a new DataFrame with `.assign(...)`.
+:::
+
+### Loading, Cleaning Dirty Survey Codes & Method Chaining
+
+```python
+import numpy as np
+import pandas as pd
+
+raw = pd.read_csv("mch_survey_sample.csv")
+
+clean = (
+    raw
+    .assign(
+        residence=lambda d: d["residence"].str.strip().str.title(),
+        anc_visits=lambda d: d["anc_visits"].replace({999: np.nan}),
+        maternal_hb=lambda d: pd.to_numeric(
+            d["maternal_hb_g_dl"], errors="coerce"
+        ),
+    )
+    .dropna(subset=["maternal_hb", "child_haz"])
+)
+
+# Single-step safe conditional assignment via .loc
+clean.loc[clean["maternal_hb"] < 11.0, "anemia_flag"] = 1
+clean["anemia_flag"] = clean["anemia_flag"].fillna(0).astype(int)
+```
+
+### GroupBy Aggregations, Safe Merges, Reshaping & Panel Windows
+
+```python
+# Named aggregation + group-wise z-score via .transform()
+summary = (
+    clean.groupby(["division", "residence"], observed=True)
+    .agg(
+        n_hh=("household_id", "count"),
+        mean_hb=("maternal_hb", "mean"),
+        stunt_pct=("child_stunted", lambda s: 100.0 * s.mean()),
+    )
+    .reset_index()
+)
+clean = clean.assign(
+    hb_div_z=clean.groupby("division")["maternal_hb"].transform(
+        lambda s: (s - s.mean()) / s.std(ddof=1)
+    )
+)
+
+# Defensive merge: ALWAYS specify validate= and check indicator=
+merged = pd.merge(
+    clean,
+    district_meta,
+    on="division",
+    how="left",
+    validate="m:1",
+    indicator=True,
+)
+assert (merged["_merge"] == "both").all(), "Unmatched division keys!"
+
+# Wide <-> Long reshaping
+long_df = pd.melt(
+    epi_df,
+    id_vars=["year", "epi_week", "district"],
+    value_vars=["dengue_cases", "respiratory_cases"],
+    var_name="syndrome",
+    value_name="cases",
+)
+wide_tbl = clean.pivot_table(
+    index="division",
+    columns="wealth_quintile",
+    values="child_stunted",
+    aggfunc="mean",
+)
+
+# Panel time-series lags & rolling windows (sort FIRST!)
+epi = epi_df.sort_values(["district", "year", "epi_week"]).copy()
+grp = epi.groupby("district")["dengue_cases"]
+epi["dengue_lag1"] = grp.shift(1)
+epi["dengue_ma4"] = grp.transform(
+    lambda s: s.rolling(window=4, min_periods=1).mean()
+)
+```
+
+---
+
+## Matplotlib & Seaborn Publication Recipe (Chapter 19) {#sec-app-a-viz}
+
+### Okabe-Ito Colorblind-Safe Palette (8 Canonical Hex Codes)
+
+| Color Name | Hex Code | Recommended Scientific Role |
+| :--- | :---: | :--- |
+| **Blue** | `#0072B2` | Primary model / baseline curve |
+| **Vermilion** | `#D55E00` | Alert / threshold / flagship model |
+| **Bluish Green** | `#009E73` | Positive outcome / target region |
+| **Orange** | `#E69F00` | Secondary comparator series |
+| **Sky Blue** | `#56B4E9` | Confidence band / shaded interval |
+| **Reddish Purple** | `#CC79A7` | Subgroup / interaction contrast |
+| **Yellow** | `#F0E442` | Highlight accent (use dark border) |
+| **Black / Slate** | `#000000` | Reference line, axes, typography |
+
+: {tbl-colwidths="[24,18,58]"}
+
+### Object-Oriented 300-DPI Dual-Format Export Template
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+OKABE_ITO = {
+    "blue": "#0072B2", "vermilion": "#D55E00", "green": "#009E73",
+    "orange": "#E69F00", "sky": "#56B4E9", "purple": "#CC79A7",
+    "yellow": "#F0E442", "black": "#000000",
+}
+
+plt.rcParams.update({
+    "font.size": 10, "axes.titlesize": 11, "axes.labelsize": 10,
+    "legend.frameon": False, "figure.dpi": 150,
+})
+
+fig, ax = plt.subplots(figsize=(6.5, 4.0), constrained_layout=True)
+sns.lineplot(
+    data=epi_df, x="epi_week", y="dengue_cases", hue="district",
+    palette=list(OKABE_ITO.values())[:4], linewidth=2.0, ax=ax,
+)
+ax.set_title("Weekly Dengue Surveillance by District (2024-2025)")
+ax.set_xlabel("Epidemiological Week")
+ax.set_ylabel("Confirmed Dengue Cases (Count)")
+ax.grid(axis="y", linestyle="--", alpha=0.35)
+sns.despine(ax=ax)
+
+# Export raster (manuscript review) + vector (journal print)
+fig.savefig("fig_dengue_trends.png", dpi=300, bbox_inches="tight")
+fig.savefig("fig_dengue_trends.pdf", bbox_inches="tight")
+plt.close(fig)
+```
+
+---
+
+## Scikit-Learn Leakage-Free Pipelines & Validation (Chapters 21–26) {#sec-app-a-sklearn}
+
+### Choosing the Right Cross-Validation Splitter
+
+| Data Structure | Recommended Splitter | Leakage Prevented |
+| :--- | :--- | :--- |
+| Independent tabular, binary/multi-class | `StratifiedKFold(n_splits=5, shuffle=True, random_state=42)` | Class-ratio drift across folds |
+| Repeated patients, clinics, or survey clusters | `StratifiedGroupKFold(n_splits=5)` (or `GroupKFold`) | Same patient/cluster in train & val |
+| Epidemiological or clinical time series | `TimeSeriesSplit(n_splits=5)` | Future observations leaking to past |
+| Small $N$ ($< 300$) high-variance tabular | `RepeatedStratifiedKFold(n_splits=5, n_repeats=10)` | Single unlucky split variance |
+
+: {tbl-colwidths="[30,38,32]"}
+
+### Complete Leakage-Free `ColumnTransformer` + `Pipeline` + Calibration
+
+```python
+import joblib
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, StratifiedGroupKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+num_cols = ["maternal_age_years", "anc_visits", "maternal_hb_g_dl"]
+cat_cols = ["division", "residence", "wealth_quintile"]
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("num", Pipeline([
+            ("imp", SimpleImputer(strategy="median")),
+            ("scl", StandardScaler()),
+        ]), num_cols),
+        ("cat", Pipeline([
+            ("imp", SimpleImputer(strategy="most_frequent")),
+            ("ohe", OneHotEncoder(handle_unknown="ignore")),
+        ]), cat_cols),
+    ],
+    remainder="drop",
+)
+
+pipe = Pipeline([
+    ("prep", preprocessor),
+    ("model", LogisticRegression(max_iter=1000, random_state=42)),
+])
+
+cv = StratifiedGroupKFold(n_splits=5)
+param_grid = {"model__C": [0.01, 0.1, 1.0, 10.0]}
+search = GridSearchCV(
+    pipe, param_grid, cv=cv, scoring="roc_auc", refit=True
+)
+search.fit(X_train, y_train, groups=clusters_train)
+
+# Post-hoc probability calibration & permutation importance
+cal_model = CalibratedClassifierCV(
+    search.best_estimator_, method="sigmoid", cv=5
+)
+cal_model.fit(X_train, y_train)
+
+perm = permutation_importance(
+    cal_model, X_test, y_test, n_repeats=20,
+    scoring="roc_auc", random_state=42,
+)
+joblib.dump(cal_model, "artifacts/anemia_risk_pipeline.joblib")
+```
+
+---
+
+## PyTorch Canonical 5-Step Loop & Architectures (Chapters 28–32) {#sec-app-a-pytorch}
+
+### Loss, Optimizer & Scheduler Quick-Pick Table
+
+| Task | Output Head | Canonical Loss | Recommended Optimizer / Scheduler |
+| :--- | :--- | :--- | :--- |
+| Binary classification | 1 raw logit (no sigmoid) | `nn.BCEWithLogitsLoss(pos_weight=...)` | `AdamW(lr=1e-3, weight_decay=1e-2)` |
+| Multi-class ($C$ classes) | $C$ raw logits (no softmax) | `nn.CrossEntropyLoss(label_smoothing=0.05)` | `AdamW` + `CosineAnnealingLR` |
+| Continuous regression | 1 linear scalar | `nn.MSELoss()` or `nn.HuberLoss(delta=1.0)` | `AdamW` + `ReduceLROnPlateau` |
+| Sequence / Transformer | Token or pooled logits | `nn.CrossEntropyLoss(ignore_index=0)` | `AdamW(lr=3e-4)` + linear warmup |
+
+: {tbl-colwidths="[22,23,28,27]"}
+
+### Reproducible `Dataset`, `DataLoader` & Canonical 5-Step Loop
+
+```python
+import random
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+
+def seed_everything(seed: int = 42) -> torch.device:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+class TabularDataset(Dataset):
+    def __init__(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.X = torch.as_tensor(X, dtype=torch.float32)
+        self.y = torch.as_tensor(y, dtype=torch.float32).unsqueeze(1)
+
+    def __len__(self) -> int:
+        return len(self.y)
+
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.X[idx], self.y[idx]
+
+def train_one_epoch(model, loader, criterion, optimizer, device):
+    model.train()
+    total_loss = 0.0
+    for xb, yb in loader:
+        xb, yb = xb.to(device), yb.to(device)
+        optimizer.zero_grad()                     # 1. Clear stale grads
+        logits = model(xb)                        # 2. Forward pass
+        loss = criterion(logits, yb)              # 3. Compute loss
+        loss.backward()                           # 4. Backprop gradients
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        optimizer.step()                          # 5. Update weights
+        total_loss += loss.item() * len(xb)
+    return total_loss / len(loader.dataset)
+
+@torch.inference_mode()
+def evaluate(model, loader, criterion, device):
+    model.eval()
+    total_loss = 0.0
+    for xb, yb in loader:
+        xb, yb = xb.to(device), yb.to(device)
+        loss = criterion(model(xb), yb)
+        total_loss += loss.item() * len(xb)
+    return total_loss / len(loader.dataset)
+```
+
+### Canonical Architecture Blocks (CNN, GRU, Attention, LoRA & Safe Save)
+
+```python
+# 1) Compact Medical CNN Block (expects NCHW: (B, C, H, W))
+class ConvBlock(nn.Module):
+    def __init__(self, c_in: int, c_out: int) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(c_in, c_out, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(c_out),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+# 2) Sequence Forecaster (expects (B, T, F) with batch_first=True)
+class EpiGRU(nn.Module):
+    def __init__(self, n_feat: int, hidden: int = 32) -> None:
+        super().__init__()
+        self.gru = nn.GRU(n_feat, hidden, batch_first=True)
+        self.head = nn.Linear(hidden, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out, _ = self.gru(x)                      # out: (B, T, hidden)
+        return self.head(out[:, -1, :])           # last time step
+
+# 3) Multi-Head Attention & LoRA Adapter (Delta W = (alpha / r) * B @ A)
+attn = nn.MultiheadAttention(embed_dim=64, num_heads=4, batch_first=True)
+
+class LoRALinear(nn.Module):
+    def __init__(self, base: nn.Linear, r: int = 4, alpha: float = 8.0):
+        super().__init__()
+        self.base = base
+        for p in self.base.parameters():
+            p.requires_grad = False
+        self.scale = alpha / r
+        self.A = nn.Parameter(torch.randn(r, base.in_features) * 0.02)
+        self.B = nn.Parameter(torch.zeros(base.out_features, r))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        delta = (x @ self.A.T) @ self.B.T
+        return self.base(x) + self.scale * delta
+
+# 4) Safe Checkpointing (weights_only=True prevents pickle exploits)
+torch.save(model.state_dict(), "artifacts/best_model.pt")
+state = torch.load(
+    "artifacts/best_model.pt", map_location="cpu", weights_only=True
+)
+model.load_state_dict(state)
+```

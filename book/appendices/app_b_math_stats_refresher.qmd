@@ -1,0 +1,222 @@
+# Essential Mathematics, Biostatistics & Deep Learning Equations Refresher {#sec-appendix-b}
+
+> **How to Use This Appendix:** Every equation in this reference card was derived from first principles and verified numerically across Chapters 16–36. Each section pairs concise mathematical formulas with geometric or clinical intuition and cross-references to the exact chapters where you built them in NumPy, SciPy, Scikit-Learn, or PyTorch.
+
+---
+
+## Linear Algebra & Matrix Calculus (Chapters 16, 22, 25, 27) {#sec-app-b-linalg}
+
+### Dot Products, Vector Norms & Cosine Similarity
+
+For vectors $u, v \in \mathbb{R}^p$:
+
+$$u \cdot v = u^\top v = \sum_{j=1}^{p} u_j v_j = \|u\|_2 \|v\|_2 \cos\theta$$
+
+$$\cos\theta = \frac{u^\top v}{\|u\|_2 \|v\|_2}, \quad \|v\|_1 = \sum_{j=1}^{p} |v_j|, \quad \|v\|_2 = \sqrt{\sum_{j=1}^{p} v_j^2}, \quad \|v\|_\infty = \max_j |v_j|$$
+
+- **Intuition:** $\|v\|_1$ penalizes total absolute magnitude and promotes exact sparsity (Lasso); $\|v\|_2$ measures Euclidean length and shrinks weights smoothly (Ridge, weight decay); $\cos\theta$ measures directional alignment independent of magnitude (embedding retrieval and attention).
+
+### Matrix Multiplication Shape Rule & Frobenius Norm
+
+For $A \in \mathbb{R}^{n \times p}$ and $B \in \mathbb{R}^{p \times k}$, the product $C = AB \in \mathbb{R}^{n \times k}$ requires matching inner dimensions:
+
+$$(n, p) \times (p, k) \longrightarrow (n, k), \qquad C_{ij} = \sum_{m=1}^{p} A_{im} B_{mj}$$
+
+$$\|A\|_F = \sqrt{\sum_{i=1}^{n} \sum_{j=1}^{p} A_{ij}^2} = \sqrt{\operatorname{tr}(A^\top A)}$$
+
+### Singular Value Decomposition (SVD) & PCA Variance-MSE Identity
+
+Let $X_c \in \mathbb{R}^{n \times p}$ be a column-centered data matrix ($\bar{x}_j = 0$). Its thin SVD factors $X_c$ into orthonormal left singular vectors $U \in \mathbb{R}^{n \times r}$, non-negative singular values $\Sigma = \operatorname{diag}(\sigma_1, \dots, \sigma_r)$ with $\sigma_1 \ge \dots \ge \sigma_r \ge 0$, and orthonormal right singular vectors (principal axes) $V \in \mathbb{R}^{p \times r}$:
+
+$$X_c = U \Sigma V^\top, \qquad S = \frac{1}{n - 1} X_c^\top X_c = V \left(\frac{\Sigma^2}{n - 1}\right) V^\top$$
+
+The **PCA Variance-MSE Identity** (Chapter 25) proves that projecting onto the top $k$ right singular vectors $V_k \in \mathbb{R}^{p \times k}$ simultaneously maximizes retained variance and minimizes orthogonal reconstruction error:
+
+$$\underbrace{\frac{1}{n} \|X_c\|_F^2}_{\text{Total variance}} = \underbrace{\frac{1}{n} \|X_c V_k\|_F^2}_{\text{Projected variance}} + \underbrace{\frac{1}{n} \|X_c - X_c V_k V_k^\top\|_F^2}_{\text{Reconstruction MSE}}, \qquad \text{EVR}_j = \frac{\sigma_j^2}{\sum_{m=1}^{r} \sigma_m^2}$$
+
+### Essential Matrix Calculus Identities
+
+For constant vector $a \in \mathbb{R}^p$ and square matrix $A \in \mathbb{R}^{p \times p}$:
+
+$$\nabla_w (a^\top w) = a, \qquad \nabla_w (w^\top A w) = (A + A^\top) w, \qquad \nabla_w \|Xw - y\|_2^2 = 2 X^\top (Xw - y)$$
+
+---
+
+## Probability, Distributions & Epidemiological Metrics (Chapters 20, 23, 34) {#sec-app-b-prob}
+
+### Bayes' Theorem (Diagnostic & Clinical Screening Form)
+
+For disease event $D$ with prior prevalence $P(D)$ and positive test $T^+$:
+
+$$P(D \mid T^+) = \frac{P(T^+ \mid D) P(D)}{P(T^+ \mid D) P(D) + P(T^+ \mid D^c) \bigl(1 - P(D)\bigr)}$$
+
+- **Clinical Intuition (Base-Rate Neglect):** Even a test with $95\%$ sensitivity and $95\%$ specificity yields a positive predictive value (PPV) under $17\%$ when true disease prevalence is $1\%$. Always report prevalence alongside PPV and PR-AUC.
+
+### Wilson Score 95% Confidence Interval for a Proportion
+
+For $k$ events in $n$ trials with sample proportion $\hat{p} = k / n$ and $z = z_{1 - \alpha/2}$ ($z \approx 1.96$ for $95\%$ CI):
+
+$$\text{CI}_{\text{Wilson}} = \frac{\hat{p} + \frac{z^2}{2n} \pm z \sqrt{\frac{\hat{p}(1 - \hat{p})}{n} + \frac{z^2}{4n^2}}}{1 + \frac{z^2}{n}}$$
+
+- **Why Wilson Beats Wald:** Unlike the naive Wald interval $\hat{p} \pm z\sqrt{\hat{p}(1-\hat{p})/n}$, the Wilson interval never produces impossible probabilities below $0$ or above $1$, and maintains reliable coverage even when $k = 0$ or $n$ is small.
+
+### $2 \times 2$ Epidemiological Table: Relative Risk & Odds Ratio (Woolf CI)
+
+Let a $2 \times 2$ exposure-outcome table contain exposed cases ($a$), exposed non-cases ($b$), unexposed cases ($c$), and unexposed non-cases ($d$):
+
+$$\text{RR} = \frac{a / (a + b)}{c / (c + d)}, \qquad \text{OR} = \frac{a / b}{c / d} = \frac{a d}{b c}$$
+
+Because $\text{OR}$ is right-skewed, compute its **Woolf 95% CI** on the log scale and exponentiate back:
+
+$$\text{SE}(\ln \text{OR}) = \sqrt{\frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}}, \qquad \text{CI}_{95\%}(\text{OR}) = \exp\!\Bigl(\ln \text{OR} \pm 1.96 \cdot \text{SE}(\ln \text{OR})\Bigr)$$
+
+### Classification & Diagnostic Accuracy Metrics
+
+| Metric | Formula | Clinical / ML Interpretation | Ch |
+| :--- | :--- | :--- | :---: |
+| **Sensitivity (Recall / TPR)** | $\dfrac{\text{TP}}{\text{TP} + \text{FN}}$ | Fraction of true cases correctly flagged | 20, 23 |
+| **Specificity (TNR)** | $\dfrac{\text{TN}}{\text{TN} + \text{FP}}$ | Fraction of healthy patients cleared | 20, 23 |
+| **PPV (Precision)** | $\dfrac{\text{TP}}{\text{TP} + \text{FP}}$ | Probability a flagged patient truly has disease | 20, 23 |
+| **NPV** | $\dfrac{\text{TN}}{\text{TN} + \text{FN}}$ | Probability a cleared patient is truly healthy | 20, 23 |
+| **$F_1$ Score** | $\dfrac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$ | Harmonic mean of precision and recall | 23 |
+| **Youden's $J$** | $\text{Sensitivity} + \text{Specificity} - 1$ | Threshold maximizing balanced $\text{TPR} - \text{FPR}$ lift | 23, 34 |
+
+: {tbl-colwidths="[25,28,38,9]"}
+
+---
+
+## Hypothesis Testing & Multiple Comparisons (Chapters 20, 33, 34) {#sec-app-b-inference}
+
+### Parametric & Non-Parametric Two-Group and Multi-Group Tests
+
+**Welch's Unequal-Variance $t$-Test** (default over Student's $t$-test in Chapter 20):
+
+$$t = \frac{\bar{x}_1 - \bar{x}_2}{\sqrt{\dfrac{s_1^2}{n_1} + \dfrac{s_2^2}{n_2}}}, \qquad \nu \approx \frac{\left(\dfrac{s_1^2}{n_1} + \dfrac{s_2^2}{n_2}\right)^2}{\dfrac{(s_1^2 / n_1)^2}{n_1 - 1} + \dfrac{(s_2^2 / n_2)^2}{n_2 - 1}}$$
+
+**Cohen's $d$ Standardized Effect Size** (always report alongside $p$-values):
+
+$$d = \frac{\bar{x}_1 - \bar{x}_2}{s_{\text{pooled}}}, \qquad s_{\text{pooled}} = \sqrt{\frac{(n_1 - 1) s_1^2 + (n_2 - 1) s_2^2}{n_1 + n_2 - 2}}$$
+
+**Mann-Whitney $U$ Statistic** (rank-sum alternative for skewed biomarkers):
+
+$$U_1 = R_1 - \frac{n_1 (n_1 + 1)}{2}, \qquad U = \min(U_1, n_1 n_2 - U_1)$$
+
+**Pearson's Chi-Square Test of Independence** ($r \times c$ contingency table):
+
+$$\chi^2 = \sum_{i=1}^{r} \sum_{j=1}^{c} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}, \qquad E_{ij} = \frac{R_i C_j}{N}, \qquad df = (r - 1)(c - 1)$$
+
+**One-Way ANOVA ($F$) & Kruskal-Wallis ($H$)** across $k$ groups ($N = \sum_{g=1}^k n_g$):
+
+$$F = \frac{\text{SS}_{\text{between}} / (k - 1)}{\text{SS}_{\text{within}} / (N - k)}, \qquad H = \frac{12}{N(N + 1)} \sum_{g=1}^{k} \frac{R_g^2}{n_g} - 3(N + 1)$$
+
+### Multiple Testing, Paired Model Comparison & Bootstrap CIs
+
+**Benjamini-Hochberg (BH) False Discovery Rate (FDR)** across $m$ sorted $p$-values $p_{(1)} \le \dots \le p_{(m)}$ at target FDR $q$ (e.g., $q = 0.05$):
+
+$$k^* = \max \left\{ k \in \{1, \dots, m\} : p_{(k)} \le \frac{k}{m} q \right\}$$
+
+Reject $H_0$ for all tests $1, \dots, k^*$. Compared to Bonferroni ($p_i \le \alpha / m$), BH preserves far higher statistical power in multi-biomarker and multi-subgroup audits.
+
+**Exact McNemar's Test** for comparing two classifiers on the exact same test set (Chapter 33), using discordant counts $b$ (Model A right, Model B wrong) and $c$ (Model A wrong, Model B right):
+
+$$p_{\text{exact}} = 2 \sum_{k=0}^{\min(b, c)} \binom{b + c}{k} (0.5)^{b + c}, \qquad \chi^2_{\text{cc}} = \frac{(|b - c| - 1)^2}{b + c}$$
+
+**Non-Parametric Percentile Bootstrap 95% CI** ($B \ge 2{,}000$ resamples with replacement):
+
+$$\text{CI}_{95\%}(\hat{\theta}) = \bigl[\,\hat{\theta}^*_{(0.025)},\; \hat{\theta}^*_{(0.975)}\,\bigr]$$
+
+---
+
+## Classical ML Objectives & Regularization (Chapters 22–26) {#sec-app-b-ml}
+
+### Regression Loss Functions, $R^2$ & Regularized Linear Models
+
+$$\text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2, \quad \text{RMSE} = \sqrt{\text{MSE}}, \quad \text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|, \quad R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$$
+
+**OLS Normal Equation & Penalized Objectives** (Chapter 22):
+
+$$\hat{w}_{\text{OLS}} = (X^\top X)^{-1} X^\top y \qquad \text{(solve } X^\top X w = X^\top y \text{ via QR/SVD)}$$
+
+$$\mathcal{J}_{\text{Ridge}}(w) = \frac{1}{n}\|Xw - y\|_2^2 + \lambda \|w\|_2^2 \;\Longrightarrow\; \hat{w}_{\text{Ridge}} = (X^\top X + n\lambda I)^{-1} X^\top y$$
+
+$$\mathcal{J}_{\text{Lasso}}(w) = \frac{1}{2n}\|Xw - y\|_2^2 + \lambda \|w\|_1$$
+
+$$\mathcal{J}_{\text{ElasticNet}}(w) = \frac{1}{2n}\|Xw - y\|_2^2 + \lambda \left(\rho \|w\|_1 + \frac{1 - \rho}{2}\|w\|_2^2\right)$$
+
+### Logistic Regression, Binary Cross-Entropy & Gradient Cancellation
+
+With sigmoid $\sigma(z) = \frac{1}{1 + e^{-z}}$, predicted probability $\hat{p}_i = \sigma(z_i)$, and $z_i = x_i^\top w + b$:
+
+$$\mathcal{L}_{\text{BCE}} = -\frac{1}{n} \sum_{i=1}^{n} \Bigl[\, y_i \ln \hat{p}_i + (1 - y_i) \ln(1 - \hat{p}_i) \,\Bigr]$$
+
+Because $\sigma'(z) = \sigma(z)(1 - \sigma(z))$ cancels the denominator of $\frac{\partial \mathcal{L}}{\partial \hat{p}_i}$, the logit gradient collapses to a remarkably clean residual (Chapters 23, 27):
+
+$$\frac{\partial \mathcal{L}_i}{\partial z_i} = \hat{p}_i - y_i, \qquad \nabla_w \mathcal{L}_{\text{BCE}} = \frac{1}{n} X^\top (\hat{p} - y)$$
+
+### Tree Impurity, Exact Shapley Values & Probability Calibration
+
+**Decision Tree Node Impurity** across class proportions $p_1, \dots, p_C$ (Chapter 24):
+
+$$G(t) = 1 - \sum_{c=1}^{C} p_c^2 \quad \text{(Gini)}, \qquad H(t) = -\sum_{c=1}^{C} p_c \log_2 p_c \quad \text{(Shannon Entropy)}$$
+
+**Exact Shapley Value** for feature $j$ in feature set $F$ (Chapter 24):
+
+$$\phi_j(v) = \sum_{S \subseteq F \setminus \{j\}} \frac{|S|! \, (|F| - |S| - 1)!}{|F|!} \Bigl[\, v(S \cup \{j\}) - v(S) \,\Bigr]$$
+
+- **Local Accuracy Guarantee:** $\sum_{j \in F} \phi_j = f(x) - \mathbb{E}[f(X)]$, meaning feature attributions sum exactly to the gap between a patient's prediction and the population base rate.
+
+**Brier Score & Expected Calibration Error (ECE)** across $B$ probability bins (Chapters 23, 34):
+
+$$\text{Brier} = \frac{1}{n} \sum_{i=1}^{n} (\hat{p}_i - y_i)^2, \qquad \text{ECE} = \sum_{b=1}^{B} \frac{|B_b|}{n} \Bigl|\operatorname{acc}(B_b) - \operatorname{conf}(B_b)\Bigr|$$
+
+---
+
+## Deep Learning & Research Evaluation Equations (Chapters 27–36) {#sec-app-b-dl}
+
+### 2-Layer MLP Backpropagation Chain Rule (Chapter 27)
+
+For hidden pre-activation $z^{[1]} = W^{[1]} x + b^{[1]}$, activation $a^{[1]} = g(z^{[1]})$, output logit $z^{[2]} = W^{[2]} a^{[1]} + b^{[2]}$, and binary probability $\hat{p} = \sigma(z^{[2]})$ under BCE loss:
+
+$$\delta^{[2]} = \frac{\partial \mathcal{L}}{\partial z^{[2]}} = \hat{p} - y, \qquad \frac{\partial \mathcal{L}}{\partial W^{[2]}} = \frac{1}{n} \delta^{[2]} (a^{[1]})^\top, \qquad \frac{\partial \mathcal{L}}{\partial b^{[2]}} = \frac{1}{n} \sum_{i=1}^{n} \delta^{[2]}_i$$
+
+$$\delta^{[1]} = \Bigl((W^{[2]})^\top \delta^{[2]}\Bigr) \odot g'(z^{[1]}), \qquad \frac{\partial \mathcal{L}}{\partial W^{[1]}} = \frac{1}{n} \delta^{[1]} X^\top$$
+
+### Variance-Preserving Weight Initialization (Chapter 29)
+
+$$\text{Xavier / Glorot (Tanh, Sigmoid): } \operatorname{Var}(W) = \frac{2}{n_{\text{in}} + n_{\text{out}}}, \qquad \text{He / Kaiming (ReLU): } \operatorname{Var}(W) = \frac{2}{n_{\text{in}}}$$
+
+### 2D Convolution Output Shape Formula (Chapter 30)
+
+For input height $H$, padding $P$, kernel size $K$, dilation $D$ (default $D = 1$), and stride $S$:
+
+$$H_{\text{out}} = \left\lfloor \frac{H + 2P - D(K - 1) - 1}{S} \right\rfloor + 1 \;\;\xrightarrow{\,D=1\,}\;\; H_{\text{out}} = \left\lfloor \frac{H + 2P - K}{S} \right\rfloor + 1$$
+
+### Scaled Dot-Product Attention & Low-Rank Adaptation (Chapter 32)
+
+$$\text{Attention}(Q, K, V) = \operatorname{softmax}\!\left(\frac{Q K^\top}{\sqrt{d_k}} + M\right) V$$
+
+where $M_{ij} = 0$ for allowed positions and $M_{ij} = -\infty$ for masked (padding or future causal) tokens. Dividing by $\sqrt{d_k}$ restores unit dot-product variance ($\operatorname{Var}(q \cdot k / \sqrt{d_k}) = 1$), preventing softmax saturation.
+
+**Low-Rank Adaptation (LoRA)** freezes $W_0 \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ and learns rank-$r$ factors $A \in \mathbb{R}^{r \times d_{\text{in}}}$ and $B \in \mathbb{R}^{d_{\text{out}} \times r}$ ($B = 0$ at step 0):
+
+$$W_{\text{eff}} = W_0 + \Delta W = W_0 + \frac{\alpha}{r} B A, \qquad \text{Trainable params} = r(d_{\text{in}} + d_{\text{out}}) \ll d_{\text{in}} d_{\text{out}}$$
+
+### Algorithmic Fairness, Distribution Drift & Clinical Utility (Chapters 34–36)
+
+**Subgroup Fairness Disparity Metrics** across sensitive groups $g \in \mathcal{G}$ (Chapter 34):
+
+$$\Delta_{\text{DP}} = \max_{g} P(\hat{Y}=1 \mid G=g) - \min_{g} P(\hat{Y}=1 \mid G=g)$$
+
+$$\Delta_{\text{TPR}} = \max_{g} \text{TPR}_g - \min_{g} \text{TPR}_g, \qquad \Delta_{\text{EO}} = \max\bigl(\Delta_{\text{TPR}},\; \Delta_{\text{FPR}}\bigr)$$
+
+**Population Stability Index (PSI)** comparing reference baseline bin shares $p_b$ to production/deployment shares $q_b$ (Chapters 34–35):
+
+$$\text{PSI} = \sum_{b=1}^{B} (q_b - p_b) \ln\!\left(\frac{q_b}{p_b}\right)$$
+
+- **Drift Triage Thresholds:** $\text{PSI} < 0.10$ (stable distribution), $0.10 \le \text{PSI} \le 0.25$ (moderate shift — investigate covariates), $\text{PSI} > 0.25$ (major distribution drift — re-calibrate or retrain).
+
+**Decision Curve Analysis (DCA) Net Benefit** at clinical decision threshold $p_t \in (0, 1)$ (Chapters 34, 36):
+
+$$\text{NB}(p_t) = \frac{\text{TP}}{N} - \frac{\text{FP}}{N}\left(\frac{p_t}{1 - p_t}\right), \qquad \text{NB}_{\text{Treat-All}}(p_t) = \pi - (1 - \pi)\left(\frac{p_t}{1 - p_t}\right)$$
+
+where $\pi$ is outcome prevalence and $\text{NB}_{\text{Treat-None}} = 0$. A prediction model delivers clinical value at threshold $p_t$ **only** when $\text{NB}(p_t) > \max\bigl(0,\; \text{NB}_{\text{Treat-All}}(p_t)\bigr)$.
