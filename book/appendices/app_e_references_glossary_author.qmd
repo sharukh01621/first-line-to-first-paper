@@ -111,6 +111,7 @@
 ### Connect, Cite & Contribute
 
 - **ORCID:** [https://orcid.org/0009-0006-8348-6123](https://orcid.org/0009-0006-8348-6123)
+- **Permanent DOI (Zenodo):** [https://doi.org/10.5281/zenodo.24446563](https://doi.org/10.5281/zenodo.24446563)
 - **GitHub Repository & Issue Tracker:** [https://github.com/sharukh01621/first-line-to-first-paper](https://github.com/sharukh01621/first-line-to-first-paper)
 - **Shared Google Drive Companion Folder:** [Open Google Drive Mirror](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
 - **Email:** [shahrukh01621@gmail.com](mailto:shahrukh01621@gmail.com)
@@ -124,7 +125,8 @@
                Statistical Data Science, and Applied Deep Learning},
   edition   = {1st},
   year      = {2026},
-  publisher = {Open Scientific Edition},
-  url       = {https://github.com/sharukh01621/first-line-to-first-paper}
+  publisher = {Open Scientific Edition / Zenodo},
+  doi       = {10.5281/zenodo.24446563},
+  url       = {https://doi.org/10.5281/zenodo.24446563}
 }
 ```

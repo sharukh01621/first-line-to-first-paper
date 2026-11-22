@@ -5,8 +5,9 @@ Interactive 3-tier progressive hint engine (**972 hints**), layered diagnostic v
 > ***From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning***  
 > *By Mezanur Rahman Sharukh* (*M.Sc. Statistician | Public Health & Machine Learning Researcher*)
 
+- **Permanent Book DOI (Zenodo):** https://doi.org/10.5281/zenodo.24446563
 - **Read the Web Book:** https://sharukh01621.github.io/first-line-to-first-paper/
-- **Download PDF (860 pp) & EPUB 3:** https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.1
+- **Download PDF (860 pp) & EPUB 3:** https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.2
 - **Launch 182 Google Colab Notebooks:** https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb
 - **GitHub Repository:** https://github.com/sharukh01621/first-line-to-first-paper
 

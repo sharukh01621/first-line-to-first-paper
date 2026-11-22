@@ -8,8 +8,9 @@
 
 **Mezanur Rahman Sharukh**  
 *M.Sc. Statistician | Public Health & Machine Learning Researcher*  
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24446563.svg)](https://doi.org/10.5281/zenodo.24446563)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0006--8348--6123-A6CE39?style=flat&logo=orcid&logoColor=white)](https://orcid.org/0009-0006-8348-6123)
-[![Release](https://img.shields.io/badge/Edition-1st%20(v1.0.1)-1B3B6F?style=flat)](https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.1)
+[![Release](https://img.shields.io/badge/Edition-1st%20(v1.0.2)-1B3B6F?style=flat)](https://github.com/sharukh01621/first-line-to-first-paper/releases/tag/v1.0.2)
 [![Notebooks](https://img.shields.io/badge/Colab%20Notebooks-182%2F182%20PASS-0F5C6E?style=flat&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb)
 [![Text License](https://img.shields.io/badge/Text-CC%20BY--NC--SA%204.0-B45309?style=flat)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Code License](https://img.shields.io/badge/Code-MIT-334155?style=flat)](https://opensource.org/licenses/MIT)
@@ -17,8 +18,8 @@
 <br />
 
 [**Read Web Book Online**](https://sharukh01621.github.io/first-line-to-first-paper/) &nbsp;|&nbsp;
-[**Download PDF (860 pp)**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.pdf) &nbsp;|&nbsp;
-[**Download EPUB 3**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.epub) &nbsp;|&nbsp;
+[**Download PDF (860 pp)**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf) &nbsp;|&nbsp;
+[**Download EPUB 3**](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub) &nbsp;|&nbsp;
 [**Launch in Google Colab**](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb) &nbsp;|&nbsp;
 [**Google Drive Mirror**](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
 
@@ -41,7 +42,7 @@ Designed with **zero prior coding prerequisites**, the book guides quantitative 
 
 ## Quick Start for Learners (Takes 2 Minutes)
 
-1. **Read Online or Download:** Open the [Interactive Web Companion](https://sharukh01621.github.io/first-line-to-first-paper/), download the [860-Page Print PDF](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.pdf), or load the [EPUB 3 E-Book](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.1/From-First-Line-to-First-Paper.epub) on your tablet/e-reader.
+1. **Read Online or Download:** Open the [Interactive Web Companion](https://sharukh01621.github.io/first-line-to-first-paper/), download the [860-Page Print PDF](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf), or load the [EPUB 3 E-Book](https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub) on your tablet/e-reader.
 2. **Open the Orientation Lab:** Launch [`00_colab_orientation.ipynb`](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb) in Google Colab, click **File $\rightarrow$ Save a copy in Drive**, and run its welcome cells.
 3. **Learn Interactively with `sharukh-tutor`:** Every chapter has three student notebooks (`01_walkthrough.ipynb`, `02_guided_todos.ipynb`, `03_coding_exam.ipynb`) plus complete annotated solutions under `colab_drive/solutions/`. Stuck on an exercise? Call `tutor.hint("ch01_todo_01", level=1)` (up to level 3) and verify your work with `tutor.check(...)` or `tutor.check_exam(...)`.
 
@@ -101,8 +102,9 @@ python3 scripts/sync_drive.py
                Statistical Data Science, and Applied Deep Learning},
   edition   = {1st},
   year      = {2026},
-  publisher = {Open Scientific Edition},
-  url       = {https://github.com/sharukh01621/first-line-to-first-paper}
+  publisher = {Open Scientific Edition / Zenodo},
+  doi       = {10.5281/zenodo.24446563},
+  url       = {https://doi.org/10.5281/zenodo.24446563}
 }
 ```
 
