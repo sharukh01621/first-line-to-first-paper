@@ -1,0 +1,70 @@
+/*-- scss:defaults --*/
+
+$body-bg: #161513;
+$body-color: #efe9de;
+$text-muted: #8f887d;
+$border-color: rgba(239, 233, 222, 0.10);
+
+$primary: #6eb5c4;
+$secondary: #aaa398;
+$link-color: #6eb5c4;
+$link-hover-color: #8fcad6;
+
+$headings-color: #efe9de;
+$code-color: #efe9de;
+$code-bg: #262421;
+$code-block-bg: #1f1d1a;
+
+$sidebar-bg: #161513;
+$sidebar-fg: #aaa398;
+$sidebar-hl: #6eb5c4;
+$toc-color: #aaa398;
+$toc-active-border: #6eb5c4;
+$toc-inactive-border: rgba(239, 233, 222, 0.10);
+
+/*-- scss:rules --*/
+
+:root,
+body.quarto-dark {
+  --book-bg: #161513;
+  --book-surface: #1c1a18;
+  --book-surface-raised: #262421;
+  --book-code-bg: #1f1d1a;
+  --book-hairline: rgba(239, 233, 222, 0.10);
+  --book-hairline-strong: rgba(239, 233, 222, 0.22);
+
+  --book-text: #efe9de;
+  --book-text-secondary: #aaa398;
+  --book-text-muted: #8f887d;
+
+  --book-accent: #6eb5c4;
+  --book-accent-hover: #8fcad6;
+  --book-accent-soft: rgba(110, 181, 196, 0.12);
+
+  --book-btn-bg: #efe9de;
+  --book-btn-bg-hover: #dcd4c6;
+  --book-btn-text: #161513;
+
+  --book-shadow-cover: 0 16px 32px rgba(0, 0, 0, 0.50);
+  --book-shadow-card: none;
+}
+
+body.quarto-dark main.content table.table tbody tr:hover td {
+  background-color: rgba(239, 233, 222, 0.03);
+}
+
+body.quarto-dark div.callout.callout-note {
+  border-left-color: #6b93c9;
+}
+
+body.quarto-dark div.callout.callout-tip {
+  border-left-color: #6eb5c4;
+}
+
+body.quarto-dark div.callout.callout-warning {
+  border-left-color: #d4924c;
+}
+
+body.quarto-dark div.callout.callout-important {
+  border-left-color: #cf6b77;
+}

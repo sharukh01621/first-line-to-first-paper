@@ -8,8 +8,27 @@ book:
   author: "Mezanur Rahman Sharukh"
   date: "2026-11-22"
   date-format: "YYYY"
+  site-url: https://sharukh01621.github.io/first-line-to-first-paper/
+  repo-url: https://github.com/sharukh01621/first-line-to-first-paper
   cover-image: assets/cover.png
   cover-image-alt: "Book cover for From First Line to First Paper by Mezanur Rahman Sharukh featuring a navy-to-teal geometric neural network brain and statistical distribution curves"
+  sidebar:
+    style: floating
+    collapse-level: 1
+    tools:
+      - icon: person
+        text: "Author homepage"
+        href: https://sharukh01621.github.io/
+      - icon: filetype-pdf
+        text: "Download PDF (12.5 MB)"
+        href: https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf
+      - icon: book
+        text: "Download EPUB 3"
+        href: https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub
+  page-footer:
+    left: "From First Line to First Paper · Mezanur Rahman Sharukh"
+    center: "Open access · CC BY-NC-SA 4.0 & MIT · [DOI 10.5281/zenodo.24446563](https://doi.org/10.5281/zenodo.24446563)"
+    right: "[Author site](https://sharukh01621.github.io/) · [PyPI](https://pypi.org/project/sharukh-tutor/)"
   chapters:
     - index.qmd
     - part: "Computational Thinking & Python from Absolute Zero"
@@ -77,13 +96,24 @@ execute:
 format:
   html:
     theme:
-      - cosmo
-      - styles/book_theme.scss
+      light:
+        - cosmo
+        - styles/book_theme.scss
+      dark:
+        - cosmo
+        - styles/book_theme.scss
+        - styles/book_theme_dark.scss
+    include-in-header: styles/header.html
+    highlight-style: arrow
     toc: true
+    toc-title: "On this page"
     toc-depth: 3
+    toc-expand: true
     number-sections: true
     code-copy: true
     code-line-numbers: true
+    smooth-scroll: true
+    link-external-newwindow: true
   pdf:
     documentclass: scrbook
     pdf-engine: xelatex

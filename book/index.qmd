@@ -1,73 +1,131 @@
 # Preface {.unnumbered}
 
-Welcome to ***From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning*** — a complete, zero-to-researcher textbook and interactive Google Colab curriculum authored by **Mezanur Rahman Sharukh** (*M.Sc. Statistician | Public Health & Machine Learning Researcher*).
+::: {.content-visible when-format="html"}
+```{=html}
+<div class="book-hero">
+  <div class="book-hero-grid">
+    <div>
+      <div class="book-hero-meta">First edition, 2026 · 36 ch. + 5 app. · DOI&nbsp;10.5281/zenodo.24446563</div>
+      <h1 class="book-hero-title">From First Line to First Paper</h1>
+      <p class="book-hero-subtitle">Mastering Python, Statistical Data Science, and Applied Deep Learning</p>
+      <p class="book-hero-byline">An open-access textbook and interactive Google Colab curriculum by <a href="https://sharukh01621.github.io/">Mezanur Rahman Sharukh</a> — written from absolute zero to reproducible statistical modelling, PyTorch architectures, fairness audits, and publication-ready research.</p>
 
-## Who This Book Is Written For
+      <div class="book-hero-figures">
+        <div>
+          <span class="book-figure-val">860</span>
+          <span class="book-figure-label">Book pages</span>
+        </div>
+        <div>
+          <span class="book-figure-val">182</span>
+          <span class="book-figure-label">Colab labs</span>
+        </div>
+        <div>
+          <span class="book-figure-val">324</span>
+          <span class="book-figure-label">Auto checks</span>
+        </div>
+        <div>
+          <span class="book-figure-val">972</span>
+          <span class="book-figure-label">Guided hints</span>
+        </div>
+      </div>
 
-This book makes **zero assumptions** about your prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS/Stata to Python, or an aspiring machine learning researcher who wants to understand every equation and line of code from first principles, every chapter builds step-by-step without skipping a single link in the chain.
+      <div class="book-cmd-bar">
+        <code>pip install sharukh-tutor</code>
+        <button id="book-copy-pip" class="book-btn-micro" type="button">Copy</button>
+      </div>
 
-By the end of Part VII, you will not merely "know Python syntax"—you will think like a disciplined **Research Software Engineer and Applied ML/DL Scientist**, capable of taking raw epidemiological or clinical datasets all the way to leakage-free models, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research repositories.
+      <div class="book-hero-actions">
+        <a href="part_01_python_foundations/ch01_first_program.html" class="book-btn book-btn-primary">Start Chapter 1</a>
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf" class="book-btn book-btn-secondary" target="_blank" rel="noopener">Download PDF (12.5 MB)</a>
+      </div>
+
+      <div class="book-hero-links">
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub" target="_blank" rel="noopener">EPUB 3</a>
+        <a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb" target="_blank" rel="noopener">Colab hub</a>
+        <a href="https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link" target="_blank" rel="noopener">Google Drive</a>
+        <a href="https://pypi.org/project/sharukh-tutor/" target="_blank" rel="noopener">PyPI</a>
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+
+    <a href="part_01_python_foundations/ch01_first_program.html" class="book-hero-cover-wrap">
+      <img src="assets/cover.png" alt="Cover of From First Line to First Paper by Mezanur Rahman Sharukh" class="book-hero-cover" />
+    </a>
+  </div>
+</div>
+```
+:::
+
+::: {.content-visible unless-format="html"}
+*From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning* is a complete, zero-to-researcher open-access textbook and interactive Google Colab curriculum authored by **Mezanur Rahman Sharukh** (Statistician, Public Health and Machine Learning Researcher).
+:::
+
+## Who this book is written for
+
+This book makes no assumptions about prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS or Stata to Python, or a quantitative researcher who wants to understand every equation and line of code from first principles, each chapter builds step by step without skipping a link in the chain.
+
+By the end of Part VII, you will move beyond Python syntax to work like a disciplined research software engineer and applied machine learning scientist — taking raw epidemiological or clinical datasets through survey cleaning, leakage-free pipelines, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research releases.
 
 ---
 
-## How the Dual-Synced Book + Google Colab Ecosystem Works
+## How the dual-synced book and Google Colab ecosystem works
 
-Every single chapter in this textbook is paired **1-to-1** with interactive Google Colab notebooks stored in our dual-mirrored companion ecosystem:
+Every chapter in this book is paired 1-to-1 with interactive Google Colab notebooks stored across two mirrored hubs:
 
-- **GitHub Repository (Live Colab Links):** [github.com/sharukh01621/first-line-to-first-paper](https://github.com/sharukh01621/first-line-to-first-paper)
-- **Google Drive Mirror Folder (Full Curriculum & Datasets):** [Open Shared Google Drive Folder](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
+- **GitHub repository (live Colab links):** [github.com/sharukh01621/first-line-to-first-paper](https://github.com/sharukh01621/first-line-to-first-paper)
+- **Google Drive mirror (full curriculum and datasets):** [Open shared Google Drive folder](https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link)
 
-1. **Walkthrough Notebook (`01_walkthrough.ipynb`):** Contains every code snippet and "Break It On Purpose" error lab printed in the chapter verbatim.
-2. **Guided To-Do Notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and friendly diagnostic checks (`tutor.check(...)`) powered by our companion package `sharukh-tutor` (installed automatically from the GitHub repository in Step 0 of every notebook and packaged cleanly for PyPI distribution).
-3. **Chapter Coding Exam (`03_coding_exam.ipynb`):** A realistic 100-point assessment graded automatically with `tutor.check_exam(...)`.
-4. **Annotated Solution Notebooks (`solutions/.../*_SOLUTION.ipynb`):** Complete worked solutions paired with debugging post-mortems explaining the most common mistakes and how to avoid them.
+1. **Walkthrough notebook (`01_walkthrough.ipynb`):** Every code snippet and "Break It On Purpose" error lab printed in the chapter verbatim.
+2. **Guided to-do notebook (`02_guided_todos.ipynb`):** Hands-on exercises with `# YOUR CODE HERE` slots, 3-tier progressive hints (`tutor.hint(..., level=1..3)`), and diagnostic checks (`tutor.check(...)`) powered by the open-source PyPI package `sharukh-tutor` (`pip install sharukh-tutor`).
+3. **Chapter coding exam (`03_coding_exam.ipynb`):** A 100-point chapter assessment graded automatically with `tutor.check_exam(...)`.
+4. **Annotated solution notebooks (`solutions/.../*_SOLUTION.ipynb`):** Complete worked solutions paired with debugging post-mortems explaining common mistakes and how to avoid them.
 
-### Quick-Start Onboarding Hub (Click or Scan) {.unnumbered}
+### Quick-start onboarding hub {.unnumbered}
 
-| Onboarding Lab | Interactive Google Colab Launch Link | Scan (Print) |
+| Onboarding lab | Interactive Google Colab launch link | Scan (print) |
 | :--- | :--- | :---: |
-| **Curriculum Index** | [00_START_HERE.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb) | ![QR code linking to the Master Start-Here Google Colab curriculum index notebook](assets/qr/00_START_HERE.png){width=58px} |
-| **2-Minute Setup** | [00_setup / 00_colab_orientation.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb) | ![QR code linking to the Colab Orientation and environment setup notebook](assets/qr/00_setup__00_colab_orientation.png){width=58px} |
+| **Curriculum index** | [00_START_HERE.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb) | ![QR code linking to the Master Start-Here Google Colab curriculum index notebook](assets/qr/00_START_HERE.png){width=58px} |
+| **2-minute setup** | [00_setup / 00_colab_orientation.ipynb](https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb) | ![QR code linking to the Colab Orientation and environment setup notebook](assets/qr/00_setup__00_colab_orientation.png){width=58px} |
 
 : {tbl-colwidths="[22,56,22]"}
 
-::: {.callout-tip title="First-Time Setup (Takes 2 Minutes)"}
-Before starting Chapter 1, open the **Colab Orientation Notebook** (`00_setup/00_colab_orientation.ipynb`), click **File $\rightarrow$ Save a copy in Drive**, and run its three welcome cells to verify your runtime and preview our Public Health spine datasets.
+::: {.callout-tip title="First-time setup (2 minutes)"}
+Before starting Chapter 1, open the **Colab Orientation Notebook** (`00_setup/00_colab_orientation.ipynb`), select **File $\rightarrow$ Save a copy in Drive**, and run its three welcome cells to verify your runtime and preview the bundled public health spine datasets.
 :::
 
 ---
 
-## The Researcher's 4-Step Problem-Structuring Blueprint
+## The researcher's 4-step problem-structuring blueprint
 
-Beginners often stare at a blank code cell and freeze because they try to write Python syntax *before* designing the logic. Throughout all 36 chapters, before we write a single line of code for any non-trivial problem, we complete this 4-step blueprint:
+Beginners often freeze at a blank code cell because they try to write Python syntax before designing the logic. Across all 36 chapters, before writing code for any non-trivial problem, we complete four steps:
 
-1. **Inputs & Units:** What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?
-2. **Edge Cases & Traps:** What could silently go wrong? (Zero denominators, missing survey codes like `999`, wrong operator precedence, floating-point truncation, data leakage.)
-3. **Step-by-Step Algorithm:** Plain-English ordered steps written *before* Python.
-4. **Verification Plan:** Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.
+1. **Inputs and units:** What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?
+2. **Edge cases and traps:** What could silently go wrong — zero denominators, missing survey sentinel codes such as `999`, operator precedence mistakes, floating-point truncation, or data leakage?
+3. **Step-by-step algorithm:** Plain-English ordered steps written before Python.
+4. **Verification plan:** Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.
 
 ---
 
-## Visual Callout Legend
+## Visual callout legend
 
 - **Mental Model (`Note`):** Diagrams and analogies showing what happens inside Python's memory and interpreter.
 - **Researcher's Note (`Tip`):** Statistical, epidemiological, and reproducible-science best practices.
-- **Common Trap (`Warning`):** Subtle bugs that run *without* crashing and silently corrupt analyses.
-- **Break It On Purpose (`Important`):** Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly and confidently.
+- **Common Trap (`Warning`):** Subtle bugs that run without crashing and silently corrupt analyses.
+- **Break It On Purpose (`Important`):** Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly.
 
 ---
 
-## Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)
+## Master 7-part curriculum roadmap (First edition, 860 pages)
 
-| Part | Chapters | Core Mastery Milestone | Print Pages |
+| Part | Chapters | Core mastery milestone | Pages |
 | :--- | :---: | :--- | :---: |
-| **Part I** | Ch 1–6 | Computational Thinking & Python from Absolute Zero | ~110 |
-| **Part II** | Ch 7–11 | Core Data Structures, Algorithms & Defensive Programming | ~105 |
-| **Part III** | Ch 12–15 | OOP, Jupyter/Colab Engineering, VS Code & Git | ~90 |
-| **Part IV** | Ch 16–20 | NumPy, Pandas, Survey Cleaning, Visualization & Biostatistics | ~115 |
-| **Part V** | Ch 21–26 | Classical Machine Learning — Scratch Math to Leakage-Free Pipelines | ~140 |
-| **Part VI** | Ch 27–32 | Deep Learning — NumPy Backprop to PyTorch, CNNs & Transformers | ~145 |
-| **Part VII** | Ch 33–36 | Rigorous Experiments, Ablation Studies, Fairness & Capstone Paper | ~115 |
-| **Appendices** | A–E | Cheat Sheets, Math Refresher, Top-50 Errors, Colab Index & References | ~50 |
+| **Part I** | Ch 1–6 | Computational thinking and Python from absolute zero | 110 |
+| **Part II** | Ch 7–11 | Core data structures, algorithms, and defensive programming | 105 |
+| **Part III** | Ch 12–15 | OOP, Jupyter/Colab engineering, VS Code, and Git | 90 |
+| **Part IV** | Ch 16–20 | NumPy, Pandas, survey cleaning, visualization, and biostatistics | 115 |
+| **Part V** | Ch 21–26 | Classical machine learning from scratch math to leakage-free pipelines | 140 |
+| **Part VI** | Ch 27–32 | Deep learning from NumPy backprop to PyTorch, CNNs, and Transformers | 145 |
+| **Part VII** | Ch 33–36 | Rigorous experiments, ablation studies, fairness, and capstone paper | 115 |
+| **Appendices** | A–E | Cheat sheets, math refresher, Top-50 error decoder, Colab index, and references | 50 |
 
 : {tbl-colwidths="[16,14,56,14]"}
