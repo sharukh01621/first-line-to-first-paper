@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "From First Line to First Paper",
     "section": "",
-    "text": "Preface\nWelcome to From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning — a complete, zero-to-researcher textbook and interactive Google Colab curriculum authored by Mezanur Rahman Sharukh (M.Sc. Statistician | Public Health & Machine Learning Researcher).",
+    "text": "Preface",
     "crumbs": [
       "Preface"
     ]
@@ -13,18 +13,18 @@
     "objectID": "index.html#who-this-book-is-written-for",
     "href": "index.html#who-this-book-is-written-for",
     "title": "From First Line to First Paper",
-    "section": "Who This Book Is Written For",
-    "text": "Who This Book Is Written For\nThis book makes zero assumptions about your prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS/Stata to Python, or an aspiring machine learning researcher who wants to understand every equation and line of code from first principles, every chapter builds step-by-step without skipping a single link in the chain.\nBy the end of Part VII, you will not merely “know Python syntax”—you will think like a disciplined Research Software Engineer and Applied ML/DL Scientist, capable of taking raw epidemiological or clinical datasets all the way to leakage-free models, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research repositories.",
+    "section": "Who this book is written for",
+    "text": "Who this book is written for\nThis book makes no assumptions about prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS or Stata to Python, or a quantitative researcher who wants to understand every equation and line of code from first principles, each chapter builds step by step without skipping a link in the chain.\nBy the end of Part VII, you will move beyond Python syntax to work like a disciplined research software engineer and applied machine learning scientist — taking raw epidemiological or clinical datasets through survey cleaning, leakage-free pipelines, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research releases.",
     "crumbs": [
       "Preface"
     ]
   },
   {
-    "objectID": "index.html#how-the-dual-synced-book-google-colab-ecosystem-works",
-    "href": "index.html#how-the-dual-synced-book-google-colab-ecosystem-works",
+    "objectID": "index.html#how-the-dual-synced-book-and-google-colab-ecosystem-works",
+    "href": "index.html#how-the-dual-synced-book-and-google-colab-ecosystem-works",
     "title": "From First Line to First Paper",
-    "section": "How the Dual-Synced Book + Google Colab Ecosystem Works",
-    "text": "How the Dual-Synced Book + Google Colab Ecosystem Works\nEvery single chapter in this textbook is paired 1-to-1 with interactive Google Colab notebooks stored in our dual-mirrored companion ecosystem:\n\nGitHub Repository (Live Colab Links): github.com/sharukh01621/first-line-to-first-paper\nGoogle Drive Mirror Folder (Full Curriculum & Datasets): Open Shared Google Drive Folder\n\n\nWalkthrough Notebook (01_walkthrough.ipynb): Contains every code snippet and “Break It On Purpose” error lab printed in the chapter verbatim.\nGuided To-Do Notebook (02_guided_todos.ipynb): Hands-on exercises with # YOUR CODE HERE slots, 3-tier progressive hints (tutor.hint(..., level=1..3)), and friendly diagnostic checks (tutor.check(...)) powered by our companion package sharukh-tutor (installed automatically from the GitHub repository in Step 0 of every notebook and packaged cleanly for PyPI distribution).\nChapter Coding Exam (03_coding_exam.ipynb): A realistic 100-point assessment graded automatically with tutor.check_exam(...).\nAnnotated Solution Notebooks (solutions/.../*_SOLUTION.ipynb): Complete worked solutions paired with debugging post-mortems explaining the most common mistakes and how to avoid them.\n\n\nQuick-Start Onboarding Hub (Click or Scan)\n\n\n\n\n\n\n\n\nOnboarding Lab\nInteractive Google Colab Launch Link\nScan (Print)\n\n\n\n\nCurriculum Index\n00_START_HERE.ipynb\n\n\n\n2-Minute Setup\n00_setup / 00_colab_orientation.ipynb\n\n\n\n\n\n\n\n\n\n\nTipFirst-Time Setup (Takes 2 Minutes)\n\n\n\nBefore starting Chapter 1, open the Colab Orientation Notebook (00_setup/00_colab_orientation.ipynb), click File \\(\\rightarrow\\) Save a copy in Drive, and run its three welcome cells to verify your runtime and preview our Public Health spine datasets.",
+    "section": "How the dual-synced book and Google Colab ecosystem works",
+    "text": "How the dual-synced book and Google Colab ecosystem works\nEvery chapter in this book is paired 1-to-1 with interactive Google Colab notebooks stored across two mirrored hubs:\n\nGitHub repository (live Colab links): github.com/sharukh01621/first-line-to-first-paper\nGoogle Drive mirror (full curriculum and datasets): Open shared Google Drive folder\n\n\nWalkthrough notebook (01_walkthrough.ipynb): Every code snippet and “Break It On Purpose” error lab printed in the chapter verbatim.\nGuided to-do notebook (02_guided_todos.ipynb): Hands-on exercises with # YOUR CODE HERE slots, 3-tier progressive hints (tutor.hint(..., level=1..3)), and diagnostic checks (tutor.check(...)) powered by the open-source PyPI package sharukh-tutor (pip install sharukh-tutor).\nChapter coding exam (03_coding_exam.ipynb): A 100-point chapter assessment graded automatically with tutor.check_exam(...).\nAnnotated solution notebooks (solutions/.../*_SOLUTION.ipynb): Complete worked solutions paired with debugging post-mortems explaining common mistakes and how to avoid them.\n\n\nQuick-start onboarding hub\n\n\n\n\n\n\n\n\nOnboarding lab\nInteractive Google Colab launch link\nScan (print)\n\n\n\n\nCurriculum index\n00_START_HERE.ipynb\n\n\n\n2-minute setup\n00_setup / 00_colab_orientation.ipynb\n\n\n\n\n\n\n\n\n\n\nTipFirst-time setup (2 minutes)\n\n\n\nBefore starting Chapter 1, open the Colab Orientation Notebook (00_setup/00_colab_orientation.ipynb), select File \\(\\rightarrow\\) Save a copy in Drive, and run its three welcome cells to verify your runtime and preview the bundled public health spine datasets.",
     "crumbs": [
       "Preface"
     ]
@@ -33,8 +33,8 @@
     "objectID": "index.html#the-researchers-4-step-problem-structuring-blueprint",
     "href": "index.html#the-researchers-4-step-problem-structuring-blueprint",
     "title": "From First Line to First Paper",
-    "section": "The Researcher’s 4-Step Problem-Structuring Blueprint",
-    "text": "The Researcher’s 4-Step Problem-Structuring Blueprint\nBeginners often stare at a blank code cell and freeze because they try to write Python syntax before designing the logic. Throughout all 36 chapters, before we write a single line of code for any non-trivial problem, we complete this 4-step blueprint:\n\nInputs & Units: What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?\nEdge Cases & Traps: What could silently go wrong? (Zero denominators, missing survey codes like 999, wrong operator precedence, floating-point truncation, data leakage.)\nStep-by-Step Algorithm: Plain-English ordered steps written before Python.\nVerification Plan: Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.",
+    "section": "The researcher’s 4-step problem-structuring blueprint",
+    "text": "The researcher’s 4-step problem-structuring blueprint\nBeginners often freeze at a blank code cell because they try to write Python syntax before designing the logic. Across all 36 chapters, before writing code for any non-trivial problem, we complete four steps:\n\nInputs and units: What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?\nEdge cases and traps: What could silently go wrong — zero denominators, missing survey sentinel codes such as 999, operator precedence mistakes, floating-point truncation, or data leakage?\nStep-by-step algorithm: Plain-English ordered steps written before Python.\nVerification plan: Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.",
     "crumbs": [
       "Preface"
     ]
@@ -43,8 +43,8 @@
     "objectID": "index.html#visual-callout-legend",
     "href": "index.html#visual-callout-legend",
     "title": "From First Line to First Paper",
-    "section": "Visual Callout Legend",
-    "text": "Visual Callout Legend\n\nMental Model (Note): Diagrams and analogies showing what happens inside Python’s memory and interpreter.\nResearcher’s Note (Tip): Statistical, epidemiological, and reproducible-science best practices.\nCommon Trap (Warning): Subtle bugs that run without crashing and silently corrupt analyses.\nBreak It On Purpose (Important): Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly and confidently.",
+    "section": "Visual callout legend",
+    "text": "Visual callout legend\n\nMental Model (Note): Diagrams and analogies showing what happens inside Python’s memory and interpreter.\nResearcher’s Note (Tip): Statistical, epidemiological, and reproducible-science best practices.\nCommon Trap (Warning): Subtle bugs that run without crashing and silently corrupt analyses.\nBreak It On Purpose (Important): Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly.",
     "crumbs": [
       "Preface"
     ]
@@ -53,8 +53,8 @@
     "objectID": "index.html#master-7-part-curriculum-roadmap-first-edition-860-pages",
     "href": "index.html#master-7-part-curriculum-roadmap-first-edition-860-pages",
     "title": "From First Line to First Paper",
-    "section": "Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)",
-    "text": "Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)\n\n\n\n\n\n\n\n\n\nPart\nChapters\nCore Mastery Milestone\nPrint Pages\n\n\n\n\nPart I\nCh 1–6\nComputational Thinking & Python from Absolute Zero\n~110\n\n\nPart II\nCh 7–11\nCore Data Structures, Algorithms & Defensive Programming\n~105\n\n\nPart III\nCh 12–15\nOOP, Jupyter/Colab Engineering, VS Code & Git\n~90\n\n\nPart IV\nCh 16–20\nNumPy, Pandas, Survey Cleaning, Visualization & Biostatistics\n~115\n\n\nPart V\nCh 21–26\nClassical Machine Learning — Scratch Math to Leakage-Free Pipelines\n~140\n\n\nPart VI\nCh 27–32\nDeep Learning — NumPy Backprop to PyTorch, CNNs & Transformers\n~145\n\n\nPart VII\nCh 33–36\nRigorous Experiments, Ablation Studies, Fairness & Capstone Paper\n~115\n\n\nAppendices\nA–E\nCheat Sheets, Math Refresher, Top-50 Errors, Colab Index & References\n~50",
+    "section": "Master 7-part curriculum roadmap (First edition, 860 pages)",
+    "text": "Master 7-part curriculum roadmap (First edition, 860 pages)\n\n\n\n\n\n\n\n\n\nPart\nChapters\nCore mastery milestone\nPages\n\n\n\n\nPart I\nCh 1–6\nComputational thinking and Python from absolute zero\n110\n\n\nPart II\nCh 7–11\nCore data structures, algorithms, and defensive programming\n105\n\n\nPart III\nCh 12–15\nOOP, Jupyter/Colab engineering, VS Code, and Git\n90\n\n\nPart IV\nCh 16–20\nNumPy, Pandas, survey cleaning, visualization, and biostatistics\n115\n\n\nPart V\nCh 21–26\nClassical machine learning from scratch math to leakage-free pipelines\n140\n\n\nPart VI\nCh 27–32\nDeep learning from NumPy backprop to PyTorch, CNNs, and Transformers\n145\n\n\nPart VII\nCh 33–36\nRigorous experiments, ablation studies, fairness, and capstone paper\n115\n\n\nAppendices\nA–E\nCheat sheets, math refresher, Top-50 error decoder, Colab index, and references\n50",
     "crumbs": [
       "Preface"
     ]

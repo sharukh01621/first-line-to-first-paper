@@ -46,10 +46,14 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-235be74f11d152e066c30ad4f5d8a79b.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-85795552886f9cbc3d9444789535f1bc.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-235be74f11d152e066c30ad4f5d8a79b.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-068f3482f553be32974875db8976df99.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fa775082f532e9773dce9612e6db81d9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-8931af81ee8ab7d28a0dc82091f256ec.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fa775082f532e9773dce9612e6db81d9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -77,6 +81,27 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f4c5c'/%3E%3Cpath d='M9 9h14v2.5H12v4.5h9v2.5h-9V24H9V9z' fill='%23fdfbf7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;display=swap" rel="stylesheet">
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("book-copy-pip");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText("pip install sharukh-tutor");
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+    } catch {
+      btn.textContent = "Copy failed";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+    }
+  });
+});
+</script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -110,7 +135,177 @@ window.Quarto = {
 
 </head>
 
-<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -135,6 +330,13 @@ window.Quarto = {
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">From First Line to First Paper</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="https://sharukh01621.github.io/" title="Author homepage" class="quarto-navigation-tool px-1" aria-label="Author homepage"><i class="bi bi-person"></i></a>
+    <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf" title="Download PDF (12.5 MB)" class="quarto-navigation-tool px-1" aria-label="Download PDF (12.5 MB)"><i class="bi bi-filetype-pdf"></i></a>
+    <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub" title="Download EPUB 3" class="quarto-navigation-tool px-1" aria-label="Download EPUB 3"><i class="bi bi-book"></i></a>
+    <a href="https://github.com/sharukh01621/first-line-to-first-paper" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
     </div>
       </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
@@ -152,10 +354,10 @@ window.Quarto = {
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-1-label">Computational Thinking &amp; Python from Absolute Zero</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_01_python_foundations/ch01_first_program.html" class="sidebar-item-text sidebar-link">
@@ -196,10 +398,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-2-label">Core Data Structures, Algorithmic Thinking &amp; Defensive Programming</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_02_data_structures_algorithms/ch07_lists_aliasing.html" class="sidebar-item-text sidebar-link">
@@ -234,10 +436,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-3-label">Software Engineering for Data Scientists</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_03_engineering_workflow/ch12_oop_for_ml.html" class="sidebar-item-text sidebar-link">
@@ -266,10 +468,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-4-label">Mathematical Computing, Data Wrangling &amp; Statistical Foundations</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_04_data_science_math/ch16_numpy_vectorization.html" class="sidebar-item-text sidebar-link">
@@ -304,10 +506,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-5-label">Classical Machine Learning — Intuition, Scratch Math &amp; Scikit-Learn</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_05_classical_ml/ch21_ml_paradigm_leakage.html" class="sidebar-item-text sidebar-link">
@@ -348,10 +550,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-controls="quarto-sidebar-section-6" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-6-label">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-6" aria-labelledby="quarto-sidebar-section-6-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_06_deep_learning/ch27_neural_nets_from_scratch.html" class="sidebar-item-text sidebar-link">
@@ -392,10 +594,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-controls="quarto-sidebar-section-7" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-7-label">Applied Research Engineering, Ablation Studies, Fairness &amp; Capstone</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-7" aria-labelledby="quarto-sidebar-section-7-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./part_07_research_capstone/ch33_reproducible_experiments_ablation.html" class="sidebar-item-text sidebar-link">
@@ -424,10 +626,10 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="true">
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-controls="quarto-sidebar-section-8" aria-expanded="false">
  <span class="menu-text" id="quarto-sidebar-section-8-label">Appendices</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
       </div>
-      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-8" aria-labelledby="quarto-sidebar-section-8-label" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./appendices/app_a_python_data_cheatsheets.html" class="sidebar-item-text sidebar-link">
@@ -466,26 +668,27 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
-    <h2 id="toc-title">Table of contents</h2>
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
    
   <ul>
   <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface">Preface</a>
   <ul class="collapse">
-  <li><a href="#who-this-book-is-written-for" id="toc-who-this-book-is-written-for" class="nav-link" data-scroll-target="#who-this-book-is-written-for">Who This Book Is Written For</a></li>
-  <li><a href="#how-the-dual-synced-book-google-colab-ecosystem-works" id="toc-how-the-dual-synced-book-google-colab-ecosystem-works" class="nav-link" data-scroll-target="#how-the-dual-synced-book-google-colab-ecosystem-works">How the Dual-Synced Book + Google Colab Ecosystem Works</a>
+  <li><a href="#who-this-book-is-written-for" id="toc-who-this-book-is-written-for" class="nav-link" data-scroll-target="#who-this-book-is-written-for">Who this book is written for</a></li>
+  <li><a href="#how-the-dual-synced-book-and-google-colab-ecosystem-works" id="toc-how-the-dual-synced-book-and-google-colab-ecosystem-works" class="nav-link" data-scroll-target="#how-the-dual-synced-book-and-google-colab-ecosystem-works">How the dual-synced book and Google Colab ecosystem works</a>
   <ul class="collapse">
-  <li><a href="#quick-start-onboarding-hub-click-or-scan" id="toc-quick-start-onboarding-hub-click-or-scan" class="nav-link" data-scroll-target="#quick-start-onboarding-hub-click-or-scan">Quick-Start Onboarding Hub (Click or Scan)</a></li>
+  <li><a href="#quick-start-onboarding-hub" id="toc-quick-start-onboarding-hub" class="nav-link" data-scroll-target="#quick-start-onboarding-hub">Quick-start onboarding hub</a></li>
   </ul></li>
-  <li><a href="#the-researchers-4-step-problem-structuring-blueprint" id="toc-the-researchers-4-step-problem-structuring-blueprint" class="nav-link" data-scroll-target="#the-researchers-4-step-problem-structuring-blueprint">The Researcher’s 4-Step Problem-Structuring Blueprint</a></li>
-  <li><a href="#visual-callout-legend" id="toc-visual-callout-legend" class="nav-link" data-scroll-target="#visual-callout-legend">Visual Callout Legend</a></li>
-  <li><a href="#master-7-part-curriculum-roadmap-first-edition-860-pages" id="toc-master-7-part-curriculum-roadmap-first-edition-860-pages" class="nav-link" data-scroll-target="#master-7-part-curriculum-roadmap-first-edition-860-pages">Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)</a></li>
+  <li><a href="#the-researchers-4-step-problem-structuring-blueprint" id="toc-the-researchers-4-step-problem-structuring-blueprint" class="nav-link" data-scroll-target="#the-researchers-4-step-problem-structuring-blueprint">The researcher’s 4-step problem-structuring blueprint</a></li>
+  <li><a href="#visual-callout-legend" id="toc-visual-callout-legend" class="nav-link" data-scroll-target="#visual-callout-legend">Visual callout legend</a></li>
+  <li><a href="#master-7-part-curriculum-roadmap-first-edition-860-pages" id="toc-master-7-part-curriculum-roadmap-first-edition-860-pages" class="nav-link" data-scroll-target="#master-7-part-curriculum-roadmap-first-edition-860-pages">Master 7-part curriculum roadmap (First edition, 860 pages)</a></li>
   </ul></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content" tabindex="-1">
+
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -522,28 +725,78 @@ window.Quarto = {
 
 <section id="preface" class="level1 unnumbered">
 <h1 class="unnumbered">Preface</h1><p><img src="assets/cover.png" title="From First Line to First Paper" class="quarto-cover-image nolightbox img-fluid" alt="Book cover for From First Line to First Paper by Mezanur Rahman Sharukh featuring a navy-to-teal geometric neural network brain and statistical distribution curves"></p>
-<p>Welcome to <strong><em>From First Line to First Paper: Mastering Python, Statistical Data Science, and Applied Deep Learning</em></strong> — a complete, zero-to-researcher textbook and interactive Google Colab curriculum authored by <strong>Mezanur Rahman Sharukh</strong> (<em>M.Sc. Statistician | Public Health &amp; Machine Learning Researcher</em>).</p>
+<div class="book-hero">
+  <div class="book-hero-grid">
+    <div>
+      <div class="book-hero-meta">First edition, 2026 · 36 ch. + 5 app. · DOI&nbsp;10.5281/zenodo.24446563</div>
+      <h1 class="book-hero-title">From First Line to First Paper</h1>
+      <p class="book-hero-subtitle">Mastering Python, Statistical Data Science, and Applied Deep Learning</p>
+      <p class="book-hero-byline">An open-access textbook and interactive Google Colab curriculum by <a href="https://sharukh01621.github.io/">Mezanur Rahman Sharukh</a> — written from absolute zero to reproducible statistical modelling, PyTorch architectures, fairness audits, and publication-ready research.</p>
+
+      <div class="book-hero-figures">
+        <div>
+          <span class="book-figure-val">860</span>
+          <span class="book-figure-label">Book pages</span>
+        </div>
+        <div>
+          <span class="book-figure-val">182</span>
+          <span class="book-figure-label">Colab labs</span>
+        </div>
+        <div>
+          <span class="book-figure-val">324</span>
+          <span class="book-figure-label">Auto checks</span>
+        </div>
+        <div>
+          <span class="book-figure-val">972</span>
+          <span class="book-figure-label">Guided hints</span>
+        </div>
+      </div>
+
+      <div class="book-cmd-bar">
+        <code>pip install sharukh-tutor</code>
+        <button id="book-copy-pip" class="book-btn-micro" type="button">Copy</button>
+      </div>
+
+      <div class="book-hero-actions">
+        <a href="part_01_python_foundations/ch01_first_program.html" class="book-btn book-btn-primary">Start Chapter 1</a>
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.pdf" class="book-btn book-btn-secondary" target="_blank" rel="noopener">Download PDF (12.5 MB)</a>
+      </div>
+
+      <div class="book-hero-links">
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper/releases/download/v1.0.2/From-First-Line-to-First-Paper.epub" target="_blank" rel="noopener">EPUB 3</a>
+        <a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb" target="_blank" rel="noopener">Colab hub</a>
+        <a href="https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link" target="_blank" rel="noopener">Google Drive</a>
+        <a href="https://pypi.org/project/sharukh-tutor/" target="_blank" rel="noopener">PyPI</a>
+        <a href="https://github.com/sharukh01621/first-line-to-first-paper" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+
+    <a href="part_01_python_foundations/ch01_first_program.html" class="book-hero-cover-wrap">
+      <img src="assets/cover.png" alt="Cover of From First Line to First Paper by Mezanur Rahman Sharukh" class="book-hero-cover">
+    </a>
+  </div>
+</div>
 <section id="who-this-book-is-written-for" class="level2">
-<h2 class="anchored" data-anchor-id="who-this-book-is-written-for">Who This Book Is Written For</h2>
-<p>This book makes <strong>zero assumptions</strong> about your prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS/Stata to Python, or an aspiring machine learning researcher who wants to understand every equation and line of code from first principles, every chapter builds step-by-step without skipping a single link in the chain.</p>
-<p>By the end of Part VII, you will not merely “know Python syntax”—you will think like a disciplined <strong>Research Software Engineer and Applied ML/DL Scientist</strong>, capable of taking raw epidemiological or clinical datasets all the way to leakage-free models, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research repositories.</p>
+<h2 class="anchored" data-anchor-id="who-this-book-is-written-for">Who this book is written for</h2>
+<p>This book makes no assumptions about prior programming experience. Whether you are a public health student opening a coding environment for the first time, a biostatistician moving from SPSS or Stata to Python, or a quantitative researcher who wants to understand every equation and line of code from first principles, each chapter builds step by step without skipping a link in the chain.</p>
+<p>By the end of Part VII, you will move beyond Python syntax to work like a disciplined research software engineer and applied machine learning scientist — taking raw epidemiological or clinical datasets through survey cleaning, leakage-free pipelines, PyTorch architectures, systematic ablation studies, subgroup fairness audits, and reproducible research releases.</p>
 <hr>
 </section>
-<section id="how-the-dual-synced-book-google-colab-ecosystem-works" class="level2">
-<h2 class="anchored" data-anchor-id="how-the-dual-synced-book-google-colab-ecosystem-works">How the Dual-Synced Book + Google Colab Ecosystem Works</h2>
-<p>Every single chapter in this textbook is paired <strong>1-to-1</strong> with interactive Google Colab notebooks stored in our dual-mirrored companion ecosystem:</p>
+<section id="how-the-dual-synced-book-and-google-colab-ecosystem-works" class="level2">
+<h2 class="anchored" data-anchor-id="how-the-dual-synced-book-and-google-colab-ecosystem-works">How the dual-synced book and Google Colab ecosystem works</h2>
+<p>Every chapter in this book is paired 1-to-1 with interactive Google Colab notebooks stored across two mirrored hubs:</p>
 <ul>
-<li><strong>GitHub Repository (Live Colab Links):</strong> <a href="https://github.com/sharukh01621/first-line-to-first-paper">github.com/sharukh01621/first-line-to-first-paper</a></li>
-<li><strong>Google Drive Mirror Folder (Full Curriculum &amp; Datasets):</strong> <a href="https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link">Open Shared Google Drive Folder</a></li>
+<li><strong>GitHub repository (live Colab links):</strong> <a href="https://github.com/sharukh01621/first-line-to-first-paper">github.com/sharukh01621/first-line-to-first-paper</a></li>
+<li><strong>Google Drive mirror (full curriculum and datasets):</strong> <a href="https://drive.google.com/drive/folders/1pHBCVND-bRsPV4FarRPqOmivYkVmRFBF?usp=drive_link">Open shared Google Drive folder</a></li>
 </ul>
 <ol type="1">
-<li><strong>Walkthrough Notebook (<code>01_walkthrough.ipynb</code>):</strong> Contains every code snippet and “Break It On Purpose” error lab printed in the chapter verbatim.</li>
-<li><strong>Guided To-Do Notebook (<code>02_guided_todos.ipynb</code>):</strong> Hands-on exercises with <code># YOUR CODE HERE</code> slots, 3-tier progressive hints (<code>tutor.hint(..., level=1..3)</code>), and friendly diagnostic checks (<code>tutor.check(...)</code>) powered by our companion package <code>sharukh-tutor</code> (installed automatically from the GitHub repository in Step 0 of every notebook and packaged cleanly for PyPI distribution).</li>
-<li><strong>Chapter Coding Exam (<code>03_coding_exam.ipynb</code>):</strong> A realistic 100-point assessment graded automatically with <code>tutor.check_exam(...)</code>.</li>
-<li><strong>Annotated Solution Notebooks (<code>solutions/.../*_SOLUTION.ipynb</code>):</strong> Complete worked solutions paired with debugging post-mortems explaining the most common mistakes and how to avoid them.</li>
+<li><strong>Walkthrough notebook (<code>01_walkthrough.ipynb</code>):</strong> Every code snippet and “Break It On Purpose” error lab printed in the chapter verbatim.</li>
+<li><strong>Guided to-do notebook (<code>02_guided_todos.ipynb</code>):</strong> Hands-on exercises with <code># YOUR CODE HERE</code> slots, 3-tier progressive hints (<code>tutor.hint(..., level=1..3)</code>), and diagnostic checks (<code>tutor.check(...)</code>) powered by the open-source PyPI package <code>sharukh-tutor</code> (<code>pip install sharukh-tutor</code>).</li>
+<li><strong>Chapter coding exam (<code>03_coding_exam.ipynb</code>):</strong> A 100-point chapter assessment graded automatically with <code>tutor.check_exam(...)</code>.</li>
+<li><strong>Annotated solution notebooks (<code>solutions/.../*_SOLUTION.ipynb</code>):</strong> Complete worked solutions paired with debugging post-mortems explaining common mistakes and how to avoid them.</li>
 </ol>
-<section id="quick-start-onboarding-hub-click-or-scan" class="level3 unnumbered">
-<h3 class="unnumbered anchored" data-anchor-id="quick-start-onboarding-hub-click-or-scan">Quick-Start Onboarding Hub (Click or Scan)</h3>
+<section id="quick-start-onboarding-hub" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="quick-start-onboarding-hub">Quick-start onboarding hub</h3>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 22%">
@@ -552,19 +805,19 @@ window.Quarto = {
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">Onboarding Lab</th>
-<th style="text-align: left;">Interactive Google Colab Launch Link</th>
-<th style="text-align: center;">Scan (Print)</th>
+<th style="text-align: left;">Onboarding lab</th>
+<th style="text-align: left;">Interactive Google Colab launch link</th>
+<th style="text-align: center;">Scan (print)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;"><strong>Curriculum Index</strong></td>
+<td style="text-align: left;"><strong>Curriculum index</strong></td>
 <td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_START_HERE.ipynb">00_START_HERE.ipynb</a></td>
 <td style="text-align: center;"><img src="assets/qr/00_START_HERE.png" class="img-fluid" width="58" alt="QR code linking to the Master Start-Here Google Colab curriculum index notebook"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><strong>2-Minute Setup</strong></td>
+<td style="text-align: left;"><strong>2-minute setup</strong></td>
 <td style="text-align: left;"><a href="https://colab.research.google.com/github/sharukh01621/first-line-to-first-paper/blob/main/colab_drive/00_setup/00_colab_orientation.ipynb">00_setup / 00_colab_orientation.ipynb</a></td>
 <td style="text-align: center;"><img src="assets/qr/00_setup__00_colab_orientation.png" class="img-fluid" width="58" alt="QR code linking to the Colab Orientation and environment setup notebook"></td>
 </tr>
@@ -576,39 +829,39 @@ window.Quarto = {
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>First-Time Setup (Takes 2 Minutes)
+<span class="screen-reader-only">Tip</span>First-time setup (2 minutes)
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Before starting Chapter 1, open the <strong>Colab Orientation Notebook</strong> (<code>00_setup/00_colab_orientation.ipynb</code>), click <strong>File <span class="math inline">\(\rightarrow\)</span> Save a copy in Drive</strong>, and run its three welcome cells to verify your runtime and preview our Public Health spine datasets.</p>
+<p>Before starting Chapter 1, open the <strong>Colab Orientation Notebook</strong> (<code>00_setup/00_colab_orientation.ipynb</code>), select <strong>File <span class="math inline">\(\rightarrow\)</span> Save a copy in Drive</strong>, and run its three welcome cells to verify your runtime and preview the bundled public health spine datasets.</p>
 </div>
 </div>
 <hr>
 </section>
 </section>
 <section id="the-researchers-4-step-problem-structuring-blueprint" class="level2">
-<h2 class="anchored" data-anchor-id="the-researchers-4-step-problem-structuring-blueprint">The Researcher’s 4-Step Problem-Structuring Blueprint</h2>
-<p>Beginners often stare at a blank code cell and freeze because they try to write Python syntax <em>before</em> designing the logic. Throughout all 36 chapters, before we write a single line of code for any non-trivial problem, we complete this 4-step blueprint:</p>
+<h2 class="anchored" data-anchor-id="the-researchers-4-step-problem-structuring-blueprint">The researcher’s 4-step problem-structuring blueprint</h2>
+<p>Beginners often freeze at a blank code cell because they try to write Python syntax before designing the logic. Across all 36 chapters, before writing code for any non-trivial problem, we complete four steps:</p>
 <ol type="1">
-<li><strong>Inputs &amp; Units:</strong> What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?</li>
-<li><strong>Edge Cases &amp; Traps:</strong> What could silently go wrong? (Zero denominators, missing survey codes like <code>999</code>, wrong operator precedence, floating-point truncation, data leakage.)</li>
-<li><strong>Step-by-Step Algorithm:</strong> Plain-English ordered steps written <em>before</em> Python.</li>
-<li><strong>Verification Plan:</strong> Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.</li>
+<li><strong>Inputs and units:</strong> What exact values enter the problem, what data types are they, and what units (kg, cm, mmHg, per 100,000) do they carry?</li>
+<li><strong>Edge cases and traps:</strong> What could silently go wrong — zero denominators, missing survey sentinel codes such as <code>999</code>, operator precedence mistakes, floating-point truncation, or data leakage?</li>
+<li><strong>Step-by-step algorithm:</strong> Plain-English ordered steps written before Python.</li>
+<li><strong>Verification plan:</strong> Hand-calculated or domain-bounded sanity checks proving the output makes scientific sense.</li>
 </ol>
 <hr>
 </section>
 <section id="visual-callout-legend" class="level2">
-<h2 class="anchored" data-anchor-id="visual-callout-legend">Visual Callout Legend</h2>
+<h2 class="anchored" data-anchor-id="visual-callout-legend">Visual callout legend</h2>
 <ul>
 <li><strong>Mental Model (<code>Note</code>):</strong> Diagrams and analogies showing what happens inside Python’s memory and interpreter.</li>
 <li><strong>Researcher’s Note (<code>Tip</code>):</strong> Statistical, epidemiological, and reproducible-science best practices.</li>
-<li><strong>Common Trap (<code>Warning</code>):</strong> Subtle bugs that run <em>without</em> crashing and silently corrupt analyses.</li>
-<li><strong>Break It On Purpose (<code>Important</code>):</strong> Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly and confidently.</li>
+<li><strong>Common Trap (<code>Warning</code>):</strong> Subtle bugs that run without crashing and silently corrupt analyses.</li>
+<li><strong>Break It On Purpose (<code>Important</code>):</strong> Controlled experiments that trigger real Python errors so you learn to read tracebacks calmly.</li>
 </ul>
 <hr>
 </section>
 <section id="master-7-part-curriculum-roadmap-first-edition-860-pages" class="level2">
-<h2 class="anchored" data-anchor-id="master-7-part-curriculum-roadmap-first-edition-860-pages">Master 7-Part Curriculum Roadmap (First Edition, ~860 Pages)</h2>
+<h2 class="anchored" data-anchor-id="master-7-part-curriculum-roadmap-first-edition-860-pages">Master 7-part curriculum roadmap (First edition, 860 pages)</h2>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 16%">
@@ -620,58 +873,58 @@ window.Quarto = {
 <tr class="header">
 <th style="text-align: left;">Part</th>
 <th style="text-align: center;">Chapters</th>
-<th style="text-align: left;">Core Mastery Milestone</th>
-<th style="text-align: center;">Print Pages</th>
+<th style="text-align: left;">Core mastery milestone</th>
+<th style="text-align: center;">Pages</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;"><strong>Part I</strong></td>
 <td style="text-align: center;">Ch 1–6</td>
-<td style="text-align: left;">Computational Thinking &amp; Python from Absolute Zero</td>
-<td style="text-align: center;">~110</td>
+<td style="text-align: left;">Computational thinking and Python from absolute zero</td>
+<td style="text-align: center;">110</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>Part II</strong></td>
 <td style="text-align: center;">Ch 7–11</td>
-<td style="text-align: left;">Core Data Structures, Algorithms &amp; Defensive Programming</td>
-<td style="text-align: center;">~105</td>
+<td style="text-align: left;">Core data structures, algorithms, and defensive programming</td>
+<td style="text-align: center;">105</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><strong>Part III</strong></td>
 <td style="text-align: center;">Ch 12–15</td>
-<td style="text-align: left;">OOP, Jupyter/Colab Engineering, VS Code &amp; Git</td>
-<td style="text-align: center;">~90</td>
+<td style="text-align: left;">OOP, Jupyter/Colab engineering, VS Code, and Git</td>
+<td style="text-align: center;">90</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>Part IV</strong></td>
 <td style="text-align: center;">Ch 16–20</td>
-<td style="text-align: left;">NumPy, Pandas, Survey Cleaning, Visualization &amp; Biostatistics</td>
-<td style="text-align: center;">~115</td>
+<td style="text-align: left;">NumPy, Pandas, survey cleaning, visualization, and biostatistics</td>
+<td style="text-align: center;">115</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><strong>Part V</strong></td>
 <td style="text-align: center;">Ch 21–26</td>
-<td style="text-align: left;">Classical Machine Learning — Scratch Math to Leakage-Free Pipelines</td>
-<td style="text-align: center;">~140</td>
+<td style="text-align: left;">Classical machine learning from scratch math to leakage-free pipelines</td>
+<td style="text-align: center;">140</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>Part VI</strong></td>
 <td style="text-align: center;">Ch 27–32</td>
-<td style="text-align: left;">Deep Learning — NumPy Backprop to PyTorch, CNNs &amp; Transformers</td>
-<td style="text-align: center;">~145</td>
+<td style="text-align: left;">Deep learning from NumPy backprop to PyTorch, CNNs, and Transformers</td>
+<td style="text-align: center;">145</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><strong>Part VII</strong></td>
 <td style="text-align: center;">Ch 33–36</td>
-<td style="text-align: left;">Rigorous Experiments, Ablation Studies, Fairness &amp; Capstone Paper</td>
-<td style="text-align: center;">~115</td>
+<td style="text-align: left;">Rigorous experiments, ablation studies, fairness, and capstone paper</td>
+<td style="text-align: center;">115</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><strong>Appendices</strong></td>
 <td style="text-align: center;">A–E</td>
-<td style="text-align: left;">Cheat Sheets, Math Refresher, Top-50 Errors, Colab Index &amp; References</td>
-<td style="text-align: center;">~50</td>
+<td style="text-align: left;">Cheat sheets, math refresher, Top-50 error decoder, Colab index, and references</td>
+<td style="text-align: center;">50</td>
 </tr>
 </tbody>
 </table>
@@ -683,6 +936,54 @@ window.Quarto = {
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
     const anchorJS = new window.AnchorJS();
     anchorJS.options = {
@@ -754,7 +1055,25 @@ window.Quarto = {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/sharukh01621\.github\.io\/first-line-to-first-paper\/");
+      const newWindowLabel = "(opens in a new tab)";
+      const newWindowNoteId = "quarto-ext-newwindow-label";
+      // Links reference one hidden label through aria-describedby, so the
+      // announcement never changes their accessible name.
+      var describeNewWindow = (link) => {
+        if (!window.document.getElementById(newWindowNoteId)) {
+          var newWindowNote = window.document.createElement("span");
+          newWindowNote.id = newWindowNoteId;
+          newWindowNote.hidden = true;
+          newWindowNote.textContent = newWindowLabel;
+          window.document.body.appendChild(newWindowNote);
+        }
+        var describedBy = (link.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+        if (!describedBy.includes(newWindowNoteId)) {
+          describedBy.push(newWindowNoteId);
+          link.setAttribute("aria-describedby", describedBy.join(" "));
+        }
+      }
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -769,6 +1088,12 @@ window.Quarto = {
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            describeNewWindow(link);
           if (!link.classList.contains('no-external-icon')) {
           }
         }
@@ -1167,8 +1492,22 @@ window.Quarto = {
   </div>
 </nav>
 </div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>From First Line to First Paper · Mezanur Rahman Sharukh</p>
+</div>   
+    <div class="nav-footer-center">
+<p>Open access · CC BY-NC-SA 4.0 &amp; MIT · <a href="https://doi.org/10.5281/zenodo.24446563">DOI 10.5281/zenodo.24446563</a></p>
+</div>
+    <div class="nav-footer-right">
+<p><a href="https://sharukh01621.github.io/">Author site</a> · <a href="https://pypi.org/project/sharukh-tutor/">PyPI</a></p>
+</div>
+  </div>
+</footer>
 
 
 
 
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
 </body></html>
